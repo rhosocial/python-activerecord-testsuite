@@ -1,0 +1,162 @@
+# pyproject.toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rhosocial-activerecord-testsuite"
+dynamic = ["version"]
+description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+
+authors = [
+    { name = "vistart", email = "i@vistart.me" }
+]
+keywords = ["testsuite", "activerecord", "orm", "database", "pytest", "rhosocial"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: Pytest",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Acceptance",
+    "Topic :: Software Development :: Testing :: BDD",
+    "Topic :: Software Development :: Testing :: Mocking",
+    "Topic :: Software Development :: Testing :: Unit",
+]
+
+dependencies = [
+    "rhosocial_activerecord>=1.0.0",
+    "pytest>=7.0.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+test = [
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.6.1",
+    "pytest-rerunfailures>=15.0",
+]
+
+dev = [
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+]
+
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=2.0.0",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/rhosocial/python-activerecord-testsuite"
+Documentation = "https://docs.python-activerecord-testsuite.dev.rho.social/"
+Repository = "https://github.com/rhosocial/python-activerecord-testsuite.git"
+Issues = "https://github.com/rhosocial/python-activerecord-testsuite/issues"
+
+[tool.hatch.version]
+path = "src/rhosocial/activerecord/testsuite/__init__.py"
+pattern = '^__version__\s*=\s*"(?P<version>(?:[1-9]\d*!)?\d+(?:\.\d+)*(?:[-._]?(?:a|alpha|b|beta|rc|pre|preview)(?:[-._]?\d+)?)?(?:\.post(?:0|[1-9]\d*))?(?:\.dev(?:0|[1-9]\d*))?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)"$'
+
+[tool.hatch.build]
+include = [
+    "src/rhosocial/**/*.py",
+    "LICENSE",
+    "README.md",
+]
+exclude = [
+    "*.pyc", "**/__pycache__", "**/*.py[cod]", "**/*.so",
+    "**/.DS_Store", "**/.*.swp", ".git*",
+    "build/", "dist/", "*.egg-info/",
+    ".idea/", ".vscode/", ".mypy_cache/", ".ruff_cache/", ".pytest_cache/",
+    ".coverage", "htmlcov/",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rhosocial"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/rhosocial/**/*.py",
+    "LICENSE",
+    "README.md",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["src/rhosocial/activerecord/testsuite"]
+
+addopts = "-ra -q"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    # Test Categories
+    "feature: marks tests for individual features",
+    "realworld: marks tests for real-world scenarios",
+    "benchmark: marks tests for performance benchmarks",
+
+    # Feature Areas (from planned structure)
+    "basic: marks tests for basic CRUD, validation, etc.",
+    "query: marks tests for query builder functionality",
+    "relation: marks tests for model relationships",
+    "field: marks tests for field type handling",
+    "crud: marks tests for CRUD operations",
+    "validation: marks tests for data validation",
+    "has_one: marks tests for HasOne relations",
+    "has_many: marks tests for HasMany relations",
+    "belongs_to: marks tests for BelongsTo relations",
+    "timestamp: marks tests for TimestampMixin",
+    "soft_delete: marks tests for SoftDeleteMixin",
+    "cte: marks tests for CTE functionality",
+
+    # Real-world Scenarios (from planned structure)
+    "ecommerce: marks tests for e-commerce scenarios",
+    "finance: marks tests for finance scenarios",
+    "social: marks tests for social media scenarios",
+
+    # Benchmark Areas (from planned structure)
+    "bulk_operations: marks tests for bulk database operations",
+    "complex_queries: marks tests for complex query performance",
+    "concurrent_access: marks tests for concurrent database access",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+include = '''\.pyi?$'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = ["E", "F", "B"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
