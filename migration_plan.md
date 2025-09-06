@@ -179,9 +179,11 @@ rhosocial-activerecord/                     # 包名
     ├── fixtures/                           # 测试夹具数据
     │   ├── schemas/                        # SQL schema文件
     │   │   └── sqlite/                     # SQLite专用schema
+    │   │       ├── type_cases.sql
+    │   │       ├── type_tests.sql
     │   │       ├── users.sql
-    │   │       ├── posts.sql
-    │   │       └── comments.sql
+    │   │       ├── validated_field_users.sql
+    │   │       └── validated_users.sql
     │   └── data/                           # 测试数据文件
     │       ├── sample_users.json
     │       └── sample_posts.json
@@ -245,7 +247,7 @@ rhosocial-activerecord/                     # 包名
 import os
 import tempfile
 from typing import Dict, Any, Tuple, Type
-from rhosocial.activerecord.backend.impl.sqlite import SQLiteBackend
+from rhosocial.activerecord.backend.impl.sqlite.backend import SQLiteBackend
 from rhosocial.activerecord.backend.impl.sqlite.config import SQLiteConnectionConfig
 
 # 场景名 -> 配置字典 的映射表（只关心SQLite）
@@ -255,32 +257,34 @@ def register_scenario(name: str, config: Dict[str, Any]):
     """注册SQLite测试场景"""
     SCENARIO_MAP[name] = config
 
-def get_scenario(name: str) -> Tuple[Type[SQLiteBackend], Dict[str, Any]]:
-    """获取SQLite测试场景"""
+def get_scenario(name: str) -> Tuple[Type[SQLiteBackend], SQLiteConnectionConfig]:
+    """
+    Retrieves the backend class and a connection configuration object for a given
+    scenario name. This is called by the provider to set up the database for a test.
+    """
     if name not in SCENARIO_MAP:
-        raise ValueError(f"未找到SQLite测试场景: {name}")
-    return SQLiteBackend, SCENARIO_MAP[name]
-
-def get_enabled_scenarios() -> Dict[str, Tuple[Type[SQLiteBackend], Dict[str, Any]]]:
-    """获取启用的SQLite测试场景"""
-    # 检查环境变量过滤
-    enabled_scenarios = os.getenv("ENABLED_TEST_SCENARIOS")
-    if enabled_scenarios:
-        enabled_names = [s.strip() for s in enabled_scenarios.split(",")]
-        return {name: (SQLiteBackend, SCENARIO_MAP[name]) 
-                for name in enabled_names if name in SCENARIO_MAP}
+        name = "memory"  # Fallback to the default in-memory scenario if not found.
     
-    # 返回所有可用场景
-    return {name: (SQLiteBackend, config) for name, config in SCENARIO_MAP.items()}
+    # Unpack the configuration dictionary into the dataclass constructor.
+    config = SQLiteConnectionConfig(**SCENARIO_MAP[name])
+    return SQLiteBackend, config
+
+def get_enabled_scenarios() -> Dict[str, Any]:
+    """
+    Returns the map of all currently enabled scenarios. The testsuite's conftest
+    uses this to parameterize the tests, causing them to run for each scenario.
+    """
+    return SCENARIO_MAP
 
 def _register_default_scenarios():
-    """注册默认的SQLite测试场景"""
-    
-    # 内存数据库（最快，默认选择）
+    """
+    Registers the default scenarios supported by this SQLite backend.
+    More complex scenarios (e.g., for performance or concurrency testing)
+    can be added here, often controlled by environment variables.
+    """
+    # The default, fastest scenario using an in-memory SQLite database.
     register_scenario("memory", {
         "database": ":memory:",
-        "echo": False,
-        "auto_commit": True
     })
     
     # 临时文件数据库（持久化测试）
@@ -288,24 +292,21 @@ def _register_default_scenarios():
         temp_dir = tempfile.gettempdir()
         register_scenario("tempfile", {
             "database": os.path.join(temp_dir, "test_activerecord.sqlite"),
-            "echo": False,
             "delete_on_close": True
         })
     
-    # 调试模式（显示SQL语句）
+    # 调试模式（显示SQL语句）。注意：'echo' 和 'auto_commit' 不是 SQLiteConnectionConfig 的参数。
+    # 要启用 SQL 回显，请配置 'rhosocial.activerecord' 的日志级别。
     if os.getenv("TEST_SQLITE_DEBUG", "false").lower() == "true":
         register_scenario("debug", {
             "database": ":memory:",
-            "echo": True,  # 显示SQL语句
-            "auto_commit": False  # 手动事务控制
         })
     
-    # 性能测试模式（优化设置）
+    # 性能测试模式（优化设置）。注意：'echo' 不是 SQLiteConnectionConfig 的参数。
     if os.getenv("TEST_SQLITE_PERFORMANCE", "false").lower() == "true":
         register_scenario("performance", {
             "database": ":memory:",
-            "echo": False,
-            "pragma_settings": {
+            "pragmas": {
                 "synchronous": "OFF",
                 "journal_mode": "MEMORY",
                 "temp_store": "MEMORY",
@@ -313,13 +314,12 @@ def _register_default_scenarios():
             }
         })
     
-    # 并发测试模式（WAL模式）
+    # 并发测试模式（WAL模式）。注意：'echo' 和 'auto_commit' 是不是 SQLiteConnectionConfig 的参数。
     if os.getenv("TEST_SQLITE_CONCURRENT", "false").lower() == "true":
         register_scenario("concurrent", {
             "database": "test_concurrent.sqlite",
-            "echo": False,
             "delete_on_close": True,
-            "pragma_settings": {
+            "pragmas": {
                 "journal_mode": "WAL",
                 "synchronous": "NORMAL"
             }
@@ -346,134 +346,103 @@ export ENABLED_TEST_SCENARIOS="memory,debug"  # 只运行指定场景
 #### BasicProvider实现
 ```python
 # tests/providers/basic.py
-"""SQLite后端的基础功能测试Provider实现"""
+"""
+This file provides the concrete implementation of the `IBasicProvider` interface
+that is defined in the `rhosocial-activerecord-testsuite` package.
 
-from typing import Type, List, Dict, Any, Tuple
-from rhosocial.activerecord.testsuite.feature.basic.interfaces import IBasicProvider
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-from rhosocial.activerecord import ActiveRecord
-from .scenarios import get_enabled_scenarios, get_scenario
+Its main responsibilities are:
+1.  Reporting which test scenarios (database configurations) are available.
+2.  Setting up the database environment for a given test. This includes:
+    - Getting the correct database configuration for the scenario.
+    - Configuring the ActiveRecord model with a database connection.
+    - Dropping any old tables and creating the necessary table schema.
+3.  Cleaning up any resources (like temporary database files) after a test runs.
+"""
 import os
+from typing import Type, List
+from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.testsuite.feature.basic.interfaces import IBasicProvider
+# The models are defined generically in the testsuite...
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import User, TypeCase, ValidatedFieldUser, TypeTestModel, ValidatedUser
+# ...and the scenarios are defined specifically for this backend.
+from .scenarios import get_enabled_scenarios, get_scenario
 
-class BasicProvider:
-    """SQLite后端的基础功能测试Provider实现"""
-    
+class BasicProvider(IBasicProvider):
+    """
+    This is the SQLite backend's implementation for the basic features test group.
+    It connects the generic tests in the testsuite with the actual SQLite database.
+    """
+
     def get_test_scenarios(self) -> List[str]:
-        """获取可用的SQLite测试场景名称"""
+        """Returns a list of names for all enabled scenarios for this backend."""
         return list(get_enabled_scenarios().keys())
-    
-    def setup_user_model(self, test_name: str, scenario_name: str = "memory") -> Type[ActiveRecord]:
-        """
-        准备User模型测试环境
+
+    def _setup_model(self, model_class: Type[ActiveRecord], scenario_name: str, table_name: str) -> Type[ActiveRecord]:
+        """A generic helper method to handle the setup for any given model."""
+        # 1. Get the backend class (SQLiteBackend) and connection config for the requested scenario.
+        backend_class, config = get_scenario(scenario_name)
         
-        注意：模型类定义来自testsuite，这里只负责配置和schema准备
-        """
+        # 2. Configure the generic model class with our specific backend and config.
+        #    This is the key step that links the testsuite's model to our database.
+        model_class.configure(config, backend_class)
         
-        # 1. 获取场景配置
-        backend_class, config_dict = get_scenario(scenario_name)
-        
-        # 2. 从testsuite获取模型类定义
-        # 重要：不在这里定义模型，而是从testsuite获取
-        User = self._get_user_model_from_testsuite()
-        
-        # 3. 配置SQLite后端
-        from rhosocial.activerecord.backend.impl.sqlite.config import SQLiteConnectionConfig
-        config = SQLiteConnectionConfig(**config_dict)
-        User.configure(config, backend_class)
-        
-        # 4. 准备SQLite表结构
-        self._setup_sqlite_schema(User, "users")
-        
-        return User
-    
-    def setup_type_test_model(self, test_name: str, scenario_name: str = "memory") -> Type[ActiveRecord]:
-        """准备类型测试模型环境"""
-        
-        backend_class, config_dict = get_scenario(scenario_name)
-        
-        # 从testsuite获取模型定义
-        TypeTestModel = self._get_type_test_model_from_testsuite()
-        
-        # 配置后端
-        from rhosocial.activerecord.backend.impl.sqlite.config import SQLiteConnectionConfig
-        config = SQLiteConnectionConfig(**config_dict)
-        TypeTestModel.configure(config, backend_class)
-        
-        # 准备schema
-        self._setup_sqlite_schema(TypeTestModel, "type_tests")
-        
-        return TypeTestModel
-    
-    def setup_validated_user_model(self, test_name: str, scenario_name: str = "memory") -> Type[ActiveRecord]:
-        """准备验证用户模型环境"""
-        
-        backend_class, config_dict = get_scenario(scenario_name)
-        
-        # 从testsuite获取模型定义
-        ValidatedUser = self._get_validated_user_model_from_testsuite()
-        
-        # 配置后端
-        from rhosocial.activerecord.backend.impl.sqlite.config import SQLiteConnectionConfig
-        config = SQLiteConnectionConfig(**config_dict)
-        ValidatedUser.configure(config, backend_class)
-        
-        # 准备schema
-        self._setup_sqlite_schema(ValidatedUser, "validated_users")
-        
-        return ValidatedUser
-    
-    def _get_user_model_from_testsuite(self) -> Type[ActiveRecord]:
-        """从testsuite获取User模型类定义"""
-        from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import User
-        return User
-    
-    def _get_type_test_model_from_testsuite(self) -> Type[ActiveRecord]:
-        """从testsuite获取TypeTestModel模型类定义"""
-        from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import TypeTestModel
-        return TypeTestModel
-    
-    def _get_validated_user_model_from_testsuite(self) -> Type[ActiveRecord]:
-        """从testsuite获取ValidatedUser模型类定义"""
-        from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import ValidatedUser
-        return ValidatedUser
-    
-    def _setup_sqlite_schema(self, model_class: Type[ActiveRecord], table_name: str):
-        """设置SQLite表结构"""
-        
-        # 清理旧表
-        model_class.__backend__.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        # 加载SQLite专用的schema文件
+        # 3. Prepare the database schema. To ensure tests are isolated, we drop
+        #    the table if it exists and recreate it from the schema file.
+        try:
+            model_class.__backend__.execute(f"DROP TABLE IF EXISTS {table_name}")
+        except Exception:
+            # Ignore errors if the table doesn't exist, which is expected on the first run.
+            pass
+            
         schema_sql = self._load_sqlite_schema(f"{table_name}.sql")
         model_class.__backend__.execute(schema_sql)
-    
+        
+        return model_class
+
+    # --- Implementation of the IBasicProvider interface ---
+
+    def setup_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """Sets up the database for the `User` model tests."""
+        return self._setup_model(User, scenario_name, "users")
+
+    def setup_type_case_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """Sets up the database for the `TypeCase` model tests."""
+        return self._setup_model(TypeCase, scenario_name, "type_cases")
+
+    def setup_type_test_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """Sets up the database for the `TypeTestModel` model tests."""
+        return self._setup_model(TypeTestModel, scenario_name, "type_tests")
+
+    def setup_validated_field_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """Sets up the database for the `ValidatedFieldUser` model tests."""
+        return self._setup_model(ValidatedFieldUser, scenario_name, "validated_field_users")
+
+    def setup_validated_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """Sets up the database for the `ValidatedUser` model tests."""
+        return self._setup_model(ValidatedUser, scenario_name, "validated_users")
+
     def _load_sqlite_schema(self, filename: str) -> str:
-        """加载SQLite schema文件"""
-        import os
-        
-        # schema文件位于后端包的fixtures目录中
-        schema_dir = os.path.join(
-            os.path.dirname(__file__),
-            "..", "fixtures", "schemas", "sqlite"
-        )
+        """Helper to load a SQL schema file from this project's fixtures."""
+        # Schemas are stored locally within this backend's test directory.
+        schema_dir = os.path.join(os.path.dirname(__file__), "..", "fixtures", "schemas", "sqlite")
         schema_path = os.path.join(schema_dir, filename)
-        
-        if not os.path.exists(schema_path):
-            raise FileNotFoundError(f"SQLite schema文件不存在: {schema_path}")
         
         with open(schema_path, 'r', encoding='utf-8') as f:
             return f.read()
-    
-    def cleanup_after_test(self, test_name: str, scenario_name: str = "memory"):
-        """测试后清理资源"""
-        # 对于内存数据库，连接关闭后自动清理
-        # 对于文件数据库，根据配置决定是否删除文件
-        if scenario_name != "memory":
-            backend_class, config_dict = get_scenario(scenario_name)
-            if config_dict.get("delete_on_close", False):
-                db_path = config_dict.get("database")
-                if db_path and os.path.exists(db_path):
-                    os.remove(db_path)
+
+    def cleanup_after_test(self, scenario_name: str):
+        """
+        Performs cleanup after a test. For file-based scenarios, this involves
+        deleting the temporary database file.
+        """
+        _, config = get_scenario(scenario_name)
+        if config.delete_on_close and config.database != ":memory:" and os.path.exists(config.database):
+            try:
+                # Attempt to remove the temp db file.
+                os.remove(config.database)
+            except OSError:
+                # Ignore errors if the file is already gone or locked, etc.
+                pass
 ```
 
 ### 3.4 MySQL后端的场景配置示例
@@ -1164,7 +1133,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.realworld.test_ecommerce import *
 
-# tests/rhosocial/activerecord_test/social_network.py
+# tests/rhosocial/activerecord_test/realworld/test_social_network.py
 """
 社交网络场景测试
 
@@ -1283,33 +1252,24 @@ from rhosocial.activerecord.testsuite.benchmark.test_concurrent_access import *
 ### 4.2 核心注册机制
 ```python
 # tests/providers/registry.py
-"""Provider注册表实现"""
-
 from rhosocial.activerecord.testsuite.core.registry import ProviderRegistry
 from .basic import BasicProvider
-from .relations import RelationsProvider
-from .query import QueryProvider
 
-# 创建注册表实例
+# Create a single, global instance of the ProviderRegistry.
 provider_registry = ProviderRegistry()
 
-# 注册Provider实现
+# Register the concrete `BasicProvider` as the implementation for the
+# `feature.basic.IBasicProvider` interface defined in the testsuite.
+# When the testsuite needs to run a "basic" feature test, it will ask the registry
+# for the "feature.basic.IBasicProvider" and will receive our `BasicProvider`.
 provider_registry.register("feature.basic.IBasicProvider", BasicProvider)
-provider_registry.register("feature.relations.IRelationsProvider", RelationsProvider)
-provider_registry.register("feature.query.IQueryProvider", QueryProvider)
 
-# 可选Provider（如果对应的实现文件存在）
-try:
-    from .realworld import RealworldProvider
-    provider_registry.register("realworld.IRealworldProvider", RealworldProvider)
-except ImportError:
-    pass
-
-try:
-    from .benchmark import BenchmarkProvider
-    provider_registry.register("benchmark.IBenchmarkProvider", BenchmarkProvider)
-except ImportError:
-    pass
+# As we migrate more test groups (e.g., relations, query), we will add
+# their provider registrations here.
+#
+# Example:
+# from .relations import RelationsProvider
+# provider_registry.register("feature.relations.IRelationsProvider", RelationsProvider)
 ```
 
 ## 五、pytest配置文件（修订版）
