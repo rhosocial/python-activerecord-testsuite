@@ -23,6 +23,32 @@ The test suite includes built-in support for testing the `sqlite` backend that s
     PYTEST_TARGET_VERSION=3.10 pytest
     ```
 
+### SQLite Test Scenarios
+
+The `rhosocial-activerecord` backend for SQLite supports several predefined test scenarios, which can be activated via environment variables. These scenarios allow for testing different operational modes and performance characteristics of SQLite.
+
+-   **`memory`**: The default and fastest scenario, using an in-memory SQLite database. This is always active.
+-   **`tempfile`**: Uses a temporary file on disk for the database. Useful for testing features that require database persistence. Activated by setting `TEST_SQLITE_FILE=true`.
+-   **`debug`**: An in-memory database with SQL echoing enabled (via logging configuration) for debugging purposes. Activated by setting `TEST_SQLITE_DEBUG=true`.
+-   **`performance`**: An in-memory database configured with optimized PRAGMA settings for performance testing. Activated by setting `TEST_SQLITE_PERFORMANCE=true`.
+-   **`concurrent`**: Uses a file-based database with WAL (Write-Ahead Logging) mode enabled for concurrency testing. Activated by setting `TEST_SQLITE_CONCURRENT=true`.
+
+You can enable multiple scenarios simultaneously by setting their respective environment variables. For example:
+
+```bash
+export TEST_SQLITE_FILE=true
+export TEST_SQLITE_DEBUG=true
+export TEST_SQLITE_PERFORMANCE=true
+export TEST_SQLITE_CONCURRENT=true
+pytest
+```
+
+Alternatively, you can specify which scenarios to run using the `--test-scenarios` pytest option:
+
+```bash
+pytest --test-scenarios="memory,debug"
+```
+
 ### Custom Backend Configuration
 
 To test your own backend (or other optional backends like MySQL, PostgreSQL), you need to configure the connection details. This can be done using environment variables.

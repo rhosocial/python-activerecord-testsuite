@@ -23,6 +23,32 @@
     PYTEST_TARGET_VERSION=3.10 pytest
     ```
 
+### SQLite 测试场景
+
+`rhosocial-activerecord` 的 SQLite 后端支持多种预定义的测试场景，可以通过环境变量激活。这些场景允许测试 SQLite 的不同操作模式和性能特征。
+
+-   **`memory`**：默认且最快的场景，使用内存中的 SQLite 数据库。此场景始终处于活动状态。
+-   **`tempfile`**：使用磁盘上的临时文件作为数据库。对于需要数据库持久性的测试功能非常有用。通过设置 `TEST_SQLITE_FILE=true` 激活。
+-   **`debug`**：一个内存中的数据库，通过日志配置启用 SQL 回显，用于调试目的。通过设置 `TEST_SQLITE_DEBUG=true` 激活。
+-   **`performance`**：一个内存中的数据库，配置了优化的 PRAGMA 设置，用于性能测试。通过设置 `TEST_SQLITE_PERFORMANCE=true` 激活。
+-   **`concurrent`**：使用基于文件的数据库，启用 WAL（Write-Ahead Logging）模式，用于并发测试。通过设置 `TEST_SQLITE_CONCURRENT=true` 激活。
+
+您可以通过同时设置相应的环境变量来启用多个场景。例如：
+
+```bash
+export TEST_SQLITE_FILE=true
+export TEST_SQLITE_DEBUG=true
+export TEST_SQLITE_PERFORMANCE=true
+export TEST_SQLITE_CONCURRENT=true
+pytest
+```
+
+或者，您可以使用 `--test-scenarios` pytest 选项指定要运行的场景：
+
+```bash
+pytest --test-scenarios="memory,debug"
+```
+
 ### 自定义后端配置
 
 要测试您自己的后端（或其他可选后端，如 MySQL、PostgreSQL），您需要配置连接详细信息。这可以通过使用环境变量来完成。
