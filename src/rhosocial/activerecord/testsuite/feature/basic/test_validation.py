@@ -7,6 +7,8 @@ import pytest
 from pydantic import ValidationError
 from rhosocial.activerecord.backend.errors import ValidationError as DBValidationError
 
+# Fixtures are now injected by the conftest.py in this package
+
 
 @pytest.fixture
 def validated_user_data():

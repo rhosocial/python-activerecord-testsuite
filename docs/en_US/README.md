@@ -26,7 +26,8 @@ Add `rhosocial-activerecord-testsuite` as a development dependency in your backe
 ```toml
 [project.optional-dependencies]
 dev = [
-    "rhosocial-activerecord-testsuite>=0.1.0"
+    "rhosocial-activerecord-testsuite>=0.1.0",
+    "pytest-cov>=4.0.0"
 ]
 ```
 
@@ -111,13 +112,28 @@ pytest
 pytest src/rhosocial/activerecord/testsuite/feature/basic/
 ```
 
-## 5. Code Conventions
+### Generating Code Coverage Reports
 
-To maintain a clean and consistent codebase, we adhere to the following convention:
+The purpose of this test suite is to test the `rhosocial-activerecord` library and other third-party backends. Therefore, code coverage should be measured against these target libraries.
 
-- **Path Comments**: All files within the `src/` directory (including `.py`, `.sql`, etc.) must begin with a comment on the first line that indicates the file's relative path from the project root (`python-activerecord-testsuite`).
+To generate a code coverage report, you first need to ensure `pytest-cov` is installed. Then, specify the target package with the `--cov` argument when running `pytest`.
 
-  Example: `# src/rhosocial/activerecord/testsuite/conftest.py`
+```bash
+# Run tests and generate an XML coverage report for rhosocial-activerecord
+pytest --cov=rhosocial.activerecord --cov-report=xml
+```
+
+This will create a `coverage.xml` file in the project root. You can inspect the `<sources>` and `<packages>` tags within this file to verify that the report was generated for the correct target library.
+
+## 5. Code Conventions and Advanced Usage
+
+- **Code Conventions**: To maintain a clean and consistent codebase, we adhere to the convention that all files within the `src/` directory must begin with a comment on the first line that indicates the file's relative path from the project root. See the [Code Conventions Guide](./CODE_CONVENTIONS.md) for details.
+
+- **IDE Integration**: For an enhanced development workflow, we recommend integrating the test suite with an IDE like PyCharm. Please refer to the [PyCharm Integration Guide](./IDE_INTEGRATION.md).
+
+- **Third-Party Backends**: If you are a developer of a third-party backend, please read the [Third-Party Backend Integration Guide](./THIRD_PARTY_BACKENDS.md) to learn how to connect your backend to this test suite.
+
+- **Continuous Integration (CI/CD)**: Please refer to our [CI/CD Guide](./CI_CD.md) for recommendations on how to run this test suite in an automated pipeline.
 
 ## 6. Troubleshooting
 
