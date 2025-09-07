@@ -35,10 +35,13 @@ feature/
 │   ├── test_has_many.py    # 一对多关系
 │   ├── test_belongs_to.py  # 多对一关系
 │   └── test_many_to_many.py # 多对多关系
-└── query/              # 查询功能测试（举例，下同）
-    ├── test_where.py   # 条件查询
-    ├── test_joins.py   # 表连接
-    └── test_aggregates.py # 聚合查询
+├── query/              # 查询功能测试（举例，下同）
+│   ├── test_where.py   # 条件查询
+│   ├── test_joins.py   # 表连接
+│   └── test_aggregates.py # 聚合查询
+└── events/             # 事件功能测试
+    ├── test_handlers.py   # 事件处理器测试
+    └── test_lifecycle.py  # 事件生命周期测试
 ```
 
 **功能说明**：feature目录包含所有后端必须通过的核心功能测试，确保ActiveRecord的基本约定和接口一致性。
@@ -916,7 +919,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.benchmark.test_concurrent_access import *
 ```python
-# tests/rhosocial/activerecord_test/basic/test_crud.py
+# tests/rhosocial/activerecord_test/feature/basic/test_crud.py
 """
 基础CRUD功能测试
 
@@ -936,7 +939,7 @@ from tests.providers.registry import provider_registry
 # 直接导入testsuite测试，pytest会自动发现
 from rhosocial.activerecord.testsuite.feature.basic.test_crud import *
 
-# tests/rhosocial/activerecord_test/basic/test_fields.py
+# tests/rhosocial/activerecord_test/feature/basic/test_fields.py
 """
 字段类型处理和转换测试
 
@@ -952,7 +955,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.basic.test_fields import *
 
-# tests/rhosocial/activerecord_test/basic/test_validation.py
+# tests/rhosocial/activerecord_test/feature/basic/test_validation.py
 """
 数据验证机制测试
 
@@ -968,7 +971,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.basic.test_validation import *
 
-# tests/rhosocial/activerecord_test/relations/test_has_many.py
+# tests/rhosocial/activerecord_test/feature/relations/test_has_many.py
 """
 一对多关系测试
 
@@ -984,7 +987,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.relations.test_has_many import *
 
-# tests/rhosocial/activerecord_test/relations/test_belongs_to.py
+# tests/rhosocial/activerecord_test/feature/relations/test_belongs_to.py
 """
 多对一关系测试
 
@@ -1000,7 +1003,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.relations.test_belongs_to import *
 
-# tests/rhosocial/activerecord_test/relations/test_many_to_many.py
+# tests/rhosocial/activerecord_test/feature/relations/test_many_to_many.py
 """
 多对多关系测试
 
@@ -1016,7 +1019,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.relations.test_many_to_many import *
 
-# tests/rhosocial/activerecord_test/query/test_where.py
+# tests/rhosocial/activerecord_test/feature/query/test_where.py
 """
 条件查询测试
 
@@ -1032,7 +1035,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.query.test_where import *
 
-# tests/rhosocial/activerecord_test/query/test_joins.py
+# tests/rhosocial/activerecord_test/feature/query/test_joins.py
 """
 表连接测试
 
@@ -1048,7 +1051,7 @@ os.environ.setdefault(
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.query.test_joins import *
 
-# tests/rhosocial/activerecord_test/query/test_aggregates.py
+# tests/rhosocial/activerecord_test/feature/query/test_aggregates.py
 """
 聚合查询测试
 
@@ -1063,6 +1066,38 @@ os.environ.setdefault(
 
 from tests.providers.registry import provider_registry
 from rhosocial.activerecord.testsuite.feature.query.test_aggregates import *
+
+# tests/rhosocial/activerecord_test/feature/events/test_handlers.py
+"""
+事件处理器测试
+
+直接导入并运行testsuite的事件处理器测试。
+"""
+
+import os
+os.environ.setdefault(
+    'TESTSUITE_PROVIDER_REGISTRY',
+    'tests.providers.registry:provider_registry'
+)
+
+from tests.providers.registry import provider_registry
+from rhosocial.activerecord.testsuite.feature.events.test_handlers import *
+
+# tests/rhosocial/activerecord_test/feature/events/test_lifecycle.py
+"""
+事件生命周期测试
+
+直接导入并运行testsuite的事件生命周期测试。
+"""
+
+import os
+os.environ.setdefault(
+    'TESTSUITE_PROVIDER_REGISTRY',
+    'tests.providers.registry:provider_registry'
+)
+
+from tests.providers.registry import provider_registry
+from rhosocial.activerecord.testsuite.feature.events.test_lifecycle import *
 
 # tests/rhosocial/activerecord_test/realworld/test_blog_system.py
 """
@@ -1254,6 +1289,7 @@ from rhosocial.activerecord.testsuite.benchmark.test_concurrent_access import *
 # tests/providers/registry.py
 from rhosocial.activerecord.testsuite.core.registry import ProviderRegistry
 from .basic import BasicProvider
+from .events import EventsProvider
 
 # Create a single, global instance of the ProviderRegistry.
 provider_registry = ProviderRegistry()
@@ -1263,6 +1299,10 @@ provider_registry = ProviderRegistry()
 # When the testsuite needs to run a "basic" feature test, it will ask the registry
 # for the "feature.basic.IBasicProvider" and will receive our `BasicProvider`.
 provider_registry.register("feature.basic.IBasicProvider", BasicProvider)
+
+# Register the concrete `EventsProvider` as the implementation for the
+# `feature.events.IEventsProvider` interface defined in the testsuite.
+provider_registry.register("feature.events.IEventsProvider", EventsProvider)
 
 # As we migrate more test groups (e.g., relations, query), we will add
 # their provider registrations here.
