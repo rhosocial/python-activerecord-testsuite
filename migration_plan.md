@@ -39,9 +39,14 @@ feature/
 │   ├── test_where.py   # 条件查询
 │   ├── test_joins.py   # 表连接
 │   └── test_aggregates.py # 聚合查询
-└── events/             # 事件功能测试
-    ├── test_handlers.py   # 事件处理器测试
-    └── test_lifecycle.py  # 事件生命周期测试
+├── events/             # 事件功能测试
+│   ├── test_handlers.py   # 事件处理器测试
+│   └── test_lifecycle.py  # 事件生命周期测试
+└── mixins/             # Mixins功能测试
+    ├── test_timestamps.py      # 时间戳功能测试
+    ├── test_soft_delete.py     # 软删除功能测试
+    ├── test_optimistic_lock.py # 乐观锁功能测试
+    └── test_combined_articles.py # 组合功能测试
 ```
 
 **功能说明**：feature目录包含所有后端必须通过的核心功能测试，确保ActiveRecord的基本约定和接口一致性。
@@ -1290,6 +1295,7 @@ from rhosocial.activerecord.testsuite.benchmark.test_concurrent_access import *
 from rhosocial.activerecord.testsuite.core.registry import ProviderRegistry
 from .basic import BasicProvider
 from .events import EventsProvider
+from .mixins import MixinsProvider
 
 # Create a single, global instance of the ProviderRegistry.
 provider_registry = ProviderRegistry()
@@ -1303,6 +1309,10 @@ provider_registry.register("feature.basic.IBasicProvider", BasicProvider)
 # Register the concrete `EventsProvider` as the implementation for the
 # `feature.events.IEventsProvider` interface defined in the testsuite.
 provider_registry.register("feature.events.IEventsProvider", EventsProvider)
+
+# Register the concrete `MixinsProvider` as the implementation for the
+# `feature.mixins.IMixinsProvider` interface defined in the testsuite.
+provider_registry.register("feature.mixins.IMixinsProvider", MixinsProvider)
 
 # As we migrate more test groups (e.g., relations, query), we will add
 # their provider registrations here.
