@@ -430,15 +430,17 @@ class ITestFixtureProvider(ABC):
         """
         pass
     
-    @abstractmethod
-    def create_order_fixtures(self) -> Tuple[Any, ...]:
-        """创建订单相关测试fixtures
+    # 每个测试组有其特定的fixture创建方法，可根据需要实现
+    def create_order_fixtures(self) -> Optional[Tuple[Any, ...]]:
+        """创建订单相关测试fixtures（可选实现）
         
         Returns:
             返回一个元组，包含相关的模型类 (User, Order, OrderItem等)
             例如: (UserModel, OrderModel, OrderItemModel)
+            如果返回None，则对应测试将被跳过
         """
-        pass
+        # 默认返回None表示不支持此fixture组
+        return None
     
     @abstractmethod
     def cleanup_fixtures(self, fixtures: Tuple[Any, ...]) -> None:
@@ -452,7 +454,7 @@ class ITestFixtureProvider(ABC):
 
 ### 2.2 通信契约
 - **输入**：能力需求映射（格式为 `{CapabilityCategory: [specific_capability]}`）
-- **输出**：执行决策（运行/跳过）
+- **输出**：执行决策（运行/跳过）和fixture支持状态
 - **不传递**：后端类型、版本信息、具体实现细节
 
 ### 2.3 能力匹配机制
@@ -460,23 +462,64 @@ class ITestFixtureProvider(ABC):
 - **具体能力匹配**：检查后端是否支持所需的特定能力
 - **映射验证**：验证能力类别与具体能力的完整映射关系
 
-### 2.4 Fixture组管理机制
+### 2.4 测试组接口模式
 
-Provider接口根据不同的测试场景定义特定的fixture创建方法：
+每个测试组（如 `feature/basic`, `feature/query`, 等）都有对应的Provider接口实现，这些接口存在共性但也存在差异：
 
-1. **Fixture创建方法**：Provider实现特定的 `create_*_fixtures` 方法来创建不同场景的fixtures
-2. **Fixture返回格式**：返回一个元组，包含相关的模型类
-3. **Fixture使用**：测试函数通过pytest参数机制获取并解包所需fixture
+1. **共性方法**：所有接口都需要实现能力评估和测试执行决策功能
+2. **差异化fixture创建**：不同测试组需要不同的fixture创建方法
+3. **向后兼容性**：fixture创建方法是可选的，如果未实现或返回None，对应测试将被跳过
 
 ```python
-# 示例：不同场景下的fixture创建方法
+# 示例：实现多个测试组的Provider接口
 
-# Provider实现特定的fixture创建方法
-order_fixtures = provider.create_order_fixtures()
-# 返回: (UserModel, OrderModel, OrderItemModel)
+class SQLiteProvider(ITestFixtureProvider):
+    def get_capabilities(self) -> DatabaseCapabilities:
+        # 实现能力评估
+        pass
+    
+    def can_run_test(self, required_capabilities_map) -> Tuple[bool, Optional[str]]:
+        # 实现测试执行决策
+        pass
+    
+    def create_order_fixtures(self) -> Optional[Tuple[Any, ...]]:
+        # 实现订单测试组的fixture创建方法
+        # 如果当前版本未实现，可返回None，相关测试将被跳过
+        pass
+    
+    def create_user_fixtures(self) -> Optional[Tuple[Any, ...]]:
+        # 实现用户测试组的fixture创建方法
+        # 如果当前版本未实现，可返回None，相关测试将被跳过
+        pass
+    
+    def cleanup_fixtures(self, fixtures) -> None:
+        # 实现清理功能
+        pass
+```
 
-# 测试函数中直接解包使用
-User, Order, OrderItem = order_fixtures
+### 2.5 兼容性处理机制
+
+为了确保后向兼容性，当后端开发者未能及时实现新的fixture组时，系统采用以下处理机制：
+
+1. **可选实现**：fixture创建方法是可选的，可返回None值
+2. **测试跳过**：如果特定fixture组不可用，对应测试将被跳过而非失败
+3. **原因标记**：跳过测试时会标记具体原因，便于开发者了解
+
+```python
+# 测试执行逻辑示例
+def run_test_with_fixtures(provider, test_func, fixture_method_name):
+    # 检查provider是否支持所需fixture方法
+    if hasattr(provider, fixture_method_name):
+        fixtures = getattr(provider, fixture_method_name)()
+        if fixtures is not None:
+            # 执行测试
+            return test_func(fixtures)
+        else:
+            # Fixture方法返回None，跳过测试
+            pytest.skip(f"Provider不支持 {fixture_method_name} fixture组")
+    else:
+        # Provider未实现此fixture方法，跳过测试
+        pytest.skip(f"Provider未实现 {fixture_method_name} fixture方法")
 ```
 
 ## 三、具体后端职责
@@ -486,7 +529,7 @@ User, Order, OrderItem = order_fixtures
 - **跳过决策**：决定哪些测试应该跳过
 - **环境准备**：创建表、索引、初始数据
 - **资源管理**：连接管理、事务控制、清理
-- **Fixture组管理**：根据测试需求准备相关的fixture组
+- **可选Fixture支持**：根据实现情况选择性支持特定fixture组
 - **Fixture生命周期管理**：负责fixture的创建、初始化和清理
 
 ### 3.2 Fixture组设计原则
@@ -496,7 +539,8 @@ User, Order, OrderItem = order_fixtures
 1. **特定创建方法**：为不同的测试场景实现特定的 `create_*_fixtures` 方法
 2. **返回元组格式**：返回包含相关模型类的元组，便于测试函数解包使用
 3. **关联性保证**：确保返回的模型类之间具有业务关联性，如订单场景的User、Order、OrderItem
-4. **清理职责**：实现 `cleanup_fixtures` 方法负责测试结束后的资源清理
+4. **可选实现**：fixture创建方法是可选的，未实现或返回None时相关测试将被跳过
+5. **清理职责**：实现 `cleanup_fixtures` 方法负责测试结束后的资源清理
 
 ### 3.2 版本检测示例
 
@@ -609,9 +653,14 @@ class MySQLProvider(BaseTestFixtureProvider):
 ```
 
 ### 3.4 Schema定义职责
-
-    def create_order_fixtures(self) -> Tuple[Any, ...]:
+```python
+    def create_order_fixtures(self) -> Optional[Tuple[Any, ...]]:
         """创建订单相关测试fixtures"""
+        # 模拟检查是否支持此功能
+        if not self._supports_complex_joins():
+            # 如果不支持复杂关联查询，则返回None，相关测试将被跳过
+            return None
+        
         # 创建数据库表
         user_schema = """
         CREATE TABLE users (
@@ -659,6 +708,11 @@ class MySQLProvider(BaseTestFixtureProvider):
         self.execute("DROP TABLE IF EXISTS order_items")
         self.execute("DROP TABLE IF EXISTS orders")
         self.execute("DROP TABLE IF EXISTS users")
+
+    def _supports_complex_joins(self) -> bool:
+        """检查当前数据库版本是否支持复杂关联查询"""
+        # 实现版本检查逻辑
+        return True  # 示例返回值
 ```
 
 ## 四、执行流程
@@ -687,19 +741,25 @@ graph TD
 @pytest.fixture
 def order_fixtures(provider):
     """订单相关fixtures（User, Order, OrderItem）"""
-    # 1. 询问Provider是否可以运行（如果需要特定能力）
+    # 1. 检查Provider是否支持此fixture组
+    if not hasattr(provider, 'create_order_fixtures'):
+        pytest.skip("Provider未实现 create_order_fixtures 方法")
+    
+    # 2. Provider尝试创建fixtures
+    fixtures = provider.create_order_fixtures()
+    if fixtures is None:
+        pytest.skip("Provider不支持订单相关fixtures，跳过测试")
+    
+    # 3. 询问Provider是否可以运行（如果需要特定能力）
     required_capabilities_map = getattr(request.function, '_required_capabilities_map', {})
     can_run, skip_reason = provider.can_run_test(required_capabilities_map)
     if not can_run:
         pytest.skip(skip_reason)
     
-    # 2. Provider创建fixtures
-    fixtures = provider.create_order_fixtures()
-    
-    # 3. 返回创建的fixtures
+    # 4. 返回创建的fixtures
     yield fixtures
     
-    # 4. 测试完成后清理
+    # 5. 测试完成后清理
     provider.cleanup_fixtures(fixtures)
 ```
 
@@ -784,41 +844,69 @@ class OracleProvider(BaseTestFixtureProvider):
 
 ### 8.1 测试套件项目结构
 ```
-rhosocial-activerecord-test-suite/
-├── src/
-│   └── test_suite/
-│       ├── features.py      # 特性定义
-│       ├── markers.py        # 测试标记
-│       ├── models.py         # 模型定义
-│       └── provider_api.py   # Provider接口
-└── tests/
-    ├── conftest.py           # 通用配置
-    └── test_*.py             # 测试文件
+python-activerecord-testsuite/
+├── src/rhosocial/activerecord/testsuite/
+│   ├── __init__.py
+│   ├── feature/              # 功能测试
+│   │   ├── basic/            # 基础功能测试
+│   │   │   ├── conftest.py
+│   │   │   └── test_*.py
+│   │   ├── query/            # 查询功能测试
+│   │   │   ├── conftest.py
+│   │   │   ├── test_*.py
+│   │   │   └── utils.py
+│   │   └── ...
+│   ├── provider_api.py       # Provider接口定义
+│   └── utils/                # 通用工具
+│       └── ...
+├── pyproject.toml
+└── README.md
 ```
 
-### 8.2 具体后端项目结构
+### 8.2 具体后端项目结构（以python-activerecord-mysql为例）
 ```
-rhosocial-activerecord-mysql/
+python-activerecord-mysql/
 ├── src/
-│   └── mysql_provider/
-│       ├── provider.py       # Provider实现
-│       ├── schemas.py        # Schema定义
-│       └── capabilities.py   # 能力映射
-└── tests/
-    └── run_suite.py          # 运行测试套件
+│   └── rhosocial/
+│       └── activerecord/
+│           └── backend/
+│               └── impl/
+│                   └── mysql/
+│                       ├── __init__.py
+│                       ├── backend.py      # MySQL后端实现
+│                       └── provider.py     # Provider接口实现
+├── tests/                  # 测试目录
+│   ├── conftest.py
+│   └── run_testsuite.py    # 运行测试套件的入口
+├── pyproject.toml
+└── README.md
 ```
 
 ### 8.3 集成方式
 
-环境变量配置：
-```bash
-# 运行MySQL测试
-export TEST_PROVIDER=mysql_provider.MySQLProvider
-pytest ../test-suite/tests/
+具体后端通过在自己的测试目录中引入测试套件的单元测试来运行测试：
 
-# 运行PostgreSQL测试
-export TEST_PROVIDER=pg_provider.PostgreSQLProvider
-pytest ../test-suite/tests/
+```bash
+# 1. 安装测试套件作为开发依赖
+pip install -e ../python-activerecord-testsuite
+
+# 2. 在具体后端项目目录下运行测试
+cd python-activerecord-mysql
+python -m pytest tests/
+
+# 或者运行特定的测试套件
+cd python-activerecord-mysql
+python -m pytest tests/test_basic_features.py
+```
+
+后端测试文件示例 (tests/test_basic_features.py)：
+```python
+# 引入测试套件中的测试
+from rhosocial.activerecord.testsuite.feature.basic.test_crud import *
+from rhosocial.activerecord.testsuite.feature.basic.test_fields import *
+from rhosocial.activerecord.testsuite.feature.basic.test_validation import *
+
+# 测试将自动使用当前项目的Provider实现
 ```
 
 ### 九、示例：ROLLUP测试的完整流程
