@@ -2,9 +2,9 @@
 
 This document details the various configuration options available for the test suite.
 
-## 1. Flexible Configuration System
+## 1. Interface-Based Configuration System
 
-The test suite is driven by a flexible configuration system that allows you to test against multiple database versions and setups.
+The test suite operates based on a flexible interface system that allows backends to implement and provide their own configuration, schema, and fixture management. The test suite defines what's needed, but backends are responsible for providing the implementation.
 
 ### Backend Drivers and Namespaces
 
@@ -12,6 +12,14 @@ Before configuring, it's important to understand how backends are loaded:
 
 -   **Official Backends**: Backends released by `rhosocial` are installed under the `rhosocial.activerecord.backend.impl` namespace (e.g., `...impl.mysql`). The test suite's default configuration loader knows how to find these.
 -   **Third-Party Backends**: If you are developing a third-party backend, it should reside in its own namespace (e.g., `acme_corp.activerecord.backend.impl.acme_db`). To make the test suite aware of your driver, you would need to register it, typically using Python's `entry_points` mechanism in your package's `pyproject.toml`.
+
+### Required Backend Interfaces
+
+Each backend must implement the following interfaces to properly work with the test suite:
+
+-   **Schema Provider Interface**: To create and manage database schemas per test requirements.
+-   **Fixture Provider Interface**: To supply test fixtures according to test specifications.
+-   **Configuration Provider Interface**: To handle backend-specific configuration options.
 
 ### Built-in SQLite Support
 

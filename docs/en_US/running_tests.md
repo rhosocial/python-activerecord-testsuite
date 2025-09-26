@@ -10,12 +10,14 @@ This section details how to run the `feature` tests. The tests under the `basic`
 -   **Field Type Handling**: Verification of various data types (strings, numbers, booleans, datetimes, JSON, etc.) (`test_fields.py`).
 -   **Data Validation**: Including field-level validation via Pydantic and custom business rule validation (`test_validation.py`).
 
-### Schema Definition
+### Schema Definition and Fixtures
 
-The test suite uses a convention-over-configuration approach for database schemas. For each test category (like `basic`), you must provide a schema file in a corresponding `schemas` directory. The test runner for your backend needs to provide the SQL dialect-specific version of this file.
+The test suite defines the requirements for database schemas and test fixtures, but does not handle their creation or management directly. Instead, it provides interfaces that backends must implement to provide these resources.
 
--   **Example Path**: `.../testsuite/feature/basic/schemas/basic.sql`
--   **Content**: This file should contain all `CREATE TABLE` statements required for the tests in the `.../feature/basic/` directory.
+For each test category (like `basic`), the test suite defines what schema and fixtures are needed. Your backend implementation is responsible for providing the SQL dialect-specific schema creation and fixture management through the required interfaces.
+
+-   **Schema Interface**: Backends must implement the schema creation interface to handle database-specific DDL statements.
+-   **Fixture Interface**: Backends need to provide test fixtures according to the specified requirements.
 
 ### Test Execution Flow
 

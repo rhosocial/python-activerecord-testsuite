@@ -7,8 +7,6 @@ This documentation provides comprehensive guides for using the test suite.
 - [Introduction](README.md)
 - [Configuration](configuration.md)
 - [Running Tests](running_tests.md)
-- [Troubleshooting](troubleshooting.md)
-- [Contributing](contributing.md)
 
 ## 1. Introduction
 
@@ -20,6 +18,8 @@ The primary goal is to ensure that every backend, whether official or third-part
 -   **Real-world Scenarios**: Simulate complex business logic to test interactions between different components.
 -   **Benchmark Tests**: Measure and compare performance metrics across different backends.
 
+**Important**: This test suite contains only the test logic and does not include environment preparation such as fixtures or database schemas. Instead, it provides interfaces that backends should implement to provide these resources. Each backend implementation is responsible for creating and managing its own test environment according to the provided interfaces.
+
 ## 2. Getting Started for Backend Developers
 
 To use this test suite to validate your custom database backend, follow these steps:
@@ -28,6 +28,7 @@ To use this test suite to validate your custom database backend, follow these st
 
 -   A working database backend implementation that inherits from `rhosocial.activerecord.backend.StorageBackend`.
 -   Your backend package should be installable in the test environment.
+-   Your backend must implement the required interfaces for providing test fixtures and database schemas.
 
 ### Installation
 
