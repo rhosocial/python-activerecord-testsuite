@@ -566,29 +566,64 @@ class SQLiteProvider(BaseTestFixtureProvider):
         """基于版本确定支持的特性"""
         caps = DatabaseCapabilities()
         
-        # SQLite的基本CRUD和事务支持
+        # SQLite的基本CRUD和事务支持（所有版本都支持）
         caps.add_category(CapabilityCategory.BULK_OPERATIONS).add_bulk_operation(BulkOperationCapability.MULTI_ROW_INSERT)
-        caps.add_category(CapabilityCategory.TRANSACTION_FEATURES).add_transaction(TransactionCapability.SAVEPOINT)
+        caps.add_category(CapabilityCategory.TRANSACTION_FEATURES).add_transaction([
+            TransactionCapability.SAVEPOINT,
+            TransactionCapability.ISOLATION_LEVELS
+        ])
         
-        # SQLite 3.25.0 开始支持窗口函数
+        # SQLite 3.8.3 (2015-02-25) 引入了CTE（公共表表达式）
+        if self.version >= (3, 8, 3):
+            caps.add_category(CapabilityCategory.CTE).add_cte(CTECapability.BASIC_CTE)
+        
+        # SQLite 3.25.0 (2018-09-15) 开始支持窗口函数
         if self.version >= (3, 25, 0):
             caps.add_category(CapabilityCategory.WINDOW_FUNCTIONS).add_window_function([
                 WindowFunctionCapability.ROW_NUMBER,
                 WindowFunctionCapability.RANK,
                 WindowFunctionCapability.DENSE_RANK,
                 WindowFunctionCapability.LAG,
-                WindowFunctionCapability.LEAD
+                WindowFunctionCapability.LEAD,
+                WindowFunctionCapability.CUME_DIST,
+                WindowFunctionCapability.PERCENT_RANK
             ])
         
-        # SQLite 3.38.0 开始支持基本JSON函数
+        # SQLite 3.26.0 (2018-12-01) 增加了READ ONLY事务支持
+        if self.version >= (3, 26, 0):
+            caps.add_transaction(TransactionCapability.READ_ONLY_TRANSACTIONS)
+        
+        # SQLite 3.35.0 (2021-03-12) 开始支持RETURNING子句
+        if self.version >= (3, 35, 0):
+            caps.add_category(CapabilityCategory.RETURNING_CLAUSE).add_returning(ReturningCapability.BASIC_RETURNING)
+        
+        # SQLite 3.38.0 (2022-02-22) 开始支持基本JSON函数
         if self.version >= (3, 38, 0):
             caps.add_category(CapabilityCategory.JSON_OPERATIONS).add_json([
                 JSONCapability.JSON_EXTRACT,
-                JSONCapability.JSON_CONTAINS
+                JSONCapability.JSON_CONTAINS,
+                JSONCapability.JSON_TYPE,
+                JSONCapability.JSON_ARRAY,
+                JSONCapability.JSON_OBJECT
             ])
+        
+        # SQLite 3.39.0 (2022-08-04) 增加了更多的JSON函数
+        if self.version >= (3, 39, 0):
+            caps.add_json([
+                JSONCapability.JSON_SET,
+                JSONCapability.JSON_INSERT,
+                JSONCapability.JSON_REPLACE
+            ])
+        
+        # SQLite 3.41.0 (2023-03-10) 增加了递归CTE支持
+        if self.version >= (3, 41, 0):
+            caps.add_cte(CTECapability.RECURSIVE_CTE)
         
         # SQLite不支持CUBE/ROLLUP等高级分组
         # 不添加CapabilityCategory.ADVANCED_GROUPING类别
+        
+        # SQLite不支持某些高级SQL功能
+        # 不添加CapabilityCategory.SET_OPERATIONS中的EXCEPT_ALL和INTERSECT_ALL
         
         return caps
     
@@ -614,6 +649,22 @@ class SQLiteProvider(BaseTestFixtureProvider):
                         return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
                 elif isinstance(capability, JSONCapability) and category == CapabilityCategory.JSON_OPERATIONS:
                     if capability != JSONCapability.NONE and not self.capabilities.supports_json(capability):
+                        capability_name = capability.name if hasattr(capability, 'name') else str(capability)
+                        return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
+                elif isinstance(capability, ReturningCapability) and category == CapabilityCategory.RETURNING_CLAUSE:
+                    if capability != ReturningCapability.NONE and not self.capabilities.supports_returning(capability):
+                        capability_name = capability.name if hasattr(capability, 'name') else str(capability)
+                        return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
+                elif isinstance(capability, JSONCapability) and category == CapabilityCategory.JSON_OPERATIONS:
+                    if capability != JSONCapability.NONE and not self.capabilities.supports_json(capability):
+                        capability_name = capability.name if hasattr(capability, 'name') else str(capability)
+                        return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
+                elif isinstance(capability, CTECapability) and category == CapabilityCategory.CTE:
+                    if capability != CTECapability.NONE and not self.capabilities.supports_cte(capability):
+                        capability_name = capability.name if hasattr(capability, 'name') else str(capability)
+                        return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
+                elif isinstance(capability, TransactionCapability) and category == CapabilityCategory.TRANSACTION_FEATURES:
+                    if capability != TransactionCapability.NONE and not self.capabilities.supports_transaction(capability):
                         capability_name = capability.name if hasattr(capability, 'name') else str(capability)
                         return False, f"SQLite {'.'.join(map(str, self.version))} 不支持: {capability_name}"
                 # 其他能力类型的检查...
