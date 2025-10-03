@@ -7,7 +7,6 @@ from pydantic import Field
 from rhosocial.activerecord import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
-from ...utils import create_active_record_fixture
 
 
 class Node(IntegerPKMixin, TimestampMixin, ActiveRecord):
@@ -22,7 +21,3 @@ class Node(IntegerPKMixin, TimestampMixin, ActiveRecord):
     # Self-referencing relation for tree structure
     parent: ClassVar[BelongsTo['Node']] = BelongsTo(foreign_key='parent_id', inverse_of='children')
     children: ClassVar[HasMany['Node']] = HasMany(foreign_key='parent_id', inverse_of='parent')
-
-
-# Create test fixture
-node_class = create_active_record_fixture(Node)

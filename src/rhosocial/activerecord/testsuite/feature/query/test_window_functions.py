@@ -6,10 +6,7 @@ import pytest
 import sqlite3
 
 from rhosocial.activerecord.query.expression import WindowExpression, FunctionExpression
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
+import pytest
 
 
 # Check if current SQLite version supports window functions

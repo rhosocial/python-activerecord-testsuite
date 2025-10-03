@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_grouped_aggregate.py
 """Test aggregate calculations with grouping."""
 from decimal import Decimal
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_single_group_aggregates(order_fixtures):

@@ -2,11 +2,6 @@
 """Test dict query functionality in ActiveQuery."""
 from decimal import Decimal
 import logging
-from .utils import create_order_fixtures, create_blog_fixtures
-
-# Create fixtures for tests
-order_fixtures = create_order_fixtures()
-blog_fixtures = create_blog_fixtures()
 
 
 def test_dict_query_all_with_model_instantiation(order_fixtures):

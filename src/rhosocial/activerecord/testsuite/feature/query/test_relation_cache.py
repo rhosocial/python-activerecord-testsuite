@@ -9,8 +9,6 @@ from typing import List
 
 import pytest
 
-from .utils import create_order_fixtures
-
 
 @dataclass
 class UserFixture:
@@ -179,7 +177,7 @@ def setup_order_data(order_fixtures) -> TestData:
     return TestData(users=users, orders=orders, items=items)
 
 
-order_fixtures = create_order_fixtures()
+
 
 
 def test_basic_relation_caching(order_fixtures, setup_order_data):

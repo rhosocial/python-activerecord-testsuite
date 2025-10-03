@@ -1,11 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_cte_integration_2.py
 """Test integration of CTE with ActiveQuery for building Common Table Expressions."""
 from decimal import Decimal
-from .utils import create_order_fixtures, create_tree_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
-tree_fixtures = create_tree_fixtures()
 
 
 def test_active_query_cte_with_where_conditions(order_fixtures):

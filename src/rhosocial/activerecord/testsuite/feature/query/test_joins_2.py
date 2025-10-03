@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_joins_2.py
 """Test cases for JOIN queries in ActiveQuery."""
 from decimal import Decimal
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_inner_join(order_fixtures):

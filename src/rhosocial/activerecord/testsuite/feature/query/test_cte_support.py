@@ -5,10 +5,6 @@ from unittest.mock import patch
 import pytest
 
 from rhosocial.activerecord.backend.errors import CTENotSupportedError
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_cte_support_detection(order_fixtures):

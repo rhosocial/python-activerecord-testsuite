@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_basic.py
 """Test basic query functionality."""
 from decimal import Decimal
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_find_by_id(order_fixtures):

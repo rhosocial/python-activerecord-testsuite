@@ -6,10 +6,6 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.query.expression import FunctionExpression
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_string_functions(order_fixtures):

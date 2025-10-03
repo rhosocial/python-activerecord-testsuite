@@ -2,9 +2,7 @@
 """Test cases for relation eager loading configuration."""
 from unittest.mock import patch
 
-from .utils import create_order_fixtures
-
-order_fixtures = create_order_fixtures()
+import pytest
 
 
 def test_relations_with_single_relation(order_fixtures):

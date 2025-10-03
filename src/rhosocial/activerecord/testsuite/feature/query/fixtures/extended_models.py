@@ -7,7 +7,6 @@ from pydantic import Field, EmailStr
 from rhosocial.activerecord import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
-from ...utils import create_active_record_fixture
 
 
 class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
@@ -64,12 +63,6 @@ class ExtendedOrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
     order: ClassVar[BelongsTo['ExtendedOrder']] = BelongsTo(foreign_key='order_id', inverse_of='items')
 
 
-# Create test fixtures
-extended_user_class = create_active_record_fixture(User)
-extended_order_class = create_active_record_fixture(ExtendedOrder)
-extended_order_item_class = create_active_record_fixture(ExtendedOrderItem)
-
-
 def create_extended_order_fixtures():
     """Create test fixtures for extended order-related tables.
 
@@ -81,15 +74,10 @@ def create_extended_order_fixtures():
     Returns:
         pytest fixture for the extended models
     """
-    from ..utils import create_table_fixture
-
-    model_classes = [User, ExtendedOrder, ExtendedOrderItem]
-
-    # Define schema mapping
-    schema_map = {
-        User.__table_name__: "users.sql",
-        ExtendedOrder.__table_name__: "extended_orders.sql",
-        ExtendedOrderItem.__table_name__: "extended_order_items.sql"
-    }
-
-    return create_table_fixture(model_classes, schema_map)
+    # This is a placeholder that will be replaced by the conftest.py fixture.
+    # In the testsuite architecture, fixtures are provided by the backend provider.
+    
+    def _extended_order_fixtures(extended_order_fixtures):
+        """Wrapper to match the expected signature."""
+        return extended_order_fixtures
+    return _extended_order_fixtures

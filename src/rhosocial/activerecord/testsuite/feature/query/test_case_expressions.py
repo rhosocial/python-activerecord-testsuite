@@ -3,10 +3,8 @@
 import logging
 from decimal import Decimal
 
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
+# Tests will receive order_fixtures via pytest fixture injection
+# All implementation details are handled by conftest.py and the backend provider
 
 
 def test_simple_case_when(order_fixtures):

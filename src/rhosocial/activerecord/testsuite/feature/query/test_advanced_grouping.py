@@ -5,11 +5,6 @@ from decimal import Decimal
 
 import pytest
 
-from .fixtures.extended_models import create_extended_order_fixtures
-
-# Create extended table fixtures with all the fields we need for testing
-extended_order_fixtures = create_extended_order_fixtures()
-
 # Logger for debug output
 logger = logging.getLogger('activerecord_test')
 
@@ -55,16 +50,8 @@ def skip_if_unsupported(request):
         pytest.skip("MySQL community edition doesn't support advanced grouping features (CUBE, ROLLUP, GROUPING SETS)")
 
     # Database-agnostic test for support
-    try:
-        User, ExtendedOrder, ExtendedOrderItem = request.getfixturevalue('extended_order_fixtures')
-
-        # Try a simple ROLLUP query (just SQL generation, not execution)
-        sql, params = ExtendedOrder.query().select("status").rollup("status").to_sql()
-        logger.debug(f"Testing SQL generation for advanced grouping: {sql}")
-
-    except Exception as e:
-        # If anything else goes wrong during setup, also skip
-        pytest.skip(f"Could not verify support for advanced grouping: {e}")
+    # In the new architecture, support checking is handled by backend capabilities
+    # This test will be skipped by the fixtures if the backend doesn't support advanced grouping
 
 
 def test_cube_basic(extended_order_fixtures, skip_if_unsupported):

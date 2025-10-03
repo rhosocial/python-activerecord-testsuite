@@ -6,10 +6,9 @@ from unittest.mock import patch
 import pytest
 
 from rhosocial.activerecord.query.relational import RelationNotFoundError
-from .utils import create_combined_fixtures
+# Removed direct import from .utils - use pytest fixtures instead
 
-# Use the combined fixture directly from utils.py
-combined_fixtures = create_combined_fixtures()
+import pytest
 
 
 @pytest.fixture

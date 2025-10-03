@@ -1,12 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
 """Test recursive CTE functionality in ActiveQuery."""
 
-from .utils import create_order_fixtures, create_tree_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
-tree_fixtures = create_tree_fixtures()
-
 
 def test_recursive_cte_basics(tree_fixtures):
     """Test basic recursive CTE functionality using tree structure"""
@@ -15,8 +9,8 @@ def test_recursive_cte_basics(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # │   ├── 4
-    # │   └── 5
+    # �?  ├── 4
+    # �?  └── 5
     # └── 3
     #     └── 6
 
@@ -66,8 +60,8 @@ def test_recursive_cte_with_depth_limit(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # │   ├── 4
-    # │   └── 5
+    # �?  ├── 4
+    # �?  └── 5
     # └── 3
     #     └── 6
 
@@ -115,8 +109,8 @@ def test_recursive_cte_find_path(tree_fixtures, request):
     # Create a tree structure:
     # 1
     # ├── 2
-    # │   ├── 4
-    # │   └── 5
+    # �?  ├── 4
+    # �?  └── 5
     # └── 3
     #     └── 6
 
@@ -260,8 +254,8 @@ def test_recursive_cte_with_aggregation(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # │   ├── 4
-    # │   └── 5
+    # �?  ├── 4
+    # �?  └── 5
     # └── 3
     #     └── 6
 

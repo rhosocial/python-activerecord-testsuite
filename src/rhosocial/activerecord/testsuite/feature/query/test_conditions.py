@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_conditions.py
 """Test query conditions."""
 from decimal import Decimal
-from .utils import create_order_fixtures
-
-# Create a multi-table test fixture
-order_fixtures = create_order_fixtures()
 
 
 def test_equal_condition(order_fixtures):

@@ -4,12 +4,6 @@ from decimal import Decimal
 
 import pytest
 
-from .utils import create_order_fixtures, create_blog_fixtures
-
-# Create test fixtures
-order_fixtures = create_order_fixtures()
-blog_fixtures = create_blog_fixtures()
-
 
 def test_cte_relation_with_subquery(order_fixtures):
     """Test CTE with relations and subqueries"""

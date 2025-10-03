@@ -89,6 +89,10 @@ def requires_rollup():
     """Decorator for tests requiring ROLLUP grouping."""
     return requires_capability(AdvancedGroupingCapability.ROLLUP)
 
+def requires_grouping_sets():
+    """Decorator for tests requiring GROUPING SETS grouping."""
+    return requires_capability(AdvancedGroupingCapability.GROUPING_SETS)
+
 def requires_cte():
     """Decorator for tests requiring Common Table Expressions."""
     return requires_capability(CTECapability.BASIC_CTE)

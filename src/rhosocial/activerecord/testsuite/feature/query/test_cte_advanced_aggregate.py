@@ -2,11 +2,6 @@
 """Test advanced aggregate functions with CTE."""
 from decimal import Decimal
 
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
-
 
 def test_cte_group_by(order_fixtures):
     """Test GROUP BY with CTE"""

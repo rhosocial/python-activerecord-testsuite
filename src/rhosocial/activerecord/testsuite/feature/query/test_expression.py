@@ -5,10 +5,6 @@ from decimal import Decimal
 from rhosocial.activerecord.query.expression import (
     SubqueryExpression
 )
-from .utils import create_order_fixtures
-
-# Create multi-table test fixtures
-order_fixtures = create_order_fixtures()
 
 
 def test_arithmetic_expressions(order_fixtures):

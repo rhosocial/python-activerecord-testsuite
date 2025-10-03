@@ -8,9 +8,9 @@ from pydantic import EmailStr
 
 from rhosocial.activerecord import ActiveRecord
 from rhosocial.activerecord.relation import BelongsTo, CacheConfig, HasMany, HasOne
-from .utils import create_order_fixtures, create_blog_fixtures
+# Removed direct import from .utils - use pytest fixtures instead
 
-order_fixtures = create_order_fixtures()
+# Tests will receive order_fixtures via pytest fixture injection
 
 
 def test_relation_required_params(order_fixtures):
