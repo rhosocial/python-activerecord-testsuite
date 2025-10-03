@@ -3,26 +3,11 @@
 from decimal import Decimal
 
 import pytest
-import sqlite3
 
 from rhosocial.activerecord.query.expression import WindowExpression, FunctionExpression
 
 
-# Helper to check if current SQLite version supports window functions
-def is_window_supported():
-    """Check if current SQLite version supports window functions"""
-    version = sqlite3.sqlite_version_info
-    return version >= (3, 25, 0)  # Window functions were added in SQLite 3.25.0
-
-
-@pytest.fixture(scope="module")
-def skip_if_unsupported():
-    """Skip tests if SQLite version doesn't support window functions."""
-    if not is_window_supported():
-        pytest.skip("SQLite version doesn't support window functions (requires 3.25.0+)")
-
-
-def test_cte_with_row_number(order_fixtures, skip_if_unsupported):
+def test_cte_with_row_number(order_fixtures):
     """Test CTE with ROW_NUMBER window function"""
     User, Order, OrderItem = order_fixtures
 
@@ -80,7 +65,7 @@ def test_cte_with_row_number(order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_cte_with_partition_by(order_fixtures, skip_if_unsupported):
+def test_cte_with_partition_by(order_fixtures):
     """Test CTE with window function and PARTITION BY"""
     User, Order, OrderItem = order_fixtures
 
@@ -146,7 +131,7 @@ def test_cte_with_partition_by(order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_cte_with_running_total(order_fixtures, skip_if_unsupported):
+def test_cte_with_running_total(order_fixtures):
     """Test CTE with running totals using window functions"""
     User, Order, OrderItem = order_fixtures
 
@@ -202,7 +187,7 @@ def test_cte_with_running_total(order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_cte_with_multiple_windows(order_fixtures, skip_if_unsupported):
+def test_cte_with_multiple_windows(order_fixtures):
     """Test CTE with multiple window functions"""
     User, Order, OrderItem = order_fixtures
 

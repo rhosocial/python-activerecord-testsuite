@@ -9,52 +9,7 @@ import pytest
 logger = logging.getLogger('activerecord_test')
 
 
-def is_sqlite_backend(request):
-    """Check if the current database backend is SQLite."""
-    if hasattr(request, 'node'):
-        backend_name = request.node.name.split('-')[0].lower()
-        return 'sqlite' in backend_name
-    return False
-
-
-def is_mysql_backend(request):
-    """Check if the current database backend is MySQL."""
-    if hasattr(request, 'node'):
-        backend_name = request.node.name.split('-')[0].lower()
-        return 'mysql' in backend_name
-    return False
-
-
-@pytest.fixture(scope="function")
-def skip_for_sqlite(request):
-    """Skip tests on SQLite database since it doesn't support advanced grouping."""
-    if is_sqlite_backend(request):
-        pytest.skip("SQLite does not support advanced grouping features (CUBE, ROLLUP, GROUPING SETS)")
-
-
-@pytest.fixture(scope="function")
-def skip_if_unsupported(request):
-    """Skip tests if database doesn't support advanced grouping features.
-
-    Different databases have different support levels:
-    - MySQL: CUBE, ROLLUP supported in 8.0+, GROUPING SETS in 8.0.19+
-    - SQLite: No native support (will be skipped by skip_for_sqlite fixture)
-    - PostgreSQL: Fully supported
-    """
-    # First check if it's SQLite
-    if is_sqlite_backend(request):
-        pytest.skip("SQLite does not support advanced grouping features (CUBE, ROLLUP, GROUPING SETS)")
-
-    # MySQL community edition doesn't support advanced grouping features
-    if is_mysql_backend(request):
-        pytest.skip("MySQL community edition doesn't support advanced grouping features (CUBE, ROLLUP, GROUPING SETS)")
-
-    # Database-agnostic test for support
-    # In the new architecture, support checking is handled by backend capabilities
-    # This test will be skipped by the fixtures if the backend doesn't support advanced grouping
-
-
-def test_cube_basic(extended_order_fixtures, skip_if_unsupported):
+def test_cube_basic(extended_order_fixtures):
     """Test basic CUBE functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -153,7 +108,7 @@ def test_cube_basic(extended_order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_rollup_basic(extended_order_fixtures, skip_if_unsupported):
+def test_rollup_basic(extended_order_fixtures):
     """Test basic ROLLUP functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -247,7 +202,7 @@ def test_rollup_basic(extended_order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_grouping_sets_basic(extended_order_fixtures, skip_if_unsupported):
+def test_grouping_sets_basic(extended_order_fixtures):
     """Test basic GROUPING SETS functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -356,7 +311,7 @@ def test_grouping_sets_basic(extended_order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_rollup_with_having(extended_order_fixtures, skip_if_unsupported):
+def test_rollup_with_having(extended_order_fixtures):
     """Test ROLLUP with HAVING clause."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -430,7 +385,7 @@ def test_rollup_with_having(extended_order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_cube_with_order_by(extended_order_fixtures, skip_if_unsupported):
+def test_cube_with_order_by(extended_order_fixtures):
     """Test CUBE with ORDER BY clause."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -498,7 +453,7 @@ def test_cube_with_order_by(extended_order_fixtures, skip_if_unsupported):
         raise
 
 
-def test_multiple_grouping_types(extended_order_fixtures, skip_if_unsupported):
+def test_multiple_grouping_types(extended_order_fixtures):
     """Test that only one grouping type can be used at a time."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
@@ -521,7 +476,7 @@ def test_multiple_grouping_types(extended_order_fixtures, skip_if_unsupported):
     assert "ROLLUP" not in sql.upper(), "Expected ROLLUP to be replaced by CUBE"
 
 
-def test_complex_grouping_with_joins(extended_order_fixtures, skip_if_unsupported):
+def test_complex_grouping_with_joins(extended_order_fixtures):
     """Test advanced grouping with JOIN operations."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
 
