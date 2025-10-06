@@ -4,11 +4,14 @@ import logging
 from decimal import Decimal
 
 import pytest
+from rhosocial.activerecord.backend.capabilities import CapabilityCategory, AdvancedGroupingCapability
+from ...utils import requires_capability, requires_cube, requires_rollup, requires_grouping_sets
 
 # Logger for debug output
 logger = logging.getLogger('activerecord_test')
 
 
+@requires_cube()
 def test_cube_basic(extended_order_fixtures):
     """Test basic CUBE functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -108,6 +111,7 @@ def test_cube_basic(extended_order_fixtures):
         raise
 
 
+@requires_rollup()
 def test_rollup_basic(extended_order_fixtures):
     """Test basic ROLLUP functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -202,6 +206,7 @@ def test_rollup_basic(extended_order_fixtures):
         raise
 
 
+@requires_grouping_sets()
 def test_grouping_sets_basic(extended_order_fixtures):
     """Test basic GROUPING SETS functionality."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -311,6 +316,7 @@ def test_grouping_sets_basic(extended_order_fixtures):
         raise
 
 
+@requires_rollup()
 def test_rollup_with_having(extended_order_fixtures):
     """Test ROLLUP with HAVING clause."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -385,6 +391,7 @@ def test_rollup_with_having(extended_order_fixtures):
         raise
 
 
+@requires_cube()
 def test_cube_with_order_by(extended_order_fixtures):
     """Test CUBE with ORDER BY clause."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -453,6 +460,7 @@ def test_cube_with_order_by(extended_order_fixtures):
         raise
 
 
+@requires_capability(CapabilityCategory.ADVANCED_GROUPING, [AdvancedGroupingCapability.CUBE, AdvancedGroupingCapability.ROLLUP])
 def test_multiple_grouping_types(extended_order_fixtures):
     """Test that only one grouping type can be used at a time."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures
@@ -476,6 +484,7 @@ def test_multiple_grouping_types(extended_order_fixtures):
     assert "ROLLUP" not in sql.upper(), "Expected ROLLUP to be replaced by CUBE"
 
 
+@requires_rollup()
 def test_complex_grouping_with_joins(extended_order_fixtures):
     """Test advanced grouping with JOIN operations."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures

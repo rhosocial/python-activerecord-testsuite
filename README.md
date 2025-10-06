@@ -24,6 +24,12 @@ The test suite is organized into the following main categories, located in `src/
 -   `/realworld`: Complex, real-world application scenarios.
 -   `/benchmark`: Performance and load tests.
 
+## Capability-based Testing
+
+The test suite includes an integrated pytest plugin that automatically checks if the current backend supports required capabilities. Tests using the `@requires_capability` decorator will be automatically skipped if the backend doesn't support the required features.
+
+The plugin is registered automatically and available when the package is installed.
+
 ## Usage for Backend Developers
 
 If you are developing a database backend for RhoSocial ActiveRecord, you should include this test suite as a development dependency. Your backend's test runner will execute these tests against your implementation, using your provided database schema fixtures.

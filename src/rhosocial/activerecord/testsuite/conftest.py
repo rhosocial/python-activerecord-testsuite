@@ -4,8 +4,22 @@ This file serves as the root pytest configuration for the entire testsuite packa
 Its purpose is to define global configurations and hooks for pytest, such as
 registering custom markers that can be used to categorize and filter tests.
 """
+import os
 import pytest
 import warnings
+
+# Set the environment variable that the testsuite uses to locate the provider registry.
+# The testsuite is a generic package and doesn't know the specific location of the
+# provider implementations for this backend (SQLite). This environment variable
+# acts as a bridge, pointing the testsuite to the correct import path.
+#
+# `setdefault` is used to ensure that this value is set only if it hasn't been
+# set already, allowing for overrides in different environments if needed.
+os.environ.setdefault(
+    'TESTSUITE_PROVIDER_REGISTRY',
+    'providers.registry:provider_registry'
+)
+
 
 def pytest_configure(config):
     """
@@ -23,31 +37,14 @@ def pytest_collection_modifyitems(config, items):
     """
     Hook to automatically skip tests that require unsupported capabilities.
     
-    This hook checks each test for the requires_capability marker and skips
-    tests that require capabilities not supported by the current backend.
+    Note: During collection time, we can't access backend-specific capabilities
+    through the provider interface since providers set up backends per test scenario.
+    Capability checking happens during test execution when provider-configured
+    models are available.
     """
-    try:
-        # Get current backend instance
-        # This would typically come from a fixture or configuration
-        from .utils import get_current_backend
-        backend = get_current_backend()
-        
-        for item in items:
-            # Check for capability requirements
-            requires_capability_marker = item.get_closest_marker("requires_capability")
-            if requires_capability_marker:
-                required_capabilities = requires_capability_marker.args[0]
-                
-                # Skip test if capabilities are not supported
-                from .feature.utils import skip_if_capability_unsupported
-                try:
-                    skip_if_capability_unsupported(backend, required_capabilities)
-                except pytest.skip.Exception:
-                    # Test should be skipped, let pytest handle it
-                    pass
-    except Exception as e:
-        # If we can't determine capability support, continue normally
-        warnings.warn(f"Could not check capability support: {e}", UserWarning)
+    # For now, we just ensure tests with requires_capability markers exist properly
+    # Actual capability checking occurs at test runtime via fixtures and decorators
+    pass
 
 def pytest_sessionstart(session):
     """
@@ -57,6 +54,15 @@ def pytest_sessionstart(session):
     to alert developers about backend limitations.
     """
     try:
+        # Import required capability classes
+        from rhosocial.activerecord.backend.capabilities import (
+            CapabilityCategory,
+            AdvancedGroupingCapability,
+            CTECapability,
+            ReturningCapability,
+            WindowFunctionCapability
+        )
+        
         # Get current backend
         from .utils import get_current_backend
         backend = get_current_backend()

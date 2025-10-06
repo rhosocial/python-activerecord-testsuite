@@ -153,6 +153,9 @@ target-version = "py38"
 select = ["E", "F", "B"]
 ignore = []
 
+[project.entry-points."pytest11"]
+rhosocial-activerecord-capabilities = "rhosocial.activerecord.testsuite.plugin.pytest_activerecord_capabilities"
+
 [tool.mypy]
 python_version = "3.8"
 warn_return_any = true
