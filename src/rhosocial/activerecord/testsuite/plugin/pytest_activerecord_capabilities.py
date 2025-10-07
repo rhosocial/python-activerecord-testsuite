@@ -71,7 +71,7 @@ def pytest_runtest_call(item):
                 if hasattr(model_to_check, 'backend') or hasattr(model_to_check, '__backend__'):
                     try:
                         # Use the model to check capabilities
-                        _check_and_skip_if_unsupported(model_to_check, required_capabilities)
+                        _check_and_skip_if_unsupported(model_to_check, required_capabilities, item)
                     except Exception as e:
                         # Log exception during capability check
                         print(f"DEBUG: Exception during capability check for test '{item.name}': {e}")
@@ -87,7 +87,7 @@ def pytest_runtest_call(item):
                 print(f"DEBUG: Available fixtures: {list(item.funcargs.keys()) if hasattr(item, 'funcargs') else 'N/A'}")
 
 
-def _check_and_skip_if_unsupported(model_class, capability_info):
+def _check_and_skip_if_unsupported(model_class, capability_info, test_item=None):
     """
     Check if backend supports required capabilities, skip test if not.
     
@@ -126,11 +126,16 @@ def _check_and_skip_if_unsupported(model_class, capability_info):
 
     capability_category, specific_capability = capability_info
 
+    # Determine test location information for the skip message
+    test_location = ""
+    if test_item:
+        test_location = f" ({test_item.nodeid})"
+
     if specific_capability is None:
         # Only check for category support
         if not capabilities.supports_category(capability_category):
             pytest.skip(
-                f"Skipping test - unsupported capability category: {capability_category.name}"
+                f"Unsupported capability category: {capability_category.name}{test_location}"
             )
     else:
         # Check for specific capability within category
@@ -189,5 +194,5 @@ def _check_and_skip_if_unsupported(model_class, capability_info):
 
         if unsupported_capabilities:
             pytest.skip(
-                f"Skipping test - unsupported capabilities: {', '.join(unsupported_capabilities)}"
+                f"Unsupported capabilities: {', '.join(unsupported_capabilities)}{test_location}"
             )
