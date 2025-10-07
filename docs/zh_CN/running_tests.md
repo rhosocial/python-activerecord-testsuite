@@ -40,7 +40,7 @@
 6. **测试运行**：测试函数（例如，`test_create_user(user_class)`）使用完全配置的模型执行。
 7. **Fixture 拆卸**：`database` fixture 清理数据库（删除表，断开连接）。
 
-## 2. 重要：PYTHONPATH 配置
+## [2. 重要：PYTHONPATH 配置](#2-重要pythonpath-配置)
 
 **必须在运行测试前配置 PYTHONPATH。** 测试目录（`tests/`, `tests_original/`）**不在** Python 路径中。
 
@@ -120,7 +120,7 @@ ModuleNotFoundError: No module named 'rhosocial.activerecord'
 PYTHONPATH=src
 ```
 
-## 3. 运行测试
+## [3. 运行测试](#3-运行测试)
 
 ### 快速参考
 
@@ -161,7 +161,7 @@ pytest -m "benchmark"
 pytest -m "benchmark_bulk"
 ```
 
-## 4. 生成代码覆盖率报告
+## [4. 生成代码覆盖率报告](#4-生成代码覆盖率报告)
 
 此测试套件的目的是测试 `rhosocial-activerecord` 库和其他第三方后端。因此，代码覆盖率应针对这些目标库进行测量。
 
@@ -174,7 +174,7 @@ pytest --cov=rhosocial.activerecord --cov-report=xml
 
 这将在项目根目录中创建一个 `coverage.xml` 文件。您可以检查此文件中的 `<sources>` 和 `<packages>` 标签，以验证报告是为正确的目标库生成的。
 
-## 5. 编写测试
+## [5. 编写测试](#5-编写测试)
 
 ### 对于测试套件作者
 

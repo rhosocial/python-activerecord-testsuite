@@ -4,9 +4,7 @@ This document details the various configuration options available for the test s
 
 ## Table of Contents
 - [1. Interface-Based Configuration System](#1-interface-based-configuration-system)
-- [2. Provider Pattern Implementation](#2-provider-pattern-implementation)
-- [3. Backend Capability Declaration](#3-backend-capability-declaration)
-- [4. Capability-Based Test Selection](#4-capability-based-test-selection)
+- [2. Capability-Based Test Selection](#2-capability-based-test-selection)
 
 ## [1. Interface-Based Configuration System](#1-interface-based-configuration-system)
 
@@ -132,7 +130,7 @@ export AR_TEST_BACKEND_PASSWORD_1=password
 export AR_TEST_BACKEND_DATABASE_1=test_db
 ```
 
-## 2. Capability-Based Test Selection
+## [2. Capability-Based Test Selection](#2-capability-based-test-selection)
 
 ### Overview
 

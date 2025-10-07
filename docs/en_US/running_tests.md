@@ -40,7 +40,7 @@ For each test category (like `basic`), the test suite defines what schema and fi
 6. **Test Run**: The test function (e.g., `test_create_user(user_class)`) executes using the fully configured model.
 7. **Fixture Teardown**: The `database` fixture cleans up the database (drops tables, disconnects).
 
-## 2. CRITICAL: PYTHONPATH Configuration
+## [2. CRITICAL: PYTHONPATH Configuration](#2-critical-pythonpath-configuration)
 
 **MUST configure PYTHONPATH before running tests.** The test directories (`tests/`, `tests_original/`) are **NOT** on the Python path by default.
 
@@ -120,7 +120,7 @@ ModuleNotFoundError: No module named 'rhosocial.activerecord'
 PYTHONPATH=src
 ```
 
-## 3. Running Tests
+## [3. Running Tests](#3-running-tests)
 
 ### Quick Reference
 
@@ -161,7 +161,7 @@ pytest -m "benchmark"
 pytest -m "benchmark_bulk"
 ```
 
-## 4. Generating Code Coverage Reports
+## [4. Generating Code Coverage Reports](#4-generating-code-coverage-reports)
 
 The purpose of this test suite is to test the `rhosocial-activerecord` library and other third-party backends. Therefore, code coverage should be measured against these target libraries.
 
@@ -174,7 +174,7 @@ pytest --cov=rhosocial.activerecord --cov-report=xml
 
 This will create a `coverage.xml` file in the project root. You can inspect the `<sources>` and `<packages>` tags within this file to verify that the report was generated for the correct target library.
 
-## 5. Writing Tests
+## [5. Writing Tests](#5-writing-tests)
 
 ### For Testsuite Authors
 
