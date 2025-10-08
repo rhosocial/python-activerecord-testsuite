@@ -11,8 +11,6 @@ from rhosocial.activerecord.relation.base import RelationManagementMixin
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMany
 
 
-@pytest.mark.feature
-@pytest.mark.feature_relation
 class TestRelationDescriptors:
     """Tests for the relation descriptor functionality."""
     

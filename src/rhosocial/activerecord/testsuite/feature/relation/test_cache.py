@@ -13,8 +13,6 @@ from rhosocial.activerecord.relation.cache import (
 )
 
 
-@pytest.mark.feature
-@pytest.mark.feature_relation
 class TestRelationCache:
     """Tests for the relation cache functionality."""
     

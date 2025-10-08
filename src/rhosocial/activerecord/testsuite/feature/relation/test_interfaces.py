@@ -7,8 +7,6 @@ import pytest
 from rhosocial.activerecord.relation.interfaces import RelationManagementInterface
 
 
-@pytest.mark.feature
-@pytest.mark.feature_relation
 class TestRelationInterfaces:
     """Tests for the relation management interfaces."""
     

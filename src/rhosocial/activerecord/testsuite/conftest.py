@@ -28,9 +28,6 @@ def pytest_configure(config):
     """
     # Register custom markers to allow for selective test runs.
     # For example, `pytest -m feature` will run only the core feature tests.
-    config.addinivalue_line("markers", "feature: Core feature tests (must be run by all backends)")
-    config.addinivalue_line("markers", "realworld: Real-world scenario tests (optional)")
-    config.addinivalue_line("markers", "benchmark: Performance benchmark tests (optional)")
     config.addinivalue_line("markers", "requires_capability: Mark tests that require specific database capabilities")
 
 def pytest_collection_modifyitems(config, items):

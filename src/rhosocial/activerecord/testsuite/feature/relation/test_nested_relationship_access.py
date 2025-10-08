@@ -6,8 +6,6 @@ import pytest
 import time
 
 
-@pytest.mark.feature
-@pytest.mark.feature_relation
 class TestNestedRelationshipAccess:
     """Tests for nested relationship access functionality."""
     

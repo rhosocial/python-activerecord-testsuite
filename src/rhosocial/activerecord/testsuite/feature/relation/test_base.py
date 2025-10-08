@@ -13,8 +13,6 @@ from rhosocial.activerecord.relation.descriptors import HasOne, HasMany, Belongs
 from rhosocial.activerecord.relation.interfaces import RelationLoader
 
 
-@pytest.mark.feature
-@pytest.mark.feature_relation
 class TestRelationDescriptor:
     """Tests for the relation descriptor functionality."""
     
