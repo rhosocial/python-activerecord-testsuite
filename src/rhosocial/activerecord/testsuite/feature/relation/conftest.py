@@ -1,117 +1,177 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/conftest.py
 """
 Pytest configuration for relation tests.
+
+This file provides the memory-based model fixtures for relation tests.
+These fixtures are backend-agnostic and do not require database access.
+
+For backend implementations that want to run these tests, they should
+create their own conftest.py file and import this one:
+
+```python
+# In backend conftest.py
+from rhosocial.activerecord.testsuite.feature.relation.conftest import *
+```
+
+Or copy the fixtures they need to properly configure their models.
 """
+from typing import ClassVar, Any, Optional, List, Dict
 import pytest
-from typing import Type, Tuple
+from pydantic import BaseModel
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.relation.base import RelationManagementMixin
+from rhosocial.activerecord.relation.cache import CacheConfig
+from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
+from rhosocial.activerecord.relation.interfaces import RelationLoader
 
 
-def pytest_configure(config):
-    """Configure pytest for relation tests."""
-    config.addinivalue_line(
-        "markers", "feature_relation: Tests for relation functionality"
+class Employee(RelationManagementMixin, BaseModel):
+    id: int
+    name: str
+    department_id: int
+    department: ClassVar[BelongsTo["Department"]] = BelongsTo(
+        foreign_key="department_id",
+        inverse_of="employees"
+    )
+
+
+class Department(RelationManagementMixin, BaseModel):
+    id: int
+    name: str
+    employees: ClassVar[HasMany["Employee"]] = HasMany(
+        foreign_key="department_id",
+        inverse_of="department"
     )
 
 
 @pytest.fixture
-def employee_department_fixtures(request) -> Tuple[Type[ActiveRecord], Type[ActiveRecord]]:
-    """
-    Provide employee and department models for relation tests.
-    
-    Returns:
-        Tuple of (Employee, Department) model classes
-    """
-    scenario = request.config.getoption("--scenario", default="memory")
-    provider_registry_path = request.config.getoption(
-        "--provider-registry",
-        default="providers.registry:provider_registry"
+def employee():
+    return Employee(id=1, name="John Doe", department_id=1)
+
+
+@pytest.fixture
+def department():
+    return Department(id=1, name="Engineering")
+
+
+@pytest.fixture
+def employee_class():
+    return Employee
+
+
+@pytest.fixture
+def department_class():
+    return Department
+
+
+class CustomBookLoader(RelationLoader):
+    def load(self, instance: Any) -> Optional[List[Any]]:
+        return [Book(id=1, title="Test Book", author_id=instance.id)]
+
+    def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAuthorLoader(RelationLoader):
+    def load(self, instance: Any) -> Optional[Any]:
+        return Author(id=instance.author_id, name="Test Author")
+
+    def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomProfileLoader(RelationLoader):
+    def load(self, instance: Any) -> Optional[Any]:
+        return Profile(id=1, bio="Test Bio", author_id=instance.id)
+
+    def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomChapterLoader(RelationLoader):
+    def load(self, instance: Any) -> Optional[List[Any]]:
+        return [Chapter(id=1, title="Test Chapter", book_id=instance.id)]
+
+    def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAuthorProfileLoader(RelationLoader):
+    def load(self, instance: Any) -> Optional[Any]:
+        return Author(id=instance.author_id, name="Test Author")
+
+    def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class Author(RelationManagementMixin, BaseModel):
+    id: int
+    name: str
+    books: ClassVar[HasMany["Book"]] = HasMany(
+        foreign_key="author_id",
+        inverse_of="author",
+        loader=CustomBookLoader(),
+        cache_config=CacheConfig(ttl=1)
     )
-    
-    # Import the provider registry
-    import importlib
-    module_path, obj_name = provider_registry_path.split(':')
-    module = importlib.import_module(module_path)
-    provider_registry = getattr(module, obj_name)
-    
-    provider = provider_registry.get_provider('relation')
-    return provider.setup_employee_department_fixtures(scenario)
-
-
-@pytest.fixture
-def author_book_fixtures(request) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
-    """
-    Provide author, book, chapter, and profile models for relation tests.
-    
-    Returns:
-        Tuple of (Author, Book, Chapter, Profile) model classes
-    """
-    scenario = request.config.getoption("--scenario", default="memory")
-    provider_registry_path = request.config.getoption(
-        "--provider-registry",
-        default="providers.registry:provider_registry"
+    profile: ClassVar[HasOne["Profile"]] = HasOne(
+        foreign_key="author_id",
+        inverse_of="author",
+        loader=CustomProfileLoader()
     )
-    
-    # Import the provider registry
-    import importlib
-    module_path, obj_name = provider_registry_path.split(':')
-    module = importlib.import_module(module_path)
-    provider_registry = getattr(module, obj_name)
-    
-    provider = provider_registry.get_provider('relation')
-    return provider.setup_author_book_fixtures(scenario)
+
+
+class Book(RelationManagementMixin, BaseModel):
+    id: int
+    title: str
+    author_id: int
+    author: ClassVar[BelongsTo["Author"]] = BelongsTo(
+        foreign_key="author_id",
+        inverse_of="books",
+        loader=CustomAuthorLoader()
+    )
+    chapters: ClassVar[HasMany["Chapter"]] = HasMany(
+        foreign_key="book_id",
+        inverse_of="book",
+        loader=CustomChapterLoader()  # Add the loader here
+    )
+
+
+class Chapter(RelationManagementMixin, BaseModel):
+    id: int
+    title: str
+    book_id: int
+    book: ClassVar[BelongsTo["Book"]] = BelongsTo(
+        foreign_key="book_id",
+        inverse_of="chapters"
+    )
+
+
+class Profile(RelationManagementMixin, BaseModel):
+    id: int
+    bio: str
+    author_id: int
+    author: ClassVar[BelongsTo["Author"]] = BelongsTo(
+        foreign_key="author_id",
+        inverse_of="profile",
+        loader=CustomAuthorProfileLoader()  # Add loader
+    )
 
 
 @pytest.fixture
-def employee(employee_department_fixtures):
-    """
-    Provide an employee instance using the employee model from fixtures.
-    """
-    Employee, _ = employee_department_fixtures
-    return Employee(username='john_doe', department_id=1)
+def author():
+    return Author(id=1, name="Test Author")
 
 
 @pytest.fixture
-def department(employee_department_fixtures):
-    """
-    Provide a department instance using the department model from fixtures.
-    """
-    _, Department = employee_department_fixtures
-    return Department(name='Engineering', description='Engineering Department')
+def book():
+    return Book(id=1, title="Test Book", author_id=1)
 
 
 @pytest.fixture
-def author(author_book_fixtures):
-    """
-    Provide an author instance using the author model from fixtures.
-    """
-    Author, _, _, _ = author_book_fixtures
-    return Author(name='Test Author')
+def chapter():
+    return Chapter(id=1, title="Chapter 1", book_id=1)
 
 
 @pytest.fixture
-def book(author_book_fixtures):
-    """
-    Provide a book instance using the book model from fixtures.
-    """
-    _, Book, _, _ = author_book_fixtures
-    return Book(title='Test Book', author_id=1)
-
-
-@pytest.fixture
-def chapter(author_book_fixtures):
-    """
-    Provide a chapter instance using the chapter model from fixtures.
-    """
-    _, _, Chapter, _ = author_book_fixtures
-    return Chapter(title='Test Chapter', book_id=1)
-
-
-@pytest.fixture
-def profile(author_book_fixtures):
-    """
-    Provide a profile instance using the profile model from fixtures.
-    """
-    _, _, _, Profile = author_book_fixtures
-    return Profile(bio='Test Bio', author_id=1)
+def profile():
+    return Profile(id=1, bio="Test Bio", author_id=1)

@@ -14,26 +14,44 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMa
 class TestRelationDescriptors:
     """Tests for the relation descriptor functionality."""
     
-    def test_invalid_relationship_types(self, employee_department_fixtures):
+    # Mock QuerySet for testing
+    class MockQuerySet:
+        def __init__(self, model_class):
+            self.model_class = model_class
+
+        def filter(self, **kwargs):
+            return [type(self.model_class.__name__, (), {'id': 1, 'title': 'Test Book', 'author_id': 1})()]
+
+        def all(self):
+            return self.filter()
+
+        def get(self, **kwargs):
+            return self.filter()[0]
+
+    def test_invalid_relationship_types(self, employee_class):
         """Test that invalid relationship pairs are handled properly."""
         # This test might not be directly applicable in the testsuite context
-        # since relationship validation would happen when the models are defined
-        pass
+        # since relationship validation would happen when the models are properly configured
+        # We'll test that the model has expected attributes instead
+        assert hasattr(employee_class, 'get_relations')
+        assert hasattr(employee_class, 'get_relation')
 
-    def test_missing_inverse_relationship(self, employee_department_fixtures):
+    def test_missing_inverse_relationship(self, employee_class):
         """Test handling of missing inverse relationships."""
-        # Similar to above, this would be tested when models are defined
-        pass
+        # Similar to above, this would be tested when models are properly configured
+        # For now just check that the class has the expected interface
+        assert hasattr(employee_class, 'get_relation')
 
-    def test_inconsistent_inverse_relationship(self, employee_department_fixtures):
+    def test_inconsistent_inverse_relationship(self, employee_class):
         """Test handling of inconsistent inverse relationships."""
-        # Similar to above, this would be tested when models are defined
-        pass
+        # Similar to above, this would be tested when models are properly configured
+        assert hasattr(employee_class, 'get_relations')
 
-    def test_validates_on_query_method(self, employee_department_fixtures):
+    def test_validates_on_query_method(self, employee_class):
         """Test that validation occurs when accessing query property."""
-        # Similar to above, this would be tested when models are defined
-        pass
+        # Test that the model class has expected methods
+        assert hasattr(employee_class, 'get_relation')
+        assert hasattr(employee_class, 'clear_relation_cache')
 
     def test_descriptor_types(self):
         """Test that relation descriptors are properly typed."""

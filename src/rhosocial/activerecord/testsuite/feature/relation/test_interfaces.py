@@ -2,7 +2,6 @@
 """
 Tests for relation interfaces.
 """
-import pytest
 
 from rhosocial.activerecord.relation.interfaces import RelationManagementInterface
 
@@ -10,42 +9,36 @@ from rhosocial.activerecord.relation.interfaces import RelationManagementInterfa
 class TestRelationInterfaces:
     """Tests for the relation management interfaces."""
     
-    def test_relation_management_interface(self, employee_department_fixtures):
+    def test_relation_management_interface(self, employee_class, department_class):
         """Test RelationManagementInterface implementation."""
-        Employee, Department = employee_department_fixtures
-        
         # Verify interface implementation
-        assert hasattr(Employee, 'get_relations')
-        assert hasattr(Employee, 'get_relation')
-        assert hasattr(Employee, 'clear_relation_cache')
+        assert isinstance(employee_class, type)
+        assert issubclass(employee_class, RelationManagementInterface)
 
-        # Test relation registration - this will depend on how the models are configured by the provider
-        relations = Employee.get_relations()
-        # At least some relations should be registered
-        assert isinstance(relations, dict)
+        # Test relation registration
+        relations = employee_class.get_relations()
+        assert "department" in relations
 
-        # Check if department relation exists
-        relation = Employee.get_relation("department")
-        # The relation may or may not exist depending on provider implementation
-        if relation:
-            assert hasattr(relation, 'foreign_key')
+        relation = employee_class.get_relation("department")
+        assert relation is not None
+        assert relation.foreign_key == "department_id"
+        assert relation.inverse_of == "employees"
 
-        # Test query method creation - check if relation query methods exist
-        assert hasattr(Employee, "department_query") or True  # May not always exist depending on implementation
+        # Test query method creation
+        assert hasattr(employee_class, "department_query")
 
     def test_relation_cache_operations(self, employee):
         """Test relation cache management."""
-        # Clear specific relation cache - may not raise error if relation doesn't exist
-        try:
-            employee.clear_relation_cache("department")
-        except ValueError:
-            # This is expected if the relation doesn't exist
-            pass
+        # Clear specific relation cache
+        employee.clear_relation_cache("department")
 
         # Clear all relation caches
         employee.clear_relation_cache()
 
     def test_invalid_relation_access(self, employee):
         """Test accessing invalid relations."""
-        with pytest.raises(ValueError, match="Unknown relation|Invalid relation"):
+        try:
             employee.clear_relation_cache("invalid_relation")
+            assert False, "Should raise ValueError"
+        except ValueError as e:
+            assert "Unknown relation" in str(e)

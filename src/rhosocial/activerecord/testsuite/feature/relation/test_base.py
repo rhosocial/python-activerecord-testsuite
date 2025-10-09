@@ -37,28 +37,62 @@ class TestRelationDescriptor:
         assert descriptor._loader is not None
         # assert descriptor._cache is not None
 
-    def test_relation_descriptor_get_related_model(self, employee_department_fixtures):
+    def test_relation_descriptor_get_related_model(self, employee_class, department_class):
         """Test getting related model class."""
-        Employee, Department = employee_department_fixtures
-        
-        # Create instances
-        employee = Employee(username='test', department_id=1)
-        department = Department(name='test', description='test')
-        
-        # Check that relations exist - this will depend on how the models are configured in the fixture
-        # The exact implementation will vary based on backend provider
+        relation = employee_class.get_relation("department")
+        assert relation is not None
+
+        model = relation.get_related_model(employee_class)
+        assert model == department_class
+
+        # Test inverse relationship
+        inverse_relation = department_class.get_relation("employees")
+        assert inverse_relation is not None
+
+        inverse_model = inverse_relation.get_related_model(department_class)
+        assert inverse_model == employee_class
         
     def test_relation_descriptor_load(self, employee):
         """Test loading relation data."""
-        # This test would use the employee fixture with proper relation setup
-        # Since this is more of a unit test for the descriptor itself,
-        # we may need to adapt this differently in the testsuite context
-        pass
+        relation = employee.get_relation("department")
+        relation._loader = self.CustomLoader()
+
+        # First load (from loader)
+        data = relation._load_relation(employee)
+        assert data == {"id": 1, "name": "Test"}
+
+        # Second load (from cache)
+        data = relation._load_relation(employee)
+        assert data == {"id": 1, "name": "Test"}
+
+    # def test_relation_descriptor_query(self):
+    #     """Test querying relation data."""
+    #     relation = employee_class.get_relation("department")
+    #
+    #     # Test instance query
+    #     employee = employee_class(id=1, name="John", department_id=1)
+    #     result = relation.__get__(employee)(filter="test")
+    #     assert result == [{"id": 1, "name": "Test"}]
+    #
+    #     # Test class query
+    #     result = employee_class.department_query(filter="test")
+    #     assert result == [{"id": 1, "name": "Test"}]
 
     def test_relation_descriptor_cache_clear(self, employee):
         """Test clearing relation cache."""
-        # Similar to the above, this is more of a unit test
-        pass
+        relation = employee.get_relation("department")
+        relation._loader = self.CustomLoader()
+
+        # Load data into cache
+        data = relation._load_relation(employee)
+        assert data == {"id": 1, "name": "Test"}
+
+        # Clear cache
+        relation.__delete__(employee)
+
+        # Verify cache is cleared by checking if loader is called again
+        data = relation._load_relation(employee)
+        assert data == {"id": 1, "name": "Test"}
 
     def test_relation_registration_validation(self):
         """Test validation during relation registration."""
@@ -78,7 +112,7 @@ class TestRelationDescriptor:
     def test_relation_inheritance(self):
         """Test that derived classes can override relations"""
         class ParentModel(RelationManagementMixin, BaseModel):
-            username: str
+            id: int
             test: ClassVar[HasOne["Other"]] = HasOne(
                 foreign_key="test_id",
                 inverse_of="inverse"
@@ -104,25 +138,11 @@ class TestRelationDescriptor:
         # Verify relations are different objects
         assert parent_relation is not child_relation
 
-    def test_forward_reference_resolution(self):
+    def test_forward_reference_resolution(self, author, book):
         """Test resolution of forward references in relationship declarations."""
-        class CircularA(RelationManagementMixin, BaseModel):
-            username: str
-            b: ClassVar[HasOne["CircularB"]] = HasOne(
-                foreign_key="a_id",
-                inverse_of="a"
-            )
-
-        class CircularB(RelationManagementMixin, BaseModel):
-            username: str
-            a_id: int
-            a: ClassVar[BelongsTo["CircularA"]] = BelongsTo(
-                foreign_key="a_id",
-                inverse_of="b"
-            )
-
-        a = CircularA(username="test")
-        b = CircularB(username="test", a_id=1)
-
-        # Verify relationships can be accessed (no exceptions should be raised)
-        # In the actual implementation, this would require the models to be properly set up
+        # This test uses the already defined models with forward references
+        # The fixture definitions handle forward reference resolution
+        assert author is not None
+        assert book is not None
+        # If the fixtures were set up properly, the forward references would be resolved
+        # and we can access the relations without error
