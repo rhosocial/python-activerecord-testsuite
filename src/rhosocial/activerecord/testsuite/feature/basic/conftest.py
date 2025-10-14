@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/basic/conftest.py
 """
 This file defines the pytest fixtures for the "basic" feature test group.
 
@@ -46,13 +46,13 @@ def user_class(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the User model for this scenario.
     Model = provider.setup_user_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
 

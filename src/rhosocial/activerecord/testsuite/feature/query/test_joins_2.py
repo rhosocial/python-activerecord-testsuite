@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_joins_2.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_joins_2.py
 """Test cases for JOIN queries in ActiveQuery."""
 from decimal import Decimal
 
@@ -375,7 +375,7 @@ def test_cross_join(order_fixtures):
         .to_dict(direct_dict=True) \
         .all()
 
-    # Should return cartesian product: 2 users × 3 products = 6 records
+    # Should return cartesian product: 2 users x 3 products = 6 records
     assert len(results) == 6
 
 

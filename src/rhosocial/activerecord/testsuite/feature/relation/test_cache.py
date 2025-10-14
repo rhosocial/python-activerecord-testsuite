@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
 """
 Tests for relation cache functionality.
 """
@@ -15,7 +15,7 @@ from rhosocial.activerecord.relation.cache import (
 
 class TestRelationCache:
     """Tests for the relation cache functionality."""
-    
+
     def test_cache_config(self):
         """Test CacheConfig initialization and defaults."""
         config = CacheConfig()

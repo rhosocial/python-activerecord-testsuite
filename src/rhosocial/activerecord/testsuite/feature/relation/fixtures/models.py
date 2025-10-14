@@ -1,4 +1,4 @@
-"""
+﻿"""
 Relation model fixtures for the testsuite.
 """
 from rhosocial.activerecord import ActiveRecord
@@ -8,7 +8,7 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasO
 class Employee(ActiveRecord):
     username: str
     department_id: int
-    
+
     # Define the relation to department
     department: BelongsTo["Department"] = BelongsTo(
         foreign_key="department_id",
@@ -19,7 +19,7 @@ class Employee(ActiveRecord):
 class Department(ActiveRecord):
     name: str
     description: str = ""
-    
+
     # Define the relation to employees
     employees: HasMany["Employee"] = HasMany(
         foreign_key="department_id",
@@ -29,7 +29,7 @@ class Department(ActiveRecord):
 
 class Author(ActiveRecord):
     name: str
-    
+
     # Relations
     books: HasMany["Book"] = HasMany(
         foreign_key="author_id",
@@ -44,7 +44,7 @@ class Author(ActiveRecord):
 class Book(ActiveRecord):
     title: str
     author_id: int
-    
+
     # Relations
     author: BelongsTo["Author"] = BelongsTo(
         foreign_key="author_id",
@@ -59,7 +59,7 @@ class Book(ActiveRecord):
 class Chapter(ActiveRecord):
     title: str
     book_id: int
-    
+
     # Relations
     book: BelongsTo["Book"] = BelongsTo(
         foreign_key="book_id",
@@ -70,7 +70,7 @@ class Chapter(ActiveRecord):
 class Profile(ActiveRecord):
     bio: str
     author_id: int
-    
+
     # Relations
     author: BelongsTo["Author"] = BelongsTo(
         foreign_key="author_id",

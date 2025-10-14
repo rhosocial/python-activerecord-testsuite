@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
 """Test recursive CTE functionality in ActiveQuery."""
 
 
@@ -9,10 +9,10 @@ def test_recursive_cte_basics(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # �?  ├── 4
-    # �?  └── 5
+    # │  ├── 4
+    # │  └── 5
     # └── 3
-    #     └── 6
+    # │      └── 6
 
     nodes = [
         Node(id=1, name="Root", parent_id=None),
@@ -60,10 +60,10 @@ def test_recursive_cte_with_depth_limit(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # �?  ├── 4
-    # �?  └── 5
+    # │  ├── 4
+    # │  └── 5
     # └── 3
-    #     └── 6
+    # │      └── 6
 
     nodes = [
         Node(id=1, name="Root", parent_id=None),
@@ -109,10 +109,10 @@ def test_recursive_cte_find_path(tree_fixtures, request):
     # Create a tree structure:
     # 1
     # ├── 2
-    # �?  ├── 4
-    # �?  └── 5
+    # │  ├── 4
+    # │  └── 5
     # └── 3
-    #     └── 6
+    # │      └── 6
 
     nodes = [
         Node(id=1, name="Root", parent_id=None),
@@ -254,10 +254,10 @@ def test_recursive_cte_with_aggregation(tree_fixtures):
     # Create a tree structure:
     # 1
     # ├── 2
-    # �?  ├── 4
-    # �?  └── 5
+    # │  ├── 4
+    # │  └── 5
     # └── 3
-    #     └── 6
+    # │      └── 6
 
     nodes = [
         Node(id=1, name="Root", parent_id=None, value=100),
@@ -311,3 +311,5 @@ def test_recursive_cte_with_aggregation(tree_fixtures):
     assert results[2]['level'] == 3
     assert results[2]['node_count'] == 3  # Three grandchildren
     assert results[2]['total_value'] == 100
+
+

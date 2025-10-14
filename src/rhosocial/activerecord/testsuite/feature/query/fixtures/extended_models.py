@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/fixtures/extended_models.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/fixtures/extended_models.py
 from decimal import Decimal
 from typing import Optional, ClassVar
 
@@ -76,7 +76,7 @@ def create_extended_order_fixtures():
     """
     # This is a placeholder that will be replaced by the conftest.py fixture.
     # In the testsuite architecture, fixtures are provided by the backend provider.
-    
+
     def _extended_order_fixtures(extended_order_fixtures):
         """Wrapper to match the expected signature."""
         return extended_order_fixtures

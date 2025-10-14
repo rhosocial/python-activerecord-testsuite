@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/events/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/events/conftest.py
 """
 This file defines the pytest fixtures for the "events" feature test group.
 
@@ -49,13 +49,13 @@ def event_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.events.IEventsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the EventTestModel for this scenario.
     Model = provider.setup_event_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
 
@@ -72,13 +72,13 @@ def event_tracking_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.events.IEventsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the EventTrackingModel for this scenario.
     # We'll need to add a specific method for this in the provider
     Model = provider.setup_event_tracking_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)

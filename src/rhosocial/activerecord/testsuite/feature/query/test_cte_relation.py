@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation.py
 """Test basic relation queries with CTE."""
 from decimal import Decimal
 
@@ -28,7 +28,7 @@ def test_cte_with_belongsto_relation(order_fixtures):
     query = User.query().with_cte(
         'order_users',
         f"""
-        SELECT u.* 
+        SELECT u.*
         FROM {User.__table_name__} u
         JOIN {Order.__table_name__} o ON u.id = o.user_id
         WHERE o.id = {orders[0].id}
@@ -98,7 +98,7 @@ def test_cte_with_hasmany_relation(order_fixtures):
     query = Order.query().with_cte(
         'orders_with_items',
         f"""
-        SELECT DISTINCT o.* 
+        SELECT DISTINCT o.*
         FROM {Order.__table_name__} o
         JOIN {OrderItem.__table_name__} i ON o.id = i.order_id
         WHERE i.quantity > 1

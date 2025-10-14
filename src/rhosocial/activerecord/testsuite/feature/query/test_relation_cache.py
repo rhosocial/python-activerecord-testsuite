@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_relation_cache.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relation_cache.py
 """Test cases for relation caching behavior."""
 import random
 import string
@@ -44,29 +44,29 @@ class TestData:
 
 
 def generate_random_string(prefix: str, length: int = 8) -> str:
-    """生成带前缀的随机字符串"""
+    """Generate random string with prefix"""
     chars = string.ascii_letters + string.digits
     random_part = ''.join(random.choice(chars) for _ in range(length))
     return f"{prefix}_{random_part}"
 
 
 def generate_random_decimal(min_val: int = 10, max_val: int = 500) -> Decimal:
-    """生成随机Decimal金额"""
+    """Generate random Decimal amount"""
     return Decimal(str(round(random.uniform(min_val, max_val), 2)))
 
 
 def generate_random_quantity(min_val: int = 1, max_val: int = 10) -> int:
-    """生成随机数量"""
+    """Generate random quantity"""
     return random.randint(min_val, max_val)
 
 
 @pytest.fixture
 def setup_order_data(order_fixtures) -> TestData:
-    """创建随机样本订单数据用于测试。"""
+    """Create random sample order data for testing."""
     User, Order, OrderItem = order_fixtures
-    test_id = str(uuid.uuid4())[:8]  # 为每次测试生成唯一标识
+    test_id = str(uuid.uuid4())[:8]  # Generate unique identifier for each test
 
-    # 创建测试用户
+    # Create test users
     users = []
     for i in range(2):
         username = generate_random_string(f"user{i}_{test_id}")
@@ -83,9 +83,9 @@ def setup_order_data(order_fixtures) -> TestData:
             age=age
         ))
 
-    # 为用户创建订单
+    # Create orders for user
     orders = []
-    # 用户1的两个订单
+    # Two orders for user 1
     for i in range(2):
         order_number = generate_random_string(f"ORD{i}_{test_id}")
         total_amount = generate_random_decimal()
@@ -104,7 +104,7 @@ def setup_order_data(order_fixtures) -> TestData:
             total_amount=total_amount
         ))
 
-    # 用户2的一个空订单（无订单项）
+    # One empty order for user 2 (no order items)
     order_number = generate_random_string(f"ORD_EMPTY_{test_id}")
     total_amount = generate_random_decimal()
 
@@ -122,10 +122,10 @@ def setup_order_data(order_fixtures) -> TestData:
         total_amount=total_amount
     ))
 
-    # 创建订单项
+    # Create order items
     items = []
 
-    # 为第一个订单创建一个订单项
+    # Create one order item for the first order
     product_name = generate_random_string("Product1")
     quantity = generate_random_quantity()
     unit_price = generate_random_decimal()
@@ -149,7 +149,7 @@ def setup_order_data(order_fixtures) -> TestData:
         subtotal=subtotal
     ))
 
-    # 为第二个订单创建一个订单项
+    # Create one order item for the second order
     product_name = generate_random_string("Product2")
     quantity = generate_random_quantity()
     unit_price = generate_random_decimal()
@@ -173,7 +173,7 @@ def setup_order_data(order_fixtures) -> TestData:
         subtotal=subtotal
     ))
 
-    # 返回带有所有测试数据的数据类
+    # Return data class with all test data
     return TestData(users=users, orders=orders, items=items)
 
 
@@ -185,18 +185,18 @@ def test_basic_relation_caching(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 从测试数据中获取第一个订单ID
+    # Get the first order ID from test data
     order_id = test_data.orders[0].id
     expected_product_name = test_data.items[0].product_name
 
-    # 第一次查询 - 应该从数据库加载
+    # First query - should load from database
     order = Order.query().with_("items").where("id = ?", (order_id,)).one()
 
     assert order is not None
     assert len(order.items()) == 1
     assert order.items()[0].product_name == expected_product_name
 
-    # 第二次查询 - 应该使用缓存
+    # Second query - should use cache
     order_again = Order.query().with_("items").where("id = ?", (order_id,)).one()
 
     assert order_again is not None
@@ -209,30 +209,30 @@ def test_empty_relation_consistency(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取空订单ID（第三个订单）
+    # Get empty order ID (third order)
     empty_order_id = test_data.orders[2].id
     order_with_items_id = test_data.orders[0].id
     expected_product_name = test_data.items[0].product_name
 
-    # 第一次查询 - 空订单应该没有订单项
+    # First query - empty order should have no order items
     order3 = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
 
     assert order3 is not None
     assert len(order3.items()) == 0, f"Order {empty_order_id} should have no items initially"
 
-    # 加载带有订单项的不同订单，潜在地影响缓存
+    # Load different orders with order items, potentially affecting cache
     order1 = Order.query().with_("items").where("id = ?", (order_with_items_id,)).one()
     assert len(order1.items()) > 0, f"Order {order_with_items_id} should have items"
     assert order1.items()[0].product_name == expected_product_name
 
-    # 再次查询order3 - 无论其他查询如何，仍然应该没有订单项
+    # Query order3 again - regardless of other queries, should still have no order items
     order3_again = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
 
     assert order3_again is not None
     assert order3 is not order3_again, "Each query should return a new instance"
     assert len(order3_again.items()) == 0, f"Order {empty_order_id} should still have no items"
 
-    # 向order3添加一个订单项
+    # Add one order item to order3
     new_product_name = f"TestProduct_for_{empty_order_id}"
     new_item = OrderItem(
         order_id=empty_order_id,
@@ -243,14 +243,14 @@ def test_empty_relation_consistency(order_fixtures, setup_order_data):
     )
     new_item.save()
 
-    # 再次查询 - 现在应该有新的订单项
+    # Query again - should now have new order items
     order3_updated = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
 
     assert order3_updated is not None
     assert len(order3_updated.items()) == 1, f"Order {empty_order_id} should now have one item"
     assert order3_updated.items()[0].product_name == new_product_name
 
-    # 原始实例不应该受到新查询的影响
+    # Original instance should not be affected by new queries
     assert len(order3.items()) == 0, "Original order3 instance should still show no items"
     assert len(order3_again.items()) == 0, "Second order3 instance should still show no items"
 
@@ -260,36 +260,36 @@ def test_cache_isolation_between_records(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取两个带有订单项的订单ID
+    # Get IDs of two orders with order items
     order_id1 = test_data.orders[0].id
     order_id2 = test_data.orders[1].id
     expected_product_name1 = test_data.items[0].product_name
     expected_product_name2 = test_data.items[1].product_name
 
-    # 加载两个订单及其订单项
+    # Load two orders and their order items
     orders = Order.query().with_("items").where("id IN (?,?)", (order_id1, order_id2)).all()
 
     assert len(orders) == 2
-    # 按ID排序以确保一致的顺序
+    # Sort by ID to ensure consistent order
     orders.sort(key=lambda o: o.id)
 
-    # 按ID找出对应订单
+    # Find the corresponding orders by ID
     order1 = next((o for o in orders if o.id == order_id1), None)
     order2 = next((o for o in orders if o.id == order_id2), None)
 
     assert order1 is not None, f"Failed to find order with id {order_id1}"
     assert order2 is not None, f"Failed to find order with id {order_id2}"
 
-    # 第一个订单应该有预期的产品
+    # First order should have expected items
     assert len(order1.items()) == 1
     assert order1.items()[0].product_name == expected_product_name1
 
-    # 第二个订单应该有预期的产品
+    # Second order should have expected items
     assert len(order2.items()) == 1
     assert order2.items()[
                0].product_name == expected_product_name2, f"Expected {expected_product_name2}, got {order2.items()[0].product_name}"
 
-    # 现在单独测试以确保缓存不相互干扰
+    # Now test separately to ensure caches don't interfere with each other
     order1 = Order.query().with_("items").where("id = ?", (order_id1,)).one()
     assert len(order1.items()) == 1
     assert order1.items()[0].product_name == expected_product_name1
@@ -308,30 +308,30 @@ def test_mixed_empty_and_populated_relations(order_fixtures, setup_order_data):
     order_ids = [order.id for order in test_data.orders]
     expected_product_names = [item.product_name for item in test_data.items]
 
-    # 加载所有订单，包括没有订单项的order3
+    # Load all orders, including order3 without order items
     orders = Order.query().with_("items").where(f"id IN ({','.join(['?'] * len(order_ids))})", order_ids).all()
 
     assert len(orders) == 3, f"Expected 3 orders, got {len(orders)}"
 
-    # 为了进行一致性测试，创建ID到订单的映射
+    # Create mapping from ID to orders for consistency test
     orders_by_id = {order.id: order for order in orders}
 
-    # 检查每个订单的订单项
-    # 第一个订单有一个订单项
+    # Check order items for each order
+    # First order has one order item
     order1 = orders_by_id[test_data.orders[0].id]
     assert len(
         order1.items()) == 1, f"Expected order {test_data.orders[0].id} to have 1 item, got {len(order1.items())}"
     assert order1.items()[0].product_name == expected_product_names[
         0], f"Expected product {expected_product_names[0]}, got {order1.items()[0].product_name}"
 
-    # 第二个订单有一个订单项
+    # Second order has one order item
     order2 = orders_by_id[test_data.orders[1].id]
     assert len(
         order2.items()) == 1, f"Expected order {test_data.orders[1].id} to have 1 item, got {len(order2.items())}"
     assert order2.items()[0].product_name == expected_product_names[
         1], f"Expected product {expected_product_names[1]}, got {order2.items()[0].product_name}"
 
-    # 第三个订单没有订单项
+    # Third order has no order items
     order3 = orders_by_id[test_data.orders[2].id]
     assert len(
         order3.items()) == 0, f"Expected order {test_data.orders[2].id} to have 0 items, got {len(order3.items())}"
@@ -342,15 +342,15 @@ def test_cache_consistency_across_queries(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取空订单ID
+    # Get empty order ID
     empty_order_id = test_data.orders[2].id
 
-    # 第一次查询 - 空订单
+    # First query - empty order
     order = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
     assert order is not None
     assert len(order.items()) == 0, f"Expected order {empty_order_id} to have 0 items, got {len(order.items())}"
 
-    # 向之前空的订单添加一个订单项
+    # Add one order item to the previously empty order
     new_product_name = f"NewProduct_for_{empty_order_id}"
     new_item = OrderItem(
         order_id=empty_order_id,
@@ -361,7 +361,7 @@ def test_cache_consistency_across_queries(order_fixtures, setup_order_data):
     )
     new_item.save()
 
-    # 第二次查询 - 应该检测到变更
+    # Second query - should detect the change
     order_updated = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
     assert order_updated is not None
     assert len(
@@ -375,11 +375,11 @@ def test_repeated_empty_relation_queries(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取空订单ID
+    # Get empty order ID
     empty_order_id = test_data.orders[2].id
 
-    # 多次测试空关系
-    for i in range(5):  # 测试5次以提高检测问题的几率
+    # Test empty relations multiple times
+    for i in range(5):  # Test 5 times to increase chance of detecting issues
         order = Order.query().with_("items").where("id = ?", (empty_order_id,)).one()
         assert order is not None, f"Failed to get order {empty_order_id} on iteration {i}"
         assert len(
@@ -391,23 +391,23 @@ def test_cache_clearing_on_update(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取有订单项的订单ID
+    # Get order ID with order items
     order_id = test_data.orders[0].id
     original_product_name = test_data.items[0].product_name
 
-    # 第一次查询
+    # First query
     order = Order.query().with_("items").where("id = ?", (order_id,)).one()
     assert len(order.items()) == 1, f"Expected order {order_id} to have 1 item, got {len(order.items())}"
     assert order.items()[
                0].product_name == original_product_name, f"Expected product {original_product_name}, got {order.items()[0].product_name}"
 
-    # 更新订单项
+    # Update order item
     item = order.items()[0]
     updated_product_name = f"{original_product_name}_Updated_{order_id}"
     item.product_name = updated_product_name
     item.save()
 
-    # 再次查询 - 应该获取更新后的数据
+    # Query again - should get updated data
     order_updated = Order.query().with_("items").where("id = ?", (order_id,)).one()
     assert len(
         order_updated.items()) == 1, f"Expected order {order_id} to still have 1 item, got {len(order_updated.items())}"
@@ -420,29 +420,29 @@ def test_relation_query_with_different_modifiers(order_fixtures, setup_order_dat
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 获取有订单项的订单ID和数量信息
+    # Get order ID and quantity info for order with items
     order_id = test_data.orders[0].id
     quantity = test_data.items[0].quantity
 
-    # 根据量判断高阈值和低阈值
-    low_threshold = max(1, quantity - 1)  # 确保至少为1
+    # Determine high and low thresholds based on quantity
+    low_threshold = max(1, quantity - 1)  # Ensure at least 1
     high_threshold = quantity + 1
 
-    # 第一次查询 - 获取所有订单项
+    # First query - Get all order items
     order = Order.query().with_("items").where("id = ?", (order_id,)).one()
     assert len(order.items()) == 1, f"Expected order {order_id} to have 1 item, got {len(order.items())}"
 
-    # 第二次查询 - 带有条件地获取订单项
+    # Second query - get order items with conditions
     order_with_condition = Order.query().with_(
-        ("items", lambda q: q.where("quantity > ?", (low_threshold - 1,)))  # 确保条件满足
+        ("items", lambda q: q.where("quantity > ?", (low_threshold - 1,)))  # Ensure condition is met
     ).where("id = ?", (order_id,)).one()
 
     assert len(
         order_with_condition.items()) == 1, f"Expected order {order_id} to have 1 item with quantity > {low_threshold - 1}, got {len(order_with_condition.items())}"
 
-    # 第三次查询 - 带有不同条件
+    # Third query - with different conditions
     order_with_different_condition = Order.query().with_(
-        ("items", lambda q: q.where("quantity > ?", (high_threshold,)))  # 确保条件不满足
+        ("items", lambda q: q.where("quantity > ?", (high_threshold,)))  # Ensure condition is not met
     ).where("id = ?", (order_id,)).one()
 
     assert len(
@@ -454,7 +454,7 @@ def test_relation_loading_on_empty_result_set(order_fixtures, setup_order_data):
     User, Order, OrderItem = order_fixtures
     test_data = setup_order_data
 
-    # 使用不存在的ID查询
+    # Query with non-existent ID
     non_existent_id = max([order.id for order in test_data.orders]) + 9999
 
     order = Order.query() \

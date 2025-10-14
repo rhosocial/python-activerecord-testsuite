@@ -1,4 +1,4 @@
-# tests/rhosocial/activerecord_test/basic/test_crud.py
+﻿# tests/rhosocial/activerecord_test/basic/test_crud.py
 """Basic CRUD Test Module
 
 This module tests the basic CRUD functionality of the ActiveRecord class.
@@ -480,5 +480,5 @@ def test_query_methods(validated_user_class):
     count = validated_user_class.query().count()
     assert count == 3
 
-    # avg_age = validated_user_class.query().select('AVG(age) as avg_age').one()  # TODO: 暂时不支持聚合查询，留待日后改进。
+    # avg_age = validated_user_class.query().select('AVG(age) as avg_age').one()  # TODO: Aggregate queries not supported yet, to be improved in the future.
     # assert avg_age['avg_age'] == 31  # 30 + 31 + 32 / 3

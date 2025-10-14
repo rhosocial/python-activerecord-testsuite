@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_interfaces.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_interfaces.py
 """
 Tests for relation interfaces.
 """
@@ -8,7 +8,7 @@ from rhosocial.activerecord.relation.interfaces import RelationManagementInterfa
 
 class TestRelationInterfaces:
     """Tests for the relation management interfaces."""
-    
+
     def test_relation_management_interface(self, employee_class, department_class):
         """Test RelationManagementInterface implementation."""
         # Verify interface implementation

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/events/fixtures/models.py
+﻿# src/rhosocial/activerecord/testsuite/feature/events/fixtures/models.py
 """
 This file defines the generic ActiveRecord model classes used by the events tests.
 

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/interface/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/interface/conftest.py
 """pytest configuration for interface tests.
 
 This file provides pytest fixtures for the interface feature tests.

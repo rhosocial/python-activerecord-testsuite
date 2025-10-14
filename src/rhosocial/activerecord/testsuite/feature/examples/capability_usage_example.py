@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/examples/capability_usage_example.py
+﻿# src/rhosocial/activerecord/testsuite/feature/examples/capability_usage_example.py
 """Example showing how to use the capability system in tests."""
 
 import pytest
@@ -78,11 +78,11 @@ def test_dynamic_capability_checking(backend):
     """Dynamically check capabilities in a test."""
     # This approach is useful when you need to conditionally
     # execute parts of a test based on capabilities
-    
+
     if backend.capabilities.supports_window_function(WindowFunctionCapability.RANK):
         # Test RANK function if supported
         pass  # Actual test implementation
-    
+
     if backend.capabilities.supports_json(JSONCapability.JSON_EXTRACT):
         # Test JSON extraction if supported
         pass  # Actual test implementation
@@ -94,7 +94,7 @@ def test_category_level_features(backend):
     if backend.capabilities.supports_category(CapabilityCategory.WINDOW_FUNCTIONS):
         # Test window function features
         pass  # Actual test implementation
-    
+
     # Check if backend supports JSON operations in general
     if backend.capabilities.supports_category(CapabilityCategory.JSON_OPERATIONS):
         # Test JSON operation features

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with.py
 """Test cases for relation eager loading configuration."""
 from unittest.mock import patch
 

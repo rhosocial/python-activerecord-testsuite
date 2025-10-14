@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_descriptors.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_descriptors.py
 """
 Tests for relation descriptor functionality.
 """
@@ -13,7 +13,7 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMa
 
 class TestRelationDescriptors:
     """Tests for the relation descriptor functionality."""
-    
+
     # Mock QuerySet for testing
     class MockQuerySet:
         def __init__(self, model_class):

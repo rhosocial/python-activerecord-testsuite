@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_case_expressions.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_case_expressions.py
 """Test CASE expression functionality in ActiveQuery."""
 import logging
 from decimal import Decimal
@@ -158,16 +158,16 @@ def test_nested_case_expressions(order_fixtures):
     # Group by id to get all rows in the aggregate result
     query = Order.query().select("id", "status", "total_amount").group_by("id")
     query.select("""
-        CASE 
-            WHEN status = 'pending' THEN 
-                CASE 
+        CASE
+            WHEN status = 'pending' THEN
+                CASE
                     WHEN total_amount < 100 THEN 'Low Priority'
-                    ELSE 'High Priority' 
+                    ELSE 'High Priority'
                 END
-            WHEN status = 'paid' THEN 
-                CASE 
+            WHEN status = 'paid' THEN
+                CASE
                     WHEN total_amount < 100 THEN 'Regular Shipping'
-                    ELSE 'Express Shipping' 
+                    ELSE 'Express Shipping'
                 END
             ELSE 'Completed'
         END as shipping_priority
@@ -224,7 +224,7 @@ def test_case_with_calculations(order_fixtures):
 
     # Calculate different taxes based on status
     query.select("""
-        CASE 
+        CASE
             WHEN status = 'pending' THEN total_amount * 0.05
             WHEN status = 'paid' THEN total_amount * 0.08
             WHEN status = 'shipped' THEN total_amount * 0.1
@@ -234,8 +234,8 @@ def test_case_with_calculations(order_fixtures):
 
     # Add calculated tax to original amount
     query.select("""
-        total_amount + 
-        CASE 
+        total_amount +
+        CASE
             WHEN status = 'pending' THEN total_amount * 0.05
             WHEN status = 'paid' THEN total_amount * 0.08
             WHEN status = 'shipped' THEN total_amount * 0.1

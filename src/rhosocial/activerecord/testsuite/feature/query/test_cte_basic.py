@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_basic.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_basic.py
 """Test basic CTE functionality in ActiveQuery."""
 from decimal import Decimal
 

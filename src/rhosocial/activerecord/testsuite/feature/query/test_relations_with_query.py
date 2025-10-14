@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with_query.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with_query.py
 """Test cases for relation eager loading query execution."""
 
 from decimal import Decimal
@@ -118,11 +118,11 @@ def test_load_single_belongs_to_relation(order_fixtures, setup_order_data):
     order = Order.query().with_("user").where("id = ?", (order_ids[0],)).one()
 
     assert order is not None
-    assert order.user() is not None  # 修改为函数调�?
+    assert order.user() is not None  # Modified to function call
     assert order.user().id == user_ids[0]
     assert order.user().username == "user1"
 
-    # 测试关系查询函数
+    # Test relation query functions
     user_query = order.user_query()
     assert user_query is not None
     assert user_query.one().id == user_ids[0]
@@ -137,11 +137,11 @@ def test_load_has_many_relation(order_fixtures, setup_order_data):
     order = Order.query().with_("items").where("id = ?", (order_ids[0],)).one()
 
     assert order is not None
-    assert len(order.items()) == 1  # 修改为函数调�?
+    assert len(order.items()) == 1  # Modified to function call
     assert order.items()[0].product_name == "Product 1", order.items()[0]
     assert order.items()[0].quantity == 2
 
-    # 测试关系查询函数
+    # Test relation query functions
     items_query = order.items_query()
     assert items_query is not None
     assert items_query.count() == 1
@@ -159,7 +159,7 @@ def test_load_belongs_to_with_conditions(order_fixtures, setup_order_data):
 
     order = query.one()
     assert order is not None
-    assert order.user() is not None  # 修改为函数调�?
+    assert order.user() is not None  # Modified to function call
     assert order.user().age > 20
 
 
@@ -175,8 +175,8 @@ def test_load_multiple_relations(order_fixtures, setup_order_data):
         .one()
 
     assert order is not None
-    assert order.user() is not None  # 修改为函数调�?
-    assert len(order.items()) == 1  # 修改为函数调�?
+    assert order.user() is not None  # Modified to function call
+    assert len(order.items()) == 1  # Modified to function call
     assert order.user().id == user_ids[0]
     assert order.items()[0].product_name == "Product 1"
 
@@ -193,12 +193,12 @@ def test_load_nested_relations_blog(blog_fixtures, setup_blog_data):
         .one()
 
     assert post is not None
-    assert post.user() is not None  # 修改为函数调�?
-    assert len(post.comments()) == 2  # 修改为函数调�?
-    assert post.comments()[0].user() is not None  # 修改为函数调�?
-    assert post.comments()[1].user() is not None  # 修改为函数调�?
+    assert post.user() is not None  # Modified to function call
+    assert len(post.comments()) == 2  # Modified to function call
+    assert post.comments()[0].user() is not None  # Modified to function call
+    assert post.comments()[1].user() is not None  # Modified to function call
 
-    # 测试关系查询函数
+    # Test relation query functions
     comments_query = post.comments_query()
     assert comments_query is not None
     assert comments_query.count() == 2
@@ -216,7 +216,7 @@ def test_load_empty_relations(order_fixtures, setup_order_data):
         .one()
 
     assert order is not None
-    assert len(order.items()) == 0, order.items()[0]  # 修改为函数调�?
+    assert len(order.items()) == 0, order.items()[0]  # Modified to function call
 
 
 def test_load_filtered_has_many_relation(order_fixtures, setup_order_data):
@@ -233,7 +233,7 @@ def test_load_filtered_has_many_relation(order_fixtures, setup_order_data):
         .one()
 
     assert user is not None
-    assert len(user.orders()) == 1  # 修改为函数调�?
+    assert len(user.orders()) == 1  # Modified to function call
     assert user.orders()[0].total_amount == Decimal("200.00")
 
 
@@ -250,9 +250,9 @@ def test_load_relations_on_collection(order_fixtures, setup_order_data):
 
     assert len(orders) == 2
     for order in orders:
-        assert order.user() is not None  # 修改为函数调�?
+        assert order.user() is not None  # Modified to function call
         assert order.user().id == user_ids[0]
-        assert len(order.items()) > 0, order  # 修改为函数调�?
+        assert len(order.items()) > 0, order  # Modified to function call
 
 
 def test_load_complex_blog_relations(blog_fixtures, setup_blog_data):
@@ -267,11 +267,11 @@ def test_load_complex_blog_relations(blog_fixtures, setup_blog_data):
         .one()
 
     assert user is not None
-    assert len(user.posts()) == 2  # 修改为函数调�?
+    assert len(user.posts()) == 2  # Modified to function call
     # First post has comments
-    assert len(user.posts()[0].comments()) == 2  # 修改为函数调�?
+    assert len(user.posts()[0].comments()) == 2  # Modified to function call
     # Second post has no comments
-    assert len(user.posts()[1].comments()) == 0  # 修改为函数调�?
+    assert len(user.posts()[1].comments()) == 0  # Modified to function call
 
 
 def test_relation_one_or_fail(order_fixtures, setup_order_data):
@@ -307,3 +307,6 @@ def test_relation_query_with_no_results(order_fixtures, setup_order_data):
         .one()
 
     assert order is None
+
+
+

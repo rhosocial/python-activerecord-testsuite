@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
 """Test advanced aggregate functions with CTE."""
 from decimal import Decimal
 
@@ -155,10 +155,10 @@ def test_cte_having(order_fixtures):
     results.sort(key=lambda r: r['username'])
 
     assert results[0]['username'] == 'user2'
-    assert results[0]['total_spent'] == Decimal('600.00')  # 3 orders × 200 = 600
+    assert results[0]['total_spent'] == Decimal('600.00')  # 3 orders x 200 = 600
 
     assert results[1]['username'] == 'user3'
-    assert results[1]['total_spent'] == Decimal('900.00')  # 3 orders × 300 = 900
+    assert results[1]['total_spent'] == Decimal('900.00')  # 3 orders x 300 = 900
 
 
 def test_cte_nested_aggregates(order_fixtures):

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_integration_2.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_integration_2.py
 """Test integration of CTE with ActiveQuery for building Common Table Expressions."""
 from decimal import Decimal
 
@@ -738,7 +738,7 @@ def test_active_query_recursive_cte(tree_fixtures):
         f"""
         SELECT id, name, parent_id, value FROM nodes WHERE id = {root.id}
         UNION ALL
-        SELECT n.id, n.name, n.parent_id, n.value 
+        SELECT n.id, n.name, n.parent_id, n.value
         FROM nodes n JOIN descendants d ON n.parent_id = d.id
         """
     ).from_cte('descendants')

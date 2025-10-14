@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/interfaces.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/interfaces.py
 """
 This file defines the interface (or contract) that a backend's test provider
 must adhere to for the \"query\" feature group.
@@ -31,7 +31,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the order-related models (User, Order, OrderItem)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (User, Order, OrderItem) model classes
         """
@@ -42,7 +42,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the blog-related models (User, Post, Comment)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (User, Post, Comment) model classes
         """
@@ -53,7 +53,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the JSON user model
         under a given scenario and return a tuple containing the JsonUser model class.
-        
+
         Returns:
             Tuple containing (JsonUser,) model class
         """
@@ -64,7 +64,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the tree structure model (Node)
         under a given scenario and return a tuple containing the Node model class.
-        
+
         Returns:
             Tuple containing (Node,) model class
         """
@@ -75,7 +75,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the extended order-related models (User, ExtendedOrder, ExtendedOrderItem)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (User, ExtendedOrder, ExtendedOrderItem) model classes
         """
@@ -86,7 +86,7 @@ class IQueryProvider(ABC):
         """
         Should prepare the testing environment for the combined models (User, Order, OrderItem, Post, Comment)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (User, Order, OrderItem, Post, Comment) model classes
         """

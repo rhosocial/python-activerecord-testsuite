@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/mixins/test_timestamps.py
+﻿# src/rhosocial/activerecord/testsuite/feature/mixins/test_timestamps.py
 """
 Test timestamp functionality
 """

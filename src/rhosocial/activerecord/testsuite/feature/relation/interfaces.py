@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/interfaces.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/interfaces.py
 """
 This file defines the interface (or contract) that a backend's test provider
 must adhere to for the "relation" feature group.
@@ -31,7 +31,7 @@ class IRelationProvider(ABC):
         """
         Should prepare the testing environment for the employee-department models (Employee, Department)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (Employee, Department) model classes
         """
@@ -42,7 +42,7 @@ class IRelationProvider(ABC):
         """
         Should prepare the testing environment for the author-book models (Author, Book, Chapter, Profile)
         under a given scenario and return a tuple of the configured model classes.
-        
+
         Returns:
             Tuple of (Author, Book, Chapter, Profile) model classes
         """

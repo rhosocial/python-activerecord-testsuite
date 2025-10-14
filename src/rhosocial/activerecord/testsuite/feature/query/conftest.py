@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/conftest.py
 """
 This file defines the pytest fixtures for the "query" feature test group.
 
@@ -114,7 +114,7 @@ def tree_fixtures(request):
 
     # Get Node model for the test via fixture group
     result = provider.setup_tree_fixtures(scenario)
-    
+
     # Ensure we return a tuple for consistency with other fixtures
     if isinstance(result, tuple):
         yield result
@@ -172,7 +172,7 @@ def extended_order_fixtures(request):
 def check_capability_requirements(request):
     """
     Auto-used fixture that checks if the current backend supports required capabilities.
-    
+
     This fixture runs automatically for each test and checks if the test has
     a 'requires_capability' marker. If so, it verifies that the current backend
     supports the required capabilities, skipping the test if not.
@@ -181,20 +181,20 @@ def check_capability_requirements(request):
     requires_capability_marker = request.node.get_closest_marker("requires_capability")
     if requires_capability_marker:
         required_capabilities = requires_capability_marker.args[0]
-        
+
         # At this point, the parametrized fixtures have already been set up
         # Look for any of the model fixtures that contain the models we need
         model_to_check = None
-        
+
         # Check for common fixture names that contain models
-        fixture_options = ['extended_order_fixtures', 'order_fixtures', 'blog_fixtures', 
+        fixture_options = ['extended_order_fixtures', 'order_fixtures', 'blog_fixtures',
                           'json_user_fixture', 'tree_fixtures', 'combined_fixtures']
-        
+
         for fixture_name in fixture_options:
             if fixture_name in request.fixturenames:
                 try:
                     fixture_value = request.getfixturevalue(fixture_name)
-                    
+
                     # Handle different types of fixture returns
                     if isinstance(fixture_value, tuple):
                         # If it's a tuple of models, use the first one that has a backend
@@ -207,16 +207,16 @@ def check_capability_requirements(request):
                         model_to_check = fixture_value
                     elif hasattr(fixture_value, '__getitem__') and len(fixture_value) > 0:
                         # If it's an array-like structure
-                        first_item = fixture_value[0] 
+                        first_item = fixture_value[0]
                         if hasattr(first_item, 'backend') or hasattr(first_item, '__backend__'):
                             model_to_check = first_item
-                            
+
                     if model_to_check is not None:
                         break
                 except Exception:
                     # If we can't get the fixture value, continue to the next option
                     continue
-        
+
         if model_to_check is not None and (hasattr(model_to_check, 'backend') or hasattr(model_to_check, '__backend__')):
             # Use the model to check capabilities
             from ..utils import skip_test_if_capability_unsupported
@@ -228,5 +228,3 @@ def check_capability_requirements(request):
                 pass
         # If no appropriate model was found, the test will continue normally
         # This might happen if the capability decorator is used inappropriately
-
-

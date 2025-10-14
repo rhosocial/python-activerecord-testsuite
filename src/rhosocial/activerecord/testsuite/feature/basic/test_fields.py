@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_fields.py
+﻿# src/rhosocial/activerecord/testsuite/feature/basic/test_fields.py
 """Basic Fields Test Module
 
 This module tests the basic field processing functionality of the ActiveRecord class.
@@ -31,7 +31,7 @@ def test_string_field(type_test_model):
     assert saved_model.string_field == special_string
 
     # Unicode test
-    unicode_string = "Unicode: 你好世界 🌍"
+    unicode_string = "Unicode: 浣犲ソ涓栫晫 馃實"
     model.string_field = unicode_string
     model.save()
 

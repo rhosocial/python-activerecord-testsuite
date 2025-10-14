@@ -1,4 +1,4 @@
-# tests/rhosocial/activerecord_test/query/test_relation_path_processing.py
+﻿# tests/rhosocial/activerecord_test/query/test_relation_path_processing.py
 """Unit tests for relation path processing logic in RelationalQueryMixin."""
 from typing import List, Optional, Any, Union, Tuple, Dict, Set
 from unittest.mock import MagicMock, patch
@@ -362,7 +362,7 @@ class TestRelationPathProcessing:
         - Correctly handles the out-of-order declaration
         - Maintains the proper relation hierarchy regardless of declaration order
         - All relations in the path are correctly configured
-        <TODO> 可以配合中途修改 query_modifier
+        <TODO> Can be modified in the middle of query_modifier
         """
         # First declare a deep nested relation
         query._process_relation_path("user.posts.comments")
@@ -448,7 +448,7 @@ class TestRelationPathProcessing:
         - Correctly merges the configurations rather than duplicating them
         - Preserves all nested relations across multiple calls
         - Maintains a consistent relation hierarchy
-        <TODO> 可以配合后续修改 query_modifier
+        <TODO> Can be modified in subsequent query_modifier
         """
         # Add same relation multiple times with different nestings
         query._process_relation_path("user")

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/conftest.py
 """
 Pytest configuration for relation tests.
 

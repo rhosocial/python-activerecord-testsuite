@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_aggregate.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_aggregate.py
 """Test basic aggregate functions with CTE."""
 from decimal import Decimal
 
@@ -34,7 +34,7 @@ def test_cte_count(order_fixtures):
 
     # Count all orders
     count = query.count()
-    assert count == 6  # 3 statuses × 2 orders each = 6 total orders
+    assert count == 6  # 3 statuses x 2 orders each = 6 total orders
 
     # Define a CTE with filtered orders
     query = Order.query().with_cte(
@@ -197,7 +197,7 @@ def test_cte_with_conditions_and_aggregates(order_fixtures):
     query = Order.query().with_cte(
         'user_orders',
         f"""
-        SELECT o.*, u.age 
+        SELECT o.*, u.age
         FROM {Order.__table_name__} o
         JOIN {User.__table_name__} u ON o.user_id = u.id
         """

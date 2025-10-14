@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access.py
 """
 Tests for nested relationship access functionality.
 """
@@ -8,7 +8,7 @@ import time
 
 class TestNestedRelationshipAccess:
     """Tests for nested relationship access functionality."""
-    
+
     def test_nested_relationship_access(self, author, book, chapter):
         """Test accessing deeply nested relationships."""
         # First level relation access

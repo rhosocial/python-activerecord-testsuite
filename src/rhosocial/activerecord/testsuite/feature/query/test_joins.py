@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_joins.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_joins.py
 """Test cases for JOIN queries in ActiveQuery."""
 from decimal import Decimal
 
@@ -37,7 +37,7 @@ def test_inner_join(order_fixtures):
     # Test three-table INNER JOIN
     results = Order.query() \
         .join(f"""
-            INNER JOIN {OrderItem.__table_name__} 
+            INNER JOIN {OrderItem.__table_name__}
             ON {Order.__table_name__}.id = {OrderItem.__table_name__}.order_id
         """) \
         .join(f"""
@@ -83,7 +83,7 @@ def test_left_join(order_fixtures):
     # Test LEFT JOIN
     results = Order.query().select('orders.*') \
         .join(f"""
-            LEFT JOIN {OrderItem.__table_name__} 
+            LEFT JOIN {OrderItem.__table_name__}
             ON {Order.__table_name__}.id = {OrderItem.__table_name__}.order_id
         """) \
         .where(f'{Order.__table_name__}.user_id = ?', (user.id,)) \
@@ -130,7 +130,7 @@ def test_join_with_conditions(order_fixtures):
             ON {Order.__table_name__}.user_id = {User.__table_name__}.id
         """) \
         .join(f"""
-            INNER JOIN {OrderItem.__table_name__} 
+            INNER JOIN {OrderItem.__table_name__}
             ON {Order.__table_name__}.id = {OrderItem.__table_name__}.order_id
             AND {OrderItem.__table_name__}.quantity > 1
         """) \
@@ -458,7 +458,7 @@ def test_complex_join_conditions_2(order_fixtures):
     # Test LEFT JOIN
     results = Order.query().select('orders.*') \
         .join(f"""
-            LEFT JOIN {OrderItem.__table_name__} 
+            LEFT JOIN {OrderItem.__table_name__}
             ON {Order.__table_name__}.id = {OrderItem.__table_name__}.order_id
         """) \
         .where(f'{Order.__table_name__}.user_id = ?', (user.id,)) \
@@ -505,7 +505,7 @@ def test_join_with_conditions(order_fixtures):
             ON {Order.__table_name__}.user_id = {User.__table_name__}.id
         """) \
         .join(f"""
-            INNER JOIN {OrderItem.__table_name__} 
+            INNER JOIN {OrderItem.__table_name__}
             ON {Order.__table_name__}.id = {OrderItem.__table_name__}.order_id
             AND {OrderItem.__table_name__}.quantity > 1
         """) \

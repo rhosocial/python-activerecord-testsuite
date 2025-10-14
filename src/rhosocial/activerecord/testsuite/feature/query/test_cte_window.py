@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
 """Test window functions with CTE."""
 from decimal import Decimal
 
@@ -218,7 +218,7 @@ def test_cte_with_multiple_windows(order_fixtures):
         query = Order.query().with_cte(
             'user_orders',
             f"""
-            SELECT o.*, u.username 
+            SELECT o.*, u.username
             FROM {Order.__table_name__} o
             JOIN {User.__table_name__} u ON o.user_id = u.id
             """
@@ -253,7 +253,7 @@ def test_cte_with_multiple_windows(order_fixtures):
 
         results = query.aggregate()
 
-        assert len(results) == 6  # 2 users × 3 orders each
+        assert len(results) == 6  # 2 users x 3 orders each
 
         # Verify user rankings
         user1_results = [r for r in results if r['username'] == 'user1']

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_base.py
+﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_base.py
 """
 Tests for relation base functionality.
 """
@@ -15,14 +15,14 @@ from rhosocial.activerecord.relation.interfaces import RelationLoader
 
 class TestRelationDescriptor:
     """Tests for the relation descriptor functionality."""
-    
+
     class CustomLoader(RelationLoader):
         def load(self, instance):
             return {"id": 1, "name": "Test"}
-    
+
         def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
             pass
-    
+
     def test_relation_descriptor_init(self):
         """Test RelationDescriptor initialization."""
         descriptor = RelationDescriptor(
@@ -31,7 +31,7 @@ class TestRelationDescriptor:
             loader=self.CustomLoader(),
             cache_config=CacheConfig(enabled=True)
         )
-    
+
         assert descriptor.foreign_key == "test_id"
         assert descriptor.inverse_of == "test"
         assert descriptor._loader is not None
@@ -51,7 +51,7 @@ class TestRelationDescriptor:
 
         inverse_model = inverse_relation.get_related_model(department_class)
         assert inverse_model == employee_class
-        
+
     def test_relation_descriptor_load(self, employee):
         """Test loading relation data."""
         relation = employee.get_relation("department")

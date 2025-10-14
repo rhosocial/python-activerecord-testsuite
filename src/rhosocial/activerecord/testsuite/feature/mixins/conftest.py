@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/mixins/conftest.py
+﻿# src/rhosocial/activerecord/testsuite/feature/mixins/conftest.py
 """
 This file defines the pytest fixtures for the "mixins" feature test group.
 
@@ -49,13 +49,13 @@ def timestamped_post_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the TimestampedPost model for this scenario.
     Model = provider.setup_timestamped_post_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
 
@@ -72,13 +72,13 @@ def versioned_product_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the VersionedProduct model for this scenario.
     Model = provider.setup_versioned_product_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
 
@@ -95,13 +95,13 @@ def task_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the Task model for this scenario.
     Model = provider.setup_task_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
 
@@ -118,12 +118,12 @@ def combined_article_model(request):
     provider_registry = get_provider_registry()
     provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
     provider = provider_class()
-    
+
     # Ask the provider to set up the database and configure the CombinedArticle model for this scenario.
     Model = provider.setup_combined_article_model(scenario)
-    
+
     # `yield` passes the configured model class to the test function.
     yield Model
-    
+
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)

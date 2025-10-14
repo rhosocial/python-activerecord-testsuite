@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_support.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_support.py
 """Test CTE support and version compatibility checks in ActiveQuery."""
 from unittest.mock import patch
 

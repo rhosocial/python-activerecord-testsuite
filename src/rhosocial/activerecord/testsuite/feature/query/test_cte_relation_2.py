@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation_2.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation_2.py
 """Test complex relation queries with CTE."""
 from decimal import Decimal
 
@@ -37,7 +37,7 @@ def test_cte_relation_with_subquery(order_fixtures):
     query = User.query().with_cte(
         'users_with_orders',
         f"""
-        SELECT u.* 
+        SELECT u.*
         FROM {User.__table_name__} u
         WHERE (
             SELECT COUNT(*)
@@ -177,7 +177,7 @@ def test_cte_relation_cross_model_aggregation(order_fixtures):
     query = User.query().with_cte(
         'user_order_stats',
         f"""
-        SELECT 
+        SELECT
             u.id, u.username, u.email, u.age,
             COUNT(o.id) as order_count,
             SUM(o.total_amount) as total_spent
@@ -260,7 +260,7 @@ def test_cte_relation_complex_join(order_fixtures):
     query = User.query().with_cte(
         'user_order_details',
         f"""
-        SELECT 
+        SELECT
             u.id, u.username, u.email, u.age,
             o.id as order_id, o.order_number, o.status,
             i.id as item_id, i.product_name, i.quantity
@@ -358,7 +358,7 @@ def test_cte_deep_nested_relations(blog_fixtures):
     query = Post.query().with_cte(
         'admin_posts',
         f"""
-        SELECT p.* 
+        SELECT p.*
         FROM {Post.__table_name__} p
         JOIN {User.__table_name__} u ON p.user_id = u.id
         WHERE u.username = 'admin'

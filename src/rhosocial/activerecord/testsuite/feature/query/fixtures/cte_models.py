@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/fixtures/cte_models.py
+﻿# src/rhosocial/activerecord/testsuite/feature/query/fixtures/cte_models.py
 from decimal import Decimal
 from typing import Optional, ClassVar
 
