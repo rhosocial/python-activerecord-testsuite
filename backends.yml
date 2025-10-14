@@ -1,7 +1,0 @@
-sqlite:
-  default:
-    driver: sqlite
-    database: ":memory:"
-  file_db:
-    driver: sqlite
-    database: "test_suite_run.db"
