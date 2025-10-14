@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_validation.py
+﻿# src/rhosocial/activerecord/testsuite/feature/basic/test_validation.py
 """Basic Validation Test Module
 
 This module tests the validation functionality of the ActiveRecord class.
@@ -6,6 +6,8 @@ This module tests the validation functionality of the ActiveRecord class.
 import pytest
 from pydantic import ValidationError
 from rhosocial.activerecord.backend.errors import ValidationError as DBValidationError
+
+# Fixtures are now injected by the conftest.py in this package
 
 
 @pytest.fixture

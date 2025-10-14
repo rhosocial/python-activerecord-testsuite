@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_crud.py
+﻿# tests/rhosocial/activerecord_test/basic/test_crud.py
 """Basic CRUD Test Module
 
 This module tests the basic CRUD functionality of the ActiveRecord class.
@@ -13,10 +13,11 @@ import pytest
 
 from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
 
+# Fixtures are now injected by the conftest.py in this package
 
 def test_create_user(user_class):
     """Test creating a user record"""
-    instance = user_class(username="Alice", email="alice@example.com", age=30, balance=100.50)
+    instance = user_class(username="Alice", email="alice@example.com", age=30, balance=Decimal("100.50"))
     rows = instance.save()
     assert rows == 1
     assert instance.id is not None
@@ -32,7 +33,7 @@ def test_create_user_with_invalid_data(user_class):
             username='jo',  # too short
             email='invalid-email',  # invalid email format
             age=200,  # out of range
-            balance=100.999  # exceeds decimal places
+            balance=Decimal('100.999')  # exceeds decimal places
         )
         user.save()
 
@@ -44,7 +45,7 @@ def test_find_user(user_class):
         username='jane_doe',
         email='jane@doe.com',
         age=25,
-        balance=200.00
+        balance=Decimal('200.00')
     )
     user.save()
 
@@ -54,7 +55,7 @@ def test_find_user(user_class):
     assert found.username == 'jane_doe'
     assert found.email == 'jane@doe.com'
     assert found.age == 25
-    assert found.balance == 200.00
+    assert found.balance == Decimal('200.00')
 
 
 def test_find_nonexistent_user(user_class):
@@ -73,7 +74,7 @@ def test_update_user(user_class):
         username='bob_smith',
         email='bob@smith.com',
         age=40,
-        balance=300.00
+        balance=Decimal('300.00')
     )
     assert user.is_new_record is True
     user.save()
@@ -108,7 +109,7 @@ def test_update_with_invalid_data(user_class):
         username='alice_wonder',
         email='alice@wonder.com',
         age=28,
-        balance=400.00
+        balance=Decimal('400.00')
     )
     user.save()
 
@@ -123,7 +124,7 @@ def test_delete_user(user_class):
         username='charlie_brown',
         email='charlie@brown.com',
         age=35,
-        balance=500.00
+        balance=Decimal('500.00')
     )
     assert user.is_new_record is True
     user.save()
@@ -145,7 +146,7 @@ def test_save_after_delete(user_class):
         username='deleted_user',
         email='deleted@example.com',
         age=45,
-        balance=600.00
+        balance=Decimal('600.00')
     )
     user.save()
     user_id = user.id
@@ -183,7 +184,7 @@ def test_bulk_operations(user_class):
         user_class(username=f'user_{i}',
                    email=f'user_{i}@example.com',
                    age=20 + i,
-                   balance=float(f'{100 + i}.00'))
+                   balance=Decimal(f'{100 + i}.00'))
         for i in range(5)
     ]
     for user in users:
@@ -205,7 +206,7 @@ def test_dirty_tracking(user_class):
         username='track_user',
         email='track@example.com',
         age=30,
-        balance=100.00
+        balance=Decimal('100.00')
     )
 
     # New record should not be dirty
@@ -374,17 +375,17 @@ def test_transaction_crud(user_class):
             username='transaction_user',
             email='transaction@example.com',
             age=35,
-            balance=1000.00
+            balance=Decimal('1000.00')
         )
         user.save()
 
-        user.balance = 1500.00
+        user.balance = Decimal('1500.00')
         user.save()
 
     # Verify transaction succeeded
     saved_user = user_class.find_one(user.id)
     assert saved_user is not None
-    assert saved_user.balance == 1500.00
+    assert saved_user.balance == Decimal('1500.00')
 
     # Failed transaction
     with pytest.raises(ValidationError):
@@ -393,7 +394,7 @@ def test_transaction_crud(user_class):
                 username='transaction_user2',
                 email='transaction2@example.com',
                 age=36,
-                balance=2000.00
+                balance=Decimal('2000.00')
             )
             user.save()
 
@@ -412,7 +413,7 @@ def test_refresh_record(validated_user_class):
         username='refresh_user',
         email='refresh@example.com',
         age=40,
-        balance=100.00,
+        balance=Decimal('100.00'),
         credit_score=100,
     )
     user.save()
@@ -431,7 +432,7 @@ def test_refresh_record(validated_user_class):
         username='new_user',
         email='new@example.com',
         age=40,
-        balance=100.00,
+        balance=Decimal('100.00'),
         credit_score=100,
     )
     with pytest.raises(DatabaseError):
@@ -446,7 +447,7 @@ def test_query_methods(validated_user_class):
             username=f'query_user_{i}',
             email=f'query{i}@example.com',
             age=30 + i,
-            balance=float(100 * (i + 1)),
+            balance=Decimal(f'{100 * (i + 1)}.00'),
             credit_score=100,
         )
         for i in range(3)

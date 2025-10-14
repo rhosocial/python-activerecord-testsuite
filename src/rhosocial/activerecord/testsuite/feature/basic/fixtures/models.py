@@ -1,22 +1,29 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
-"""Basic Functionality Test Module"""
+﻿# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
+"""
+This file defines the generic ActiveRecord model classes used by the basic tests.
+
+These models are "generic" because they define the data structure and validation
+rules (using Pydantic), but they are not tied to any specific database backend.
+The backend-specific provider is responsible for taking these classes and
+configuring them with a live database connection at test time.
+"""
 import re
-from datetime import date, time, datetime, timedelta
+from datetime import date, time, datetime
 from decimal import Decimal
 from typing import Optional, Type, Literal
 
-import pytest
 from pydantic import EmailStr, Field, field_validator
 
 from rhosocial.activerecord import ActiveRecord
 from rhosocial.activerecord.backend.errors import ValidationError
+# These mixins are assumed to be provided by the core `rhosocial-activerecord`
+# package to handle common field behaviors like auto-incrementing IDs or timestamps.
 from rhosocial.activerecord.field import TimestampMixin, UUIDMixin, IntegerPKMixin
 
-
 class TypeCase(UUIDMixin, ActiveRecord):
+    """A model with a wide variety of data types to test database type handling."""
     __table_name__ = "type_cases"
 
-    # id: str
     username: str
     email: str
     tiny_int: Optional[int]
@@ -36,45 +43,6 @@ class TypeCase(UUIDMixin, ActiveRecord):
     array_val: Optional[list]
     is_active: bool = True
 
-
-class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    __table_name__ = "users"
-
-    id: Optional[int] = None  # Primary key, empty for new records
-    username: str  # Required field
-    email: EmailStr  # Required field
-    age: Optional[int] = Field(..., ge=0, le=100)  # Optional field
-    balance: float = 0.0  # Field with default value
-    is_active: bool = True  # Field with default value
-    # created_at: Optional[str] = None  # Optional field, typically set automatically by database
-    # updated_at: Optional[str] = None  # Optional field, typically set automatically by database
-
-
-class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
-    __table_name__ = "validated_field_users"
-
-    id: Optional[int] = None  # Primary key, empty for new records
-    username: str
-    email: EmailStr
-    age: Optional[int] = None
-    balance: Optional[float] = 0.0
-    credit_score: int
-    status: Literal['active', 'inactive', 'banned', 'pending', 'suspended'] = 'active'
-    is_active: Optional[bool] = True
-
-    @field_validator('username')
-    def validate_username(cls, value):
-        if re.search(r'123', value):
-            raise ValidationError("Username must not contain any digits.")
-        return value
-
-    @field_validator('credit_score')
-    def validate_credit_score(cls, value):
-        if not (0 <= value <= 800):
-            raise ValidationError("Credit score must be a float between 0 and 800.")
-        return value
-
-
 class TypeTestModel(UUIDMixin, ActiveRecord):
     """Model class for testing various field types"""
     __table_name__ = "type_tests"
@@ -89,6 +57,50 @@ class TypeTestModel(UUIDMixin, ActiveRecord):
     json_field: Optional[dict] = None
     nullable_field: Optional[str] = Field(default=None)
 
+
+class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """A standard User model for general CRUD operation testing."""
+    __table_name__ = "users"
+
+    # The IntegerPKMixin is expected to handle the `id` field.
+    id: Optional[int] = None
+    username: str
+    email: EmailStr
+    age: Optional[int] = Field(..., ge=0, le=100)
+    balance: float = 0.0
+    is_active: bool = True
+
+class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
+    """
+    A User model with specific, custom field validators to test the framework's
+    validation handling.
+    """
+    __table_name__ = "validated_field_users"
+
+    id: Optional[int] = None
+    username: str
+    email: EmailStr
+    age: Optional[int] = None
+    balance: Optional[float] = 0.0
+    credit_score: int
+    status: Literal['active', 'inactive', 'banned', 'pending', 'suspended'] = 'active'
+    is_active: Optional[bool] = True
+
+    @field_validator('username')
+    def validate_username(cls, value):
+        """A custom validator that rejects usernames containing '123'."""
+        if re.search(r'123', value):
+            # This test uses the framework's custom ValidationError, which is
+            # distinct from pydantic.ValidationError.
+            raise ValidationError("Username must not contain '123'.")
+        return value
+
+    @field_validator('credit_score')
+    def validate_credit_score(cls, value):
+        """A custom validator that ensures credit_score is within a specific range."""
+        if not (0 <= value <= 800):
+            raise ValidationError("Credit score must be between 0 and 800.")
+        return value
 
 class ValidatedUser(IntegerPKMixin, ActiveRecord):
     """User model for validation testing"""
