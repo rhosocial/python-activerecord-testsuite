@@ -1,5 +1,7 @@
 # Real-World and Benchmark Tests Design Outline
 
+**IMPORTANT**: This plan will only be implemented after the rhosocial-activerecord introduces features including "Storage Backend Facade Pattern", "Asynchronous Database Access", "ActiveRecord Field Expressions", and "Set Operations". The plan content will also not appear in the continuous integration of rhosocial-activerecord and other backends, meaning it will not be a prerequisite for their releases. All tests implemented under this plan are only used as reference for technology selection.
+
 ## Document Purpose
 
 This document outlines the proposed design for two major testing categories in the rhosocial-activerecord testsuite:
