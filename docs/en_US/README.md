@@ -146,7 +146,7 @@ Add `rhosocial-activerecord-testsuite` as a development dependency in your backe
 ```toml
 [project.optional-dependencies]
 dev = [
-    "rhosocial-activerecord-testsuite>=0.1.0",
-    "pytest-cov>=4.0.0"
+    "rhosocial-activerecord-testsuite",
+    "pytest-cov"
 ]
 ```
