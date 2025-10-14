@@ -36,7 +36,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "rhosocial_activerecord>=1.0.0",
     "pytest>=7.0.0",
 ]
 
@@ -108,34 +107,8 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
-    # Test Categories
-    "feature: marks tests for individual features",
-    "realworld: marks tests for real-world scenarios",
-    "benchmark: marks tests for performance benchmarks",
-
-    # Feature Areas (from planned structure)
-    "basic: marks tests for basic CRUD, validation, etc.",
-    "query: marks tests for query builder functionality",
-    "relation: marks tests for model relationships",
-    "field: marks tests for field type handling",
-    "crud: marks tests for CRUD operations",
-    "validation: marks tests for data validation",
-    "has_one: marks tests for HasOne relations",
-    "has_many: marks tests for HasMany relations",
-    "belongs_to: marks tests for BelongsTo relations",
-    "timestamp: marks tests for TimestampMixin",
-    "soft_delete: marks tests for SoftDeleteMixin",
-    "cte: marks tests for CTE functionality",
-
-    # Real-world Scenarios (from planned structure)
-    "ecommerce: marks tests for e-commerce scenarios",
-    "finance: marks tests for finance scenarios",
-    "social: marks tests for social media scenarios",
-
-    # Benchmark Areas (from planned structure)
-    "bulk_operations: marks tests for bulk database operations",
-    "complex_queries: marks tests for complex query performance",
-    "concurrent_access: marks tests for concurrent database access",
+    # Capability requirement markers
+    "requires_capability: marks tests requiring specific backend capabilities",
 ]
 
 [tool.black]
@@ -153,6 +126,9 @@ line-length = 100
 target-version = "py38"
 select = ["E", "F", "B"]
 ignore = []
+
+[project.entry-points."pytest11"]
+rhosocial-activerecord-capabilities = "rhosocial.activerecord.testsuite.plugin.pytest_activerecord_capabilities"
 
 [tool.mypy]
 python_version = "3.8"

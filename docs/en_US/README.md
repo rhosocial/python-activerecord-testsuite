@@ -1,23 +1,143 @@
-# RhoSocial ActiveRecord Test Suite Documentation
+# Test Suite Documentation
 
-## 1. Introduction
+This documentation provides comprehensive guides for using the test suite.
 
-Welcome to the RhoSocial ActiveRecord Test Suite. This package provides a standardized testing contract for all database backends integrating with the `rhosocial-activerecord` library.
+## Table of Contents
+- [1. Introduction](#1-introduction)
+- [2. Getting Started for Backend Developers](#2-getting-started-for-backend-developers)
+
+## [1. Introduction](#1-introduction)
+
+Welcome to the ActiveRecord Test Suite. This package provides a standardized testing contract for all database backends integrating with the `rhosocial-activerecord` library.
 
 The primary goal is to ensure that every backend, whether official or third-party, behaves consistently and correctly according to the core library's expectations. The suite is built on three pillars:
 
--   **Feature Tests**: Validate individual, atomic functionalities (e.g., CRUD operations, query methods, field types).
--   **Real-world Scenarios**: Simulate complex business logic to test interactions between different components.
--   **Benchmark Tests**: Measure and compare performance metrics across different backends.
+- **Feature Tests**: Validate individual, atomic functionalities (e.g., CRUD operations, query methods, field types).
+- **Real-world Scenarios**: Simulate complex business logic to test interactions between different components.
+- **Benchmark Tests**: Measure and compare performance metrics across different backends.
 
-## 2. Getting Started for Backend Developers
+**Important**: This test suite contains only the test logic and does not include environment preparation such as fixtures or database schemas. Instead, it provides **interfaces** that backends should implement to provide these resources. Each backend implementation is responsible for creating and managing its own test environment according to the provided interfaces.
+
+### Architecture Overview
+
+The test suite and backend relationship follows a clear separation of concerns:
+
+```mermaid
+graph TB
+    subgraph "Backend Packages" 
+        direction TB
+        MYSQL[rhosocial-activerecord-mysql<br/>- Backend implementation<br/>- Schema definitions<br/>- Backend-specific tests]
+        DEFAULT[rhosocial-activerecord<br/>- Default backend<br/>- Core functionality<br/>- Backend-specific tests]
+    end
+
+    subgraph "Testsuite Package" 
+        direction TB
+        TS[rhosocial-activerecord-testsuite<br/>- Standardized test contracts<br/>- Feature tests<br/>- Real-world scenarios<br/>- Performance benchmarks]
+    end
+
+    subgraph "Backend Developer Responsibilities" 
+        direction TB
+        PROVIDER[Implement test providers<br/>- Set up database schemas<br/>- Configure test models<br/>- Provide fixtures]
+        SCHEMA[SQL Schema Creation<br/>- Create backend-specific<br/>  schema files<br/>- Match testsuite structure]
+        REPORT[Generate compatibility reports<br/>- Run standardized tests<br/>- Track compatibility scores]
+    end
+
+    subgraph "Testsuite Author Responsibilities" 
+        direction TB
+        TESTDEF[Test Definition<br/>- Write backend-agnostic<br/>  test functions<br/>- Define test contracts<br/>- Provide test utilities]
+        MARKER[Test Marking<br/>- Standard pytest markers<br/>- Categorization system<br/>- Feature identification]
+        UTIL[Test Utilities<br/>- Schema generators<br/>- Helper functions<br/>- Provider interfaces]
+    end
+
+    %% Relationship arrows
+    MYSQL -.->|uses| TS
+    DEFAULT -.->|uses| TS
+    PROVIDER -->|fulfills| TS
+    SCHEMA -->|supports| TS
+    REPORT -->|verifies| TS
+    TESTDEF -->|provides| TS
+    MARKER -->|organizes| TS
+    UTIL -->|facilitates| TS
+
+    style TS fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style MYSQL fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style DEFAULT fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style PROVIDER fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style SCHEMA fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style REPORT fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style TESTDEF fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style MARKER fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style UTIL fill:#fff3e0,stroke:#e65100,stroke-width:2px
+```
+
+### Testing Layer Architecture
+
+```mermaid
+graph LR
+    subgraph "Testsuite Layer"
+        TEST[Test Functions<br/>Backend-agnostic logic]
+        IFACE[Provider Interfaces<br/>Contract definitions]
+        CAPS[Capability Requirements<br/>Feature declarations]
+    end
+    
+    subgraph "Backend Layer"
+        PROV[Provider Implementation<br/>Model setup & fixtures]
+        SCHEMA[SQL Schemas<br/>Database structure]
+        CAPSDECL[Capability Declaration<br/>Supported features]
+    end
+    
+    subgraph "Database Layer"
+        DB[(Database<br/>SQLite/MySQL/PostgreSQL)]
+    end
+    
+    TEST -->|uses| IFACE
+    TEST -->|requires| CAPS
+    IFACE -->|implemented by| PROV
+    CAPS -->|checked against| CAPSDECL
+    PROV -->|creates| SCHEMA
+    PROV -->|configures models with| CAPSDECL
+    SCHEMA -->|executed on| DB
+    CAPSDECL -->|describes| DB
+```
+
+### Responsibilities Division
+
+#### Testsuite Authors MUST:
+- Write backend-agnostic test logic
+- Define provider interfaces
+- Create test fixtures and utilities
+- NEVER assume backend-specific features
+- NEVER write SQL directly in tests
+- Document required capabilities using correct category+capability format
+
+#### Backend Developers MUST:
+- Implement provider interfaces
+- Create backend-specific schema files
+- Handle database connection/cleanup
+- Write backend-specific tests separately
+- Generate compatibility reports
+- Declare backend capabilities using add_* methods
+
+### Division of Labor
+
+| Component | Testsuite | Backend |
+|-----------|-----------|---------|
+| Test logic | ✅ Defines | Uses |
+| SQL schemas | Provides templates | ✅ Implements |
+| Database setup | Defines interface | ✅ Implements |
+| Model configuration | Defines fixtures | ✅ Provides models |
+| Cleanup/teardown | Defines hooks | ✅ Implements |
+| Capability declaration | Defines requirements | ✅ Declares support |
+
+## [2. Getting Started for Backend Developers](#2-getting-started-for-backend-developers)
 
 To use this test suite to validate your custom database backend, follow these steps:
 
 ### Prerequisites
 
--   A working database backend implementation that inherits from `rhosocial.activerecord.backend.StorageBackend`.
--   Your backend package should be installable in the test environment.
+- A working database backend implementation that inherits from `rhosocial.activerecord.backend.StorageBackend`.
+- Your backend package should be installable in the test environment.
+- Your backend must implement the required interfaces for providing test fixtures and database schemas.
 
 ### Installation
 
@@ -26,105 +146,7 @@ Add `rhosocial-activerecord-testsuite` as a development dependency in your backe
 ```toml
 [project.optional-dependencies]
 dev = [
-    "rhosocial-activerecord-testsuite>=0.1.0"
+    "rhosocial-activerecord-testsuite",
+    "pytest-cov"
 ]
 ```
-
-## 3. Configuration
-
-The test suite is driven by a flexible configuration system that allows you to test against multiple database versions and setups.
-
-### Backend Drivers and Namespaces
-
-Before configuring, it's important to understand how backends are loaded:
-
--   **Official Backends**: Backends released by `rhosocial` are installed under the `rhosocial.activerecord.backend.impl` namespace (e.g., `...impl.mysql`). The test suite's default configuration loader knows how to find these.
--   **Third-Party Backends**: If you are developing a third-party backend, it should reside in its own namespace (e.g., `acme_corp.activerecord.backend.impl.acme_db`). To make the test suite aware of your driver, you would need to register it, typically using Python's `entry_points` mechanism in your package's `pyproject.toml`.
-
-### Built-in SQLite Support
-
-The test suite includes built-in support for testing the `sqlite` backend that ships with `rhosocial-activerecord`. The configurations are determined by the Python version you are using to run the tests.
-
--   **Automatic Detection**: By default, the test suite detects the current Python version (e.g., 3.11) and runs tests against its corresponding SQLite version (e.g., `sqlite_py311_mem` and `sqlite_py311_file`).
--   **CI/CD Override**: You can force tests to run against a specific Python version's configuration by setting the `PYTEST_TARGET_VERSION` environment variable. For example:
-    ```bash
-    PYTEST_TARGET_VERSION=3.10 pytest
-    ```
-
-### Custom Backend Configuration (`backends.yml`)
-
-To test your own backend (or other optional backends like MySQL, PostgreSQL), you need to create a `backends.yml` file in the root of your project.
-
-**Example `backends.yml` for a MySQL backend:**
-```yaml
-mysql:
-  # A custom name for this configuration
-  mysql_8_0:
-    # The driver name must match a registered backend driver
-    driver: mysql 
-    host: "127.0.0.1"
-    port: 3306
-    username: "root"
-    password: "password"
-    database: "testsuite_db"
-```
-The test runner will automatically discover and use this file to run the entire test suite against your configured MySQL instance.
-
-## 4. Running Feature Tests
-
-This section details how to run the `feature` tests. The tests under the `basic` directory cover the fundamental functionalities of ActiveRecord, including:
-
--   **CRUD Operations**: Creating, reading, updating, and deleting records (`test_crud.py`).
--   **Field Type Handling**: Verification of various data types (strings, numbers, booleans, datetimes, JSON, etc.) (`test_fields.py`).
--   **Data Validation**: Including field-level validation via Pydantic and custom business rule validation (`test_validation.py`).
-
-### Schema Definition
-
-The test suite uses a convention-over-configuration approach for database schemas. For each test category (like `basic`), you must provide a schema file in a corresponding `schemas` directory. The test runner for your backend needs to provide the SQL dialect-specific version of this file.
-
--   **Example Path**: `.../testsuite/feature/basic/schemas/basic.sql`
--   **Content**: This file should contain all `CREATE TABLE` statements required for the tests in the `.../feature/basic/` directory.
-
-### Test Execution Flow
-
-1.  **Discovery**: `pytest` discovers the tests (e.g., `test_crud.py`).
-2.  **Configuration Loading**: The root `conftest.py` in the test suite calls `load_backend_configs()` to get a list of all database configurations to test against (both built-in SQLite and custom ones from `backends.yml`).
-3.  **Parametrization**: `pytest` creates a parameterized run for each configuration.
-4.  **Fixture Setup (`database`)**: For each run, the `database` fixture does the following:
-    a.  Connects to the specified database.
-    b.  Locates the correct schema file (e.g., `basic.sql`) based on the test file's path.
-    c.  Executes the SQL to create the necessary tables.
-    d.  Yields a tuple containing the configured backend instance and the connection configuration object.
-5.  **Model Fixture Setup**: Fixtures like `user_class` receive the result from the `database` fixture and bind the generic `User` model from `fixtures/models.py` to the live database connection.
-6.  **Test Run**: The test function (e.g., `test_create_user(user_class)`) executes using the fully configured model.
-7.  **Fixture Teardown**: The `database` fixture cleans up the database (drops tables, disconnects).
-
-### Running the Tests
-
-From your backend project's root directory, simply run `pytest`:
-
-```bash
-# Run all tests against all configured backends
-pytest
-
-# Run only the basic feature tests
-pytest src/rhosocial/activerecord/testsuite/feature/basic/
-```
-
-## 5. Code Conventions
-
-To maintain a clean and consistent codebase, we adhere to the following convention:
-
-- **Path Comments**: All files within the `src/` directory (including `.py`, `.sql`, etc.) must begin with a comment on the first line that indicates the file's relative path from the project root (`python-activerecord-testsuite`).
-
-  Example: `# src/rhosocial/activerecord/testsuite/conftest.py`
-
-## 6. Troubleshooting
-
-When running and debugging the test suite, you may encounter various environment and code-related issues. We have compiled a detailed guide to help you resolve them.
-
--   [Troubleshooting Guide](./TROUBLESHOOTING.md)
-
-## 7. Contributing
-
-Contributions to the test suite are welcome! Please refer to the main repository's [contribution guidelines](https://github.com/rhosocial/python-activerecord/blob/main/CONTRIBUTING.md).

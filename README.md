@@ -1,5 +1,9 @@
 # RhoSocial ActiveRecord Test Suite
 
+> **⚠️ Development Stage Notice:** This project is currently under development. Features may be added or removed at any time, and there may be defects or inconsistencies with actual implementations. Therefore, the documentation content is subject to change at any time and is for reference only.
+
+[![PyPI version](https://badge.fury.io/py/rhosocial-activerecord-testsuite.svg)](https://badge.fury.io/py/rhosocial-activerecord-testsuite)
+[![Python](https://img.shields.io/pypi/pyversions/rhosocial-activerecord-testsuite.svg)](https://pypi.org/project/rhosocial-activerecord-testsuite/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Overview
@@ -23,6 +27,12 @@ The test suite is organized into the following main categories, located in `src/
 -   `/feature`: Core feature tests.
 -   `/realworld`: Complex, real-world application scenarios.
 -   `/benchmark`: Performance and load tests.
+
+## Capability-based Testing
+
+The test suite includes an integrated pytest plugin that automatically checks if the current backend supports required capabilities. Tests using the `@requires_capability` decorator will be automatically skipped if the backend doesn't support the required features.
+
+The plugin is registered automatically and available when the package is installed.
 
 ## Usage for Backend Developers
 
