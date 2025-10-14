@@ -1,6 +1,6 @@
 # RhoSocial ActiveRecord Test Suite
 
-> **⚠️ Development Stage Notice:** This project is currently under development. Features may be added or removed at any time, and there may be defects or inconsistencies with actual implementations. Therefore, the documentation content is subject to change随时 and is for reference only.
+> **⚠️ Development Stage Notice:** This project is currently under development. Features may be added or removed at any time, and there may be defects or inconsistencies with actual implementations. Therefore, the documentation content is subject to change at any time and is for reference only.
 
 [![PyPI version](https://badge.fury.io/py/rhosocial-activerecord-testsuite.svg)](https://badge.fury.io/py/rhosocial-activerecord-testsuite)
 [![Python](https://img.shields.io/pypi/pyversions/rhosocial-activerecord-testsuite.svg)](https://pypi.org/project/rhosocial-activerecord-testsuite/)
