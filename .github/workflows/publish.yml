@@ -1,0 +1,102 @@
+name: Python Package Publish
+
+on:
+  # When test workflow successfully completes, automatically trigger release approval process
+  workflow_run:
+    workflows: ["Python Test and Coverage"]
+    types:
+      - completed
+    branches:
+      - main
+
+  # Manually trigger publish workflow
+  workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Publish destination'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  # Check if test workflow completed successfully
+  check-tests:
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Success check
+        run: echo "Preceding tests passed, can continue with publish process"
+
+  # Publish to TestPyPI
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: check-tests
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.destination == 'testpypi')
+    runs-on: ubuntu-latest
+    environment: publish-testpypi  # Use environment requiring approval
+    permissions:
+      # Required for trusted publishing
+      id-token: write
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build package
+      run: python -m build
+
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+        # Note: removed user and password fields to use Trusted Publishers
+
+  # Publish to PyPI
+  publish-pypi:
+    name: Publish to PyPI
+    needs: check-tests
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.destination == 'pypi'
+    runs-on: ubuntu-latest
+    environment: publish-pypi  # Use environment requiring strict approval
+    permissions:
+      # Required for trusted publishing
+      id-token: write
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build package
+      run: python -m build
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # Note: removed user and password fields to use Trusted Publishers
