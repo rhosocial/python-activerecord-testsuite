@@ -12,6 +12,8 @@ import tzlocal
 
 # Fixtures are now injected by the conftest.py in this package
 
+from rhosocial.activerecord.testsuite.utils import requires_json_operations
+
 
 def test_string_field(type_test_model):
     """Test string field processing"""
@@ -102,6 +104,7 @@ def test_datetime_field(type_test_model):
     assert isinstance(saved_model.datetime_field, datetime)
 
 
+@requires_json_operations()
 def test_json_field(type_test_model):
     """Test JSON field processing"""
     test_json = {

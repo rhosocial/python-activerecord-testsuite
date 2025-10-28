@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.query.expression import WindowExpression, FunctionExpression
+from rhosocial.activerecord.testsuite.utils import requires_window_functions
 
 # Create multi-table test fixtures
 
@@ -23,6 +24,7 @@ def skip_if_unsupported():
         pytest.skip("SQLite version doesn't support window functions (requires 3.25.0+)")
 
 
+@requires_window_functions()
 def test_row_number_window_function(order_fixtures):
     """Test ROW_NUMBER() window function."""
     User, Order, OrderItem = order_fixtures
@@ -72,6 +74,7 @@ def test_row_number_window_function(order_fixtures):
         raise
 
 
+@requires_window_functions()
 def test_partition_by_window_function(order_fixtures):
     """Test window functions with PARTITION BY."""
     User, Order, OrderItem = order_fixtures
@@ -129,6 +132,7 @@ def test_partition_by_window_function(order_fixtures):
         raise
 
 
+@requires_window_functions()
 def test_aggregate_window_functions(order_fixtures):
     """Test aggregate functions over windows."""
     User, Order, OrderItem = order_fixtures
@@ -204,6 +208,7 @@ def test_aggregate_window_functions(order_fixtures):
         raise
 
 
+@requires_window_functions()
 def test_named_window_definitions(order_fixtures):
     """Test named window definitions."""
     User, Order, OrderItem = order_fixtures
@@ -328,6 +333,7 @@ def test_named_window_definitions(order_fixtures):
         raise
 
 
+@requires_window_functions()
 def test_window_frame_specifications(order_fixtures):
     """Test window function frame specifications."""
     User, Order, OrderItem = order_fixtures
@@ -388,6 +394,7 @@ def test_window_frame_specifications(order_fixtures):
         raise
 
 
+@requires_window_functions()
 def test_unbounded_window_frames(order_fixtures):
     """Test window functions with unbounded frames."""
     User, Order, OrderItem = order_fixtures

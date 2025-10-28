@@ -2,7 +2,10 @@
 """Test integration of CTE with other ActiveQuery features."""
 from decimal import Decimal
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+
+@requires_cte()
 def test_cte_with_where_conditions(order_fixtures):
     """Test CTE with WHERE conditions in main query"""
     User, Order, OrderItem = order_fixtures
@@ -49,6 +52,7 @@ def test_cte_with_where_conditions(order_fixtures):
     assert results[0].total_amount > Decimal('200.00')
 
 
+@requires_cte()
 def test_cte_with_order_limit_offset(order_fixtures):
     """Test CTE with ORDER BY, LIMIT, and OFFSET"""
     User, Order, OrderItem = order_fixtures
@@ -88,6 +92,7 @@ def test_cte_with_order_limit_offset(order_fixtures):
     assert results[1].total_amount == Decimal('300.00')
 
 
+@requires_cte()
 def test_cte_with_range_conditions(order_fixtures):
     """Test CTE with range-based conditions (IN, BETWEEN, LIKE, etc.)"""
     User, Order, OrderItem = order_fixtures
@@ -148,6 +153,7 @@ def test_cte_with_range_conditions(order_fixtures):
     assert all(r.order_number.startswith('ORD-') for r in results)
 
 
+@requires_cte()
 def test_cte_with_aggregation(order_fixtures):
     """Test CTE with aggregation in main query"""
     User, Order, OrderItem = order_fixtures
@@ -201,6 +207,7 @@ def test_cte_with_aggregation(order_fixtures):
     assert by_status['shipped']['total_amount'] == Decimal('300.00')
 
 
+@requires_cte()
 def test_cte_with_or_conditions(order_fixtures):
     """Test CTE with OR conditions and condition groups"""
     User, Order, OrderItem = order_fixtures
@@ -256,6 +263,7 @@ def test_cte_with_or_conditions(order_fixtures):
     assert all(r.status in ('shipped', 'cancelled') for r in results)
 
 
+@requires_cte()
 def test_cte_with_dict_query(order_fixtures):
     """Test CTE with dictionary query conversion"""
     User, Order, OrderItem = order_fixtures
@@ -309,6 +317,7 @@ def test_cte_with_dict_query(order_fixtures):
     assert all('id' in r for r in dict_results)
 
 
+@requires_cte()
 def test_cte_with_advanced_expressions(order_fixtures):
     """Test CTE with advanced expressions (CASE, functions)"""
     User, Order, OrderItem = order_fixtures

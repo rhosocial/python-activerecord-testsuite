@@ -1,7 +1,10 @@
 ﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
 """Test recursive CTE functionality in ActiveQuery."""
 
+from rhosocial.activerecord.testsuite.utils import requires_recursive_cte
 
+
+@requires_recursive_cte()
 def test_recursive_cte_basics(tree_fixtures):
     """Test basic recursive CTE functionality using tree structure"""
     Node = tree_fixtures[0]
@@ -53,6 +56,7 @@ def test_recursive_cte_basics(tree_fixtures):
     assert results[5]['id'] == 6 and results[5]['level'] == 3  # Level 3
 
 
+@requires_recursive_cte()
 def test_recursive_cte_with_depth_limit(tree_fixtures):
     """Test recursive CTE with depth limiting condition"""
     Node = tree_fixtures[0]
@@ -102,6 +106,7 @@ def test_recursive_cte_with_depth_limit(tree_fixtures):
     assert results[2]['id'] == 3 and results[2]['level'] == 2  # Level 2
 
 
+@requires_recursive_cte()
 def test_recursive_cte_find_path(tree_fixtures, request):
     """Test recursive CTE to find path between nodes"""
     Node = tree_fixtures[0]
@@ -179,6 +184,7 @@ def test_recursive_cte_find_path(tree_fixtures, request):
     assert results[2]['id'] == 5  # Grandchild 2 (target)
 
 
+@requires_recursive_cte()
 def test_recursive_cte_cycles(tree_fixtures, request):
     """Test recursive CTE with cycle detection"""
     Node = tree_fixtures[0]
@@ -247,6 +253,7 @@ def test_recursive_cte_cycles(tree_fixtures, request):
     assert len(results) <= 10, "Query should terminate despite cycles"
 
 
+@requires_recursive_cte()
 def test_recursive_cte_with_aggregation(tree_fixtures):
     """Test combining recursive CTE with aggregation"""
     Node = tree_fixtures[0]

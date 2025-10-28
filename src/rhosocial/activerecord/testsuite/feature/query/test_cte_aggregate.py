@@ -2,7 +2,10 @@
 """Test basic aggregate functions with CTE."""
 from decimal import Decimal
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+
+@requires_cte()
 def test_cte_count(order_fixtures):
     """Test COUNT aggregation with CTE"""
     User, Order, OrderItem = order_fixtures
@@ -62,6 +65,7 @@ def test_cte_count(order_fixtures):
     assert count == 2  # Only paid orders
 
 
+@requires_cte()
 def test_cte_sum(order_fixtures):
     """Test SUM aggregation with CTE"""
     User, Order, OrderItem = order_fixtures
@@ -111,6 +115,7 @@ def test_cte_sum(order_fixtures):
     assert total == Decimal('500.00')  # 200 + 300 = 500
 
 
+@requires_cte()
 def test_cte_avg_min_max(order_fixtures):
     """Test AVG, MIN, and MAX aggregations with CTE"""
     User, Order, OrderItem = order_fixtures
@@ -167,6 +172,7 @@ def test_cte_avg_min_max(order_fixtures):
     assert query.max('total_amount') == Decimal('400.00')
 
 
+@requires_cte()
 def test_cte_with_conditions_and_aggregates(order_fixtures):
     """Test CTE with conditions and aggregates"""
     User, Order, OrderItem = order_fixtures

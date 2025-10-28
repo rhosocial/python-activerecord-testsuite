@@ -4,7 +4,10 @@ from decimal import Decimal
 
 import pytest
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+
+@requires_cte()
 def test_cte_relation_with_subquery(order_fixtures):
     """Test CTE with relations and subqueries"""
     User, Order, OrderItem = order_fixtures
@@ -72,6 +75,7 @@ def test_cte_relation_with_subquery(order_fixtures):
         assert len(orders_direct) == expected_order_count
 
 
+@requires_cte()
 def test_cte_relation_filtered_eager_loading(blog_fixtures):
     """Test CTE with filtered eager loading"""
     User, Post, Comment = blog_fixtures
@@ -147,6 +151,7 @@ def test_cte_relation_filtered_eager_loading(blog_fixtures):
     assert not visible_comment.is_hidden
 
 
+@requires_cte()
 def test_cte_relation_cross_model_aggregation(order_fixtures):
     """Test CTE with cross-model aggregation"""
     User, Order, OrderItem = order_fixtures
@@ -215,6 +220,7 @@ def test_cte_relation_cross_model_aggregation(order_fixtures):
     assert orders_query.count() == 2
 
 
+@requires_cte()
 def test_cte_relation_complex_join(order_fixtures):
     """Test CTE with complex joined relations"""
     User, Order, OrderItem = order_fixtures
@@ -305,6 +311,7 @@ def test_cte_relation_complex_join(order_fixtures):
         assert items_query.count() == 2
 
 
+@requires_cte()
 def test_cte_deep_nested_relations(blog_fixtures):
     """Test CTE with deeply nested relations"""
     User, Post, Comment = blog_fixtures
@@ -399,6 +406,7 @@ def test_cte_deep_nested_relations(blog_fixtures):
             assert comment_author.username == 'user1'
 
 
+@requires_cte()
 def test_cte_relation_with_instance_cache(blog_fixtures):
     """Test CTE relations with the instance cache system"""
     User, Post, Comment = blog_fixtures
@@ -451,6 +459,7 @@ def test_cte_relation_with_instance_cache(blog_fixtures):
         cte_post.clear_relation_cache('invalid_relation')
 
 
+@requires_cte()
 def test_cte_relation_query_methods_basic(blog_fixtures):
     """Test basic relation query methods with CTE."""
     User, Post, Comment = blog_fixtures
@@ -512,6 +521,7 @@ def test_cte_relation_query_methods_basic(blog_fixtures):
     assert all(post.status == 'published' for post in filtered_posts)
 
 
+@requires_cte()
 def test_cte_relation_query_methods_chaining(order_fixtures):
     """Test chaining relation query methods with CTE."""
     User, Order, OrderItem = order_fixtures
@@ -593,6 +603,7 @@ def test_cte_relation_query_methods_chaining(order_fixtures):
         assert all(item.unit_price >= Decimal('100.00') for item in expensive_items)
 
 
+@requires_cte()
 def test_cte_relation_query_methods_aggregation(blog_fixtures):
     """Test relation query methods with aggregation and CTE."""
     User, Post, Comment = blog_fixtures
@@ -655,6 +666,7 @@ def test_cte_relation_query_methods_aggregation(blog_fixtures):
             assert int(comment_stats['total']) == i + 1
 
 
+@requires_cte()
 def test_cte_relation_query_methods_with_joins(order_fixtures):
     """Test relation query methods with joins and CTE."""
     User, Order, OrderItem = order_fixtures
@@ -735,6 +747,7 @@ def test_cte_relation_query_methods_with_joins(order_fixtures):
             assert int(result['item_count']) == 3  # Each order has 3 items
 
 
+@requires_cte()
 def test_cte_relation_query_methods_with_custom_where(blog_fixtures):
     """Test relation query methods with custom where conditions and CTE."""
     User, Post, Comment = blog_fixtures

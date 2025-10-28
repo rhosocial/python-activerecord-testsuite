@@ -2,7 +2,10 @@
 """Test basic relation queries with CTE."""
 from decimal import Decimal
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+
+@requires_cte()
 def test_cte_with_belongsto_relation(order_fixtures):
     """Test CTE with BelongsTo relation"""
     User, Order, OrderItem = order_fixtures
@@ -62,6 +65,7 @@ def test_cte_with_belongsto_relation(order_fixtures):
     assert related_user.username == 'test_user'
 
 
+@requires_cte()
 def test_cte_with_hasmany_relation(order_fixtures):
     """Test CTE with HasMany relation"""
     User, Order, OrderItem = order_fixtures
@@ -122,6 +126,7 @@ def test_cte_with_hasmany_relation(order_fixtures):
     assert all(item.order_id == first_order.id for item in items)
 
 
+@requires_cte()
 def test_cte_with_eager_loading(blog_fixtures):
     """Test CTE with eager loading of relations"""
     User, Post, Comment = blog_fixtures
@@ -185,6 +190,7 @@ def test_cte_with_eager_loading(blog_fixtures):
         assert len(query_comments) == 2
 
 
+@requires_cte()
 def test_cte_with_nested_relations(blog_fixtures):
     """Test CTE with nested relations"""
     User, Post, Comment = blog_fixtures
@@ -256,6 +262,7 @@ def test_cte_with_nested_relations(blog_fixtures):
             assert comment_author.id == comment.user_id
 
 
+@requires_cte()
 def test_cte_relation_cache_mechanisms(blog_fixtures):
     """Test relation caching when using CTE queries"""
     User, Post, Comment = blog_fixtures
@@ -304,6 +311,7 @@ def test_cte_relation_cache_mechanisms(blog_fixtures):
     assert reloaded_user.id == user.id
 
 
+@requires_cte()
 def test_cte_with_query_modifiers(blog_fixtures):
     """Test CTE with relation query modifiers"""
     User, Post, Comment = blog_fixtures
