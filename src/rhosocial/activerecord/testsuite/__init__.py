@@ -13,4 +13,4 @@ This allows the test suite to maintain compatibility with the main package
 while being developed and released on its own schedule.
 """
 
-__version__ = "1.0.0.dev1"
+__version__ = "1.0.0.dev2"
