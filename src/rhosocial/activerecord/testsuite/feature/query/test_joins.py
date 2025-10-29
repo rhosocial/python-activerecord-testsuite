@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_joins.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_joins.py
 """Test cases for JOIN queries in ActiveQuery."""
 from decimal import Decimal
 

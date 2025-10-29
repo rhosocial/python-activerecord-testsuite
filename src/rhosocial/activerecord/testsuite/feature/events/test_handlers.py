@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/events/test_handlers.py
+# src/rhosocial/activerecord/testsuite/feature/events/test_handlers.py
 """
 Event Handler Test Module
 

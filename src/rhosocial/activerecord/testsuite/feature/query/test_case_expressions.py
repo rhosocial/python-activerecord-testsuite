@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_case_expressions.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_case_expressions.py
 """Test CASE expression functionality in ActiveQuery."""
 import logging
 from decimal import Decimal

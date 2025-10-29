@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
 """Test window functions with CTE."""
 from decimal import Decimal
 

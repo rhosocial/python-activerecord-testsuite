@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_dict_query.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_dict_query.py
 """Test dict query functionality in ActiveQuery."""
 from decimal import Decimal
 import logging

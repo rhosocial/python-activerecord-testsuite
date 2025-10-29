@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/conftest.py
+# src/rhosocial/activerecord/testsuite/feature/basic/conftest.py
 """
 This file defines the pytest fixtures for the "basic" feature test group.
 

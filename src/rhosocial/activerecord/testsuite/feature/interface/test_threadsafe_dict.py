@@ -1,4 +1,4 @@
-﻿# tests/rhosocial/activerecord_test/interface/test_threadsafe_dict.py
+# src/rhosocial/activerecord/testsuite/feature/interface/test_threadsafe_dict.py
 """Test cases for ThreadSafeDict implementation."""
 import pytest
 import threading

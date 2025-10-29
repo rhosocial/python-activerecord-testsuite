@@ -1,4 +1,4 @@
-﻿# tests/rhosocial/activerecord_test/basic/test_crud.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_crud.py
 """Basic CRUD Test Module
 
 This module tests the basic CRUD functionality of the ActiveRecord class.

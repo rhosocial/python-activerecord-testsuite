@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/test_features.py
+# src/rhosocial/activerecord/testsuite/feature/test_features.py
 """Test the feature support mechanism itself."""
 
 import pytest

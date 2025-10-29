@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relations_basic.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_relations_basic.py
 """Test cases for basic relation definition functionality."""
 from decimal import Decimal
 from typing import ClassVar, Optional

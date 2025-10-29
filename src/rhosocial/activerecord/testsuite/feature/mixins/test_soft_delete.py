@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/mixins/test_soft_delete.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/test_soft_delete.py
 """
 Test soft delete functionality
 """

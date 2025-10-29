@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_recursive.py
 """Test recursive CTE functionality in ActiveQuery."""
 
 from rhosocial.activerecord.testsuite.utils import requires_recursive_cte

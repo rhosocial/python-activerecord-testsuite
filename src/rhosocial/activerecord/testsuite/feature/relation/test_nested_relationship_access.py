@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access.py
 """
 Tests for nested relationship access functionality.
 """

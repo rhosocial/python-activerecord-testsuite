@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/mixins/interfaces.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/interfaces.py
 """
 This file defines the interface (or contract) that a backend's test provider
 must adhere to for the "mixins" feature group.

@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/interfaces.py
+# src/rhosocial/activerecord/testsuite/feature/basic/interfaces.py
 """
 This file defines the interface (or contract) that a backend's test provider
 must adhere to for the "basic" feature group.

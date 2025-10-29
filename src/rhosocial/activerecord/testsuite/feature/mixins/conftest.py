@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/mixins/conftest.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/conftest.py
 """
 This file defines the pytest fixtures for the "mixins" feature test group.
 

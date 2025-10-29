@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relation_cache.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_relation_cache.py
 """Test cases for relation caching behavior."""
 import random
 import string

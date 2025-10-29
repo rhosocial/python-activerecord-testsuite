@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
 """
 This file defines the generic ActiveRecord model classes used by the basic tests.
 

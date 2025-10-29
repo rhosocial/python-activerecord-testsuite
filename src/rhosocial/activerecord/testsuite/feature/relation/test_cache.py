@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
 """
 Tests for relation cache functionality.
 """

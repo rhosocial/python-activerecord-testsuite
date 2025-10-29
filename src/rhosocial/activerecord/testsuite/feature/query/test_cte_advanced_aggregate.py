@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
 """Test advanced aggregate functions with CTE."""
 from decimal import Decimal
 

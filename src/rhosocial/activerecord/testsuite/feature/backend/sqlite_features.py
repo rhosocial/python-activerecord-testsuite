@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/backend/sqlite_features.py
+# src/rhosocial/activerecord/testsuite/feature/backend/sqlite_features.py
 """SQLite backend feature support implementation."""
 
 from typing import Tuple

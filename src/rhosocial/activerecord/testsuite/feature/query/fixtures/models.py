@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/query/fixtures/models.py
 """
 This module defines the generic models used by the query feature tests in the
 testsuite. These models are then configured with specific backends by the

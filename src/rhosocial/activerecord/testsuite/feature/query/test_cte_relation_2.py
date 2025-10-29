@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation_2.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_relation_2.py
 """Test complex relation queries with CTE."""
 from decimal import Decimal
 

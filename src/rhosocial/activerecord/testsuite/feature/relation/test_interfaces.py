@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_interfaces.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_interfaces.py
 """
 Tests for relation interfaces.
 """
