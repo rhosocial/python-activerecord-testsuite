@@ -10,7 +10,7 @@ these abstract methods.
 """
 from abc import ABC, abstractmethod
 from typing import Type, List, Tuple
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 
 
 class IQueryProvider(ABC):

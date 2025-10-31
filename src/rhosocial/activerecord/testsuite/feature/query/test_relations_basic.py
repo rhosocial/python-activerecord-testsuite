@@ -6,7 +6,7 @@ from typing import ClassVar, Optional
 import pytest
 from pydantic import EmailStr
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.relation import BelongsTo, CacheConfig, HasMany, HasOne
 # Removed direct import from .utils - use pytest fixtures instead
 

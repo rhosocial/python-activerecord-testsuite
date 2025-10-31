@@ -9,7 +9,7 @@ from typing import Optional, ClassVar
 
 from pydantic import Field, EmailStr
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
 

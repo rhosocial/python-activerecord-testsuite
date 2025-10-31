@@ -2,7 +2,7 @@
 """
 Relation model fixtures for the testsuite.
 """
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
 
 
