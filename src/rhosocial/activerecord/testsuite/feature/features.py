@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/features.py
+# src/rhosocial/activerecord/testsuite/feature/features.py
 """Database feature constants and support system."""
 
 # This file is deprecated in favor of the capability system defined in

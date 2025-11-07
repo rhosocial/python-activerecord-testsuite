@@ -1,8 +1,11 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_advanced_aggregate.py
 """Test advanced aggregate functions with CTE."""
 from decimal import Decimal
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+
+@requires_cte()
 def test_cte_group_by(order_fixtures):
     """Test GROUP BY with CTE"""
     User, Order, OrderItem = order_fixtures
@@ -46,6 +49,7 @@ def test_cte_group_by(order_fixtures):
     assert status_counts['shipped'] == 2
 
 
+@requires_cte()
 def test_cte_group_by_with_multiple_aggregates(order_fixtures):
     """Test GROUP BY with multiple aggregates using CTE"""
     User, Order, OrderItem = order_fixtures
@@ -102,6 +106,7 @@ def test_cte_group_by_with_multiple_aggregates(order_fixtures):
     assert pending['max_amount'] == Decimal('150.00')
 
 
+@requires_cte()
 def test_cte_having(order_fixtures):
     """Test GROUP BY with HAVING clause using CTE"""
     User, Order, OrderItem = order_fixtures
@@ -161,6 +166,7 @@ def test_cte_having(order_fixtures):
     assert results[1]['total_spent'] == Decimal('900.00')  # 3 orders x 300 = 900
 
 
+@requires_cte()
 def test_cte_nested_aggregates(order_fixtures):
     """Test nested aggregates using CTEs"""
     User, Order, OrderItem = order_fixtures

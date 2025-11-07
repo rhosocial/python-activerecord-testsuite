@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/events/interfaces.py
+# src/rhosocial/activerecord/testsuite/feature/events/interfaces.py
 """
 This file defines the interface (or contract) that a backend's test provider
 must adhere to for the "events" feature group.
@@ -10,7 +10,7 @@ these abstract methods.
 """
 from abc import ABC, abstractmethod
 from typing import Type, List
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 
 
 class IEventsProvider(ABC):

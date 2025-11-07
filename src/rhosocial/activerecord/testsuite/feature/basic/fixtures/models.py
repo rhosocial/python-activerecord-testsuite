@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
 """
 This file defines the generic ActiveRecord model classes used by the basic tests.
 
@@ -14,7 +14,7 @@ from typing import Optional, Type, Literal
 
 from pydantic import EmailStr, Field, field_validator
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.backend.errors import ValidationError
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
 # package to handle common field behaviors like auto-incrementing IDs or timestamps.

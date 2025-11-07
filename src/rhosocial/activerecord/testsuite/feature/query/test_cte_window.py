@@ -1,12 +1,15 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_window.py
 """Test window functions with CTE."""
 from decimal import Decimal
 
 import pytest
 
 from rhosocial.activerecord.query.expression import WindowExpression, FunctionExpression
+from rhosocial.activerecord.testsuite.utils import requires_cte, requires_window_functions
 
 
+@requires_cte()
+@requires_window_functions()
 def test_cte_with_row_number(order_fixtures):
     """Test CTE with ROW_NUMBER window function"""
     User, Order, OrderItem = order_fixtures
@@ -65,6 +68,8 @@ def test_cte_with_row_number(order_fixtures):
         raise
 
 
+@requires_cte()
+@requires_window_functions()
 def test_cte_with_partition_by(order_fixtures):
     """Test CTE with window function and PARTITION BY"""
     User, Order, OrderItem = order_fixtures
@@ -131,6 +136,8 @@ def test_cte_with_partition_by(order_fixtures):
         raise
 
 
+@requires_cte()
+@requires_window_functions()
 def test_cte_with_running_total(order_fixtures):
     """Test CTE with running totals using window functions"""
     User, Order, OrderItem = order_fixtures
@@ -187,6 +194,8 @@ def test_cte_with_running_total(order_fixtures):
         raise
 
 
+@requires_cte()
+@requires_window_functions()
 def test_cte_with_multiple_windows(order_fixtures):
     """Test CTE with multiple window functions"""
     User, Order, OrderItem = order_fixtures

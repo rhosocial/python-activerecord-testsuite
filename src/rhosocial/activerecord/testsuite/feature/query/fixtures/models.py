@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/query/fixtures/models.py
 """
 This module defines the generic models used by the query feature tests in the
 testsuite. These models are then configured with specific backends by the
@@ -9,7 +9,7 @@ from typing import Optional, ClassVar
 
 from pydantic import Field, EmailStr
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
 

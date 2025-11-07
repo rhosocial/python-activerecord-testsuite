@@ -1,8 +1,10 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_integration_2.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_integration_2.py
 """Test integration of CTE with ActiveQuery for building Common Table Expressions."""
 from decimal import Decimal
 
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
+@requires_cte()
 def test_active_query_cte_with_where_conditions(order_fixtures):
     """Test CTE using ActiveQuery with WHERE conditions in main query"""
     User, Order, OrderItem = order_fixtures
@@ -50,6 +52,7 @@ def test_active_query_cte_with_where_conditions(order_fixtures):
     assert results[0].total_amount > Decimal('200.00')
 
 
+@requires_cte()
 def test_active_query_cte_with_filtered_source(order_fixtures):
     """Test CTE using ActiveQuery with filtered source query"""
     User, Order, OrderItem = order_fixtures
@@ -96,6 +99,7 @@ def test_active_query_cte_with_filtered_source(order_fixtures):
     assert Decimal('500.00') in [r.total_amount for r in results]
 
 
+@requires_cte()
 def test_active_query_cte_with_order_limit_offset(order_fixtures):
     """Test CTE using ActiveQuery with ORDER BY, LIMIT, and OFFSET"""
     User, Order, OrderItem = order_fixtures
@@ -136,6 +140,7 @@ def test_active_query_cte_with_order_limit_offset(order_fixtures):
     assert results[1].total_amount == Decimal('300.00')
 
 
+@requires_cte()
 def test_active_query_cte_with_ordered_source(order_fixtures):
     """Test CTE using ActiveQuery with ordering in the source query"""
     User, Order, OrderItem = order_fixtures
@@ -174,6 +179,7 @@ def test_active_query_cte_with_ordered_source(order_fixtures):
     assert results[1].total_amount == Decimal('400.00')
 
 
+@requires_cte()
 def test_active_query_cte_with_range_conditions(order_fixtures):
     """Test CTE using ActiveQuery with range-based conditions (IN, BETWEEN, LIKE, etc.)"""
     User, Order, OrderItem = order_fixtures
@@ -237,6 +243,7 @@ def test_active_query_cte_with_range_conditions(order_fixtures):
     assert all(r.order_number.startswith('ORD-') for r in results)
 
 
+@requires_cte()
 def test_active_query_cte_with_aggregation(order_fixtures):
     """Test CTE using ActiveQuery with aggregation in main query"""
     User, Order, OrderItem = order_fixtures
@@ -290,6 +297,7 @@ def test_active_query_cte_with_aggregation(order_fixtures):
     assert by_status['shipped']['total_amount'] == Decimal('300.00')
 
 
+@requires_cte()
 def test_active_query_cte_with_aggregated_source(order_fixtures):
     """Test CTE using aggregated ActiveQuery as source"""
     User, Order, OrderItem = order_fixtures
@@ -346,6 +354,7 @@ def test_active_query_cte_with_aggregated_source(order_fixtures):
     assert pending_result['total_sum'] == Decimal('500.00')  # 100 + 400
 
 
+@requires_cte()
 def test_active_query_cte_with_or_conditions(order_fixtures):
     """Test CTE using ActiveQuery with OR conditions and condition groups"""
     User, Order, OrderItem = order_fixtures
@@ -403,6 +412,7 @@ def test_active_query_cte_with_or_conditions(order_fixtures):
     assert all(r.status in ('shipped', 'cancelled') for r in results)
 
 
+@requires_cte()
 def test_active_query_cte_with_or_conditions_in_source(order_fixtures):
     """Test CTE using ActiveQuery with OR conditions in the source query"""
     User, Order, OrderItem = order_fixtures
@@ -459,6 +469,7 @@ def test_active_query_cte_with_or_conditions_in_source(order_fixtures):
     assert all(r.status in ('shipped', 'cancelled') for r in results)
 
 
+@requires_cte()
 def test_active_query_cte_with_dict_query(order_fixtures):
     """Test CTE using ActiveQuery with dictionary query conversion"""
     User, Order, OrderItem = order_fixtures
@@ -513,6 +524,7 @@ def test_active_query_cte_with_dict_query(order_fixtures):
     assert all('id' in r for r in dict_results)
 
 
+@requires_cte()
 def test_active_query_cte_with_selected_columns(order_fixtures):
     """Test CTE using ActiveQuery with explicit column selection"""
     User, Order, OrderItem = order_fixtures
@@ -550,6 +562,7 @@ def test_active_query_cte_with_selected_columns(order_fixtures):
     assert all('total_amount' in r for r in results)
 
 
+@requires_cte()
 def test_active_query_cte_with_advanced_expressions(order_fixtures):
     """Test CTE using ActiveQuery with advanced expressions (CASE, functions)"""
     User, Order, OrderItem = order_fixtures
@@ -605,6 +618,7 @@ def test_active_query_cte_with_advanced_expressions(order_fixtures):
         assert result['status_label'] == expected_labels[result['status']]
 
 
+@requires_cte()
 def test_active_query_cte_with_advanced_expressions_in_source(order_fixtures):
     """Test CTE using ActiveQuery with advanced expressions in the source query"""
     User, Order, OrderItem = order_fixtures
@@ -652,6 +666,7 @@ def test_active_query_cte_with_advanced_expressions_in_source(order_fixtures):
     assert results[0]['status'] == 'paid'
 
 
+@requires_cte()
 def test_active_query_cte_with_multiple_ctes(order_fixtures):
     """Test using multiple CTEs with ActiveQuery"""
     User, Order, OrderItem = order_fixtures
@@ -703,6 +718,7 @@ def test_active_query_cte_with_multiple_ctes(order_fixtures):
     assert results[3].total_amount == Decimal('500.00')
 
 
+@requires_cte()  # Recursive CTE is also a form of CTE
 def test_active_query_recursive_cte(tree_fixtures):
     """Test recursive CTE with ActiveQuery"""
     Node = tree_fixtures[0]
@@ -761,6 +777,7 @@ def test_active_query_recursive_cte(tree_fixtures):
     assert total_value == Decimal('300.00')
 
 
+@requires_cte()
 def test_active_query_cte_with_chained_from(order_fixtures):
     """Test chained FROM in CTE with ActiveQuery"""
     User, Order, OrderItem = order_fixtures

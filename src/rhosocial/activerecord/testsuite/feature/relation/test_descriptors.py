@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/relation/test_descriptors.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_descriptors.py
 """
 Tests for relation descriptor functionality.
 """

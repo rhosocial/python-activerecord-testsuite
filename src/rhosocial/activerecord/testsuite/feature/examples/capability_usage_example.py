@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/examples/capability_usage_example.py
+# src/rhosocial/activerecord/testsuite/feature/examples/capability_usage_example.py
 """Example showing how to use the capability system in tests."""
 
 import pytest

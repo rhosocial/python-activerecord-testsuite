@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/test_validation.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_validation.py
 """Basic Validation Test Module
 
 This module tests the validation functionality of the ActiveRecord class.

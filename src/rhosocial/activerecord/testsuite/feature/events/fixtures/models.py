@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/events/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/events/fixtures/models.py
 """
 This file defines the generic ActiveRecord model classes used by the events tests.
 
@@ -13,7 +13,7 @@ from datetime import datetime
 from pydantic import Field
 
 from rhosocial.activerecord.interface import ModelEvent
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 
 

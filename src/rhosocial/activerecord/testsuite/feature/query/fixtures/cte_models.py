@@ -1,10 +1,10 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/fixtures/cte_models.py
+# src/rhosocial/activerecord/testsuite/feature/query/fixtures/cte_models.py
 from decimal import Decimal
 from typing import Optional, ClassVar
 
 from pydantic import Field
 
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
 

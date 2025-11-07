@@ -1,7 +1,8 @@
-﻿"""
+# src/rhosocial/activerecord/testsuite/feature/relation/fixtures/models.py
+"""
 Relation model fixtures for the testsuite.
 """
-from rhosocial.activerecord import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
 
 

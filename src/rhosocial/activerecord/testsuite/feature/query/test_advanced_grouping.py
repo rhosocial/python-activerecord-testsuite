@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_advanced_grouping.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_advanced_grouping.py
 """Test advanced grouping (CUBE, ROLLUP, GROUPING SETS) functionality in ActiveQuery."""
 import logging
 from decimal import Decimal

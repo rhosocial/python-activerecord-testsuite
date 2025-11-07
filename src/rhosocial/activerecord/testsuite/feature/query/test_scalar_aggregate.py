@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_scalar_aggregate.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_scalar_aggregate.py
 """Test scalar aggregate calculations without grouping."""
 from decimal import Decimal
 import pytest

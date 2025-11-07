@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/conftest.py
+# src/rhosocial/activerecord/testsuite/feature/query/conftest.py
 """
 This file defines the pytest fixtures for the "query" feature test group.
 

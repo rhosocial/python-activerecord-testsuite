@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_grouped_aggregate.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_grouped_aggregate.py
 """Test aggregate calculations with grouping."""
 from decimal import Decimal
 

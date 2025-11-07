@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/events/conftest.py
+# src/rhosocial/activerecord/testsuite/feature/events/conftest.py
 """
 This file defines the pytest fixtures for the "events" feature test group.
 

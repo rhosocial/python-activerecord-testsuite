@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/basic/test_fields.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_fields.py
 """Basic Fields Test Module
 
 This module tests the basic field processing functionality of the ActiveRecord class.
@@ -11,6 +11,8 @@ from uuid import UUID
 import tzlocal
 
 # Fixtures are now injected by the conftest.py in this package
+
+from rhosocial.activerecord.testsuite.utils import requires_json_operations
 
 
 def test_string_field(type_test_model):
@@ -102,6 +104,7 @@ def test_datetime_field(type_test_model):
     assert isinstance(saved_model.datetime_field, datetime)
 
 
+@requires_json_operations()
 def test_json_field(type_test_model):
     """Test JSON field processing"""
     test_json = {

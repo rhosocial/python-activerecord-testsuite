@@ -1,11 +1,11 @@
 # pyproject.toml
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhosocial-activerecord-testsuite"
-dynamic = ["version"]
+version = "1.0.0.dev2"
 description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -49,6 +49,7 @@ test = [
 ]
 
 dev = [
+    "towncrier>=23.0.0",
     "black>=23.0.0",
     "isort>=5.0.0",
     "mypy>=1.0.0",
@@ -65,38 +66,9 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/rhosocial/python-activerecord-testsuite"
-Documentation = "https://docs.python-activerecord-testsuite.dev.rho.social/"
+Documentation = "https://docs.python-activerecord.dev.rho.social/"
 Repository = "https://github.com/rhosocial/python-activerecord-testsuite.git"
 Issues = "https://github.com/rhosocial/python-activerecord-testsuite/issues"
-
-[tool.hatch.version]
-path = "src/rhosocial/activerecord/testsuite/__init__.py"
-pattern = '^__version__\s*=\s*"(?P<version>(?:[1-9]\d*!)?\d+(?:\.\d+)*(?:[-._]?(?:a|alpha|b|beta|rc|pre|preview)(?:[-._]?\d+)?)?(?:\.post(?:0|[1-9]\d*))?(?:\.dev(?:0|[1-9]\d*))?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)"$'
-
-[tool.hatch.build]
-include = [
-    "src/rhosocial/**/*.py",
-    "LICENSE",
-    "README.md",
-]
-exclude = [
-    "*.pyc", "**/__pycache__", "**/*.py[cod]", "**/*.so",
-    "**/.DS_Store", "**/.*.swp", ".git*",
-    "build/", "dist/", "*.egg-info/",
-    ".idea/", ".vscode/", ".mypy_cache/", ".ruff_cache/", ".pytest_cache/",
-    ".coverage", "htmlcov/",
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/rhosocial"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "src/rhosocial/**/*.py",
-    "LICENSE",
-    "README.md",
-    "pyproject.toml",
-]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -136,3 +108,87 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 check_untyped_defs = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = "rhosocial.activerecord.testsuite.*"
+ignore_missing_imports = false
+
+[tool.towncrier]
+package = "rhosocial.activerecord.testsuite"
+package_dir = "src"
+filename = "CHANGELOG.md"
+directory = "changelog.d"
+title_format = "## [{version}] - {project_date}"
+template = "changelog.d/template.md"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]
+issue_format = "[#{issue}](https://github.com/rhosocial/python-activerecord-testsuite/issues/{issue})"
+
+[[tool.towncrier.type]]
+directory = "security"
+name = "Security"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecated"
+name = "Deprecated"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "performance"
+name = "Performance"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "docs"
+name = "Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "internal"
+name = "Internal"
+showcontent = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+# Explicitly include namespace packages
+[tool.setuptools.package-data]
+"rhosocial" = ["py.typed"]
+"rhosocial.activerecord" = ["py.typed"]
+
+# ===== Editable Install Configuration =====
+# This is the key to making IDE work properly in dev mode
+[tool.setuptools]
+# Use modern editable install mode that properly supports namespace packages
+# Options: "strict" (PEP 660 compliant) or "compat" (legacy compatibility)
+# "strict" mode creates proper .pth files that work with IDEs
+zip-safe = false
+
+[tool.setuptools.dynamic]
+# If you want version from git tags, use setuptools-scm
+# version = {attr = "setuptools_scm.get_version"}

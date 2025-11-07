@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/test_capability_integration.py
+# src/rhosocial/activerecord/testsuite/feature/test_capability_integration.py
 """Integration tests for the capability system."""
 
 import pytest

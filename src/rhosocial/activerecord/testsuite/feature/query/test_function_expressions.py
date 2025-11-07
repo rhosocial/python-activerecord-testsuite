@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_function_expressions.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_function_expressions.py
 """Test function expression functionality in ActiveQuery."""
 import re
 from decimal import Decimal

@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/plugin/pytest_activerecord_capabilities.py
 """
 Pytest plugin for Active Record capability checking.
 

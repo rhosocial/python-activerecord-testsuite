@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/mixins/test_optimistic_lock.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/test_optimistic_lock.py
 """
 Test optimistic locking functionality
 """

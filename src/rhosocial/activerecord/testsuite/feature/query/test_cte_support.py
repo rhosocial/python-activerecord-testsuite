@@ -1,12 +1,14 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_cte_support.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_support.py
 """Test CTE support and version compatibility checks in ActiveQuery."""
 from unittest.mock import patch
 
 import pytest
 
 from rhosocial.activerecord.backend.errors import CTENotSupportedError
+from rhosocial.activerecord.testsuite.utils import requires_cte
 
 
+@requires_cte()
 def test_cte_support_detection(order_fixtures):
     """Test CTE support detection methods"""
     User, Order, OrderItem = order_fixtures
@@ -30,6 +32,7 @@ def test_cte_support_detection(order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin._check_cte_support')
+@requires_cte()
 def test_cte_not_supported_error(mock_check, order_fixtures):
     """Test error handling when CTEs are not supported"""
     User, Order, OrderItem = order_fixtures
@@ -48,6 +51,7 @@ def test_cte_not_supported_error(mock_check, order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin.supports_recursive_cte')
+@requires_cte()
 def test_recursive_cte_not_supported(mock_supports_recursive, order_fixtures):
     """Test error handling when recursive CTEs are not supported"""
     User, Order, OrderItem = order_fixtures
@@ -66,6 +70,7 @@ def test_recursive_cte_not_supported(mock_supports_recursive, order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin.supports_recursive_cte')
+@requires_cte()
 def test_recursive_flag_check(mock_supports_recursive, order_fixtures):
     """Test that recursive flag is properly checked"""
     User, Order, OrderItem = order_fixtures
@@ -95,6 +100,7 @@ def test_recursive_flag_check(mock_supports_recursive, order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin.supports_materialized_hint')
+@requires_cte()
 def test_materialized_hint_check(mock_supports_materialized, order_fixtures):
     """Test handling of materialized hints when not supported"""
     User, Order, OrderItem = order_fixtures
@@ -127,6 +133,7 @@ def test_materialized_hint_check(mock_supports_materialized, order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin.supports_multiple_ctes')
+@requires_cte()
 def test_multiple_ctes_check(mock_supports_multiple, order_fixtures):
     """Test error handling when multiple CTEs are not supported"""
     User, Order, OrderItem = order_fixtures
@@ -151,6 +158,7 @@ def test_multiple_ctes_check(mock_supports_multiple, order_fixtures):
     assert "Multiple CTEs are not supported" in str(excinfo.value)
 
 
+@requires_cte()
 def test_undefined_cte_error(order_fixtures):
     """Test error handling when attempting to use undefined CTE"""
     User, Order, OrderItem = order_fixtures
@@ -163,6 +171,7 @@ def test_undefined_cte_error(order_fixtures):
     assert "Use with_cte() first" in str(excinfo.value)
 
 
+@requires_cte()
 def test_cte_build_clause(order_fixtures):
     """Test the _build_cte_clause internal method"""
     User, Order, OrderItem = order_fixtures
@@ -202,6 +211,7 @@ def test_cte_build_clause(order_fixtures):
 
 
 @patch('rhosocial.activerecord.query.cte.CTEQueryMixin.supports_recursive_cte')
+@requires_cte()
 def test_build_clause_recursive_check(mock_supports_recursive, order_fixtures):
     """Test _build_cte_clause checks recursive support before building SQL"""
     User, Order, OrderItem = order_fixtures

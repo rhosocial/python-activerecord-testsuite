@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_basic.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_basic.py
 """Test basic query functionality."""
 from decimal import Decimal
 

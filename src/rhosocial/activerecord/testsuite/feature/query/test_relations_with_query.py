@@ -1,4 +1,4 @@
-﻿# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with_query.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_relations_with_query.py
 """Test cases for relation eager loading query execution."""
 
 from decimal import Decimal
