@@ -1,11 +1,19 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_joins_2.py
-"""Test cases for JOIN queries in ActiveQuery."""
+"""
+Test cases for advanced JOIN queries in ActiveQuery.
+
+This test suite is designed to be backend-agnostic. It uses the `@requires_capability`
+decorator to ensure that tests for specific JOIN types (e.g., RIGHT and FULL OUTER
+JOINs) are only executed on backends that declare support for them. This approach
+allows for robust and portable testing across different database systems.
+"""
 from decimal import Decimal
 from rhosocial.activerecord.backend.capabilities import (
     CapabilityCategory,
     JoinCapability
 )
 from rhosocial.activerecord.testsuite.utils import requires_capability
+
 
 
 def test_inner_join(order_fixtures):
@@ -214,7 +222,16 @@ def test_right_outer_join(order_fixtures):
 
 @requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
 def test_full_join(order_fixtures):
-    """Test FULL JOIN query using enhanced full_join method"""
+    """Test FULL JOIN query using enhanced full_join method.
+
+    This test verifies the correctness of a FULL OUTER JOIN, which includes
+    rows from both tables, with NULLs for non-matching columns.
+
+    `.to_dict(direct_dict=True)` is used to bypass Pydantic model
+    instantiation, which would raise a `ValidationError` when encountering
+    the expected NULLs from the outer join. This allows the test to assert
+    the raw dictionary output directly.
+    """
     User, Order, OrderItem = order_fixtures
 
     # Create users
@@ -254,25 +271,46 @@ def test_full_join(order_fixtures):
         .full_join(User.__table_name__, f'{Order.__table_name__}.user_id', f'{User.__table_name__}.id', outer=False) \
         .where(f'{User.__table_name__}.id IN (?, ?)', (user1.id, user2.id)) \
         .order_by(f'{Order.__table_name__}.order_number') \
+        .to_dict(direct_dict=True) \
         .all()
 
     # Should return all matched orders and users (including those without related records)
-    assert len(results) >= 2  # At least 2 records (1 order + 1 user without orders)
+    assert len(results) == 2  # Exactly 2 records (1 order + 1 user without orders)
 
-    # Count orders in results
-    order_numbers = [r.order_number for r in results if r.order_number]
-    assert 'ORD-001' in order_numbers
-    # 'ORD-002' won't appear as its user is excluded from the query
+    # Sort results to ensure consistent order for assertions
+    # Sort by username, as order_number can be None
+    results.sort(key=lambda x: x.get('username') or '')
 
-    # Count users in results
-    usernames = [r.username for r in results if r.username]
-    assert 'user1' in usernames
-    assert 'user2' in usernames
+    # Expected result 1: user1 with order1
+    result_user1_order1 = results[0]
+    assert result_user1_order1['order_number'] == 'ORD-001'
+    assert result_user1_order1['username'] == 'user1'
+    assert result_user1_order1['user_id'] == user1.id
+
+    # Expected result 2: user2 without order
+    result_user2_no_order = results[1]
+    assert result_user2_no_order['order_number'] is None
+    assert result_user2_no_order['username'] == 'user2'
+    # For a full join, if there's no match from the Order side, Order.user_id will be None
+    # but the User.id from the join condition (if selected) would be present if it's the right side that has the data.
+    # In this specific select, we only asked for Order.* and User.username,
+    # so Order.user_id would be None.
+
+
 
 
 @requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
 def test_full_outer_join(order_fixtures):
-    """Test FULL OUTER JOIN with outer keyword"""
+    """Test FULL OUTER JOIN with outer keyword.
+
+    This test verifies the correctness of a FULL OUTER JOIN, which includes
+    rows from both tables, with NULLs for non-matching columns.
+
+    `.to_dict(direct_dict=True)` is used to bypass Pydantic model
+    instantiation, which would raise a `ValidationError` when encountering
+    the expected NULLs from the outer join. This allows the test to assert
+    the raw dictionary output directly.
+    """
     User, Order, OrderItem = order_fixtures
 
     # Create users
@@ -312,19 +350,26 @@ def test_full_outer_join(order_fixtures):
         .full_join(User.__table_name__, f'{Order.__table_name__}.user_id', f'{User.__table_name__}.id', outer=True) \
         .where(f'{User.__table_name__}.id IN (?, ?)', (user1.id, user2.id)) \
         .order_by(f'{Order.__table_name__}.order_number') \
+        .to_dict(direct_dict=True) \
         .all()
 
     # Should return all matched orders and users (including those without related records)
-    assert len(results) >= 2  # At least 2 records (1 order + 1 user without orders)
+    assert len(results) == 2  # Exactly 2 records (1 order + 1 user without orders)
 
-    # Count orders in results
-    order_numbers = [r.order_number for r in results if r.order_number]
-    assert 'ORD-001' in order_numbers
+    # Sort results to ensure consistent order for assertions
+    # Sort by username, as order_number can be None
+    results.sort(key=lambda x: x.get('username') or '')
 
-    # Count users in results
-    usernames = [r.username for r in results if r.username]
-    assert 'user1' in usernames
-    assert 'user2' in usernames
+    # Expected result 1: user1 with order1
+    result_user1_order1 = results[0]
+    assert result_user1_order1['order_number'] == 'ORD-001'
+    assert result_user1_order1['username'] == 'user1'
+    assert result_user1_order1['user_id'] == user1.id
+
+    # Expected result 2: user2 without order
+    result_user2_no_order = results[1]
+    assert result_user2_no_order['order_number'] is None
+    assert result_user2_no_order['username'] == 'user2'
 
 
 def test_cross_join(order_fixtures):
