@@ -126,7 +126,6 @@ def _check_and_skip_if_unsupported(model_class, capability_info, test_item=None)
         )
 
     capability_category, specific_capability = capability_info
-
     # Determine test location information for the skip message
     test_location = ""
     if test_item:
