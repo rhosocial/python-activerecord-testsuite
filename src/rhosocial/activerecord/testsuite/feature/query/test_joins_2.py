@@ -1,6 +1,11 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_joins_2.py
 """Test cases for JOIN queries in ActiveQuery."""
 from decimal import Decimal
+from rhosocial.activerecord.backend.capabilities import (
+    CapabilityCategory,
+    JoinCapability
+)
+from rhosocial.activerecord.testsuite.utils import requires_capability
 
 
 def test_inner_join(order_fixtures):
@@ -127,6 +132,7 @@ def test_left_outer_join(order_fixtures):
     assert order_numbers == ['ORD-001', 'ORD-002']
 
 
+@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.RIGHT_OUTER_JOIN)
 def test_right_join(order_fixtures):
     """Test RIGHT JOIN query using enhanced right_join method"""
     User, Order, OrderItem = order_fixtures
@@ -167,6 +173,7 @@ def test_right_join(order_fixtures):
     assert 'user2' in usernames
 
 
+@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.RIGHT_OUTER_JOIN)
 def test_right_outer_join(order_fixtures):
     """Test RIGHT OUTER JOIN with outer keyword"""
     User, Order, OrderItem = order_fixtures
@@ -205,6 +212,7 @@ def test_right_outer_join(order_fixtures):
     assert 'user2' in usernames
 
 
+@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
 def test_full_join(order_fixtures):
     """Test FULL JOIN query using enhanced full_join method"""
     User, Order, OrderItem = order_fixtures
@@ -240,11 +248,6 @@ def test_full_join(order_fixtures):
     order2 = Order(user_id=special_user.id, order_number='ORD-002')
     order2.save()
 
-    # Skip testing on databases that don't support FULL JOIN
-    backend_name = Order.backend().__class__.__name__
-    if any(db in backend_name for db in ['SQLite', 'MySQL']):
-        return  # Skip test for unsupported databases
-
     # Test FULL JOIN - include only user1 and user2 in the query conditions
     results = Order.query() \
         .select(f'{Order.__table_name__}.*', f'{User.__table_name__}.username') \
@@ -267,6 +270,7 @@ def test_full_join(order_fixtures):
     assert 'user2' in usernames
 
 
+@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
 def test_full_outer_join(order_fixtures):
     """Test FULL OUTER JOIN with outer keyword"""
     User, Order, OrderItem = order_fixtures
@@ -291,6 +295,7 @@ def test_full_outer_join(order_fixtures):
     order1.save()
 
     # Create another order associated with a real user but excluded from query conditions
+    # This simulates an "orphaned" order for testing purposes
     special_user = User(
         username='special_user',
         email='special@example.com',
@@ -300,11 +305,6 @@ def test_full_outer_join(order_fixtures):
 
     order2 = Order(user_id=special_user.id, order_number='ORD-002')
     order2.save()
-
-    # Skip testing on databases that don't support FULL JOIN
-    backend_name = Order.backend().__class__.__name__
-    if any(db in backend_name for db in ['SQLite', 'MySQL']):
-        return  # Skip test for unsupported databases
 
     # Test FULL OUTER JOIN - include only user1 and user2 in the query
     results = Order.query() \
@@ -382,12 +382,6 @@ def test_cross_join(order_fixtures):
 def test_natural_join(order_fixtures):
     """Test NATURAL JOIN (automatically joining on columns with the same name)"""
     User, Order, OrderItem = order_fixtures
-
-    # Skip testing on databases that might not support NATURAL JOIN
-    backend_name = Order.backend().__class__.__name__
-    if 'SQLite' in backend_name:
-        # SQLite supports NATURAL JOIN but may have limitations
-        pass
 
     # Create a user
     user = User(username='test_user', email='test@example.com', age=30)
