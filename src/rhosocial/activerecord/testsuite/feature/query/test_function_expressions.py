@@ -143,8 +143,8 @@ def test_numeric_functions(order_fixtures):
 
 def test_datetime_functions(order_fixtures, request):
     """Test date and time functions."""
-    if 'mysql' in request.node.name:
-        pytest.skip("This test is not applicable to MySQL")
+    if 'mysql' in request.node.name or 'postgres' in request.node.name:
+        pytest.skip("This test uses the SQLite-specific STRFTIME function and is not applicable to MySQL/PostgreSQL")
     User, Order, OrderItem = order_fixtures
 
     # Create test user

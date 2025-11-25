@@ -194,6 +194,7 @@ def test_cte_relation_cross_model_aggregation(order_fixtures):
 
     # Add selection for the aggregated columns
     query.select('*')
+    query.order_by('id')
 
     # Convert to dictionary for accessing non-model columns
     results = query.to_dict(direct_dict=True).all()
