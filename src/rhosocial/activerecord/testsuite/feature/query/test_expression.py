@@ -179,8 +179,8 @@ def test_case_expressions(order_fixtures):
     # Test simple CASE expression
     query = Order.query().group_by('status')
     query.case([
-        ('status = "pending"', 'New'),
-        ('status = "paid"', 'Completed'),
+        ("status = 'pending'", 'New'),
+        ("status = 'paid'", 'Completed'),
     ], else_result='Other', alias='status_label')
     query.count('*', 'count')
     results = query.aggregate()
@@ -276,8 +276,8 @@ def test_combined_expressions(order_fixtures):
 
     # Add CASE expression
     query.case([
-        ('status = "pending"', 'New'),
-        ('status = "paid"', 'Completed'),
+        ("status = 'pending'", 'New'),
+        ("status = 'paid'", 'Completed'),
     ], else_result='Other', alias='status_label')
 
     # Add arithmetic expression

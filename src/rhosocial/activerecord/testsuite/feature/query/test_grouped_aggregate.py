@@ -232,7 +232,7 @@ def test_complex_aggregates(order_fixtures):
                .avg('total_amount', 'avg_amount')
                .min('total_amount', 'min_amount')
                .max('total_amount', 'max_amount')
-               .order_by('total_amount DESC')
+               .order_by('sum_amount DESC')
                .limit(5)
                .aggregate())
 
