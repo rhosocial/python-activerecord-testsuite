@@ -219,7 +219,7 @@ def check_capability_requirements(request):
 
         if model_to_check is not None and (hasattr(model_to_check, 'backend') or hasattr(model_to_check, '__backend__')):
             # Use the model to check capabilities
-            from ..utils import skip_test_if_capability_unsupported
+            from rhosocial.activerecord.testsuite.utils import skip_test_if_capability_unsupported
             try:
                 skip_test_if_capability_unsupported(model_to_check, required_capabilities)
             except Exception:
