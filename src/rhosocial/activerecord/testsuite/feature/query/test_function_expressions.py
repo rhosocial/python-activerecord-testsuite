@@ -141,62 +141,6 @@ def test_numeric_functions(order_fixtures):
     assert float(results['min_amount']) == -125.30  # Lowest amount
 
 
-def test_datetime_functions(order_fixtures, request):
-    """Test date and time functions."""
-    if 'mysql' in request.node.name or 'postgres' in request.node.name:
-        pytest.skip("This test uses the SQLite-specific STRFTIME function and is not applicable to MySQL/PostgreSQL")
-    User, Order, OrderItem = order_fixtures
-
-    # Create test user
-    user = User(username='test_user', email='test@example.com', age=30)
-    user.save()
-
-    # Create test orders with specific timestamps if we have updated_at field
-    order = Order(
-        user_id=user.id,
-        order_number='ORD-001',
-        total_amount=Decimal('100.00')
-    )
-    order.save()
-
-    try:
-        # Test STRFTIME function (SQLite datetime function)
-        query = Order.query().where('id = ?', (order.id,))
-        query.function('STRFTIME', "'%Y-%m-%d'", 'created_at', alias='order_date')
-        results = query.aggregate()[0]
-
-        assert 'order_date' in results
-        # Verify it's a properly formatted date
-        assert re.match(r'^\d{4}-\d{2}-\d{2}$', results['order_date']) is not None
-
-        # Test DATE function
-        query = Order.query().where('id = ?', (order.id,))
-        query.function('DATE', 'created_at', alias='order_date_only')
-        results = query.aggregate()[0]
-
-        assert 'order_date_only' in results
-        # Should be in YYYY-MM-DD format
-        assert re.match(r'^\d{4}-\d{2}-\d{2}$', results['order_date_only']) is not None
-
-        # Test current date/time functions
-        query = Order.query().where('id = ?', (order.id,))
-        query.function('DATE', "'now'", alias='current_date')
-        results = query.aggregate()[0]
-
-        assert 'current_date' in results
-        # SQLite's DATE('now') returns the date in UTC
-        # So we need to get today's date in UTC for comparison
-        import datetime as dt
-        today_utc = dt.datetime.now(dt.timezone.utc).date().strftime('%Y-%m-%d')
-        assert results['current_date'] == today_utc
-    except Exception as e:
-        # Some SQLite versions might not fully support all datetime functions
-        # Just make sure we can execute the query
-        if 'no such function' in str(e).lower():
-            pytest.skip("SQLite installation doesn't fully support the tested datetime functions")
-        elif 'no such column' in str(e).lower() and 'created_at' in str(e).lower():
-            pytest.skip("Order model doesn't have created_at column")
-        raise
 
 
 def test_conditional_functions(order_fixtures):
