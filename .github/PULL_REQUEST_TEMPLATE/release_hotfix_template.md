@@ -45,16 +45,19 @@ Does this PR introduce a breaking change for a hotfix, or finalize breaking chan
 ## Testing
 
 <!--
-Please describe the tests that you ran to verify your changes.
-For releases, confirm all CI checks passed on the release branch.
-For hotfixes, describe the specific tests performed to validate the fix.
+Please describe how the changes in this test suite have been verified.
+As this is a test suite, its primary verification occurs when integrated
+and run within the CI of dependent `rhosocial-activerecord` backend
+projects or the core `python-activerecord` project.
 -->
 
-- [ ] All CI checks passed on the source branch (e.g., `release/vX.Y.Z` or `hotfix/ar-XXX`).
-- [ ] Specific tests for this hotfix have been run and passed.
+- [ ] All CI checks passed on the source branch of this repository.
+- [ ] Verification has been confirmed through CI runs in dependent projects
+      (e.g., `python-activerecord` or specific backend integrations).
+      Please provide links to relevant CI runs if applicable.
 
 **Test Plan:**
-<!-- e.g., "Ran full test suite on release/v1.2.0 branch", or "Executed `pytest tests/rhosocial/activerecord_test/bug/critical_fix.py`" -->
+<!-- e.g., "Confirmed successful CI runs for `python-activerecord-mysql` and `python-activerecord-postgres` using this test suite version.", or "Executed `pytest` within a backend project using this test suite." -->
 
 
 ## Checklist
