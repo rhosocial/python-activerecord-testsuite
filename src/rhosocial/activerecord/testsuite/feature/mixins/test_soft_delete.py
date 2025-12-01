@@ -2,13 +2,12 @@
 """
 Test soft delete functionality
 """
-from datetime import datetime
-
-import tzlocal
+from datetime import datetime, timezone
 
 
 def test_soft_delete_basic(task_model):
     """Test basic soft delete functionality"""
+    from datetime import timedelta
     # Create new record
     t = task_model(title="Test Task")
     t.save()
@@ -17,23 +16,26 @@ def test_soft_delete_basic(task_model):
     assert t.deleted_at is None
 
     # Record time before deletion
-    before_delete = datetime.now(tzlocal.get_localzone())
+    before_delete = datetime.now(timezone.utc)
 
     # Perform soft delete
     t.delete()
 
     # Record time after deletion
-    after_delete = datetime.now(tzlocal.get_localzone())
+    after_delete = datetime.now(timezone.utc)
 
     # Verify deletion time is correctly set
     assert t.deleted_at is not None
     assert isinstance(t.deleted_at, datetime)
     assert before_delete <= t.deleted_at <= after_delete
+    utc_plus_8 = timezone(timedelta(hours=8))
+    assert t.deleted_at.astimezone(utc_plus_8).utcoffset() == timedelta(hours=8)
 
     # Verify database record consistency
     db_task = task_model.query_with_deleted().where(f"{task_model.primary_key()} = ?", (t.id,)).one()
     assert db_task is not None
     assert db_task.deleted_at == t.deleted_at
+
 
 
 def test_soft_delete_query(task_model):
