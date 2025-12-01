@@ -4,11 +4,10 @@
 This module tests the basic field processing functionality of the ActiveRecord class.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-import tzlocal
 
 # Fixtures are now injected by the conftest.py in this package
 
@@ -95,13 +94,17 @@ def test_boolean_field(type_test_model):
 
 def test_datetime_field(type_test_model):
     """Test datetime field processing"""
-    test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456, tzinfo=tzlocal.get_localzone())
+    from datetime import timedelta
+    test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
     model = type_test_model(datetime_field=test_datetime)
     model.save()
 
     saved_model = type_test_model.find_one(model.id)
     assert saved_model.datetime_field == test_datetime
     assert isinstance(saved_model.datetime_field, datetime)
+    utc_plus_8 = timezone(timedelta(hours=8))
+    assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == '2024-01-01T20:30:45.123456+08:00'
+
 
 
 @requires_json_operations()
