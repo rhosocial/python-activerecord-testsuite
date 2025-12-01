@@ -758,11 +758,10 @@ def test_cte_relation_query_methods_with_custom_where(blog_fixtures):
     user.save()
 
     # Create posts with different creation timestamps
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import time  # Import time for Unix timestamps
-    import pytz
 
-    base_date = datetime.now(pytz.UTC)
+    base_date = datetime.now(timezone.utc)
     base_timestamp = int(time.time())  # Current Unix timestamp
 
     # Store creation timestamps for verification
@@ -785,7 +784,7 @@ def test_cte_relation_query_methods_with_custom_where(blog_fixtures):
             status='published',
             # Store timestamp for created_at (if your model supports it)
             # If created_at expects datetime, convert timestamp back
-            created_at=datetime.fromtimestamp(timestamp, pytz.UTC)
+            created_at=datetime.fromtimestamp(timestamp, timezone.utc)
         )
         post.save()
 
