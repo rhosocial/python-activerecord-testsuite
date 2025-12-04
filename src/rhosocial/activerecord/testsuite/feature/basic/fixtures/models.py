@@ -10,10 +10,12 @@ configuring them with a live database connection at test time.
 import re
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Optional, Type, Literal
+from typing import Optional, Type, Literal, Union, Any, Dict
 
 from pydantic import EmailStr, Field, field_validator
 
+from rhosocial.activerecord.backend import BaseSQLTypeAdapter
+from rhosocial.activerecord.base.fields import UseAdapter
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.backend.errors import ValidationError
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
@@ -125,3 +127,40 @@ class ValidatedUser(IntegerPKMixin, ActiveRecord):
         """Business rule validation"""
         if instance.age is not None and instance.age < 13:
             raise ValidationError("User must be at least 13 years old")
+
+
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
+
+
+# --- Module-level definitions for TypeAdapterTest and YesOrNoBooleanAdapter ---
+class YesOrNoBooleanAdapter(BaseSQLTypeAdapter):
+    """Converts Python's True/False to 'yes'/'no' strings."""
+    def _do_to_database(self, value: bool, target_type: Type, options: Optional[Dict[str, Any]] = None) -> str:
+        return "yes" if value else "no"
+
+    def _do_from_database(self, value: str, target_type: Type, options: Optional[Dict[str, Any]] = None) -> bool:
+        return value == "yes"
+
+class TypeAdapterTest(ActiveRecord):
+    """Model for testing various type adapter scenarios."""
+    __table_name__ = 'type_adapter_tests'
+    __primary_key__ = 'id'
+
+
+    id: Optional[int] = None
+    name: str
+    # Fields for testing implicit Optional[T] handling
+    optional_name: Optional[str] = None
+    optional_age: Optional[int] = None
+    last_login: Optional[datetime] = None
+    is_premium: Optional[bool] = None
+    # Field for testing unsupported Union
+    unsupported_union: Union[str, int] = 0
+    # Fields for testing explicit adapter annotation
+    custom_bool: Annotated[bool, UseAdapter(YesOrNoBooleanAdapter(), str)] = None
+    optional_custom_bool: Annotated[Optional[bool], UseAdapter(YesOrNoBooleanAdapter(), str)] = None
+# --- End of module-level definitions ---

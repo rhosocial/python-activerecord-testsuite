@@ -72,3 +72,23 @@ class IBasicProvider(ABC):
         deleting temporary database files.
         """
         pass
+
+    @abstractmethod
+    def setup_type_adapter_model_and_schema(self) -> Type[ActiveRecord]:
+        """
+        Prepares the environment for type adapter tests.
+        
+        Implementers should:
+        1. Define and execute the DDL for the 'type_adapter_tests' table.
+        2. Define and configure the ActiveRecord model for this test.
+        3. Return the configured model class.
+        """
+        pass
+
+    @abstractmethod
+    def get_yes_no_adapter(self) -> 'BaseSQLTypeAdapter':
+        """
+        Returns an adapter instance for converting boolean True/False
+        to 'yes'/'no' strings.
+        """
+        pass
