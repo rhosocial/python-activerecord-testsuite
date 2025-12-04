@@ -119,7 +119,9 @@ class TestTypeAdapter:
         with pytest.raises(IntegrityError) as exc_info:
             TypeAdapterTest.backend().execute(f"INSERT INTO type_adapter_tests (id, name) VALUES ({placeholder}, {placeholder})", (1, None))
 
-        assert "NOT NULL constraint failed" in str(exc_info.value)
+        error_message = str(exc_info.value)
+        # Check for SQLite's message OR MySQL's message
+        assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message or "violates not-null constraint" in error_message)
 
     def test_annotated_custom_adapter(self, type_adapter_fixtures):
         """Tests that a field-specific adapter assigned via Annotation works correctly."""
@@ -175,3 +177,4 @@ class TestTypeAdapter:
         assert found_none.optional_custom_bool is None
         raw_none = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
         assert raw_none["optional_custom_bool"] is None
+
