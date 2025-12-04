@@ -165,7 +165,7 @@ class TestTypeAdapter:
         rec_false.save()
         found_false = TypeAdapterTest.find_one(rec_false.id)
         assert found_false.optional_custom_bool is False
-        raw_false = TypeAdapterTest.backend().fetch_one("SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
+        raw_false = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
         assert raw_false["optional_custom_bool"] == "no"
 
         # Test with None
@@ -173,5 +173,5 @@ class TestTypeAdapter:
         rec_none.save()
         found_none = TypeAdapterTest.find_one(rec_none.id)
         assert found_none.optional_custom_bool is None
-        raw_none = TypeAdapterTest.backend().fetch_one("SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
+        raw_none = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
         assert raw_none["optional_custom_bool"] is None
