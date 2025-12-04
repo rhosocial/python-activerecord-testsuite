@@ -14,6 +14,9 @@ once for each database configuration (scenario) the backend supports.
 import pytest
 from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
 
+# The correct key for the provider is its short name string.
+PROVIDER_KEY = "feature.basic.IBasicProvider"
+
 def get_scenarios():
     """
     A helper function that runs during pytest's collection phase to discover
@@ -21,7 +24,7 @@ def get_scenarios():
     """
     # Dynamically get the registry and the provider for this test group.
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     if not provider_class:
         return []
     # Instantiate the provider and get the list of scenario names.
@@ -44,14 +47,14 @@ def user_class(request):
     # `request.param` holds the current scenario name (e.g., "memory", "file").
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     provider = provider_class()
 
     # Ask the provider to set up the database and configure the User model for this scenario.
-    Model = provider.setup_user_model(scenario)
+    model = provider.setup_user_model(scenario)
 
     # `yield` passes the configured model class to the test function.
-    yield Model
+    yield model
 
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
@@ -62,11 +65,11 @@ def type_case_class(request):
     Provides a configured `TypeCase` model class for each scenario."""
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     provider = provider_class()
 
-    Model = provider.setup_type_case_model(scenario)
-    yield Model
+    model = provider.setup_type_case_model(scenario)
+    yield model
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -75,11 +78,11 @@ def type_test_model(request):
     Provides a configured `TypeTestModel` model class for each scenario."""
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     provider = provider_class()
 
-    Model = provider.setup_type_test_model(scenario)
-    yield Model
+    model = provider.setup_type_test_model(scenario)
+    yield model
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -88,11 +91,11 @@ def validated_user_class(request):
     Provides a configured `ValidatedFieldUser` model class for each scenario."""
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     provider = provider_class()
 
-    Model = provider.setup_validated_field_user_model(scenario)
-    yield Model
+    model = provider.setup_validated_field_user_model(scenario)
+    yield model
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -101,9 +104,29 @@ def validated_user(request):
     Provides a configured `ValidatedUser` model class for each scenario."""
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.basic.IBasicProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
     provider = provider_class()
 
-    Model = provider.setup_validated_user_model(scenario)
-    yield Model
+    model = provider.setup_validated_user_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def type_adapter_fixtures(request):
+    """
+    Provides fixtures for type adapter tests, including the model, backend,
+    and a custom 'yes/no' adapter.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The setup method returns a tuple: (Model, backend_instance)
+    model = provider.setup_type_adapter_model_and_schema(scenario)
+    yes_no_adapter = provider.get_yes_no_adapter()
+    
+    # Yield all resources needed by the tests
+    yield model
+
     provider.cleanup_after_test(scenario)
