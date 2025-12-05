@@ -93,6 +93,17 @@ class IQueryProvider(ABC):
         pass
 
     @abstractmethod
+    def setup_annotated_query_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
+        """
+        Should prepare the testing environment for models using Annotated type adapters in queries,
+        under a given scenario and return a tuple containing the configured model class(es).
+
+        Returns:
+            Tuple containing (SearchableItem,) model class.
+        """
+        pass
+
+    @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """
         Should perform any necessary cleanup after a test has run, such as

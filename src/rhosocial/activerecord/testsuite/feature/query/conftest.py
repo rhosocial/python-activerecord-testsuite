@@ -168,6 +168,25 @@ def extended_order_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def annotated_query_fixtures(request):
+    """
+    A pytest fixture that provides the configured SearchableItem model class.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider = provider_class()
+
+    # Get the SearchableItem model for the test via fixture group
+    result = provider.setup_annotated_query_fixtures(scenario)
+
+    yield result
+
+    # Cleanup after test
+    provider.cleanup_after_test(scenario)
+
+
 @pytest.fixture(scope="function", autouse=True)
 def check_capability_requirements(request):
     """
