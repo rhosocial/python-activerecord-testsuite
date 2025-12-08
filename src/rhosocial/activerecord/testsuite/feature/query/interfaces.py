@@ -23,6 +23,9 @@ class IQueryProvider(ABC):
         """
         Should return a list of scenario names (e.g., ['memory', 'file'])
         that this backend supports for this test group.
+
+        Returns:
+            List[str]: A list of supported scenario names.
         """
         pass
 
@@ -100,6 +103,18 @@ class IQueryProvider(ABC):
 
         Returns:
             Tuple containing (SearchableItem,) model class.
+        """
+        pass
+
+    @abstractmethod
+    def setup_mapped_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for `MappedUser`, `MappedPost`,
+        and `MappedComment` models under a given scenario and return the
+        configured model classes as a tuple.
+
+        Returns:
+            Tuple of (MappedUser, MappedPost, MappedComment) model classes
         """
         pass
 

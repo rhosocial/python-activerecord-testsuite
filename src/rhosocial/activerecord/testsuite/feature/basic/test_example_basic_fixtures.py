@@ -1,0 +1,29 @@
+# src/rhosocial/activerecord/testsuite/feature/basic/test_example_basic_fixtures.py
+"""
+Example test file to import and verify the newly introduced mapped models fixtures.
+"""
+
+import pytest
+from rhosocial.activerecord.model import ActiveRecord
+
+def test_mapped_models_fixtures_load(
+    mapped_models_fixtures # Only import this specific fixture
+):
+    """
+    This test checks if the mapped_models_fixtures can be loaded successfully.
+    It asserts that the fixture is not None and that its elements are ActiveRecord subclasses.
+    """
+    assert mapped_models_fixtures is not None
+    assert isinstance(mapped_models_fixtures, tuple)
+    assert len(mapped_models_fixtures) == 3 # MappedUser, MappedPost, MappedComment
+
+    # Assert that each element in the tuple is an ActiveRecord subclass
+    for model in mapped_models_fixtures:
+        assert issubclass(model, ActiveRecord)
+
+    # Optionally, check specific names or types if needed
+    # MappedUser, MappedPost, MappedComment = mapped_models_fixtures
+    # assert MappedUser.__name__ == "MappedUser"
+    # assert MappedPost.__name__ == "MappedPost"
+    # assert MappedComment.__name__ == "MappedComment"
+
