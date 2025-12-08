@@ -15,7 +15,7 @@ from typing import Optional, Type, Literal, Union, Any, Dict
 from pydantic import EmailStr, Field, field_validator
 
 from rhosocial.activerecord.backend import BaseSQLTypeAdapter
-from rhosocial.activerecord.base.fields import UseAdapter
+from rhosocial.activerecord.base.fields import UseAdapter, UseColumn
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.backend.errors import ValidationError
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
@@ -164,3 +164,75 @@ class TypeAdapterTest(ActiveRecord):
     custom_bool: Annotated[bool, UseAdapter(YesOrNoBooleanAdapter(), str)] = None
     optional_custom_bool: Annotated[Optional[bool], UseAdapter(YesOrNoBooleanAdapter(), str)] = None
 # --- End of module-level definitions ---
+
+class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """User model with custom column name mappings for testing in basic feature."""
+
+    __table_name__ = "users"
+    __primary_key__ = "id"
+
+    # Python field: user_id, Database column: id
+    user_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: user_name, Database column: username
+    user_name: Annotated[str, UseColumn("username")]
+
+    # Python field: email_address, Database column: email
+    email_address: Annotated[str, UseColumn("email")]
+
+    # Python field: created_at, Database column: created_time
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+
+    # Relations are not defined here as they are part of the core testsuite and
+    # these models are for basic feature tests focusing on CRUD/mapping.
+    # If relations are needed, they should be defined in query/models.py or a dedicated relation test file.
+
+
+class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Post model with custom column name mappings for testing in basic feature."""
+
+    __table_name__ = "posts"
+    __primary_key__ = "id"
+
+    # Python field: post_id, Database column: id
+    post_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: author_id, Database column: author
+    author_id: Annotated[int, UseColumn("author")]
+
+    # Python field: post_title: Annotated[str, UseColumn("title")]
+    post_title: Annotated[str, UseColumn("title")]
+
+    # Python field: post_content: Annotated[str, UseColumn("content")]
+    post_content: Annotated[str, UseColumn("content")]
+
+    # Python field: published_at, Database column: published_time
+    published_at: Annotated[Optional[str], UseColumn("published_time")] = None
+
+    # Python field: is_published, Database column: published
+    is_published: Annotated[bool, UseColumn("published")]
+
+
+class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Comment model with custom column name mappings for testing in basic feature."""
+
+    __table_name__ = "comments"
+    __primary_key__ = "id"
+
+    # Python field: comment_id, Database column: id
+    comment_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: post_id, Database column: post_ref
+    post_id: Annotated[int, UseColumn("post_ref")]
+
+    # Python field: author_id: Annotated[int, UseColumn("author")]
+    author_id: Annotated[int, UseColumn("author")]
+
+    # Python field: comment_text, Database column: text
+    comment_text: Annotated[str, UseColumn("text")]
+
+    # Python field: created_at, Database column: created_time
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+
+    # Python field: is_approved, Database column: approved
+    is_approved: Annotated[bool, UseColumn("approved")]

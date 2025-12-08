@@ -187,6 +187,27 @@ def annotated_query_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def mapped_models_fixtures(request):
+    """
+    A pytest fixture that provides configured `MappedUser`, `MappedPost`,
+    and `MappedComment` model classes for testing, parameterized by scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider = provider_class()
+
+    # Ask the provider to set up the database and configure the Mapped models for this scenario.
+    user_model, post_model, comment_model = provider.setup_mapped_models(scenario)
+
+    # Yield the configured model classes as a tuple.
+    yield user_model, post_model, comment_model
+
+    # After the test function finishes, perform cleanup.
+    provider.cleanup_after_test(scenario)
+
+
 @pytest.fixture(scope="function", autouse=True)
 def check_capability_requirements(request):
     """
@@ -207,7 +228,8 @@ def check_capability_requirements(request):
 
         # Check for common fixture names that contain models
         fixture_options = ['extended_order_fixtures', 'order_fixtures', 'blog_fixtures',
-                          'json_user_fixture', 'tree_fixtures', 'combined_fixtures']
+                          'json_user_fixture', 'tree_fixtures', 'combined_fixtures',
+                          'annotated_query_fixtures', 'mapped_models_fixtures'] # Added mapped_models_fixtures
 
         for fixture_name in fixture_options:
             if fixture_name in request.fixturenames:

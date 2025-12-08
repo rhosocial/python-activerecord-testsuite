@@ -9,7 +9,7 @@ running the tests. Each backend must provide a concrete class that implements
 these abstract methods.
 """
 from abc import ABC, abstractmethod
-from typing import Type, List
+from typing import Type, List, Tuple
 from rhosocial.activerecord.model import ActiveRecord
 
 class IBasicProvider(ABC):
@@ -22,6 +22,9 @@ class IBasicProvider(ABC):
         """
         Should return a list of scenario names (e.g., ['memory', 'file'])
         that this backend supports for this test group.
+        
+        Returns:
+            List[str]: A list of supported scenario names.
         """
         pass
 
@@ -30,6 +33,9 @@ class IBasicProvider(ABC):
         """
         Should prepare the testing environment for the `User` model under a
         given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured User model class.
         """
         pass
 
@@ -38,6 +44,9 @@ class IBasicProvider(ABC):
         """
         Should prepare the testing environment for the `TypeCase` model under a
         given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured TypeCase model class.
         """
         pass
 
@@ -46,6 +55,9 @@ class IBasicProvider(ABC):
         """
         Should prepare the testing environment for the `TypeTestModel` model under a
         given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured TypeTestModel model class.
         """
         pass
 
@@ -54,6 +66,9 @@ class IBasicProvider(ABC):
         """
         Should prepare the testing environment for the `ValidatedFieldUser` model
         under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured ValidatedFieldUser model class.
         """
         pass
 
@@ -62,9 +77,25 @@ class IBasicProvider(ABC):
         """
         Should prepare the testing environment for the `ValidatedUser` model
         under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured ValidatedUser model class.
         """
         pass
 
+    @abstractmethod
+    def setup_mapped_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for `MappedUser`, `MappedPost`,
+        and `MappedComment` models under a given scenario and return the
+        configured model classes as a tuple.
+
+        Returns:
+            Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]: A tuple
+            containing the configured MappedUser, MappedPost, and MappedComment model classes.
+        """
+        pass
+    
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """
@@ -82,6 +113,9 @@ class IBasicProvider(ABC):
         1. Define and execute the DDL for the 'type_adapter_tests' table.
         2. Define and configure the ActiveRecord model for this test.
         3. Return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured TypeAdapterTest model class.
         """
         pass
 

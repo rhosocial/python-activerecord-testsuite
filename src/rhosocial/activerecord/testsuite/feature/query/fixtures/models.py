@@ -1,167 +1,186 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/models.py
 """
-This module defines the generic models used by the query feature tests in the
-testsuite. These models are then configured with specific backends by the
-provider implementations in each backend package.
+This file defines the generic ActiveRecord model classes used by the query tests.
+
+These models are "generic" because they define the data structure and validation
+rules (using Pydantic), but they are not tied to any specific database backend.
+The backend-specific provider is responsible for taking these classes and
+configuring them with a live database connection at test time.
 """
-from decimal import Decimal
-from typing import Optional, ClassVar
+from datetime import datetime
+from typing import ClassVar, Optional
 
-from pydantic import Field, EmailStr
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
+from pydantic import EmailStr, Field
+
+from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin, UUIDMixin
 from rhosocial.activerecord.model import ActiveRecord
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
-from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
-
+from rhosocial.activerecord.relation import HasMany, BelongsTo
+from rhosocial.activerecord.base.fields import UseColumn
 
 class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """User model with basic relations."""
+    """A standard User model for general CRUD operation testing."""
     __table_name__ = "users"
 
-    id: Optional[int] = None  # Primary key, null for new records
-    username: str  # Required field
-    email: EmailStr  # Required field
-    age: Optional[int] = Field(..., ge=0, le=100)  # Optional field
-    balance: float = 0.0  # Field with default value
-    is_active: bool = True  # Field with default value
-    # created_at: Optional[str] = None  # Optional field, usually set automatically by database
-    # updated_at: Optional[str] = None  # Optional field, usually set automatically by database
-
-    orders: ClassVar[HasMany['Order']] = HasMany(foreign_key='user_id', inverse_of='user')
-    # Add relationships to User model
-    posts: ClassVar[HasMany['Post']] = HasMany(
-        foreign_key='user_id',
-        inverse_of='user'
-    )
-    comments: ClassVar[HasMany['Comment']] = HasMany(
-        foreign_key='user_id',
-        inverse_of='user'
-    )
-
-
-class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """User model specialized for JSON testing."""
-    __table_name__ = "json_users"
-
-    id: Optional[int] = None
     username: str
     email: EmailStr
-    age: Optional[int] = Field(None, ge=0, le=100)
+    age: Optional[int] = Field(..., ge=0, le=100)
+    balance: float = 0.0
+    is_active: bool = True
 
-    # JSON fields
-    settings: Optional[str] = None  # For theme and notification preferences
-    tags: Optional[str] = None  # For user roles as array
-    profile: Optional[str] = None  # For address and contact information
-    roles: Optional[str] = None  # For admin/editor roles
-    scores: Optional[str] = None  # For test scores in different subjects
-    subscription: Optional[str] = None  # For subscription type and expiration
-    preferences: Optional[str] = None  # For user preferences including region
-
-
-class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """Order model with basic relations."""
-    __table_name__ = "orders"
-
-    id: Optional[int] = None
-    user_id: int
-    order_number: str
-    total_amount: Decimal = Field(default=Decimal('0'))
-    status: str = 'pending'  # pending, paid, shipped, completed, cancelled
-
-    items: ClassVar[HasMany['OrderItem']] = HasMany(foreign_key='order_id', inverse_of='order')
-    user: ClassVar[BelongsTo['User']] = BelongsTo(foreign_key='user_id', inverse_of='orders')
-
-
-class OrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """Order item model with basic relations."""
-    __table_name__ = "order_items"
-
-    id: Optional[int] = None
-    order_id: int
-    product_name: str
-    quantity: int = Field(ge=1)
-    unit_price: Decimal
-    subtotal: Decimal = Field(default=Decimal('0'))
-
-    order: ClassVar[BelongsTo['Order']] = BelongsTo(foreign_key='order_id', inverse_of='items')
-
-
-# Test-specific model variations
-
-class OrderWithCustomCache(Order):
-    """Order model with custom TTL cache configuration."""
-    __table_name__ = "orders"
-
-    # Override user relation with custom cache TTL
-    user: ClassVar[BelongsTo['User']] = BelongsTo(
-        foreign_key='user_id',
-        cache_config=CacheConfig(ttl=1)  # 1 second TTL
+    # Relationships
+    posts: ClassVar[HasMany["Post"]] = HasMany(
+        foreign_key="author_id",
+        inverse_of="author"
     )
-
-
-class OrderWithLimitedCache(Order):
-    """Order model with limited cache size configuration."""
-    __table_name__ = "orders"
-
-    # Override user relation with limited cache size
-    user: ClassVar[BelongsTo['User']] = BelongsTo(
-        foreign_key='user_id',
-        cache_config=CacheConfig(max_size=2)
-    )
-
-
-class OrderWithComplexCache(Order):
-    """Order model with complex cache configuration."""
-    __table_name__ = "orders"
-
-    # Override relations with different cache settings
-    user: ClassVar[BelongsTo['User']] = BelongsTo(
-        foreign_key='user_id',
-        cache_config=CacheConfig(ttl=300, max_size=100)
-    )
-
-    items: ClassVar[HasMany['OrderItem']] = HasMany(
-        foreign_key='order_id',
-        cache_config=CacheConfig(ttl=60, max_size=1000),
-        # order_by=['created_at DESC']
+    comments: ClassVar[HasMany["Comment"]] = HasMany(
+        foreign_key="author_id",
+        inverse_of="author"
     )
 
 
 class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """Post model with user and comments relations."""
+    """A standard Post model for general CRUD operation testing."""
     __table_name__ = "posts"
 
-    id: Optional[int] = None
-    user_id: int
+    author_id: int
     title: str
     content: str
-    status: str = 'published'  # draft, published, archived
+    is_published: bool = False
+    published_at: Optional[datetime] = None
 
-    user: ClassVar[BelongsTo['User']] = BelongsTo(
-        foreign_key='user_id',
-        inverse_of='posts'
+    # Relationships
+    author: ClassVar[BelongsTo["User"]] = BelongsTo(
+        foreign_key="author_id",
+        inverse_of="posts"
     )
-    comments: ClassVar[HasMany['Comment']] = HasMany(
-        foreign_key='post_id',
-        inverse_of='post'
+    comments: ClassVar[HasMany["Comment"]] = HasMany(
+        foreign_key="post_id",
+        inverse_of="post"
     )
 
 
 class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
-    """Comment model with user and post relations."""
+    """A standard Comment model for general CRUD operation testing."""
     __table_name__ = "comments"
 
-    id: Optional[int] = None
-    user_id: int
     post_id: int
+    author_id: int
     content: str
-    is_hidden: bool = False
+    is_approved: bool = True
 
-    user: ClassVar[BelongsTo['User']] = BelongsTo(
-        foreign_key='user_id',
-        inverse_of='comments'
+    # Relationships
+    post: ClassVar[BelongsTo["Post"]] = BelongsTo(
+        foreign_key="post_id",
+        inverse_of="comments"
     )
-    post: ClassVar[BelongsTo['Post']] = BelongsTo(
-        foreign_key='post_id',
-        inverse_of='comments'
+    author: ClassVar[BelongsTo["User"]] = BelongsTo(
+        foreign_key="author_id",
+        inverse_of="comments"
+    )
+
+class JsonUser(UUIDMixin, ActiveRecord):
+    """A User model for testing JSON field types."""
+    __table_name__ = "json_users"
+
+    username: str
+    metadata: Optional[dict] = None # JSON field
+
+class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """User model with custom column name mappings for testing in query feature."""
+
+    __table_name__ = "users"
+    __primary_key__ = "id"
+
+    # Python field: user_id, Database column: id
+    user_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: user_name, Database column: username
+    user_name: Annotated[str, UseColumn("username")]
+
+    # Python field: email_address, Database column: email
+    email_address: Annotated[str, UseColumn("email")]
+
+    # Python field: created_at, Database column: created_time
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+
+    posts: ClassVar[HasMany["MappedPost"]] = HasMany(
+        foreign_key="author",
+        inverse_of="author"
+    )
+    comments: ClassVar[HasMany["MappedComment"]] = HasMany(
+        foreign_key="author",
+        inverse_of="author"
+    )
+
+
+class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Post model with custom column name mappings for testing in query feature."""
+
+    __table_name__ = "posts"
+    __primary_key__ = "id"
+
+    # Python field: post_id, Database column: id
+    post_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: author_id, Database column: author
+    author_id: Annotated[int, UseColumn("author")]
+
+    # Python field: post_title: Annotated[str, UseColumn("title")]
+    post_title: Annotated[str, UseColumn("title")]
+
+    # Python field: post_content: Annotated[str, UseColumn("content")]
+    post_content: Annotated[str, UseColumn("content")]
+
+    # Python field: published_at, Database column: published_time
+    published_at: Annotated[Optional[str], UseColumn("published_time")] = None
+
+    # Python field: is_published, Database column: published
+    is_published: Annotated[bool, UseColumn("published")]
+
+    author: ClassVar[BelongsTo["MappedUser"]] = BelongsTo(
+        foreign_key="author",
+        inverse_of="posts"
+    )
+    comments: ClassVar[HasMany["MappedComment"]] = HasMany(
+        foreign_key="post_ref",
+        inverse_of="post"
+    )
+
+
+class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Comment model with custom column name mappings for testing in query feature."""
+
+    __table_name__ = "comments"
+    __primary_key__ = "id"
+
+    # Python field: comment_id, Database column: id
+    comment_id: Annotated[Optional[int], UseColumn("id")] = None
+
+    # Python field: post_id, Database column: post_ref
+    post_id: Annotated[int, UseColumn("post_ref")]
+
+    # Python field: author_id: Annotated[int, UseColumn("author")]
+    author_id: Annotated[int, UseColumn("author")]
+
+    # Python field: comment_text, Database column: text
+    comment_text: Annotated[str, UseColumn("text")]
+
+    # Python field: created_at, Database column: created_time
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+
+    # Python field: is_approved, Database column: approved
+    is_approved: Annotated[bool, UseColumn("approved")]
+
+    post: ClassVar[BelongsTo["MappedPost"]] = BelongsTo(
+        foreign_key="post_ref",
+        inverse_of="comments"
+    )
+    author: ClassVar[BelongsTo["MappedUser"]] = BelongsTo(
+        foreign_key="author",
+        inverse_of="comments"
     )
