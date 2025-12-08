@@ -151,3 +151,22 @@ def mapped_models_fixtures(request):
 
     # After the test function finishes, perform cleanup.
     provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def mixed_models_fixtures(request):
+    """
+    A pytest fixture that provides configured models with mixed annotations
+    (`ColumnMappingModel`, `MixedAnnotationModel`) for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The provider's setup method returns a tuple of configured models
+    models = provider.setup_mixed_models(scenario)
+
+    yield models
+
+    # After the test function finishes, perform cleanup.
+    provider.cleanup_after_test(scenario)

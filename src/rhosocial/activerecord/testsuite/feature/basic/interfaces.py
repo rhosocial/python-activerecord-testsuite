@@ -95,7 +95,20 @@ class IBasicProvider(ABC):
             containing the configured MappedUser, MappedPost, and MappedComment model classes.
         """
         pass
-    
+
+    @abstractmethod
+    def setup_mixed_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
+        """
+        Should prepare the testing environment for models with mixed annotations
+        (`ColumnMappingModel`, `MixedAnnotationModel`) under a given scenario
+        and return the configured model classes as a tuple.
+
+        Returns:
+            Tuple[Type[ActiveRecord], ...]: A tuple containing the configured
+            ColumnMappingModel and MixedAnnotationModel classes.
+        """
+        pass
+
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """
