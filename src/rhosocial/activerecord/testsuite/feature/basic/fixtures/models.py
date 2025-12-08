@@ -10,7 +10,8 @@ configuring them with a live database connection at test time.
 import re
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Optional, Type, Literal, Union, Any, Dict
+from typing import Optional, Type, Literal, Union, Any, Dict, List
+import json # Added import for json
 
 from pydantic import EmailStr, Field, field_validator
 
@@ -180,12 +181,9 @@ class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     # Python field: email_address, Database column: email
     email_address: Annotated[str, UseColumn("email")]
 
-    # Python field: created_at, Database column: created_time
-    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
-
-    # Relations are not defined here as they are part of the core testsuite and
-    # these models are for basic feature tests focusing on CRUD/mapping.
-    # If relations are needed, they should be defined in query/models.py or a dedicated relation test file.
+    # Python field: creation_date, which maps to the 'created_at' column.
+    # This overrides the `created_at` field from TimestampMixin.
+    creation_date: Annotated[Optional[datetime], UseColumn("created_at")] = None
 
 
 class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
@@ -206,8 +204,8 @@ class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
     # Python field: post_content: Annotated[str, UseColumn("content")]
     post_content: Annotated[str, UseColumn("content")]
 
-    # Python field: published_at, Database column: published_time
-    published_at: Annotated[Optional[str], UseColumn("published_time")] = None
+    # Python field: publication_time, maps to 'published_at' column
+    publication_time: Annotated[Optional[datetime], UseColumn("published_at")] = None
 
     # Python field: is_published, Database column: published
     is_published: Annotated[bool, UseColumn("published")]
@@ -231,8 +229,100 @@ class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
     # Python field: comment_text, Database column: text
     comment_text: Annotated[str, UseColumn("text")]
 
-    # Python field: created_at, Database column: created_time
-    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+    # Python field: comment_creation_date, maps to 'created_at' column.
+    # This overrides the `created_at` field from TimestampMixin.
+    comment_creation_date: Annotated[Optional[datetime], UseColumn("created_at")] = None
 
     # Python field: is_approved, Database column: approved
     is_approved: Annotated[bool, UseColumn("approved")]
+
+
+class IntToStringAdapter(BaseSQLTypeAdapter):
+    """A simple type adapter that converts an integer for the DB to a string for Python."""
+
+    def __init__(self):
+        super().__init__()
+        self._register_type(str, int)  # Python 'str' can be converted to DB 'int'
+
+    def _do_to_database(self, value: Any, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Any:
+        # The 'notes' attribute on the model is a str, which we convert to an int for the DB.
+        return int(value)
+
+    def _do_from_database(self, value: Any, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Any:
+        # The 'remarks' column in the DB is an int, which we convert to a str for the model attribute.
+        return str(value)
+
+
+class ColumnMappingModel(ActiveRecord):
+    """
+    A model demonstrating various valid uses of UseColumn and UseAdapter,
+    including mapping the primary key attribute.
+    """
+    __table_name__ = 'column_mapping_items'
+    __primary_key__ = 'id'
+
+    # Primary key defaults to 'id'. item_id attribute maps to this 'id' column.
+    item_id: Annotated[Optional[int], UseColumn("id")] = Field(default=None)
+    name: str  # Default mapping
+    item_count: Annotated[int, UseColumn("item_total")]  # Mapped to 'item_total'
+    notes: Annotated[str, UseAdapter(IntToStringAdapter(), target_db_type=int), UseColumn("remarks")] # Mapped to 'remarks' with an adapter
+
+
+class ListToStringAdapter(BaseSQLTypeAdapter):
+    """Converts a Python list of strings to a single comma-separated string for the DB."""
+
+    def __init__(self):
+        super().__init__()
+        self._register_type(list, str)
+
+    def _do_to_database(self, value: List[str], target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        if value is None:
+            return None
+        return ",".join(value)
+
+    def _do_from_database(self, value: str, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[List[str]]:
+        if value is None:
+            return None
+        return value.split(',') if value else []
+
+# New adapter for JSON string conversion
+class JsonToStringAdapter(BaseSQLTypeAdapter):
+    """Converts a Python dictionary to a JSON string for the DB."""
+
+    def __init__(self):
+        super().__init__()
+        self._register_type(dict, str)
+
+    def _do_to_database(self, value: Dict, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        if value is None:
+            return None
+        return json.dumps(value)
+
+    def _do_from_database(self, value: str, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[Dict]:
+        if value is None:
+            return None
+        return json.loads(value)
+
+class MixedAnnotationModel(ActiveRecord):
+    """A model with various combinations of annotations to test field mapping and adapters."""
+    __table_name__ = "mixed_annotation_items"
+    __primary_key__ = "id" # Corrected from "item_id"
+
+    # 1. Standard Python type
+    name: str
+
+    # 2. Field with a different column name
+    item_id: Annotated[int, UseColumn("id")]
+
+    # 3. Field using a type adapter
+    tags: Annotated[List[str], UseAdapter(ListToStringAdapter(), str)]
+
+    # 4. Field with both a different column name and a type adapter
+    #    Now uses the correct JsonToStringAdapter for dictionary serialization
+    metadata: Annotated[Optional[Dict], UseColumn("meta"), UseAdapter(JsonToStringAdapter(), str)] = None
+
+    # 5. Field that is nullable
+    description: Optional[str] = None
+
+    # 6. Field with a default value
+    status: str = "active"
