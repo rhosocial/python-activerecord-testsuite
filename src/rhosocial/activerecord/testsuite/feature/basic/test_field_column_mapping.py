@@ -67,11 +67,20 @@ class TestMappedModels:
         """
         Test creation and retrieval for multiple related mapped models.
         """
-        _, MappedPost, MappedComment = mapped_models_fixtures
+        MappedUser, MappedPost, MappedComment = mapped_models_fixtures
 
+        # Create a MappedUser first to satisfy foreign key constraint
+        user = MappedUser(
+            user_id=1,
+            user_name="test_user",
+            email_address="test@example.com",
+            created_at="2023-01-01T00:00:00"
+        )
+        assert user.save()
+        
         # Create a post
         post = MappedPost(
-            author_id=1,
+            author_id=user.user_id,
             post_title="My Mapped Post",
             post_content="Content here.",
             is_published=True,
@@ -83,7 +92,7 @@ class TestMappedModels:
         # Create a comment related to the post
         comment = MappedComment(
             post_id=post.post_id,
-            author_id=2,
+            author_id=user.user_id, # Use the ID of the created user
             comment_text="This is a comment.",
             is_approved=True,
             comment_creation_date="2023-01-02T00:00:00"
@@ -102,7 +111,7 @@ class TestMappedModels:
         found_comment = MappedComment.query().where("post_ref = ?", (post.post_id,)).one()
         assert found_comment is not None
         assert found_comment.comment_text == "This is a comment."
-        assert found_comment.author_id == 2
+        assert found_comment.author_id == user.user_id
         assert found_comment.comment_creation_date is not None
 
 
