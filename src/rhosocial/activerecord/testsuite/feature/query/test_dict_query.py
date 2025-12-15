@@ -260,8 +260,7 @@ def test_dict_query_to_sql(order_fixtures):
     assert 'LIMIT' in sql
 
     # Verify parameters
-    assert params == ('pending',)
-
+    assert params == ('pending', 10)
 
 def test_dict_query_attribute_delegation(order_fixtures):
     """Test __getattr__ delegation to underlying query"""
@@ -282,8 +281,9 @@ def test_dict_query_attribute_delegation(order_fixtures):
     # Verify delegated calls affected the query
     assert 'WHERE' in sql
     assert 'status = ?' in sql or 'status = %s' in sql
-    assert 'LIMIT 5' in sql or 'LIMIT ? 5' in sql
-    assert params == ('complete',)
+    assert 'LIMIT' in sql
+    assert 5 in params
+    assert params == ('complete', 5)
 
 
 def test_dict_query_with_join(order_fixtures):
