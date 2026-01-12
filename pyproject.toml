@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhosocial-activerecord-testsuite"
-version = "1.0.0.dev4"
+version = "1.0.0.dev5"
 description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
 readme = "README.md"
 license = { file = "LICENSE" }
