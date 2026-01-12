@@ -5,7 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from rhosocial.activerecord.query.expression import FunctionExpression
+# Removed import of FunctionExpression as it's been moved to the expression-dialect system
+# All expression functionality is now handled through the backend expression system
 
 
 def test_string_functions(order_fixtures):

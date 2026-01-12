@@ -3,11 +3,11 @@
 Utility functions for the testsuite package.
 
 This module provides:
-1. Capability checking decorators for marking test requirements
-2. Runtime capability validation functions
-3. Convenience decorators for common capability requirements
+1. Protocol checking decorators for marking test requirements
+2. Runtime protocol validation functions
+3. Convenience decorators for common protocol requirements
 
-All tests across the entire testsuite should import capability utilities from this module.
+All tests across the entire testsuite should import protocol utilities from this module.
 """
 import pytest
 
@@ -28,7 +28,7 @@ def get_current_backend():
         None during collection phase, backend instance during execution
     """
     # For now, return None to allow collection to continue without crashing
-    # The real capability checking should happen at test execution time
+    # The real protocol checking should happen at test execution time
     return None
 
 def get_backend_from_model(model_class):
@@ -62,313 +62,161 @@ def get_backend_from_model(model_class):
 
 
 # ============================================================================
-# Capability Checking Functions
+# Protocol Checking Functions
 # ============================================================================
 
-def skip_test_if_capability_unsupported(model_class, capability_info):
+def skip_test_if_protocol_unsupported(model_class, protocol_class, method_name=None):
     """
-    Skip the current test if the backend doesn't support the required capability.
+    Skip the current test if the backend doesn't support the required protocol.
 
     This function is called during test execution when we have access to
-    the provider-configured model and can check its backend capabilities.
+    the provider-configured model and can check its backend protocols.
 
     Args:
         model_class: A provider-configured model class
-        capability_info: A tuple of (capability_category, specific_capability)
-                        where specific_capability can be:
-                        - None: check for category support only
-                        - Single capability: check for that specific capability
-                        - List of capabilities: check all are supported
+        protocol_class: The protocol class to check for (e.g., WindowFunctionSupport), or None for no specific protocol
+        method_name: Optional specific method name to check for (e.g., 'supports_window_functions')
 
     Raises:
-        pytest.skip: If required capabilities are not supported
-        ValueError: If capability_info format is invalid
+        pytest.skip: If required protocol is not supported
+        ValueError: If protocol_class is not provided and not None (when no specific protocol is required)
     """
-    # Import required capability classes
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        SetOperationCapability,
-        WindowFunctionCapability,
-        AdvancedGroupingCapability,
-        CTECapability,
-        JSONCapability,
-        ReturningCapability,
-        TransactionCapability,
-        BulkOperationCapability,
-        JoinCapability,
-        ConstraintCapability,
-        AggregateFunctionCapability,
-        DateTimeFunctionCapability,
-        StringFunctionCapability,
-        MathematicalFunctionCapability
-    )
+    if protocol_class is None:
+        # If no specific protocol is required, just return without skipping
+        return
 
     # Get the backend from the model
     backend = get_backend_from_model(model_class)
-    capabilities = backend.capabilities
 
-    # Expect a tuple of (capability_category, specific_capability)
-    if not isinstance(capability_info, tuple) or len(capability_info) != 2:
-        raise ValueError(
-            "capability_info must be a tuple of (capability_category, specific_capability). "
-            f"Got: {capability_info}"
+    # Check if backend implements the required protocol
+    if not isinstance(backend.dialect, protocol_class):
+        pytest.skip(
+            f"Skipping test - backend dialect does not implement {protocol_class.__name__} protocol"
         )
 
-    capability_category, specific_capability = capability_info
-
-    if specific_capability is None:
-        # Only check for category support
-        if not capabilities.supports_category(capability_category):
-            pytest.skip(
-                f"Skipping test - unsupported capability category: {capability_category.name}"
-            )
-    else:
-        # Check for specific capability within category
-        unsupported_capabilities = []
-
-        # Ensure specific_capability is a list for consistent processing
-        if not isinstance(specific_capability, list):
-            specific_capability = [specific_capability]
-
-        # Determine the appropriate check method based on category
-        for spec_cap in specific_capability:
-            check_result = False
-
-            # Map category to appropriate support checking method
-            if capability_category == CapabilityCategory.SET_OPERATIONS and isinstance(spec_cap,
-                                                                                       SetOperationCapability):
-                check_result = capabilities.supports_set_operation(spec_cap)
-            elif capability_category == CapabilityCategory.WINDOW_FUNCTIONS and isinstance(spec_cap,
-                                                                                           WindowFunctionCapability):
-                check_result = capabilities.supports_window_function(spec_cap)
-            elif capability_category == CapabilityCategory.ADVANCED_GROUPING and isinstance(spec_cap,
-                                                                                            AdvancedGroupingCapability):
-                check_result = capabilities.supports_advanced_grouping(spec_cap)
-            elif capability_category == CapabilityCategory.CTE and isinstance(spec_cap, CTECapability):
-                check_result = capabilities.supports_cte(spec_cap)
-            elif capability_category == CapabilityCategory.JSON_OPERATIONS and isinstance(spec_cap, JSONCapability):
-                check_result = capabilities.supports_json(spec_cap)
-            elif capability_category == CapabilityCategory.RETURNING_CLAUSE and isinstance(spec_cap,
-                                                                                           ReturningCapability):
-                check_result = capabilities.supports_returning(spec_cap)
-            elif capability_category == CapabilityCategory.TRANSACTION_FEATURES and isinstance(spec_cap,
-                                                                                               TransactionCapability):
-                check_result = capabilities.supports_transaction(spec_cap)
-            elif capability_category == CapabilityCategory.BULK_OPERATIONS and isinstance(spec_cap,
-                                                                                          BulkOperationCapability):
-                check_result = capabilities.supports_bulk_operation(spec_cap)
-            elif capability_category == CapabilityCategory.JOIN_OPERATIONS and isinstance(spec_cap, JoinCapability):
-                check_result = capabilities.supports_join_operation(spec_cap)
-            elif capability_category == CapabilityCategory.CONSTRAINTS and isinstance(spec_cap, ConstraintCapability):
-                check_result = capabilities.supports_constraint(spec_cap)
-            elif capability_category == CapabilityCategory.AGGREGATE_FUNCTIONS and isinstance(spec_cap,
-                                                                                              AggregateFunctionCapability):
-                check_result = capabilities.supports_aggregate_function(spec_cap)
-            elif capability_category == CapabilityCategory.DATETIME_FUNCTIONS and isinstance(spec_cap,
-                                                                                             DateTimeFunctionCapability):
-                check_result = capabilities.supports_datetime_function(spec_cap)
-            elif capability_category == CapabilityCategory.STRING_FUNCTIONS and isinstance(spec_cap,
-                                                                                           StringFunctionCapability):
-                check_result = capabilities.supports_string_function(spec_cap)
-            elif capability_category == CapabilityCategory.MATHEMATICAL_FUNCTIONS and isinstance(spec_cap,
-                                                                                                 MathematicalFunctionCapability):
-                check_result = capabilities.supports_mathematical_function(spec_cap)
-
-            if not check_result:
-                unsupported_capabilities.append(str(spec_cap))
-
-        if unsupported_capabilities:
-            pytest.skip(
-                f"Skipping test - unsupported capabilities: {', '.join(unsupported_capabilities)}"
-            )
+    # If a specific method name is provided, check if it's supported
+    if method_name:
+        if hasattr(backend.dialect, method_name):
+            method = getattr(backend.dialect, method_name)
+            if callable(method):
+                # For support checking methods that return bool, check if they return True
+                if method_name.startswith('supports_'):
+                    if not method():
+                        pytest.skip(
+                            f"Skipping test - backend dialect does not support {method_name.replace('supports_', '')}"
+                        )
 
 
 # ============================================================================
-# Capability Requirement Decorators
+# Protocol Requirement Decorators
 # ============================================================================
 
-def requires_capability(capability_category, specific_capability=None):
+def requires_protocol(protocol_class, method_name=None):
     """
-    Decorator to mark a test function as requiring specific database capabilities.
+    Decorator to mark a test function as requiring specific database protocol support.
 
     This decorator should be used by ALL tests in the testsuite that require
-    specific database features. The actual capability checking happens at runtime
-    via the check_capability_requirements fixture in conftest.py.
+    specific database features. The actual protocol checking happens at runtime
+    via the check_protocol_requirements fixture in conftest.py.
 
     Args:
-        capability_category: The top-level capability category (e.g., CapabilityCategory.SET_OPERATIONS)
-        specific_capability: The specific capability within the category, which can be:
-                           - None: requires any capability in the category
-                           - Single capability enum: requires that specific capability
-                           - List of capability enums: requires all listed capabilities
+        protocol_class: The protocol class to check for (e.g., WindowFunctionSupport), or None for no specific protocol
+        method_name: Optional specific method name to check for (e.g., 'supports_window_functions')
 
     Returns:
-        pytest.mark.requires_capability decorator that will be processed by conftest.py
+        pytest.mark.requires_protocol decorator that will be processed by conftest.py
 
     Examples:
-        # Category-level requirement (any capability in category)
-        @requires_capability(CapabilityCategory.SET_OPERATIONS)
-        def test_set_operations(fixtures):
+        # Protocol-level requirement
+        @requires_protocol(WindowFunctionSupport)
+        def test_window_functions(fixtures):
             pass
 
-        # Specific capability requirement
-        @requires_capability(CapabilityCategory.SET_OPERATIONS, SetOperationCapability.UNION)
-        def test_union(fixtures):
-            pass
-
-        # Multiple specific capabilities
-        @requires_capability(
-            CapabilityCategory.SET_OPERATIONS,
-            [SetOperationCapability.UNION, SetOperationCapability.INTERSECT]
-        )
-        def test_union_intersect(fixtures):
+        # Specific method requirement
+        @requires_protocol(WindowFunctionSupport, 'supports_window_functions')
+        def test_window_functions(fixtures):
             pass
     """
-    return pytest.mark.requires_capability((capability_category, specific_capability))
+    return pytest.mark.requires_protocol((protocol_class, method_name))
 
 
 # ============================================================================
-# Convenience Decorators for Common Capabilities
+# Convenience Decorators for Common Protocols
 # ============================================================================
 
-def requires_window_functions(specific_functions=None):
+def requires_window_functions():
     """
-    Decorator for tests requiring window functions.
-
-    Args:
-        specific_functions: Optional list of specific window functions required.
-                          If None, requires any window function support.
-
-    Examples:
-        @requires_window_functions()
-        def test_any_window_function(fixtures):
-            pass
-
-        @requires_window_functions([WindowFunctionCapability.ROW_NUMBER, WindowFunctionCapability.RANK])
-        def test_ranking_functions(fixtures):
-            pass
+    Decorator for tests requiring window function support.
     """
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        WindowFunctionCapability
-    )
+    from rhosocial.activerecord.backend.dialect.protocols import WindowFunctionSupport
+    return requires_protocol(WindowFunctionSupport, 'supports_window_functions')
 
-    if specific_functions is None:
-        # Require at least basic window function support
-        specific_functions = WindowFunctionCapability.ROW_NUMBER
-
-    return requires_capability(CapabilityCategory.WINDOW_FUNCTIONS, specific_functions)
+def requires_advanced_grouping():
+    """Decorator for tests requiring advanced grouping operations (ROLLUP, CUBE, GROUPING SETS)."""
+    from rhosocial.activerecord.backend.dialect.protocols import AdvancedGroupingSupport
+    return requires_protocol(AdvancedGroupingSupport)
 
 def requires_cube():
     """Decorator for tests requiring CUBE grouping."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        AdvancedGroupingCapability
-    )
-    return requires_capability(CapabilityCategory.ADVANCED_GROUPING, AdvancedGroupingCapability.CUBE)
+    from rhosocial.activerecord.backend.dialect.protocols import AdvancedGroupingSupport
+    return requires_protocol(AdvancedGroupingSupport, 'supports_cube')
 
 def requires_rollup():
     """Decorator for tests requiring ROLLUP grouping."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        AdvancedGroupingCapability
-    )
-    return requires_capability(CapabilityCategory.ADVANCED_GROUPING, AdvancedGroupingCapability.ROLLUP)
+    from rhosocial.activerecord.backend.dialect.protocols import AdvancedGroupingSupport
+    return requires_protocol(AdvancedGroupingSupport, 'supports_rollup')
 
 def requires_grouping_sets():
     """Decorator for tests requiring GROUPING SETS grouping."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        AdvancedGroupingCapability
-    )
-    return requires_capability(CapabilityCategory.ADVANCED_GROUPING, AdvancedGroupingCapability.GROUPING_SETS)
+    from rhosocial.activerecord.backend.dialect.protocols import AdvancedGroupingSupport
+    return requires_protocol(AdvancedGroupingSupport, 'supports_grouping_sets')
 
 def requires_cte():
     """Decorator for tests requiring Common Table Expressions."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        CTECapability
-    )
-    return requires_capability(CapabilityCategory.CTE, CTECapability.BASIC_CTE)
+    from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+    return requires_protocol(CTESupport, 'supports_basic_cte')
 
 def requires_recursive_cte():
     """Decorator for tests requiring recursive CTEs."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        CTECapability
-    )
-    return requires_capability(CapabilityCategory.CTE, CTECapability.RECURSIVE_CTE)
+    from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+    return requires_protocol(CTESupport, 'supports_recursive_cte')
 
-def requires_json_operations(specific_operations=None):
+def requires_json_operations():
     """
     Decorator for tests requiring JSON operations.
-
-    Args:
-        specific_operations: Optional list of specific JSON operations required.
-                           If None, requires any JSON operation support.
     """
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        JSONCapability
-    )
-
-    if specific_operations is None:
-        # Require at least basic JSON extraction
-        specific_operations = JSONCapability.JSON_EXTRACT
-
-    return requires_capability(CapabilityCategory.JSON_OPERATIONS, specific_operations)
+    from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
+    return requires_protocol(JSONSupport, 'supports_json_type')
 
 def requires_returning_clause():
     """Decorator for tests requiring RETURNING clause."""
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        ReturningCapability
-    )
-    return requires_capability(CapabilityCategory.RETURNING_CLAUSE, ReturningCapability.BASIC_RETURNING)
+    from rhosocial.activerecord.backend.dialect.protocols import ReturningSupport
+    return requires_protocol(ReturningSupport, 'supports_returning_clause')
 
-def requires_set_operations(specific_operations=None):
+def requires_set_operations():
     """
     Decorator for tests requiring set operations (UNION, INTERSECT, EXCEPT).
-
-    Args:
-        specific_operations: Optional list of specific set operations required.
-                           If None, requires any set operation support.
     """
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        SetOperationCapability
-    )
+    # Set operations are part of the core query functionality
+    # Most backends support basic set operations
+    # Since there isn't a specific SetOperationSupport protocol, we'll return a decorator
+    # that doesn't require any specific protocol as basic set operations are typically supported by all backends
+    return requires_protocol(None)  # No specific protocol required for basic set operations
 
-    if specific_operations is None:
-        # Require at least UNION support
-        specific_operations = SetOperationCapability.UNION
+def requires_lateral_joins():
+    """Decorator for tests requiring LATERAL joins."""
+    from rhosocial.activerecord.backend.dialect.protocols import LateralJoinSupport
+    return requires_protocol(LateralJoinSupport, 'supports_lateral_join')
 
-    return requires_capability(CapabilityCategory.SET_OPERATIONS, specific_operations)
+def requires_upsert():
+    """Decorator for tests requiring UPSERT operations."""
+    from rhosocial.activerecord.backend.dialect.protocols import UpsertSupport
+    return requires_protocol(UpsertSupport, 'supports_upsert')
 
-def requires_bulk_operations(specific_operations=None):
-    """
-    Decorator for tests requiring bulk operations.
-
-    Args:
-        specific_operations: Optional list of specific bulk operations required.
-                           If None, requires any bulk operation support.
-    """
-    from rhosocial.activerecord.backend.capabilities import (
-        CapabilityCategory,
-        BulkOperationCapability
-    )
-
-    if specific_operations is None:
-        specific_operations = BulkOperationCapability.BULK_INSERT
-
-    return requires_capability(CapabilityCategory.BULK_OPERATIONS, specific_operations)
-
-
-# ============================================================================
-# Pytest Hook for Capability Checking
-# ============================================================================
-
-
+def requires_array_operations():
+    """Decorator for tests requiring array operations."""
+    from rhosocial.activerecord.backend.dialect.protocols import ArraySupport
+    return requires_protocol(ArraySupport, 'supports_array_type')
 
 
 # ============================================================================
@@ -380,14 +228,15 @@ __all__ = [
     'get_current_backend',
     'get_backend_from_model',
 
-    # Capability checking
-    'skip_test_if_capability_unsupported',
+    # Protocol checking
+    'skip_test_if_protocol_unsupported',
 
     # Decorators
-    'requires_capability',
+    'requires_protocol',
 
     # Convenience decorators
     'requires_window_functions',
+    'requires_advanced_grouping',
     'requires_cube',
     'requires_rollup',
     'requires_grouping_sets',
@@ -396,5 +245,7 @@ __all__ = [
     'requires_json_operations',
     'requires_returning_clause',
     'requires_set_operations',
-    'requires_bulk_operations',
+    'requires_lateral_joins',
+    'requires_upsert',
+    'requires_array_operations',
 ]

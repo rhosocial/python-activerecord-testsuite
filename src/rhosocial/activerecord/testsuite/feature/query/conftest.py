@@ -209,18 +209,18 @@ def mapped_models_fixtures(request):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def check_capability_requirements(request):
+def check_protocol_requirements(request):
     """
-    Auto-used fixture that checks if the current backend supports required capabilities.
+    Auto-used fixture that checks if the current backend supports required protocols.
 
     This fixture runs automatically for each test and checks if the test has
-    a 'requires_capability' marker. If so, it verifies that the current backend
-    supports the required capabilities, skipping the test if not.
+    a 'requires_protocol' marker. If so, it verifies that the current backend
+    supports the required protocols, skipping the test if not.
     """
-    # Check if the test has a requires_capability marker
-    requires_capability_marker = request.node.get_closest_marker("requires_capability")
-    if requires_capability_marker:
-        required_capabilities = requires_capability_marker.args[0]
+    # Check if the test has a requires_protocol marker
+    requires_protocol_marker = request.node.get_closest_marker("requires_protocol")
+    if requires_protocol_marker:
+        required_protocol_info = requires_protocol_marker.args[0]
 
         # At this point, the parametrized fixtures have already been set up
         # Look for any of the model fixtures that contain the models we need
@@ -259,13 +259,14 @@ def check_capability_requirements(request):
                     continue
 
         if model_to_check is not None and (hasattr(model_to_check, 'backend') or hasattr(model_to_check, '__backend__')):
-            # Use the model to check capabilities
-            from rhosocial.activerecord.testsuite.utils import skip_test_if_capability_unsupported
+            # Use the model to check protocols
+            from rhosocial.activerecord.testsuite.utils import skip_test_if_protocol_unsupported
             try:
-                skip_test_if_capability_unsupported(model_to_check, required_capabilities)
+                protocol_class, method_name = required_protocol_info
+                skip_test_if_protocol_unsupported(model_to_check, protocol_class, method_name)
             except Exception:
-                # If capability checking fails for any reason, continue with the test
-                # This ensures tests don't break due to capability checking issues
+                # If protocol checking fails for any reason, continue with the test
+                # This ensures tests don't break due to protocol checking issues
                 pass
         # If no appropriate model was found, the test will continue normally
-        # This might happen if the capability decorator is used inappropriately
+        # This might happen if the protocol decorator is used inappropriately

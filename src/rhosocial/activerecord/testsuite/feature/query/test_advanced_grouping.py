@@ -4,8 +4,7 @@ import logging
 from decimal import Decimal
 
 import pytest
-from rhosocial.activerecord.backend.capabilities import CapabilityCategory, AdvancedGroupingCapability
-from ...utils import requires_capability, requires_cube, requires_rollup, requires_grouping_sets
+from ...utils import requires_protocol, requires_cube, requires_rollup, requires_grouping_sets
 
 # Logger for debug output
 logger = logging.getLogger('activerecord_test')
@@ -460,7 +459,8 @@ def test_cube_with_order_by(extended_order_fixtures):
         raise
 
 
-@requires_capability(CapabilityCategory.ADVANCED_GROUPING, [AdvancedGroupingCapability.CUBE, AdvancedGroupingCapability.ROLLUP])
+@requires_cube()
+@requires_rollup()
 def test_multiple_grouping_types(extended_order_fixtures):
     """Test that only one grouping type can be used at a time."""
     User, ExtendedOrder, ExtendedOrderItem = extended_order_fixtures

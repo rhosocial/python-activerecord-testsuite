@@ -4,7 +4,8 @@ from decimal import Decimal
 
 import pytest
 
-from rhosocial.activerecord.query.expression import WindowExpression, FunctionExpression
+# Removed imports of WindowExpression and FunctionExpression as they've been moved to the expression-dialect system
+# All expression functionality is now handled through the backend expression system
 from rhosocial.activerecord.testsuite.utils import requires_window_functions
 
 # Create multi-table test fixtures

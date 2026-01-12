@@ -2,17 +2,14 @@
 """
 Test cases for advanced JOIN queries in ActiveQuery.
 
-This test suite is designed to be backend-agnostic. It uses the `@requires_capability`
+This test suite is designed to be backend-agnostic. It uses the `@requires_protocol`
 decorator to ensure that tests for specific JOIN types (e.g., RIGHT and FULL OUTER
 JOINs) are only executed on backends that declare support for them. This approach
 allows for robust and portable testing across different database systems.
 """
 from decimal import Decimal
-from rhosocial.activerecord.backend.capabilities import (
-    CapabilityCategory,
-    JoinCapability
-)
-from rhosocial.activerecord.testsuite.utils import requires_capability
+from rhosocial.activerecord.testsuite.utils import requires_protocol
+from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
 
 
 
@@ -140,7 +137,7 @@ def test_left_outer_join(order_fixtures):
     assert order_numbers == ['ORD-001', 'ORD-002']
 
 
-@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.RIGHT_OUTER_JOIN)
+@requires_protocol(JoinSupport, 'supports_right_join')
 def test_right_join(order_fixtures):
     """Test RIGHT JOIN query using enhanced right_join method"""
     User, Order, OrderItem = order_fixtures
@@ -181,7 +178,7 @@ def test_right_join(order_fixtures):
     assert 'user2' in usernames
 
 
-@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.RIGHT_OUTER_JOIN)
+@requires_protocol(JoinSupport, 'supports_right_join')
 def test_right_outer_join(order_fixtures):
     """Test RIGHT OUTER JOIN with outer keyword"""
     User, Order, OrderItem = order_fixtures
@@ -220,7 +217,7 @@ def test_right_outer_join(order_fixtures):
     assert 'user2' in usernames
 
 
-@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
+@requires_protocol(JoinSupport, 'supports_full_join')
 def test_full_join(order_fixtures):
     """Test FULL JOIN query using enhanced full_join method.
 
@@ -299,7 +296,7 @@ def test_full_join(order_fixtures):
 
 
 
-@requires_capability(CapabilityCategory.JOIN_OPERATIONS, JoinCapability.FULL_OUTER_JOIN)
+@requires_protocol(JoinSupport, 'supports_full_join')
 def test_full_outer_join(order_fixtures):
     """Test FULL OUTER JOIN with outer keyword.
 

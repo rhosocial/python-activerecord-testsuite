@@ -89,7 +89,7 @@ class TestTypeAdapter:
         TypeAdapterTest = type_adapter_fixtures
         # Save a string value to a field that expects Union[str, int].
         # The `to_database` part will work fine as it will use the string adapter.
-        placeholder = TypeAdapterTest.backend().dialect.get_placeholder()
+        placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         TypeAdapterTest.backend().execute(
             f"INSERT INTO type_adapter_tests (id, name, unsupported_union, custom_bool) VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder})",
             (1, "test_unsupported_union", "some_string", "no")
@@ -115,7 +115,7 @@ class TestTypeAdapter:
 
         # Manually trying to insert a record with NULL for the non-optional 'name' field
         # should violate the table's NOT NULL constraint.
-        placeholder = TypeAdapterTest.backend().dialect.get_placeholder()
+        placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         with pytest.raises(IntegrityError) as exc_info:
             TypeAdapterTest.backend().execute(f"INSERT INTO type_adapter_tests (id, name) VALUES ({placeholder}, {placeholder})", (1, None))
 
@@ -129,7 +129,7 @@ class TestTypeAdapter:
         # Test True value
         rec_true = TypeAdapterTest(name="custom_true", custom_bool=True)
         rec_true.save()
-        placeholder = TypeAdapterTest.backend().dialect.get_placeholder()
+        placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         # Verify raw data in DB is 'yes'
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
         assert raw_true["custom_bool"] == "yes"
@@ -158,7 +158,7 @@ class TestTypeAdapter:
         rec_true.save()
         found_true = TypeAdapterTest.find_one(rec_true.id)
         assert found_true.optional_custom_bool is True
-        placeholder = TypeAdapterTest.backend().dialect.get_placeholder()
+        placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
         assert raw_true["optional_custom_bool"] == "yes"
 

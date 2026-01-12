@@ -9,7 +9,7 @@ from rhosocial.activerecord.interface import IQuery
 from rhosocial.activerecord.query.relational import RelationalQueryMixin, InvalidRelationPathError
 
 
-class MockQueryBase(IQuery[Any]):
+class MockQueryBase(IQuery):
     """Mock base class that implements IQuery interface with empty methods."""
 
     def __init__(self):

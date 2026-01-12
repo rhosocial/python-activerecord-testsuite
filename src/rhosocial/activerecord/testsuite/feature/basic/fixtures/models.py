@@ -15,7 +15,7 @@ import json # Added import for json
 
 from pydantic import EmailStr, Field, field_validator
 
-from rhosocial.activerecord.backend import BaseSQLTypeAdapter
+from rhosocial.activerecord.backend.type_adapter import BaseSQLTypeAdapter
 from rhosocial.activerecord.base.fields import UseAdapter, UseColumn
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.backend.errors import ValidationError
