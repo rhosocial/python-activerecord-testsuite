@@ -278,12 +278,51 @@ class ListToStringAdapter(BaseSQLTypeAdapter):
     def _do_to_database(self, value: List[str], target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[str]:
         if value is None:
             return None
+        # Join the list elements with commas
         return ",".join(value)
 
     def _do_from_database(self, value: str, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Optional[List[str]]:
         if value is None:
             return None
-        return value.split(',') if value else []
+
+        # Handle different string representations of lists
+        if isinstance(value, str):
+            # Check if it looks like a Python list representation (with brackets)
+            if value.startswith('[') and value.endswith(']'):
+                # It's a string representation of a list, try to parse it
+                import ast
+                try:
+                    parsed_value = ast.literal_eval(value)
+                    if isinstance(parsed_value, list):
+                        return parsed_value
+                    else:
+                        # If it's not a list after parsing, return as single-item list
+                        return [parsed_value] if parsed_value is not None else []
+                except (ValueError, SyntaxError):
+                    # If parsing fails, fall back to comma splitting
+                    pass
+
+            # Also handle if it looks like a Python list representation but with quotes around the whole thing
+            # For example: "['tag1', 'tag2']" might become "'['tag1', 'tag2']'" after some processing
+            # So we try to strip outer quotes first
+            stripped_value = value.strip().strip('"\'')
+            if stripped_value.startswith('[') and stripped_value.endswith(']'):
+                import ast
+                try:
+                    parsed_value = ast.literal_eval(stripped_value)
+                    if isinstance(parsed_value, list):
+                        return parsed_value
+                except (ValueError, SyntaxError):
+                    pass
+
+            # If not a list representation or parsing failed, split by comma
+            if value:
+                return [item.strip().strip('"\'') for item in value.split(',')]
+            else:
+                return []
+
+        # If value is not a string, return as is (though this shouldn't happen with proper DB integration)
+        return [value] if value is not None else []
 
 # New adapter for JSON string conversion
 class JsonToStringAdapter(BaseSQLTypeAdapter):
