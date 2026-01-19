@@ -15,6 +15,7 @@ except ImportError:
 from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
 from rhosocial.activerecord.base.fields import UseColumn
@@ -22,6 +23,7 @@ from rhosocial.activerecord.base.fields import UseColumn
 
 class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """User model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "users"
 
     id: Optional[int] = None  # Primary key, null for new records
@@ -44,6 +46,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """User model specialized for JSON testing."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "json_users"
 
     id: Optional[int] = None
@@ -63,6 +66,7 @@ class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Order model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "orders"
 
     id: Optional[int] = None
@@ -77,6 +81,7 @@ class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class OrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Order item model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "order_items"
 
     id: Optional[int] = None
@@ -126,6 +131,7 @@ class OrderWithComplexCache(Order):
 
 class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Post model with user and comments relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "posts"
 
     id: Optional[int] = None
@@ -146,6 +152,7 @@ class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Comment model with user and post relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "comments"
 
     id: Optional[int] = None
@@ -167,6 +174,7 @@ class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """User model with custom column name mappings for testing in query feature."""
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "users"
     __primary_key__ = "id"
@@ -188,6 +196,7 @@ class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Post model with custom column name mappings for testing in query feature."""
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "posts"
     __primary_key__ = "id"
@@ -211,6 +220,7 @@ class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Comment model with custom column name mappings for testing in query feature."""
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "comments"
     __primary_key__ = "id"

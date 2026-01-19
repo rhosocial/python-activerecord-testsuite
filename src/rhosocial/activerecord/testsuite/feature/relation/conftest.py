@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from rhosocial.activerecord.relation.base import RelationManagementMixin
 from rhosocial.activerecord.relation.cache import CacheConfig
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
-from rhosocial.activerecord.relation.interfaces import RelationLoader
+from rhosocial.activerecord.relation.interfaces import IRelationLoader
 
 
 class Employee(RelationManagementMixin, BaseModel):
@@ -64,7 +64,7 @@ def department_class():
     return Department
 
 
-class CustomBookLoader(RelationLoader):
+class CustomBookLoaderI(IRelationLoader):
     def load(self, instance: Any) -> Optional[List[Any]]:
         return [Book(id=1, title="Test Book", author_id=instance.id)]
 
@@ -72,7 +72,7 @@ class CustomBookLoader(RelationLoader):
         pass
 
 
-class CustomAuthorLoader(RelationLoader):
+class CustomAuthorLoaderI(IRelationLoader):
     def load(self, instance: Any) -> Optional[Any]:
         return Author(id=instance.author_id, name="Test Author")
 
@@ -80,7 +80,7 @@ class CustomAuthorLoader(RelationLoader):
         pass
 
 
-class CustomProfileLoader(RelationLoader):
+class CustomProfileLoaderI(IRelationLoader):
     def load(self, instance: Any) -> Optional[Any]:
         return Profile(id=1, bio="Test Bio", author_id=instance.id)
 
@@ -88,7 +88,7 @@ class CustomProfileLoader(RelationLoader):
         pass
 
 
-class CustomChapterLoader(RelationLoader):
+class CustomChapterLoaderI(IRelationLoader):
     def load(self, instance: Any) -> Optional[List[Any]]:
         return [Chapter(id=1, title="Test Chapter", book_id=instance.id)]
 
@@ -96,7 +96,7 @@ class CustomChapterLoader(RelationLoader):
         pass
 
 
-class CustomAuthorProfileLoader(RelationLoader):
+class CustomAuthorProfileLoaderI(IRelationLoader):
     def load(self, instance: Any) -> Optional[Any]:
         return Author(id=instance.author_id, name="Test Author")
 
@@ -110,13 +110,13 @@ class Author(RelationManagementMixin, BaseModel):
     books: ClassVar[HasMany["Book"]] = HasMany(
         foreign_key="author_id",
         inverse_of="author",
-        loader=CustomBookLoader(),
+        loader=CustomBookLoaderI(),
         cache_config=CacheConfig(ttl=1)
     )
     profile: ClassVar[HasOne["Profile"]] = HasOne(
         foreign_key="author_id",
         inverse_of="author",
-        loader=CustomProfileLoader()
+        loader=CustomProfileLoaderI()
     )
 
 
@@ -127,12 +127,12 @@ class Book(RelationManagementMixin, BaseModel):
     author: ClassVar[BelongsTo["Author"]] = BelongsTo(
         foreign_key="author_id",
         inverse_of="books",
-        loader=CustomAuthorLoader()
+        loader=CustomAuthorLoaderI()
     )
     chapters: ClassVar[HasMany["Chapter"]] = HasMany(
         foreign_key="book_id",
         inverse_of="book",
-        loader=CustomChapterLoader()  # Add the loader here
+        loader=CustomChapterLoaderI()  # Add the loader here
     )
 
 
@@ -153,7 +153,7 @@ class Profile(RelationManagementMixin, BaseModel):
     author: ClassVar[BelongsTo["Author"]] = BelongsTo(
         foreign_key="author_id",
         inverse_of="profile",
-        loader=CustomAuthorProfileLoader()  # Add loader
+        loader=CustomAuthorProfileLoaderI()  # Add loader
     )
 
 

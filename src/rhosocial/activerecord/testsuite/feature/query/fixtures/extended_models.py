@@ -5,12 +5,14 @@ from typing import Optional, ClassVar
 from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
 
 
 class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """User model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "users"
 
     id: Optional[int] = None
@@ -25,6 +27,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class ExtendedOrder(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Extended Order model with additional fields for advanced grouping tests."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_orders"
 
     id: Optional[int] = None
@@ -48,6 +51,7 @@ class ExtendedOrder(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 class ExtendedOrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Extended Order item model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_order_items"
 
     id: Optional[int] = None

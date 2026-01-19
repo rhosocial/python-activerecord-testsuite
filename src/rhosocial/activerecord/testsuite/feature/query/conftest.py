@@ -229,7 +229,7 @@ def check_protocol_requirements(request):
         # Check for common fixture names that contain models
         fixture_options = ['extended_order_fixtures', 'order_fixtures', 'blog_fixtures',
                           'json_user_fixture', 'tree_fixtures', 'combined_fixtures',
-                          'annotated_query_fixtures', 'mapped_models_fixtures'] # Added mapped_models_fixtures
+                          'annotated_query_fixtures', 'mapped_models_fixtures']
 
         for fixture_name in fixture_options:
             if fixture_name in request.fixturenames:
@@ -270,3 +270,29 @@ def check_protocol_requirements(request):
                 pass
         # If no appropriate model was found, the test will continue normally
         # This might happen if the protocol decorator is used inappropriately
+
+
+# --- Async Fixtures ---
+
+# Add imports for async models
+from rhosocial.activerecord.testsuite.feature.query.fixtures.async_models import AsyncUser, AsyncOrder, AsyncOrderItem
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_order_fixtures(request):
+    """
+    A pytest fixture that provides async-configured (AsyncUser, AsyncOrder, AsyncOrderItem) model classes
+    for testing complex queries with related tables.
+    It is parameterized to run for each available scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider = provider_class()
+
+    # Get all required models for the test via fixture group
+    AsyncUser, AsyncOrder, AsyncOrderItem = await provider.setup_async_order_fixtures(scenario)
+
+    yield (AsyncUser, AsyncOrder, AsyncOrderItem)
+
+    # Cleanup after test
+    await provider.cleanup_after_test_async(scenario)

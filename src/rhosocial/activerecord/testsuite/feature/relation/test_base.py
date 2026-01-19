@@ -10,13 +10,13 @@ from pydantic import BaseModel
 from rhosocial.activerecord.relation.base import RelationManagementMixin
 from rhosocial.activerecord.relation.cache import CacheConfig
 from rhosocial.activerecord.relation.descriptors import HasOne, HasMany, BelongsTo, RelationDescriptor
-from rhosocial.activerecord.relation.interfaces import RelationLoader
+from rhosocial.activerecord.relation.interfaces import IRelationLoader
 
 
 class TestRelationDescriptor:
     """Tests for the relation descriptor functionality."""
 
-    class CustomLoader(RelationLoader):
+    class CustomLoaderI(IRelationLoader):
         def load(self, instance):
             return {"id": 1, "name": "Test"}
 
@@ -28,7 +28,7 @@ class TestRelationDescriptor:
         descriptor = RelationDescriptor(
             foreign_key="test_id",
             inverse_of="test",
-            loader=self.CustomLoader(),
+            loader=self.CustomLoaderI(),
             cache_config=CacheConfig(enabled=True)
         )
 
@@ -55,7 +55,7 @@ class TestRelationDescriptor:
     def test_relation_descriptor_load(self, employee):
         """Test loading relation data."""
         relation = employee.get_relation("department")
-        relation._loader = self.CustomLoader()
+        relation._loader = self.CustomLoaderI()
 
         # First load (from loader)
         data = relation._load_relation(employee)
@@ -81,7 +81,7 @@ class TestRelationDescriptor:
     def test_relation_descriptor_cache_clear(self, employee):
         """Test clearing relation cache."""
         relation = employee.get_relation("department")
-        relation._loader = self.CustomLoader()
+        relation._loader = self.CustomLoaderI()
 
         # Load data into cache
         data = relation._load_relation(employee)

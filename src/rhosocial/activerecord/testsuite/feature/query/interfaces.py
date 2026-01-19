@@ -125,3 +125,22 @@ class IQueryProvider(ABC):
         deleting temporary database files.
         """
         pass
+
+    @abstractmethod
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Should perform any necessary async cleanup after a test has run.
+        """
+        pass
+
+    @abstractmethod
+    def setup_async_order_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for the async order-related models (User, Order, OrderItem)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (User, Order, OrderItem) model classes
+        """
+        pass
+

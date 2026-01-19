@@ -5,12 +5,14 @@ from typing import Optional, ClassVar
 from pydantic import Field
 
 from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
 
 
 class Node(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """Node model for tree structure tests (recursive CTEs)."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "nodes"
 
     id: Optional[int] = None

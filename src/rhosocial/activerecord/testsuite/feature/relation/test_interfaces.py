@@ -3,7 +3,7 @@
 Tests for relation interfaces.
 """
 
-from rhosocial.activerecord.relation.interfaces import RelationManagementInterface
+from rhosocial.activerecord.relation.interfaces import IRelationManagement
 
 
 class TestRelationInterfaces:
@@ -13,7 +13,7 @@ class TestRelationInterfaces:
         """Test RelationManagementInterface implementation."""
         # Verify interface implementation
         assert isinstance(employee_class, type)
-        assert issubclass(employee_class, RelationManagementInterface)
+        assert issubclass(employee_class, IRelationManagement)
 
         # Test relation registration
         relations = employee_class.get_relations()
