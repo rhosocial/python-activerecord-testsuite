@@ -294,5 +294,10 @@ async def async_order_fixtures(request):
 
     yield (AsyncUser, AsyncOrder, AsyncOrderItem)
 
+    # Disconnect the backend to allow the event loop to close.
+    # The backend instance is shared across all models in this fixture group.
+    backend_to_close = AsyncUser.__backend__
+    await backend_to_close.disconnect()
+
     # Cleanup after test
     await provider.cleanup_after_test_async(scenario)
