@@ -208,6 +208,36 @@ def requires_lateral_joins():
     from rhosocial.activerecord.backend.dialect.protocols import LateralJoinSupport
     return requires_protocol(LateralJoinSupport, 'supports_lateral_join')
 
+def requires_inner_join():
+    """Decorator for tests requiring INNER JOIN support."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_inner_join')
+
+def requires_left_join():
+    """Decorator for tests requiring LEFT JOIN support."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_left_join')
+
+def requires_cross_join():
+    """Decorator for tests requiring CROSS JOIN support."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_cross_join')
+
+def requires_natural_join():
+    """Decorator for tests requiring NATURAL JOIN support."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_natural_join')
+
+def requires_right_join():
+    """Decorator for tests requiring RIGHT JOIN support (typically not supported by SQLite)."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_right_join')
+
+def requires_full_join():
+    """Decorator for tests requiring FULL JOIN support (typically not supported by SQLite)."""
+    from rhosocial.activerecord.backend.dialect.protocols import JoinSupport
+    return requires_protocol(JoinSupport, 'supports_full_join')
+
 def requires_upsert():
     """Decorator for tests requiring UPSERT operations."""
     from rhosocial.activerecord.backend.dialect.protocols import UpsertSupport
@@ -243,9 +273,15 @@ __all__ = [
     'requires_cte',
     'requires_recursive_cte',
     'requires_json_operations',
-    'requires_returning_clause',
-    'requires_set_operations',
+    'requires_inner_join',
+    'requires_left_join',
+    'requires_cross_join',
+    'requires_natural_join',
+    'requires_right_join',
+    'requires_full_join',
     'requires_lateral_joins',
     'requires_upsert',
     'requires_array_operations',
+    'requires_returning_clause',
+    'requires_set_operations',
 ]

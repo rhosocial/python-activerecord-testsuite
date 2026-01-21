@@ -950,3 +950,176 @@ class TestAsyncSetOperations:
         async_set_op_query = AsyncSetOperationQuery(query1, query2, "INVALID_OP")
         assert async_set_op_query is not None
         assert async_set_op_query.operation == "INVALID_OP"
+
+    @pytest.mark.asyncio
+    async def test_async_active_query_union_method(self, async_order_fixtures):
+        """
+        Test AsyncActiveQuery union method creates AsyncSetOperationQuery.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='test_user', email='test@example.com', age=25)
+        await user.save()
+
+        # Create two async queries using the new union method
+        query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+        query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+
+        # Use the union method that should now be async
+        union_query = await query1.union(query2)
+
+        # Verify it returns an AsyncSetOperationQuery
+        assert isinstance(union_query, AsyncSetOperationQuery)
+        assert union_query.operation == "UNION"
+        assert union_query.left == query1
+        assert union_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_async_active_query_intersect_method(self, async_order_fixtures):
+        """
+        Test AsyncActiveQuery intersect method creates AsyncSetOperationQuery.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='test_user', email='test@example.com', age=25)
+        await user.save()
+
+        # Create two async queries using the new intersect method
+        query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+        query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+
+        # Use the intersect method that should now be async
+        intersect_query = await query1.intersect(query2)
+
+        # Verify it returns an AsyncSetOperationQuery
+        assert isinstance(intersect_query, AsyncSetOperationQuery)
+        assert intersect_query.operation == "INTERSECT"
+        assert intersect_query.left == query1
+        assert intersect_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_async_active_query_except_method(self, async_order_fixtures):
+        """
+        Test AsyncActiveQuery except_ method creates AsyncSetOperationQuery.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='test_user', email='test@example.com', age=25)
+        await user.save()
+
+        # Create two async queries using the new except_ method
+        query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+        query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
+
+        # Use the except_ method that should now be async
+        except_query = await query1.except_(query2)
+
+        # Verify it returns an AsyncSetOperationQuery
+        assert isinstance(except_query, AsyncSetOperationQuery)
+        assert except_query.operation == "EXCEPT"
+        assert except_query.left == query1
+        assert except_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_sync_active_query_union_method(self, order_fixtures):
+        """
+        Test ActiveQuery union method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the union method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the union method
+        union_query = query1.union(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(union_query, SetOperationQuery)
+        assert union_query.operation == "UNION"
+        assert union_query.left == query1
+        assert union_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_sync_active_query_intersect_method(self, order_fixtures):
+        """
+        Test ActiveQuery intersect method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the intersect method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the intersect method
+        intersect_query = query1.intersect(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(intersect_query, SetOperationQuery)
+        assert intersect_query.operation == "INTERSECT"
+        assert intersect_query.left == query1
+        assert intersect_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_sync_active_query_except_method(self, order_fixtures):
+        """
+        Test ActiveQuery except_ method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the except_ method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the except_ method
+        except_query = query1.except_(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(except_query, SetOperationQuery)
+        assert except_query.operation == "EXCEPT"
+        assert except_query.left == query1
+        assert except_query.right == query2
+
+    @pytest.mark.asyncio
+    async def test_mixed_sync_async_set_operations_should_fail(self, order_fixtures, async_order_fixtures):
+        """
+        Test that mixing sync and async queries in set operations raises TypeError.
+        """
+        User, Order, OrderItem = order_fixtures
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        async_user = AsyncUser(username='async_test_user', email='async_test@example.com', age=25)
+        await async_user.save()
+
+        # Create sync and async queries
+        sync_query = Order.query().where(Order.c.user_id == user.id)
+        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == async_user.id)
+
+        # Attempting to mix sync and async queries should raise TypeError
+        with pytest.raises(TypeError, match="does not support async backends"):
+            SetOperationQuery(sync_query, async_query, "UNION")
+
+        with pytest.raises(TypeError, match="requires async backends"):
+            AsyncSetOperationQuery(sync_query, async_query, "UNION")
+
+        with pytest.raises(TypeError, match="requires async backends"):
+            AsyncSetOperationQuery(async_query, sync_query, "UNION")
