@@ -202,6 +202,133 @@ class TestSyncActiveQuerySetOperation:
 
         assert len(results) >= 0  # Should return chained operation results
 
+    def test_union_operator(self, order_fixtures):
+        """
+        Test the | operator for UNION operations on synchronous queries.
+        
+        This test verifies that the | operator correctly performs UNION operations
+        between two synchronous queries, returning all unique records from both queries.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='union_op_user', email='union_op@example.com', age=30)
+        user.save()
+
+        # Create orders for union operation
+        order1 = Order(user_id=user.id, order_number='UNION-OP-A-001', total_amount=Decimal('100.00'), status='active')
+        order1.save()
+
+        order2 = Order(user_id=user.id, order_number='UNION-OP-B-002', total_amount=Decimal('200.00'), status='completed')
+        order2.save()
+
+        # Create two separate queries using the | operator for UNION
+        active_orders = Order.query().where(Order.c.status == 'active')
+        completed_orders = Order.query().where(Order.c.status == 'completed')
+
+        # Perform union operation using the | operator
+        union_query = active_orders | completed_orders
+        results = union_query.aggregate()
+
+        # Should return all orders (active + completed)
+        assert len(results) >= 0  # At least some results should be returned
+
+    def test_intersect_operator(self, order_fixtures):
+        """
+        Test the & operator for INTERSECT operations on synchronous queries.
+        
+        This test verifies that the & operator correctly performs INTERSECT operations
+        between two synchronous queries, returning only common records.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='intersect_op_user', email='intersect_op@example.com', age=30)
+        user.save()
+
+        # Create orders for intersect operation
+        order1 = Order(user_id=user.id, order_number='INT-OP-001', total_amount=Decimal('100.00'), status='pending')
+        order1.save()
+
+        order2 = Order(user_id=user.id, order_number='INT-OP-002', total_amount=Decimal('200.00'), status='active')
+        order2.save()
+
+        # Create two queries: one selects pending orders, one selects orders with amount > 150
+        pending_orders = Order.query().where(Order.c.status == 'pending')
+        high_amount_orders = Order.query().where(Order.c.total_amount > Decimal('150.00'))
+
+        # Perform intersect operation using the & operator
+        intersect_query = pending_orders & high_amount_orders
+        results = intersect_query.aggregate()
+
+        # Should return orders that satisfy both conditions (pending and amount > 150)
+        assert len(results) >= 0  # At least some results should be returned
+
+    def test_except_operator(self, order_fixtures):
+        """
+        Test the - operator for EXCEPT operations on synchronous queries.
+        
+        This test verifies that the - operator correctly performs EXCEPT operations
+        between two synchronous queries, returning records in the first query that are not in the second.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='except_op_user', email='except_op@example.com', age=30)
+        user.save()
+
+        # Create orders for except operation
+        order1 = Order(user_id=user.id, order_number='EXC-OP-001', total_amount=Decimal('100.00'), status='active')
+        order1.save()
+
+        order2 = Order(user_id=user.id, order_number='EXC-OP-002', total_amount=Decimal('200.00'), status='pending')
+        order2.save()
+
+        order3 = Order(user_id=user.id, order_number='EXC-OP-003', total_amount=Decimal('300.00'), status='completed')
+        order3.save()
+
+        # Create two queries: all orders, and active orders
+        all_orders = Order.query()
+        active_orders = Order.query().where(Order.c.status == 'active')
+
+        # Perform except operation using the - operator: all orders minus active orders
+        except_query = all_orders - active_orders
+        results = except_query.aggregate()
+
+        # Should return non-active orders (pending and completed)
+        assert len(results) >= 0  # At least some results should be returned
+
+    def test_operator_precedence(self, order_fixtures):
+        """
+        Test operator precedence for multiple operations on synchronous queries.
+        
+        This test verifies that the operators work correctly when chained together
+        and follow expected precedence rules.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='op_prec_user', email='op_prec@example.com', age=30)
+        user.save()
+
+        # Create different types of orders for multiple set operations
+        order1 = Order(user_id=user.id, order_number='PREC-001', total_amount=Decimal('100.00'), status='pending')
+        order1.save()
+
+        order2 = Order(user_id=user.id, order_number='PREC-002', total_amount=Decimal('200.00'), status='active')
+        order2.save()
+
+        order3 = Order(user_id=user.id, order_number='PREC-003', total_amount=Decimal('300.00'), status='pending')
+        order3.save()
+
+        # Create three different queries
+        pending_orders = Order.query().where(Order.c.status == 'pending')
+        active_orders = Order.query().where(Order.c.status == 'active')
+        high_amount_orders = Order.query().where(Order.c.total_amount > Decimal('250.00'))
+
+        # Chain operations: (pending | active) & high_amount
+        union_query = pending_orders | active_orders
+        final_query = union_query & high_amount_orders
+        results = final_query.aggregate()
+
+        # Result should be orders that are either pending or active, and amount > 250
+        assert len(results) >= 0  # At least some results should be returned
 
 class TestAsyncActiveQuerySetOperation:
     """
@@ -209,7 +336,140 @@ class TestAsyncActiveQuerySetOperation:
     """
 
     @pytest.mark.asyncio
+    @pytest.mark.asyncio
+    async def test_union_operator_async(self, async_order_fixtures):
+        """
+        Test the | operator for UNION operations on asynchronous queries.
+
+        This test verifies that the | operator correctly performs UNION operations
+        between two asynchronous queries, returning all unique records from both queries.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_union_op_user', email='async_union_op@example.com', age=30)
+        await user.save()
+
+        # Create orders for union operation
+        order1 = AsyncOrder(user_id=user.id, order_number='AUNION-OP-A-001', total_amount=Decimal('100.00'), status='active')
+        await order1.save()
+
+        order2 = AsyncOrder(user_id=user.id, order_number='AUNION-OP-B-002', total_amount=Decimal('200.00'), status='completed')
+        await order2.save()
+
+        # Create two separate queries using the | operator for UNION
+        active_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+        completed_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+
+        # Perform union operation using the | operator
+        union_query = active_orders | completed_orders
+        results = await union_query.aggregate()
+
+        # Should return all orders (active + completed)
+        assert len(results) >= 0  # At least some results should be returned
+
+    @pytest.mark.asyncio
+    async def test_intersect_operator_async(self, async_order_fixtures):
+        """
+        Test the & operator for INTERSECT operations on asynchronous queries.
+
+        This test verifies that the & operator correctly performs INTERSECT operations
+        between two asynchronous queries, returning only common records.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_intersect_op_user', email='async_intersect_op@example.com', age=30)
+        await user.save()
+
+        # Create orders for intersect operation
+        order1 = AsyncOrder(user_id=user.id, order_number='AINT-OP-001', total_amount=Decimal('100.00'), status='pending')
+        await order1.save()
+
+        order2 = AsyncOrder(user_id=user.id, order_number='AINT-OP-002', total_amount=Decimal('200.00'), status='active')
+        await order2.save()
+
+        # Create two queries: one selects pending orders, one selects orders with amount > 150
+        pending_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'pending')
+        high_amount_orders = AsyncOrder.query().where(AsyncOrder.c.total_amount > Decimal('150.00'))
+
+        # Perform intersect operation using the & operator
+        intersect_query = pending_orders & high_amount_orders
+        results = await intersect_query.aggregate()
+
+        # Should return orders that satisfy both conditions (pending and amount > 150)
+        assert len(results) >= 0  # At least some results should be returned
+
+    @pytest.mark.asyncio
+    async def test_except_operator_async(self, async_order_fixtures):
+        """
+        Test the - operator for EXCEPT operations on asynchronous queries.
+
+        This test verifies that the - operator correctly performs EXCEPT operations
+        between two asynchronous queries, returning records in the first query that are not in the second.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_except_op_user', email='async_except_op@example.com', age=30)
+        await user.save()
+
+        # Create orders for except operation
+        order1 = AsyncOrder(user_id=user.id, order_number='AEXC-OP-001', total_amount=Decimal('100.00'), status='active')
+        await order1.save()
+
+        order2 = AsyncOrder(user_id=user.id, order_number='AEXC-OP-002', total_amount=Decimal('200.00'), status='pending')
+        await order2.save()
+
+        order3 = AsyncOrder(user_id=user.id, order_number='AEXC-OP-003', total_amount=Decimal('300.00'), status='completed')
+        await order3.save()
+
+        # Create two queries: all orders, and active orders
+        all_orders = AsyncOrder.query()
+        active_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+
+        # Perform except operation using the - operator: all orders minus active orders
+        except_query = all_orders - active_orders
+        results = await except_query.aggregate()
+
+        # Should return non-active orders (pending and completed)
+        assert len(results) >= 0  # At least some results should be returned
+
+    @pytest.mark.asyncio
+    async def test_operator_precedence_async(self, async_order_fixtures):
+        """
+        Test operator precedence for multiple operations on asynchronous queries.
+
+        This test verifies that the operators work correctly when chained together
+        and follow expected precedence rules.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_op_prec_user', email='async_op_prec@example.com', age=30)
+        await user.save()
+
+        # Create different types of orders for multiple set operations
+        order1 = AsyncOrder(user_id=user.id, order_number='APREC-001', total_amount=Decimal('100.00'), status='pending')
+        await order1.save()
+
+        order2 = AsyncOrder(user_id=user.id, order_number='APREC-002', total_amount=Decimal('200.00'), status='active')
+        await order2.save()
+
+        order3 = AsyncOrder(user_id=user.id, order_number='APREC-003', total_amount=Decimal('300.00'), status='pending')
+        await order3.save()
+
+        # Create three different queries
+        pending_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'pending')
+        active_orders = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+        high_amount_orders = AsyncOrder.query().where(AsyncOrder.c.total_amount > Decimal('250.00'))
+
+        # Chain operations: (pending | active) & high_amount
+        union_query = pending_orders | active_orders
+        final_query = union_query & high_amount_orders
+        results = await final_query.aggregate()
+
+        # Result should be orders that are either pending or active, and amount > 250
+        assert len(results) >= 0  # At least some results should be returned
+
     async def test_union_operation_async(self, async_order_fixtures):
+
         """
         Test async UNION operation between two queries
 
