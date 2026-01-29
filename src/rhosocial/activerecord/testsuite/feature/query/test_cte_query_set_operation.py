@@ -7,7 +7,7 @@ is a set operation (UNION, INTERSECT, EXCEPT) composed of two ActiveQuery instan
 
 These tests verify that:
 1. CTE can wrap a UNION operation between two ActiveQuery instances
-2. CTE can wrap an INTERSECT operation between two ActiveQuery instances
+2. CTE can wrap an INTERSECT operation between two ActiveQuery instances  
 3. CTE can wrap an EXCEPT operation between two ActiveQuery instances
 4. Both sync and async variants work properly
 """
@@ -22,9 +22,9 @@ class TestCTEQuerySetOperation:
     """Test CTE queries wrapping set operations of ActiveQuery instances (synchronous)."""
 
     @requires_cte()
-    def test_cte_wrapping_union_of_active_queries(self, order_fixtures):
+    def test_cte_with_union_of_active_queries(self, order_fixtures):
         """
-        Test CTE query that wraps a UNION operation between two ActiveQuery instances.
+        Test CTE query that uses a UNION operation between two ActiveQuery instances.
         
         This test verifies that a CTE can be created with a UNION operation
         between two ActiveQuery instances as its underlying query.
@@ -53,42 +53,25 @@ class TestCTEQuerySetOperation:
         # Perform UNION operation between the two ActiveQuery instances
         union_query = active_orders_query.union(completed_orders_query)
         
-        # Execute the union query directly to get results
-        union_results = union_query.aggregate()
+        # Create a CTE that uses the UNION operation as its source
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('union_orders_cte', union_query)
+        # Query the CTE
+        cte_query.query("SELECT * FROM union_orders_cte")
         
-        # Since we can't pass SetOperationQuery directly to CTE, we'll create a different approach
-        # We'll create a CTE using a simpler query and then test that CTE functionality works
-        # For this test, we'll create a CTE from a simple query and then test set operations separately
-        # Let's create a CTE for active orders and another for completed orders, then perform set operations on CTEs
-        active_cte_query = CTEQuery(backend)
-        active_cte_query.with_cte('active_orders_cte', active_orders_query)
-        active_cte_query.query("SELECT * FROM active_orders_cte")
+        # Execute the CTE query
+        results = cte_query.aggregate()
         
-        completed_cte_query = CTEQuery(backend)
-        completed_cte_query.with_cte('completed_orders_cte', completed_orders_query)
-        completed_cte_query.query("SELECT * FROM completed_orders_cte")
-        
-        # Now test that we can perform set operations on CTE queries
-        # Get results from each CTE separately
-        active_results = active_cte_query.aggregate()
-        completed_results = completed_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(active_results) >= 1  # Should have at least one active order
-        assert len(completed_results) >= 1  # Should have at least one completed order
-        
-        # Check that active results only have active status
-        for row in active_results:
-            assert row.get('status') == 'active'
-        
-        # Check that completed results only have completed status
-        for row in completed_results:
-            assert row.get('status') == 'completed'
+        # Verify results contain both active and completed orders (no duplicates in UNION)
+        assert len(results) >= 2  # At least active and completed orders
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
 
     @requires_cte()
-    def test_cte_wrapping_intersect_of_active_queries(self, order_fixtures):
+    def test_cte_with_intersect_of_active_queries(self, order_fixtures):
         """
-        Test CTE query that wraps an INTERSECT operation between two ActiveQuery instances.
+        Test CTE query that uses an INTERSECT operation between two ActiveQuery instances.
         
         This test verifies that a CTE can be created with an INTERSECT operation
         between two ActiveQuery instances as its underlying query.
@@ -122,35 +105,24 @@ class TestCTEQuerySetOperation:
         # Perform INTERSECT operation between the two ActiveQuery instances
         intersect_query = high_amount_query.intersect(active_orders_query)
         
-        # Execute the intersect query directly to get results
-        intersect_results = intersect_query.aggregate()
+        # Create a CTE that uses the INTERSECT operation as its source
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('intersect_orders_cte', intersect_query)
+        # Query the CTE
+        cte_query.query("SELECT * FROM intersect_orders_cte")
         
-        # Create CTEs for each query separately
-        high_amount_cte_query = CTEQuery(backend)
-        high_amount_cte_query.with_cte('high_amount_orders_cte', high_amount_query)
-        high_amount_cte_query.query("SELECT * FROM high_amount_orders_cte")
+        # Execute the CTE query
+        results = cte_query.aggregate()
         
-        active_cte_query = CTEQuery(backend)
-        active_cte_query.with_cte('active_orders_cte', active_orders_query)
-        active_cte_query.query("SELECT * FROM active_orders_cte")
-        
-        # Get results from each CTE separately
-        high_amount_results = high_amount_cte_query.aggregate()
-        active_results = active_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(high_amount_results) >= 2  # Should have at least 2 orders with amount > 100
-        assert len(active_results) >= 2  # Should have at least 2 active orders
-        
-        # Check that intersect results meet both criteria
-        for row in intersect_results:
+        # Verify results contain orders that are both high amount AND active
+        for row in results:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
     @requires_cte()
-    def test_cte_wrapping_except_of_active_queries(self, order_fixtures):
+    def test_cte_with_except_of_active_queries(self, order_fixtures):
         """
-        Test CTE query that wraps an EXCEPT operation between two ActiveQuery instances.
+        Test CTE query that uses an EXCEPT operation between two ActiveQuery instances.
         
         This test verifies that a CTE can be created with an EXCEPT operation
         between two ActiveQuery instances as its underlying query.
@@ -183,28 +155,17 @@ class TestCTEQuerySetOperation:
         # Perform EXCEPT operation between the two ActiveQuery instances
         except_query = all_orders_query.except_(completed_orders_query)
         
-        # Execute the except query directly to get results
-        except_results = except_query.aggregate()
+        # Create a CTE that uses the EXCEPT operation as its source
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('except_orders_cte', except_query)
+        # Query the CTE
+        cte_query.query("SELECT * FROM except_orders_cte")
         
-        # Create CTEs for each query separately
-        all_orders_cte_query = CTEQuery(backend)
-        all_orders_cte_query.with_cte('all_orders_cte', all_orders_query)
-        all_orders_cte_query.query("SELECT * FROM all_orders_cte")
+        # Execute the CTE query
+        results = cte_query.aggregate()
         
-        completed_cte_query = CTEQuery(backend)
-        completed_cte_query.with_cte('completed_orders_cte', completed_orders_query)
-        completed_cte_query.query("SELECT * FROM completed_orders_cte")
-        
-        # Get results from each CTE separately
-        all_results = all_orders_cte_query.aggregate()
-        completed_results = completed_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(all_results) >= 3  # Should have at least 4 orders total
-        assert len(completed_results) >= 1  # Should have at least 1 completed order
-        
-        # Check that except results do not contain completed orders
-        for row in except_results:
+        # Verify results contain orders that are NOT completed
+        for row in results:
             assert row.get('status') != 'completed'
 
 
@@ -213,9 +174,9 @@ class TestAsyncCTEQuerySetOperation:
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_cte_wrapping_union_of_active_queries(self, async_order_fixtures):
+    async def test_cte_with_union_of_active_queries(self, async_order_fixtures):
         """
-        Async version of test_cte_wrapping_union_of_active_queries.
+        Async version of test_cte_with_union_of_active_queries.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
         
@@ -238,42 +199,31 @@ class TestAsyncCTEQuerySetOperation:
         active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
         completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
         
-        # Perform UNION operation between the two ActiveQuery instances
+        # Get the SQL and params for the UNION operation
         union_query = active_orders_query.union(completed_orders_query)
+        union_sql, union_params = union_query.to_sql()
         
-        # Execute the union query directly to get results
-        union_results = await union_query.aggregate()
+        # Create a CTE that uses the UNION SQL and params as its source
+        # Pass the SQL and params as a tuple to preserve the parameters
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('union_orders_cte', (union_sql, union_params))
+        # Query the CTE
+        cte_query.query("SELECT * FROM union_orders_cte")
         
-        # Create CTEs for each query separately
-        active_cte_query = AsyncCTEQuery(backend)
-        active_cte_query.with_cte('active_orders_cte', active_orders_query)
-        active_cte_query.query("SELECT * FROM active_orders_cte")
+        # Execute the CTE query
+        results = await cte_query.aggregate()
         
-        completed_cte_query = AsyncCTEQuery(backend)
-        completed_cte_query.with_cte('completed_orders_cte', completed_orders_query)
-        completed_cte_query.query("SELECT * FROM completed_orders_cte")
-        
-        # Get results from each CTE separately
-        active_results = await active_cte_query.aggregate()
-        completed_results = await completed_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(active_results) >= 1  # Should have at least one active order
-        assert len(completed_results) >= 1  # Should have at least one completed order
-        
-        # Check that active results only have active status
-        for row in active_results:
-            assert row.get('status') == 'active'
-        
-        # Check that completed results only have completed status
-        for row in completed_results:
-            assert row.get('status') == 'completed'
+        # Verify results contain both active and completed orders (no duplicates in UNION)
+        assert len(results) >= 2  # At least active and completed orders
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_cte_wrapping_intersect_of_active_queries(self, async_order_fixtures):
+    async def test_cte_with_intersect_of_active_queries(self, async_order_fixtures):
         """
-        Async version of test_cte_wrapping_intersect_of_active_queries.
+        Async version of test_cte_with_intersect_of_active_queries.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
         
@@ -300,39 +250,29 @@ class TestAsyncCTEQuerySetOperation:
         # Second query: active orders (regardless of amount)
         active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
         
-        # Perform INTERSECT operation between the two ActiveQuery instances
+        # Get the SQL and params for the INTERSECT operation
         intersect_query = high_amount_query.intersect(active_orders_query)
+        intersect_sql, intersect_params = intersect_query.to_sql()
         
-        # Execute the intersect query directly to get results
-        intersect_results = await intersect_query.aggregate()
+        # Create a CTE that uses the INTERSECT SQL and params as its source
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('intersect_orders_cte', (intersect_sql, intersect_params))
+        # Query the CTE
+        cte_query.query("SELECT * FROM intersect_orders_cte")
         
-        # Create CTEs for each query separately
-        high_amount_cte_query = AsyncCTEQuery(backend)
-        high_amount_cte_query.with_cte('high_amount_orders_cte', high_amount_query)
-        high_amount_cte_query.query("SELECT * FROM high_amount_orders_cte")
+        # Execute the CTE query
+        results = await cte_query.aggregate()
         
-        active_cte_query = AsyncCTEQuery(backend)
-        active_cte_query.with_cte('active_orders_cte', active_orders_query)
-        active_cte_query.query("SELECT * FROM active_orders_cte")
-        
-        # Get results from each CTE separately
-        high_amount_results = await high_amount_cte_query.aggregate()
-        active_results = await active_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(high_amount_results) >= 2  # Should have at least 2 orders with amount > 100
-        assert len(active_results) >= 2  # Should have at least 2 active orders
-        
-        # Check that intersect results meet both criteria
-        for row in intersect_results:
+        # Verify results contain orders that are both high amount AND active
+        for row in results:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_cte_wrapping_except_of_active_queries(self, async_order_fixtures):
+    async def test_cte_with_except_of_active_queries(self, async_order_fixtures):
         """
-        Async version of test_cte_wrapping_except_of_active_queries.
+        Async version of test_cte_with_except_of_active_queries.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
         
@@ -359,29 +299,19 @@ class TestAsyncCTEQuerySetOperation:
         # Second query: completed orders
         completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
         
-        # Perform EXCEPT operation between the two ActiveQuery instances
+        # Get the SQL and params for the EXCEPT operation
         except_query = all_orders_query.except_(completed_orders_query)
+        except_sql, except_params = except_query.to_sql()
         
-        # Execute the except query directly to get results
-        except_results = await except_query.aggregate()
+        # Create a CTE that uses the EXCEPT SQL and params as its source
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('except_orders_cte', (except_sql, except_params))
+        # Query the CTE
+        cte_query.query("SELECT * FROM except_orders_cte")
         
-        # Create CTEs for each query separately
-        all_orders_cte_query = AsyncCTEQuery(backend)
-        all_orders_cte_query.with_cte('all_orders_cte', all_orders_query)
-        all_orders_cte_query.query("SELECT * FROM all_orders_cte")
+        # Execute the CTE query
+        results = await cte_query.aggregate()
         
-        completed_cte_query = AsyncCTEQuery(backend)
-        completed_cte_query.with_cte('completed_orders_cte', completed_orders_query)
-        completed_cte_query.query("SELECT * FROM completed_orders_cte")
-        
-        # Get results from each CTE separately
-        all_results = await all_orders_cte_query.aggregate()
-        completed_results = await completed_cte_query.aggregate()
-        
-        # Verify that the CTE queries worked as expected
-        assert len(all_results) >= 3  # Should have at least 4 orders total
-        assert len(completed_results) >= 1  # Should have at least 1 completed order
-        
-        # Check that except results do not contain completed orders
-        for row in except_results:
+        # Verify results contain orders that are NOT completed
+        for row in results:
             assert row.get('status') != 'completed'
