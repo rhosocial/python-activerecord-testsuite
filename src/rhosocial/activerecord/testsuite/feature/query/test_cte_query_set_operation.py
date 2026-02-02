@@ -1217,3 +1217,267 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         for row in results:
             assert row.get('status') != 'completed'
             assert row.get('total_amount') > Decimal('50.00')
+
+
+class TestCTEQuerySetOperationWithOtherQueries:
+    """Test CTE queries with set operations against other query types (ActiveQuery, etc.)."""
+
+    @requires_cte()
+    def test_cte_query_union_with_active_query(self, order_fixtures):
+        '''
+        Test CTE query UNION operation with ActiveQuery.
+        '''
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_union_active_user', email='cte_union_active@example.com', age=30)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-UNION-ACTIVE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-UNION-ACTIVE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = Order(user_id=user.id, order_number='CTE-UNION-ACTIVE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = Order(user_id=user.id, order_number='CTE-UNION-ACTIVE-004', total_amount=Decimal('400.00'), status='active')
+        order1.save()
+        order2.save()
+        order3.save()
+        order4.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a simple query
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('cte_orders', (f"SELECT id, status, total_amount FROM {Order.table_name()} WHERE status = ?", ('active',)))
+
+        # Create an ActiveQuery for comparison
+        active_query = Order.query().select(Order.c.id, Order.c.status, Order.c.total_amount).where(Order.c.status == 'completed')
+
+        # Perform UNION operation between CTE query and ActiveQuery
+        union_query = cte_query.from_cte('cte_orders').select('id', 'status', 'total_amount').union(active_query)
+
+        # Execute the union query
+        results = union_query.aggregate()
+
+        # Verify results contain both active orders from CTE and completed orders from ActiveQuery (no duplicates in UNION)
+        assert len(results) >= 2  # At least one active from CTE, one completed from ActiveQuery
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
+
+    @requires_cte()
+    def test_cte_query_intersect_with_active_query(self, order_fixtures):
+        '''
+        Test CTE query INTERSECT operation with ActiveQuery.
+        '''
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_intersect_active_user', email='cte_intersect_active@example.com', age=35)
+        user.save()
+
+        # Create orders for the test - we'll create some orders with specific amounts
+        # to make sure there are some overlaps for the intersect operation
+        order1 = Order(user_id=user.id, order_number='CTE-INTERSECT-ACTIVE-001', total_amount=Decimal('150.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-INTERSECT-ACTIVE-002', total_amount=Decimal('200.00'), status='active')
+        order3 = Order(user_id=user.id, order_number='CTE-INTERSECT-ACTIVE-003', total_amount=Decimal('150.00'), status='pending')
+        order4 = Order(user_id=user.id, order_number='CTE-INTERSECT-ACTIVE-004', total_amount=Decimal('250.00'), status='completed')
+        order1.save()
+        order2.save()
+        order3.save()
+        order4.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a query for high-value active orders
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('high_value_cte', (f"SELECT id, status, total_amount FROM {Order.table_name()} WHERE status = ? AND total_amount > ?", ('active', Decimal('100.00'))))
+
+        # Create an ActiveQuery for orders with amount > 100 (regardless of status)
+        high_amount_query = Order.query().select(Order.c.id, Order.c.status, Order.c.total_amount).where(Order.c.total_amount > Decimal('100.00'))
+
+        # Perform INTERSECT operation between CTE query and ActiveQuery
+        intersect_query = cte_query.from_cte('high_value_cte').select('id', 'status', 'total_amount').intersect(high_amount_query)
+
+        # Execute the intersect query
+        results = intersect_query.aggregate()
+
+        # Verify results contain orders that are both high amount AND active
+        for row in results:
+            assert row.get('total_amount') > Decimal('100.00')
+            assert row.get('status') == 'active'
+
+    @requires_cte()
+    def test_cte_query_except_with_active_query(self, order_fixtures):
+        '''
+        Test CTE query EXCEPT operation with ActiveQuery.
+        '''
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_except_active_user', email='cte_except_active@example.com', age=40)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-EXCEPT-ACTIVE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-EXCEPT-ACTIVE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = Order(user_id=user.id, order_number='CTE-EXCEPT-ACTIVE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = Order(user_id=user.id, order_number='CTE-EXCEPT-ACTIVE-004', total_amount=Decimal('400.00'), status='active')
+        order1.save()
+        order2.save()
+        order3.save()
+        order4.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a query for all orders
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('all_orders_cte', (f"SELECT id, status, total_amount FROM {Order.table_name()}", ()))
+
+        # Create an ActiveQuery for completed orders
+        completed_query = Order.query().select(Order.c.id, Order.c.status, Order.c.total_amount).where(Order.c.status == 'completed')
+
+        # Perform EXCEPT operation between CTE query and ActiveQuery
+        except_query = cte_query.from_cte('all_orders_cte').select('id', 'status', 'total_amount').except_(completed_query)
+
+        # Execute the except query
+        results = except_query.aggregate()
+
+        # Verify results contain orders that are NOT completed
+        for row in results:
+            assert row.get('status') != 'completed'
+
+
+class TestAsyncCTEQuerySetOperationWithOtherQueries:
+    """Test Async CTE queries with set operations against other Async query types (AsyncActiveQuery, etc.)."""
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_query_union_with_async_active_query(self, async_order_fixtures):
+        '''
+        Test AsyncCTE query UNION operation with AsyncActiveQuery.
+        '''
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_union_active_user', email='async_cte_union_active@example.com', age=30)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-ACTIVE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-ACTIVE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-ACTIVE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-ACTIVE-004', total_amount=Decimal('400.00'), status='active')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+        await order4.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTE with a simple query
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('async_cte_orders', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()} WHERE status = ?", ('active',)))
+
+        # Create an AsyncActiveQuery for comparison
+        active_query = AsyncOrder.query().select(AsyncOrder.c.id, AsyncOrder.c.status, AsyncOrder.c.total_amount).where(AsyncOrder.c.status == 'completed')
+
+        # Perform UNION operation between AsyncCTE query and AsyncActiveQuery
+        union_query = cte_query.from_cte('async_cte_orders').select('id', 'status', 'total_amount').union(active_query)
+
+        # Execute the union query
+        results = await union_query.aggregate()
+
+        # Verify results contain both active orders from CTE and completed orders from AsyncActiveQuery (no duplicates in UNION)
+        assert len(results) >= 2  # At least one active from CTE, one completed from AsyncActiveQuery
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_query_intersect_with_async_active_query(self, async_order_fixtures):
+        '''
+        Test AsyncCTE query INTERSECT operation with AsyncActiveQuery.
+        '''
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_intersect_active_user', email='async_cte_intersect_active@example.com', age=35)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INTERSECT-ACTIVE-001', total_amount=Decimal('150.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INTERSECT-ACTIVE-002', total_amount=Decimal('200.00'), status='active')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INTERSECT-ACTIVE-003', total_amount=Decimal('150.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INTERSECT-ACTIVE-004', total_amount=Decimal('250.00'), status='completed')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+        await order4.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTE with a query for high-value active orders
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('async_high_value_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()} WHERE status = ? AND total_amount > ?", ('active', Decimal('100.00'))))
+
+        # Create an AsyncActiveQuery for orders with amount > 100 (regardless of status)
+        high_amount_query = AsyncOrder.query().select(AsyncOrder.c.id, AsyncOrder.c.status, AsyncOrder.c.total_amount).where(AsyncOrder.c.total_amount > Decimal('100.00'))
+
+        # Perform INTERSECT operation between AsyncCTE query and AsyncActiveQuery
+        intersect_query = cte_query.from_cte('async_high_value_cte').select('id', 'status', 'total_amount').intersect(high_amount_query)
+
+        # Execute the intersect query
+        results = await intersect_query.aggregate()
+
+        # Verify results contain orders that are both high amount AND active
+        for row in results:
+            assert row.get('total_amount') > Decimal('100.00')
+            assert row.get('status') == 'active'
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_query_except_with_async_active_query(self, async_order_fixtures):
+        '''
+        Test AsyncCTE query EXCEPT operation with AsyncActiveQuery.
+        '''
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_except_active_user', email='async_cte_except_active@example.com', age=40)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-EXCEPT-ACTIVE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-EXCEPT-ACTIVE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-EXCEPT-ACTIVE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-EXCEPT-ACTIVE-004', total_amount=Decimal('400.00'), status='active')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+        await order4.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTE with a query for all orders
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('async_all_orders_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()}", ()))
+
+        # Create an AsyncActiveQuery for completed orders
+        completed_query = AsyncOrder.query().select(AsyncOrder.c.id, AsyncOrder.c.status, AsyncOrder.c.total_amount).where(AsyncOrder.c.status == 'completed')
+
+        # Perform EXCEPT operation between AsyncCTE query and AsyncActiveQuery
+        except_query = cte_query.from_cte('async_all_orders_cte').select('id', 'status', 'total_amount').except_(completed_query)
+
+        # Execute the except query
+        results = await except_query.aggregate()
+
+        # Verify results contain orders that are NOT completed
+        for row in results:
+            assert row.get('status') != 'completed'
