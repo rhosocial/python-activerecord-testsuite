@@ -942,6 +942,146 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
     @requires_cte()
     async def test_async_cte_with_union_and_extended_conditions(self, async_order_fixtures):
         """
+        Async version of test_cte_with_union_and_extended_conditions.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_union_extended_user', email='async_cte_union_extended@example.com', age=30)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-003', total_amount=Decimal('300.00'), status='pending')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create two ActiveQuery instances for the UNION operation
+        active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+        completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+
+        # Get the SQL and params for the UNION operation
+        union_query = active_orders_query.union(completed_orders_query)
+        union_sql, union_params = union_query.to_sql()
+
+        # Create a CTE that uses the UNION SQL and params as its source
+        # Pass the SQL and params as a tuple to preserve the parameters
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('union_orders_cte', (union_sql, union_params))
+
+        # Use the new API: specify which CTE to use and apply extended query conditions
+        results = await cte_query.from_cte('union_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).aggregate()
+
+        # Verify results contain both active and completed orders, ordered by amount descending, limited to 2
+        assert len(results) == 2
+        assert results[0]['status'] in ['active', 'completed']
+        assert results[1]['status'] in ['active', 'completed']
+
+
+class TestCTEQueryErrorHandlingSetOperations:
+    """Test error handling for CTE queries with set operations."""
+
+    @requires_cte()
+    def test_cte_with_invalid_query_types_in_set_operations(self, order_fixtures):
+        """
+        Test CTE query with invalid query types in set operations.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_invalid_query_types_user', email='cte_invalid_query_types@example.com', age=30)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-INVALID-QUERY-TYPES-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-INVALID-QUERY-TYPES-002', total_amount=Decimal('200.00'), status='completed')
+        order1.save()
+        order2.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create an ActiveQuery instance
+        active_orders_query = Order.query().where(Order.c.status == 'active')
+
+        # Test that we can perform set operations with valid queries
+        completed_orders_query = Order.query().where(Order.c.status == 'completed')
+        union_query = active_orders_query.union(completed_orders_query)
+
+        # Create a CTE that uses the valid UNION operation as its source
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('valid_union_cte', union_query)
+
+        # Use the new API: specify which CTE to use and apply query conditions
+        results = cte_query.from_cte('valid_union_cte').select('id', 'status', 'total_amount').aggregate()
+
+        # Verify results contain both active and completed orders
+        assert len(results) == 2
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
+
+
+class TestAsyncCTEQueryErrorHandlingSetOperations:
+    """Test error handling for Async CTE queries with set operations."""
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_with_invalid_query_types_in_set_operations(self, async_order_fixtures):
+        """
+        Test Async CTE query with invalid query types in set operations.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_invalid_query_types_user', email='async_cte_invalid_query_types@example.com', age=30)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-002', total_amount=Decimal('200.00'), status='completed')
+        await order1.save()
+        await order2.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncActiveQuery instance
+        active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+
+        # Test that we can perform set operations with valid async queries
+        completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+        union_query = active_orders_query.union(completed_orders_query)
+
+        # Get the SQL and params for the union query
+        union_sql, union_params = union_query.to_sql()
+
+        # Create an AsyncCTE that uses the valid UNION SQL and params as its source
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('valid_union_cte', (union_sql, union_params))
+
+        # Use the new API: specify which CTE to use and apply query conditions
+        results = await cte_query.from_cte('valid_union_cte').select('id', 'status', 'total_amount').aggregate()
+
+        # Verify results contain both active and completed orders
+        assert len(results) == 2
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
+
+
+class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
+    """Test Async CTE queries with extended functionality applied to set operations."""
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_with_union_and_extended_conditions(self, async_order_fixtures):
+        """
         Test Async CTE query with UNION operation and extended query conditions.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures

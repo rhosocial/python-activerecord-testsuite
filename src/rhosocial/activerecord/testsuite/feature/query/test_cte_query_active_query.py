@@ -101,6 +101,154 @@ class TestCTEQueryActiveQuery:
         assert len(result) >= 2  # Should have results from the high_values CTE
 
 
+class TestCTEQueryErrorHandling:
+    """Test CTE query error handling and validation."""
+
+    def test_cte_query_with_async_backend_raises_error(self, order_fixtures):
+        """
+        Test that CTEQuery raises TypeError when an async backend is provided.
+
+        This test verifies that the synchronous CTEQuery properly validates
+        the backend type and raises appropriate errors for incorrect types.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get sync backend from model
+        sync_backend = Order.backend()
+
+        # Create a mock async backend to simulate passing an async backend to sync CTEQuery
+        from unittest.mock import Mock
+        from rhosocial.activerecord.backend.base import AsyncStorageBackend
+
+        mock_async_backend = Mock(spec=AsyncStorageBackend)
+        mock_async_backend.dialect = Mock()
+
+        # Try to create a CTEQuery with an async backend - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            CTEQuery(mock_async_backend)
+
+        # Verify the error message mentions the incorrect backend type
+        assert "StorageBackend" in str(exc_info.value)
+        assert "Mock" in str(exc_info.value)
+
+    def test_async_cte_query_with_sync_backend_raises_error(self, order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when a sync backend is provided.
+
+        This test verifies that the asynchronous AsyncCTEQuery properly validates
+        the backend type and raises appropriate errors for incorrect types.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get sync backend from model
+        sync_backend = Order.backend()
+
+        # Try to create an AsyncCTEQuery with a sync backend - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            AsyncCTEQuery(sync_backend)
+
+        # Verify the error message mentions the incorrect backend type
+        assert "AsyncCTEQuery requires an AsyncStorageBackend" in str(exc_info.value)
+        assert "StorageBackend" in str(exc_info.value)
+
+    def test_cte_query_with_async_query_raises_error(self, order_fixtures):
+        """
+        Test that CTEQuery raises TypeError when an invalid query type is provided to with_cte.
+
+        This test verifies that the synchronous CTEQuery properly validates
+        the query types passed to it and raises appropriate errors for incorrect types.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get sync backend from model
+        backend = Order.backend()
+
+        # Create a CTEQuery instance
+        cte_query = CTEQuery(backend)
+
+        # Create a mock that behaves like an invalid query
+        from unittest.mock import Mock
+
+        # Create a mock that doesn't implement the expected interfaces
+        invalid_query = Mock()
+
+        # Try to add the invalid query to the CTEQuery - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', invalid_query)
+
+        # Verify the error message mentions the unsupported query type
+        assert "not supported in CTE" in str(exc_info.value)
+        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+
+    def test_async_cte_query_with_sync_query_raises_error(self, async_order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when an invalid query type is provided to with_cte.
+
+        This test verifies that the asynchronous AsyncCTEQuery properly validates
+        the query types passed to it and raises appropriate errors for incorrect types.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get async backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTEQuery instance
+        cte_query = AsyncCTEQuery(backend)
+
+        # Create a mock that behaves like an invalid query
+        from unittest.mock import Mock
+
+        # Create a mock that doesn't implement the expected interfaces
+        invalid_query = Mock()
+
+        # Try to add the invalid query to the async CTEQuery - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', invalid_query)
+
+        # Verify the error message mentions the unsupported query type
+        assert "not supported in CTE" in str(exc_info.value)
+        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+
+    def test_cte_query_with_invalid_query_type_raises_error(self, order_fixtures):
+        """
+        Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
+
+        This test verifies that the CTEQuery properly validates the types of query
+        objects passed to it and raises appropriate errors for unsupported types.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTEQuery instance
+        cte_query = CTEQuery(backend)
+
+        # Try to pass an unsupported type (e.g., integer) as query parameter
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', 12345)  # Passing an integer instead of valid query type
+
+        # Verify the error message mentions the unsupported type
+        assert "Query type <class 'int'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
+        # Try to pass a list as query parameter
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', [1, 2, 3])  # Passing a list instead of valid query type
+
+        # Verify the error message mentions the unsupported type
+        assert "Query type <class 'list'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
+        # Try to pass a dict as query parameter
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})  # Passing a dict instead of valid query type
+
+        # Verify the error message mentions the unsupported type
+        assert "Query type <class 'dict'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
+
 class TestAsyncCTEQueryActiveQuery:
     """Test CTE queries with ActiveQuery subqueries (asynchronous)."""
 
