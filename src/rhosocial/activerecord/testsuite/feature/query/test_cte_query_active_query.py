@@ -188,3 +188,278 @@ class TestAsyncCTEQueryActiveQuery:
         result = await cte_query.from_cte("high_values").select("name", "value").aggregate()
 
         assert len(result) >= 2  # Should have results from the high_values CTE
+
+
+class TestCTEQueryExtendedFunctionality:
+    """Test CTE queries with extended functionality from BaseQueryMixin, JoinQueryMixin, and RangeQueryMixin."""
+
+    @requires_cte()
+    def test_cte_with_basic_query_conditions(self, order_fixtures):
+        """
+        Test CTE query with basic query conditions (select, where, order_by).
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_basic_user', email='cte_basic@example.com', age=30)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-BASIC-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-BASIC-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = Order(user_id=user.id, order_number='CTE-BASIC-003', total_amount=Decimal('300.00'), status='pending')
+        order1.save()
+        order2.save()
+        order3.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a simple query
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('basic_orders_cte', (f"SELECT id, status, total_amount, user_id FROM {Order.table_name()}", ()))
+
+        # Verify the SQL generation before execution
+        sql_query = cte_query.from_cte('basic_orders_cte').select('id', 'status', 'total_amount').where("status IN (?, ?)", ('active', 'completed')).order_by(('total_amount', 'DESC'))
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains expected elements
+        assert 'WITH' in sql.upper()
+        assert 'basic_orders_cte' in sql
+        assert 'SELECT' in sql.upper()
+        assert 'status IN (?, ?)' in sql
+        assert 'ORDER BY' in sql.upper()
+        assert params == ('active', 'completed')
+
+        # Execute the query and verify results
+        results = sql_query.aggregate()
+
+        # Verify results contain only active and completed orders, ordered by amount descending
+        assert len(results) == 2
+        assert results[0]['status'] == 'completed'
+        assert results[0]['total_amount'] == Decimal('200.00')
+        assert results[1]['status'] == 'active'
+        assert results[1]['total_amount'] == Decimal('100.00')
+
+    @requires_cte()
+    def test_cte_with_range_conditions(self, order_fixtures):
+        """
+        Test CTE query with range conditions (limit, offset).
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_range_user', email='cte_range@example.com', age=35)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-RANGE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-RANGE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = Order(user_id=user.id, order_number='CTE-RANGE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = Order(user_id=user.id, order_number='CTE-RANGE-004', total_amount=Decimal('400.00'), status='active')
+        order1.save()
+        order2.save()
+        order3.save()
+        order4.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a simple query
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('range_orders_cte', (f"SELECT id, status, total_amount FROM {Order.table_name()} ORDER BY total_amount DESC", ()))
+
+        # Verify the SQL generation for range conditions
+        sql_query = cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').limit(2).offset(1)
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains expected range elements
+        assert 'WITH' in sql.upper()
+        assert 'LIMIT' in sql.upper()
+        assert 'OFFSET' in sql.upper()
+        assert 'range_orders_cte' in sql
+        assert params == (2, 1)  # Limit and offset values
+
+        # Use the new API: specify which CTE to use and apply range conditions
+        results = sql_query.aggregate()
+
+        # Verify results contain limited and offset records
+        assert len(results) == 2
+        # With offset 1 and limit 2, we should get the 2nd and 3rd highest amounts (300 and 200)
+        assert results[0]['total_amount'] == Decimal('300.00')
+        assert results[1]['total_amount'] == Decimal('200.00')
+
+    @requires_cte()
+    def test_cte_with_joins(self, order_fixtures):
+        """
+        Test CTE query with join conditions.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='cte_join_user', email='cte_join@example.com', age=40)
+        user.save()
+
+        # Create orders for the test
+        order1 = Order(user_id=user.id, order_number='CTE-JOIN-001', total_amount=Decimal('150.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-JOIN-002', total_amount=Decimal('250.00'), status='pending')
+        order1.save()
+        order2.save()
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTE with a query that joins orders and users
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('joined_orders_cte', (f"SELECT o.id, o.status, o.total_amount, u.username FROM {Order.table_name()} o JOIN {User.table_name()} u ON o.user_id = u.id WHERE o.status IN (?, ?)", ('active', 'pending')))
+
+        # Verify the SQL generation for join conditions
+        sql_query = cte_query.from_cte('joined_orders_cte').select('id', 'status', 'total_amount', 'username').order_by(('total_amount', 'DESC'))
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains expected join elements
+        assert 'WITH' in sql.upper()
+        assert 'JOIN' in sql.upper()
+        assert 'ORDER BY' in sql.upper()
+        assert 'joined_orders_cte' in sql
+        assert params == ('active', 'pending')
+
+        # Use the new API: specify which CTE to use and apply additional conditions
+        results = sql_query.aggregate()
+
+        # Verify results contain joined data
+        assert len(results) == 2
+        # Results should be ordered by amount descending
+        assert results[0]['total_amount'] == Decimal('250.00')
+        assert results[0]['status'] == 'pending'
+        assert results[0]['username'] == 'cte_join_user'
+        assert results[1]['total_amount'] == Decimal('150.00')
+        assert results[1]['status'] == 'active'
+
+
+class TestAsyncCTEQueryExtendedFunctionality:
+    """Test Async CTE queries with extended functionality from BaseQueryMixin, JoinQueryMixin, and RangeQueryMixin."""
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_with_basic_query_conditions(self, async_order_fixtures):
+        """
+        Test Async CTE query with basic query conditions (select, where, order_by).
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_basic_user', email='async_cte_basic@example.com', age=30)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-BASIC-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-BASIC-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-BASIC-003', total_amount=Decimal('300.00'), status='pending')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create a CTE with a simple query
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('basic_orders_cte', (f"SELECT id, status, total_amount, user_id FROM {AsyncOrder.table_name()}", ()))
+
+        # Verify the SQL generation for async query
+        sql_query = cte_query.from_cte('basic_orders_cte').select('id', 'status', 'total_amount').where("status IN (?, ?)", ('active', 'completed')).order_by(('total_amount', 'DESC'))
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains expected elements
+        assert 'WITH' in sql.upper()
+        assert 'basic_orders_cte' in sql
+        assert 'SELECT' in sql.upper()
+        assert 'status IN (?, ?)' in sql
+        assert 'ORDER BY' in sql.upper()
+        assert params == ('active', 'completed')
+
+        # Use the new API: specify which CTE to use and apply basic query conditions
+        results = await sql_query.aggregate()
+
+        # Verify results contain only active and completed orders, ordered by amount descending
+        assert len(results) == 2
+        assert results[0]['status'] == 'completed'
+        assert results[0]['total_amount'] == Decimal('200.00')
+        assert results[1]['status'] == 'active'
+        assert results[1]['total_amount'] == Decimal('100.00')
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_with_range_conditions(self, async_order_fixtures):
+        """
+        Test Async CTE query with range conditions (limit, offset).
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_range_user', email='async_cte_range@example.com', age=35)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-004', total_amount=Decimal('400.00'), status='active')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+        await order4.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create a CTE with a simple query
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('range_orders_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()} ORDER BY total_amount DESC", ()))
+
+        # Use the new API: specify which CTE to use and apply range conditions
+        results = await cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').limit(2).offset(1).aggregate()
+
+        # Verify results contain limited and offset records
+        assert len(results) == 2
+        # With offset 1 and limit 2, we should get the 2nd and 3rd highest amounts (300 and 200)
+        assert results[0]['total_amount'] == Decimal('300.00')
+        assert results[1]['total_amount'] == Decimal('200.00')
+
+    @pytest.mark.asyncio
+    @requires_cte()
+    async def test_async_cte_with_joins(self, async_order_fixtures):
+        """
+        Test Async CTE query with join conditions.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_join_user', email='async_cte_join@example.com', age=40)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-JOIN-001', total_amount=Decimal('150.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-JOIN-002', total_amount=Decimal('250.00'), status='pending')
+        await order1.save()
+        await order2.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create a CTE with a query that joins orders and users
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('joined_orders_cte', (f"SELECT o.id, o.status, o.total_amount, u.username FROM {AsyncOrder.table_name()} o JOIN {AsyncUser.table_name()} u ON o.user_id = u.id WHERE o.status IN (?, ?)", ('active', 'pending')))
+
+        # Use the new API: specify which CTE to use and apply additional conditions
+        results = await cte_query.from_cte('joined_orders_cte').select('id', 'status', 'total_amount', 'username').order_by(('total_amount', 'DESC')).aggregate()
+
+        # Verify results contain joined data
+        assert len(results) == 2
+        # Results should be ordered by amount descending
+        assert results[0]['total_amount'] == Decimal('250.00')
+        assert results[0]['status'] == 'pending'
+        assert results[0]['username'] == 'async_cte_join_user'
+        assert results[1]['total_amount'] == Decimal('150.00')
+        assert results[1]['status'] == 'active'
