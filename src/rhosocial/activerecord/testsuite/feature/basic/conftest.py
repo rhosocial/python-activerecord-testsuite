@@ -152,6 +152,23 @@ def mapped_models_fixtures(request):
     # After the test function finishes, perform cleanup.
     provider.cleanup_after_test(scenario)
 
+# Import async models
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
+    AsyncUser as AsyncUserModel,
+    AsyncTypeCase as AsyncTypeCaseModel,
+    AsyncValidatedUser as AsyncValidatedUserModel,
+    AsyncTypeTestModel as AsyncTypeTestModel,
+    AsyncValidatedFieldUser as AsyncValidatedFieldUserModel,
+    AsyncTypeAdapterTest as AsyncTypeAdapterTestModel,
+    AsyncYesOrNoBooleanAdapter as AsyncYesOrNoBooleanAdapter,
+    AsyncMappedUser as AsyncMappedUserModel,
+    AsyncMappedPost as AsyncMappedPostModel,
+    AsyncMappedComment as AsyncMappedCommentModel,
+    AsyncColumnMappingModel as AsyncColumnMappingModel,
+    AsyncMixedAnnotationModel as AsyncMixedAnnotationModel
+)
+
+
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def mixed_models_fixtures(request):
     """
@@ -170,3 +187,158 @@ def mixed_models_fixtures(request):
 
     # After the test function finishes, perform cleanup.
     provider.cleanup_after_test(scenario)
+
+
+# --- Async Fixtures ---
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_user_class(request):
+    """
+    A pytest fixture that provides an async-configured `AsyncUser` model class for testing.
+    It is parameterized to run for each available scenario.
+    It also handles the async setup and teardown for each test.
+    """
+    # `request.param` holds the current scenario name (e.g., "memory", "file").
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # Ask the provider to set up the database and configure the AsyncUser model for this scenario.
+    model = await provider.setup_async_user_model(scenario)
+
+    # `yield` passes the configured model class to the test function.
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    # After the test function finishes, the code below this line runs as a teardown.
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_case_class(request):
+    """
+    Provides an async-configured `AsyncTypeCase` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_type_case_model(scenario)
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_validated_user_class(request):
+    """
+    Provides an async-configured `AsyncValidatedUser` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_validated_user_model(scenario)
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_test_model(request):
+    """
+    Provides an async-configured `AsyncTypeTestModel` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_type_test_model(scenario)
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_validated_field_user_class(request):
+    """
+    Provides an async-configured `AsyncValidatedFieldUser` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_validated_field_user_model(scenario)
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_mapped_models_fixtures(request):
+    """
+    A pytest fixture that provides async-configured `AsyncMappedUser`, `AsyncMappedPost`,
+    and `AsyncMappedComment` model classes for testing, parameterized by scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # Ask the provider to set up the database and configure the AsyncMapped models for this scenario.
+    user_model, post_model, comment_model = await provider.setup_async_mapped_models(scenario)
+
+    # Yield the configured model classes as a tuple.
+    yield user_model, post_model, comment_model
+
+    # After the test function finishes, perform async cleanup.
+    # Determine which model has the backend to disconnect
+    backend_to_close = user_model.__backend__
+    await backend_to_close.disconnect()
+
+    # Cleanup after test
+    await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_mixed_models_fixtures(request):
+    """
+    Provides async-configured models with mixed annotations
+    (`AsyncColumnMappingModel`, `AsyncMixedAnnotationModel`) for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The provider's setup method returns a tuple of configured models
+    models = await provider.setup_async_mixed_models(scenario)
+
+    yield models
+
+    # After the test function finishes, perform async cleanup.
+    # Determine which model has the backend to disconnect
+    backend_to_close = models[0].__backend__  # Assuming first model has the backend
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)

@@ -614,3 +614,103 @@ class TestAsyncCTEQueryExtendedFunctionality:
         assert 'active' in statuses
         assert 'pending' in statuses
         assert 'async_cte_join_user' in usernames
+
+
+class TestCTEQuerySyncErrorHandling:
+    """Test CTE query error handling for edge cases (synchronous)."""
+
+    def test_cte_query_to_sql_with_empty_ctes_raises_error(self, order_fixtures):
+        """
+        Test that calling to_sql() on a CTEQuery with no CTEs defined raises ValueError.
+        This tests the condition: if not self._ctes: raise ValueError("CTEQuery must have at least one CTE defined")
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTEQuery instance without adding any CTEs
+        cte_query = CTEQuery(backend)
+
+        # Attempt to call to_sql() without defining any CTEs - should raise ValueError
+        with pytest.raises(ValueError) as exc_info:
+            cte_query.to_sql()
+
+        # Verify the error message mentions the missing CTE requirement
+        assert "CTEQuery must have at least one CTE defined" in str(exc_info.value)
+
+    def test_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, order_fixtures):
+        """
+        Test that calling to_sql() with a _main_cte_name that doesn't exist in defined CTEs raises ValueError.
+        This tests the condition: if main_cte_name not in cte_names: raise ValueError(...)
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get backend from model
+        backend = Order.backend()
+
+        # Create a CTEQuery instance and add one CTE
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('existing_cte', (f"SELECT id, status FROM {Order.table_name()}", ()))
+
+        # Explicitly set _main_cte_name to a name that doesn't exist
+        cte_query._main_cte_name = 'nonexistent_cte'
+
+        # Attempt to call to_sql() with nonexistent CTE name - should raise ValueError
+        with pytest.raises(ValueError) as exc_info:
+            cte_query.to_sql()
+
+        # Verify the error message mentions the missing CTE
+        assert "CTE 'nonexistent_cte' not found in defined CTEs:" in str(exc_info.value)
+        assert 'existing_cte' in str(exc_info.value)  # Should show the available CTE names
+
+
+class TestCTEQueryAsyncErrorHandling:
+    """Test CTE query error handling for edge cases (asynchronous)."""
+
+    @pytest.mark.asyncio
+    async def test_async_cte_query_to_sql_with_empty_ctes_raises_error(self, async_order_fixtures):
+        """
+        Test that calling to_sql() on an AsyncCTEQuery with no CTEs defined raises ValueError.
+        This tests the async version of the condition: if not self._ctes: raise ValueError("CTEQuery must have at least one CTE defined")
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTEQuery instance without adding any CTEs
+        cte_query = AsyncCTEQuery(backend)
+
+        # Attempt to call to_sql() without defining any CTEs - should raise ValueError
+        with pytest.raises(ValueError) as exc_info:
+            cte_query.to_sql()
+
+        # Verify the error message mentions the missing CTE requirement
+        assert "CTEQuery must have at least one CTE defined" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_async_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, async_order_fixtures):
+        """
+        Test that calling to_sql() with a _main_cte_name that doesn't exist in defined CTEs raises ValueError.
+        This tests the async version of the condition: if main_cte_name not in cte_names: raise ValueError(...)
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTEQuery instance and add one CTE
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('existing_cte', (f"SELECT id, status FROM {AsyncOrder.table_name()}", ()))
+
+        # Explicitly set _main_cte_name to a name that doesn't exist
+        cte_query._main_cte_name = 'nonexistent_cte'
+
+        # Attempt to call to_sql() with nonexistent CTE name - should raise ValueError
+        with pytest.raises(ValueError) as exc_info:
+            cte_query.to_sql()
+
+        # Verify the error message mentions the missing CTE
+        assert "CTE 'nonexistent_cte' not found in defined CTEs:" in str(exc_info.value)
+        assert 'existing_cte' in str(exc_info.value)  # Should show the available CTE names

@@ -139,3 +139,92 @@ class IBasicProvider(ABC):
         to 'yes'/'no' strings.
         """
         pass
+
+    @abstractmethod
+    async def setup_async_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncUser` model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncUser model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_type_case_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncTypeCase` model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncTypeCase model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_validated_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncValidatedUser` model
+        under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncValidatedUser model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_type_test_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncTypeTestModel` model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncTypeTestModel model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_validated_field_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncValidatedFieldUser` model
+        under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncValidatedFieldUser model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_mapped_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for `AsyncMappedUser`, `AsyncMappedPost`,
+        and `AsyncMappedComment` models under a given scenario and return the
+        configured model classes as a tuple.
+
+        Returns:
+            Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]: A tuple
+            containing the configured AsyncMappedUser, AsyncMappedPost, and AsyncMappedComment model classes.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_mixed_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
+        """
+        Should prepare the testing environment for async models with mixed annotations
+        (`AsyncColumnMappingModel`, `AsyncMixedAnnotationModel`) under a given scenario
+        and return the configured model classes as a tuple.
+
+        Returns:
+            Tuple[Type[ActiveRecord], ...]: A tuple containing the configured
+            AsyncColumnMappingModel and AsyncMixedAnnotationModel classes.
+        """
+        pass
+
+    @abstractmethod
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Should perform any necessary async cleanup after a test has run, such as
+        deleting temporary database files.
+        """
+        pass
