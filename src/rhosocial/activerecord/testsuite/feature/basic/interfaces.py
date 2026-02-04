@@ -141,6 +141,21 @@ class IBasicProvider(ABC):
         pass
 
     @abstractmethod
+    async def setup_async_type_adapter_model_and_schema(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Prepares the environment for async type adapter tests.
+
+        Implementers should:
+        1. Define and execute the DDL for the 'type_adapter_tests' table.
+        2. Define and configure the AsyncActiveRecord model for this test.
+        3. Return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncTypeAdapterTest model class.
+        """
+        pass
+
+    @abstractmethod
     async def setup_async_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
         """
         Should prepare the testing environment for the `AsyncUser` model under a

@@ -342,3 +342,27 @@ async def async_mixed_models_fixtures(request):
     await backend_to_close.disconnect()
 
     await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_adapter_fixtures(request):
+    """
+    Provides async fixtures for type adapter tests, including the async model, backend,
+    and a custom "yes/no" adapter.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The setup method returns an async model
+    model = await provider.setup_async_type_adapter_model_and_schema(scenario)
+
+    # Yield all resources needed by the tests
+    yield model
+
+    # Disconnect the backend to allow the event loop to close.
+    backend_to_close = model.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)
