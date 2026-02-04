@@ -270,6 +270,88 @@ class TestInvalidCases:
         assert "Duplicate explicit column name 'shared_column' found" in str(excinfo.value)
 
 
+class TestAsyncInvalidCases:
+    """
+    Async version of TestInvalidCases to ensure sync/async parity.
+    These tests ensure the framework raises errors at definition time for async models too.
+    """
+
+    def test_multiple_use_column_raises_error(self):
+        """Verify that using multiple UseColumn annotations raises an error for async models."""
+        from rhosocial.activerecord.model import AsyncActiveRecord
+
+        with pytest.raises(TypeError) as excinfo:
+            class AsyncInvalidModel(AsyncActiveRecord):
+                __table_name__ = "invalid"
+                # This field has two UseColumn annotations, which is invalid.
+                name: Annotated[str, UseColumn("col1"), UseColumn("col2")]
+
+        assert "A field can have at most one UseColumn specified" in str(excinfo.value)
+
+    def test_multiple_use_adapter_raises_error(self):
+        """Verify that using multiple UseAdapter annotations raises an error for async models."""
+        from rhosocial.activerecord.model import AsyncActiveRecord
+        class DummyAdapter(BaseSQLTypeAdapter):
+            def _do_to_database(self, value, **kwargs): return value
+            def _do_from_database(self, value, **kwargs): return value
+
+        with pytest.raises(TypeError) as excinfo:
+            class AsyncInvalidModel(AsyncActiveRecord):
+                __table_name__ = "invalid"
+                # This field has two UseAdapter annotations, which is invalid.
+                data: Annotated[
+                    str,
+                    UseAdapter(DummyAdapter(), str),
+                    UseAdapter(DummyAdapter(), str)
+                ]
+
+        assert "A field can have at most one UseAdapter specified" in str(excinfo.value)
+
+    def test_use_column_with_invalid_type_raises_error(self):
+        """Verify that UseColumn expects a string argument for async models."""
+        from rhosocial.activerecord.model import AsyncActiveRecord
+
+        with pytest.raises(TypeError) as excinfo:
+            class AsyncInvalidModel(AsyncActiveRecord):
+                __table_name__ = "invalid"
+                # UseColumn is given an integer, but it expects a string.
+                name: Annotated[str, UseColumn(123)]
+
+        assert "Invalid type for column_name. Expected str, but received type int." in str(excinfo.value)
+
+    def test_use_adapter_with_invalid_adapter_raises_error(self):
+        """Verify that UseAdapter expects a valid adapter instance for async models."""
+        from rhosocial.activerecord.model import AsyncActiveRecord
+        class NotAnAdapter:
+            pass
+
+        with pytest.raises(TypeError) as excinfo:
+            class AsyncInvalidModel(AsyncActiveRecord):
+                __table_name__ = "invalid"
+                # UseAdapter is given an object that is not a BaseSQLTypeAdapter.
+                data: Annotated[str, UseAdapter(NotAnAdapter(), str)]
+
+        assert "Invalid type for adapter. Expected an instance of SQLTypeAdapter, but received type NotAnAdapter." in str(excinfo.value)
+
+    def test_duplicate_column_name_raises_error(self):
+        """Verify that two fields mapping to the same column raises an error for async models."""
+        from rhosocial.activerecord.model import AsyncActiveRecord
+
+        with pytest.raises(ValueError) as excinfo:
+            class AsyncInvalidModelWithDuplicates(AsyncActiveRecord):
+                __table_name__ = "invalid_duplicates"
+
+                field_a: Annotated[str, UseColumn("shared_column")]
+                field_b: Annotated[int, UseColumn("shared_column")]
+
+            # The error is raised when the class's MRO is being constructed
+            # and metaclass are applied. We explicitly trigger validation
+            # to ensure the check is performed.
+            AsyncInvalidModelWithDuplicates.validate_column_names()
+
+        assert "Duplicate explicit column name 'shared_column' found" in str(excinfo.value)
+
+
 # Import async fixtures to make them available for async tests
 from rhosocial.activerecord.testsuite.feature.basic.conftest import (
     async_mapped_models_fixtures,
