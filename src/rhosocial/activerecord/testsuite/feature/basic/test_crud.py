@@ -13,8 +13,6 @@ import pytest
 
 from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
 
-# Fixtures are now injected by the conftest.py in this package
-
 
 class TestSyncCRUD:
     """Synchronous CRUD test class that wraps all the test functions."""
@@ -475,11 +473,10 @@ class TestSyncCRUD:
 
 
 class TestAsyncCRUD:
-    """Asynchronous CRUD test class with equivalent async tests."""
+    """Asynchronous CRUD test class that wraps all the test functions."""
 
-    @pytest.mark.asyncio
     async def test_create_user(self, async_user_class):
-        """Test creating a user record asynchronously"""
+        """Test creating a user record"""
         instance = async_user_class(username="Alice", email="alice@example.com", age=30, balance=Decimal("100.50"))
         rows = await instance.save()
         assert rows == 1
@@ -488,9 +485,8 @@ class TestAsyncCRUD:
         assert instance.updated_at is not None
         assert instance.is_active is True
 
-    @pytest.mark.asyncio
     async def test_create_user_with_invalid_data(self, async_user_class):
-        """Test creating a user record with invalid data asynchronously"""
+        """Test creating a user record with invalid data"""
         with pytest.raises(pydantic.ValidationError):
             user = async_user_class(
                 username='jo',  # too short
@@ -500,9 +496,8 @@ class TestAsyncCRUD:
             )
             await user.save()
 
-    @pytest.mark.asyncio
     async def test_find_user(self, async_user_class):
-        """Test finding a user record asynchronously"""
+        """Test finding a user record"""
         # Create a user
         user = async_user_class(
             username='jane_doe',
@@ -520,18 +515,16 @@ class TestAsyncCRUD:
         assert found.age == 25
         assert found.balance == Decimal('200.00')
 
-    @pytest.mark.asyncio
     async def test_find_nonexistent_user(self, async_user_class):
-        """Test finding a non-existent user record asynchronously"""
+        """Test finding a non-existent user record"""
         found = await async_user_class.find_one(999)
         assert found is None
 
         with pytest.raises(RecordNotFound):
             await async_user_class.find_one_or_fail(999)
 
-    @pytest.mark.asyncio
     async def test_update_user(self, async_user_class):
-        """Test updating a user record asynchronously"""
+        """Test updating a user record"""
         # Create a user
         user = async_user_class(
             username='bob_smith',
@@ -565,9 +558,8 @@ class TestAsyncCRUD:
         assert user.email == 'bob@smith.com'  # field not modified should remain unchanged
         assert user.created_at == original_created_at
 
-    @pytest.mark.asyncio
     async def test_update_with_invalid_data(self, async_user_class):
-        """Test updating a user record with invalid data asynchronously"""
+        """Test updating a user record with invalid data"""
         user = async_user_class(
             username='alice_wonder',
             email='alice@wonder.com',
@@ -580,9 +572,8 @@ class TestAsyncCRUD:
             user.age = -1  # invalid age
             await user.save()
 
-    @pytest.mark.asyncio
     async def test_delete_user(self, async_user_class):
-        """Test deleting a user record asynchronously"""
+        """Test deleting a user record"""
         user = async_user_class(
             username='charlie_brown',
             email='charlie@brown.com',
@@ -601,9 +592,8 @@ class TestAsyncCRUD:
         # Verify deleted
         assert await async_user_class.find_one(user_id) is None
 
-    @pytest.mark.asyncio
     async def test_save_after_delete(self, async_user_class):
-        """Test saving a user record after it has been deleted asynchronously"""
+        """Test saving a user record after it has been deleted"""
         # Create a user
         user = async_user_class(
             username='deleted_user',
@@ -639,15 +629,14 @@ class TestAsyncCRUD:
         assert found.username == 'deleted_user'
         assert found.email == 'deleted@example.com'
 
-    @pytest.mark.asyncio
     async def test_bulk_operations(self, async_user_class):
-        """Test bulk operations asynchronously"""
+        """Test bulk operations"""
         # Bulk create
         users = [
             async_user_class(username=f'user_{i}',
-                             email=f'user_{i}@example.com',
-                             age=20 + i,
-                             balance=Decimal(f'{100 + i}.00'))
+                       email=f'user_{i}@example.com',
+                       age=20 + i,
+                       balance=Decimal(f'{100 + i}.00'))
             for i in range(5)
         ]
         for user in users:
@@ -662,9 +651,8 @@ class TestAsyncCRUD:
         young_users = await async_user_class.query().where('age < ?', (22,)).all()
         assert len(young_users) == 2
 
-    @pytest.mark.asyncio
     async def test_dirty_tracking(self, async_user_class):
-        """Test dirty data tracking asynchronously"""
+        """Test dirty data tracking"""
         user = async_user_class(
             username='track_user',
             email='track@example.com',
@@ -688,9 +676,8 @@ class TestAsyncCRUD:
         assert 'username' in user.dirty_fields
         assert 'email' not in user.dirty_fields
 
-    @pytest.mark.asyncio
     async def test_type_case_crud(self, async_type_case_class):
-        """Test CRUD operations with various field types asynchronously"""
+        """Test CRUD operations with various field types"""
         from datetime import datetime
 
         # Create test record
@@ -739,9 +726,8 @@ class TestAsyncCRUD:
         assert found.json_val == {'key': 'value'}
         assert found.array_val == [1, 2, 3]
 
-    @pytest.mark.asyncio
     async def test_validated_user_crud(self, async_validated_user_class):
-        """Test CRUD operations with a validated user model asynchronously"""
+        """Test CRUD operations with a validated user model"""
         # Test with valid data
         user = async_validated_user_class(
             username='valid_user',
@@ -829,9 +815,8 @@ class TestAsyncCRUD:
         assert user.credit_score == 800
         assert user.status == 'suspended'
 
-    @pytest.mark.asyncio
     async def test_transaction_crud(self, async_user_class):
-        """Test CRUD operations in transactions asynchronously"""
+        """Test CRUD operations in transactions"""
         # Successful transaction
         async with async_user_class.transaction():
             user = async_user_class(
@@ -869,9 +854,8 @@ class TestAsyncCRUD:
         found = await async_user_class.query().where('username = ?', ('transaction_user2',)).one()
         assert found is None
 
-    @pytest.mark.asyncio
     async def test_refresh_record(self, async_validated_user_class):
-        """Test record refresh functionality asynchronously"""
+        """Test record refresh functionality"""
         user = async_validated_user_class(
             username='refresh_user',
             email='refresh@example.com',
@@ -901,9 +885,8 @@ class TestAsyncCRUD:
         with pytest.raises(DatabaseError):
             await new_user.refresh()
 
-    @pytest.mark.asyncio
     async def test_query_methods(self, async_validated_user_class):
-        """Test query methods asynchronously"""
+        """Test query methods"""
         # Create test data
         users = [
             async_validated_user_class(
@@ -932,9 +915,9 @@ class TestAsyncCRUD:
 
         # Test query builder
         query_results = await (async_validated_user_class.query()
-                               .where('age >= ?', (31,))
-                               .order_by('age')
-                               .all())
+                         .where('age >= ?', (31,))
+                         .order_by('age')
+                         .all())
         assert len(query_results) == 2
         assert query_results[0].username == 'query_user_1'
         assert query_results[1].username == 'query_user_2'
