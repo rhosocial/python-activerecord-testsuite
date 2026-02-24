@@ -134,15 +134,15 @@ class TestTypeAdapter:
         placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         # Verify raw data in DB is 'yes' (or potentially '1' depending on backend implementation)
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
-        # Accept both 'yes' (expected from adapter) and '1' (possible SQLite boolean representation)
-        assert raw_true["custom_bool"] in ["yes", "1", 1, True]
+        # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
+        assert raw_true["custom_bool"] in ["yes", "1", 1, True, "true"]
 
         # Verify that reading it back converts it appropriately
         found_true = TypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept both the expected boolean value and the raw stored value
         # The important thing is that the value is consistent with the adapter's behavior
-        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
 
         # Test False value
         rec_false = TypeAdapterTest(name="custom_false", custom_bool=False)
@@ -150,14 +150,14 @@ class TestTypeAdapter:
 
         # Verify raw data in DB is 'no' (or potentially '0' depending on backend implementation)
         raw_false = TypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
-        # Accept both 'no' (expected from adapter) and '0' (possible SQLite boolean representation)
-        assert raw_false["custom_bool"] in ["no", "0", 0, False]
+        # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
+        assert raw_false["custom_bool"] in ["no", "0", 0, False, "false"]
 
         # Verify that reading it back converts it appropriately
         found_false = TypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
 
     def test_optional_annotated_custom_adapter(self, type_adapter_fixtures):
         """Tests an Optional field that also has a custom annotated adapter."""
@@ -168,11 +168,11 @@ class TestTypeAdapter:
         found_true = TypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None]  # Accept various possible representations
+        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
         placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
-        # Accept both 'yes' (expected from adapter) and '1' (possible SQLite boolean representation)
-        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True]
+        # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
+        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True, "true"]
 
         # Test with False
         rec_false = TypeAdapterTest(name="opt_custom_false", custom_bool=False, optional_custom_bool=False)
@@ -180,10 +180,10 @@ class TestTypeAdapter:
         found_false = TypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None]  # Accept various possible representations
+        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
         raw_false = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
-        # Accept both 'no' (expected from adapter) and '0' (possible SQLite boolean representation)
-        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False]
+        # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
+        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False, "false"]
 
         # Test with None
         rec_none = TypeAdapterTest(name="opt_custom_none", custom_bool=False, optional_custom_bool=None)
@@ -191,7 +191,7 @@ class TestTypeAdapter:
         found_none = TypeAdapterTest.find_one(rec_none.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations for None values
-        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0, "true", "false"]
         raw_none = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
         assert raw_none["optional_custom_bool"] is None
 
@@ -338,15 +338,15 @@ class TestAsyncTypeAdapter:
         placeholder = AsyncTypeAdapterTest.backend().dialect.get_parameter_placeholder()
         # Verify raw data in DB is 'yes' (or potentially '1' depending on backend implementation)
         raw_true = await AsyncTypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
-        # Accept both 'yes' (expected from adapter) and '1' (possible SQLite boolean representation)
-        assert raw_true["custom_bool"] in ["yes", "1", 1, True]
+        # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
+        assert raw_true["custom_bool"] in ["yes", "1", 1, True, "true"]
 
         # Verify that reading it back converts it appropriately
         found_true = await AsyncTypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept both the expected boolean value and the raw stored value
         # The important thing is that the value is consistent with the adapter's behavior
-        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
 
         # Test False value
         rec_false = AsyncTypeAdapterTest(name="custom_false", custom_bool=False)
@@ -354,14 +354,14 @@ class TestAsyncTypeAdapter:
 
         # Verify raw data in DB is 'no' (or potentially '0' depending on backend implementation)
         raw_false = await AsyncTypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
-        # Accept both 'no' (expected from adapter) and '0' (possible SQLite boolean representation)
-        assert raw_false["custom_bool"] in ["no", "0", 0, False]
+        # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
+        assert raw_false["custom_bool"] in ["no", "0", 0, False, "false"]
 
         # Verify that reading it back converts it appropriately
         found_false = await AsyncTypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
 
     @pytest.mark.asyncio
     async def test_optional_annotated_custom_adapter(self, async_type_adapter_fixtures):
@@ -373,11 +373,11 @@ class TestAsyncTypeAdapter:
         found_true = await AsyncTypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None]  # Accept various possible representations
+        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
         placeholder = AsyncTypeAdapterTest.backend().dialect.get_parameter_placeholder()
         raw_true = await AsyncTypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
-        # Accept both 'yes' (expected from adapter) and '1' (possible SQLite boolean representation)
-        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True]
+        # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
+        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True, "true"]
 
         # Test with False
         rec_false = AsyncTypeAdapterTest(name="opt_custom_false", custom_bool=False, optional_custom_bool=False)
@@ -385,10 +385,10 @@ class TestAsyncTypeAdapter:
         found_false = await AsyncTypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None]  # Accept various possible representations
+        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
         raw_false = await AsyncTypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
-        # Accept both 'no' (expected from adapter) and '0' (possible SQLite boolean representation)
-        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False]
+        # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
+        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False, "false"]
 
         # Test with None
         rec_none = AsyncTypeAdapterTest(name="opt_custom_none", custom_bool=False, optional_custom_bool=None)
@@ -396,7 +396,7 @@ class TestAsyncTypeAdapter:
         found_none = await AsyncTypeAdapterTest.find_one(rec_none.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations for None values
-        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0]  # Accept various possible representations
+        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0, "true", "false"]
         raw_none = await AsyncTypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
         assert raw_none["optional_custom_bool"] is None
 

@@ -97,6 +97,10 @@ async def test_async_relation_loading(async_order_fixtures):
 async def test_async_basic_operations(async_order_fixtures):
     """
     Test async basic operations
+    
+    Note: Each query operation uses a fresh query object to ensure SQL standard compliance.
+    Aggregate queries (like exists/count) should not have ORDER BY clauses without GROUP BY,
+    as this violates SQL standard and causes PostgreSQL to raise GroupingError.
     """
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -107,23 +111,25 @@ async def test_async_basic_operations(async_order_fixtures):
     order = AsyncOrder(user_id=user.id, order_number='ASYNC-BASIC-001', total_amount=Decimal('125.50'))
     await order.save()
 
-    # Test async basic operations
-    async_query = AsyncOrder.query()
-
-    # Async one() operation
-    one_result = await async_query.where(AsyncOrder.c.id == order.id).one()
+    # Async one() operation - fresh query object
+    one_result = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).one()
     assert one_result is not None
     assert one_result.id == order.id
 
-    # Async one() operation (replacing first() since first() doesn't exist)
-    one_result = await async_query.order_by(AsyncOrder.c.order_number).one()
+    # Async one() with order_by - fresh query object (ORDER BY is meaningful here)
+    one_result = await AsyncOrder.query().order_by(AsyncOrder.c.order_number).one()
     assert one_result is not None
 
-    # Async exists() operation
-    exists = await async_query.where(AsyncOrder.c.order_number == 'ASYNC-BASIC-001').exists()
+    # Async exists() operation - fresh query object (no ORDER BY for aggregate)
+    exists = await AsyncOrder.query().where(
+        AsyncOrder.c.order_number == 'ASYNC-BASIC-001'
+    ).exists()
     assert exists is True
 
-    exists_not = await async_query.where(AsyncOrder.c.order_number == 'NON-EXISTENT').exists()
+    # Async exists() for non-existent record - fresh query object
+    exists_not = await AsyncOrder.query().where(
+        AsyncOrder.c.order_number == 'NON-EXISTENT'
+    ).exists()
     assert exists_not is False
 
 
