@@ -78,11 +78,7 @@ async def async_user_class(request):
     # `yield` passes the configured model class to the test function.
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
-    # After the test function finishes, the code below this line runs as a teardown.
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -110,10 +106,7 @@ async def async_type_case_class(request):
     model = await provider.setup_async_type_case_model(scenario)
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -141,10 +134,7 @@ async def async_type_test_model(request):
     model = await provider.setup_async_type_test_model(scenario)
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -172,10 +162,7 @@ async def async_validated_user_class(request):
     model = await provider.setup_async_validated_field_user_model(scenario)
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -203,10 +190,7 @@ async def async_validated_user(request):
     model = await provider.setup_async_validated_user_model(scenario)
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -246,10 +230,7 @@ async def async_type_adapter_fixtures(request):
     # Yield all resources needed by the tests
     yield model
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = model.__backend__
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 
@@ -290,12 +271,7 @@ async def async_mapped_models_fixtures(request):
     # Yield the configured model classes as a tuple.
     yield user_model, post_model, comment_model
 
-    # After the test function finishes, perform async cleanup.
-    # Determine which model has the backend to disconnect
-    backend_to_close = user_model.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -333,9 +309,5 @@ async def async_mixed_models_fixtures(request):
 
     yield models
 
-    # After the test function finishes, perform async cleanup.
-    # Determine which model has the backend to disconnect
-    backend_to_close = models[0].__backend__  # Assuming first model has the backend
-    await backend_to_close.disconnect()
-
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)

@@ -118,6 +118,63 @@ graph LR
 - Generate compatibility reports
 - Declare backend capabilities using add_* methods
 
+### Provider Responsibilities
+
+The Provider design pattern is central to the test suite. Each backend must implement a provider that handles:
+
+1. **Environment Preparation** (Setup):
+   - Creating database schemas (tables, indexes, constraints)
+   - Establishing database connections
+   - Configuring test models with backend-specific implementations
+
+2. **Environment Cleanup** (Teardown):
+   - Dropping test tables
+   - Closing cursors properly
+   - Disconnecting from the database
+
+**Critical: Cleanup Order**
+
+The provider MUST handle cleanup in the correct order to avoid issues:
+
+```
+Correct Order:
+1. Execute DROP TABLE statements (cleanup data)
+2. Close all cursors
+3. Disconnect from database
+
+Incorrect Order:
+1. Disconnect first  ❌
+2. Then try to cleanup  ❌ (connection already closed!)
+```
+
+**Why This Matters:**
+
+Different backends have different requirements:
+
+- **MySQL Async**: Closing connection before cursors can cause `RuntimeError: Set changed size during iteration` (due to WeakSet modification during iteration)
+- **Table Conflicts**: Not dropping tables can cause "table already exists" errors
+- **Data Contamination**: Not cleaning up can cause context-dependent tests to fail
+- **Connection Issues**: Improper cleanup can leave dangling connections, causing resource exhaustion
+
+**Implementation Example:**
+
+```python
+async def cleanup_after_test_async(self, scenario_name: str):
+    """Proper cleanup order: data first, then cursors, then disconnect."""
+    # Step 1: Drop tables (while connection is alive)
+    for table in tables_to_drop:
+        await self._backend.execute(f"DROP TABLE IF EXISTS {table}")
+    
+    # Step 2: Close cursors explicitly (before disconnecting)
+    connection = self._backend._connection
+    if connection is not None:
+        for cursor in list(connection._cursors):
+            await cursor.close()
+    
+    # Step 3: Disconnect (last step)
+    await self._backend.disconnect()
+```
+
 ### Division of Labor
 
 | Component | Testsuite | Backend |

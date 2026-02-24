@@ -118,6 +118,63 @@ graph LR
 - 生成兼容性报告
 - 使用add_*方法声明后端能力
 
+### 提供者职责
+
+提供者设计模式是测试套件的核心。每个后端必须实现一个提供者来处理：
+
+1. **环境准备**（Setup）：
+   - 创建数据库schema（表、索引、约束）
+   - 建立数据库连接
+   - 使用后端特定实现配置测试模型
+
+2. **环境清理**（Teardown）：
+   - 删除测试表
+   - 正确关闭游标
+   - 断开数据库连接
+
+**关键：清理顺序**
+
+提供者必须按正确顺序处理清理以避免问题：
+
+```
+正确顺序：
+1. 执行 DROP TABLE 语句（清理数据）
+2. 关闭所有游标
+3. 断开数据库连接
+
+错误顺序：
+1. 先断开连接  ❌
+2. 然后尝试清理  ❌ (连接已关闭！)
+```
+
+**为什么这很重要：**
+
+不同后端有不同要求：
+
+- **MySQL 异步**：在游标之前关闭连接可能导致 `RuntimeError: Set changed size during iteration`（由于 WeakSet 在迭代过程中被修改）
+- **表冲突**：不删除表可能导致"表已存在"错误
+- **数据污染**：不清理可能导致上下文相关测试失败
+- **连接问题**：不当清理可能留下悬空连接，导致资源耗尽
+
+**实现示例：**
+
+```python
+async def cleanup_after_test_async(self, scenario_name: str):
+    """正确的清理顺序：先数据，后游标，最后断开连接。"""
+    # 步骤 1：删除表（连接仍然存活时）
+    for table in tables_to_drop:
+        await self._backend.execute(f"DROP TABLE IF EXISTS {table}")
+    
+    # 步骤 2：显式关闭游标（断开连接之前）
+    connection = self._backend._connection
+    if connection is not None:
+        for cursor in list(connection._cursors):
+            await cursor.close()
+    
+    # 步骤 3：断开连接（最后一步）
+    await self._backend.disconnect()
+```
+
 ### 分工
 
 | 组件 | 测试套件 | 后端 |
