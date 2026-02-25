@@ -549,7 +549,9 @@ class TestAsyncActiveQueryBasic:
         for i in range(3):
             Order(user_id=user.id, order_number=f'ORD-{i:03d}', total_amount=Decimal(f'{(i+1)*100.00}')).save()
 
-        results = Order.query().group_by(Order.c.user_id).group_by(Order.c.order_number).all()
+        # Use explicit column selection with GROUP BY to comply with SQL standard
+        # PostgreSQL and standard SQL require all non-aggregated columns in SELECT to be in GROUP BY
+        results = Order.query().select(Order.c.user_id, Order.c.order_number).group_by(Order.c.user_id).group_by(Order.c.order_number).all()
         assert len(results) == 3
 
     def test_having_invalid_condition_type(self, order_fixtures):
