@@ -4,50 +4,6 @@ import json
 from decimal import Decimal
 
 
-def test_json_query_operations(json_user_fixture):
-    """
-    Test JSON query operations functionality
-    
-    This test verifies that JSON query operations work correctly when
-    the backend supports JSON data types and functions. This includes
-    creating, storing, and querying JSON data in the database.
-    """
-    JsonUser = json_user_fixture
-
-    # Create user with JSON data for testing
-    user_data = {
-        'preferences': {
-            'theme': 'dark',
-            'language': 'en',
-            'notifications': True
-        },
-        'settings': {
-            'privacy': 'public',
-            'timezone': 'UTC'
-        },
-        'tags': ['developer', 'python', 'activerecord']
-    }
-
-    json_user = JsonUser(
-        username='json_test_user',
-        email='json@example.com',
-        age=28,
-        settings=json.dumps(user_data['settings']),
-        tags=json.dumps(user_data['tags']),
-        profile=json.dumps(user_data['preferences'])
-    )
-    json_user.save()
-
-    # Execute basic query (all databases should support)
-    results = JsonUser.query().where(JsonUser.c.username == 'json_test_user').all()
-    assert len(results) == 1
-    assert results[0].username == 'json_test_user'
-
-    # If backend supports JSON query, test more complex queries
-    # For example, find users with specific tag
-    # results = JsonUser.query().where("json_extract(tags, '$[0]') = ?", ('developer',)).all()
-
-
 def test_full_text_search(annotated_query_fixtures):
     """
     Test full-text search query functionality

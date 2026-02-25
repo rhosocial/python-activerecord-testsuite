@@ -2,6 +2,8 @@
 """Error handling and edge cases tests"""
 from decimal import Decimal
 
+from rhosocial.activerecord.backend.errors import DatabaseError
+
 
 def test_invalid_parameter_handling(order_fixtures):
     """
@@ -26,8 +28,11 @@ def test_invalid_parameter_handling(order_fixtures):
         results = Order.query().where(Order.c.id == "invalid_id_type").all()
         # Some backends may try to convert type, so not always fail
     except Exception as e:
-        # Verify expected exception type is thrown
-        assert isinstance(e, (TypeError, ValueError, AttributeError)), f"Expected TypeError, ValueError or AttributeError, got {type(e)}"
+        # Different backends report errors differently:
+        # - SQLite/MySQL: TypeError, ValueError, AttributeError
+        # - PostgreSQL: DatabaseError (reports invalid input at DB level)
+        assert isinstance(e, (TypeError, ValueError, AttributeError, DatabaseError)), \
+            f"Expected TypeError, ValueError, AttributeError or DatabaseError, got {type(e)}"
 
     # Test correct parameter type
     results = Order.query().where(Order.c.id == order.id).all()

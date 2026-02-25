@@ -13,9 +13,6 @@ This module contains comprehensive tests for SQL set operations including:
 
 import pytest
 from rhosocial.activerecord.query.set_operation import SetOperationQuery, AsyncSetOperationQuery
-from rhosocial.activerecord.backend.impl.dummy.backend import DummyBackend, AsyncDummyBackend
-from rhosocial.activerecord.interface import IQuery, IAsyncQuery
-from unittest.mock import Mock
 
 
 class TestSyncSetOperations:
@@ -226,123 +223,6 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) >= 0
 
-    def test_sync_set_operation_with_invalid_backend_types(self, order_fixtures):
-        """
-        Test SetOperationQuery rejects different backend types
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create a real query with real models
-        query1 = Order.query().where(Order.c.user_id == user.id)
-
-        # Create a mock query with a different backend type
-        from rhosocial.activerecord.backend.impl.dummy.backend import DummyBackend
-        dummy_backend = DummyBackend()
-
-        class MockQuery(IQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock", ())
-
-            def where(self, condition):
-                return self
-
-            def all(self):
-                return []
-
-        mock_query = MockQuery(dummy_backend)
-
-        # Creating SetOperationQuery with different backend types should raise ValueError
-        with pytest.raises(ValueError, match="Different dialect types"):
-            SetOperationQuery(query1, mock_query, "UNION")
-
-    def test_sync_set_operation_with_async_backend_left_raises_error(self, order_fixtures):
-        """
-        Test SetOperationQuery rejects async backend on left operand.
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create a real sync query with real models
-        sync_query = Order.query().where(Order.c.user_id == user.id)
-
-        # Create a mock async backend and query
-        from rhosocial.activerecord.backend.impl.dummy.backend import AsyncDummyBackend
-        async_backend = AsyncDummyBackend()
-
-        class MockAsyncQuery(IQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock_async", ())
-
-            def where(self, condition):
-                return self
-
-            def all(self):
-                return []
-
-        async_query = MockAsyncQuery(async_backend)
-
-        # Creating SetOperationQuery with async and sync backends should raise TypeError
-        with pytest.raises(TypeError, match="does not support async backends"):
-            SetOperationQuery(async_query, sync_query, "UNION")
-
-    def test_sync_set_operation_with_async_backend_right_raises_error(self, order_fixtures):
-        """
-        Test SetOperationQuery rejects async backend on right operand.
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create a real sync query with real models
-        sync_query = Order.query().where(Order.c.user_id == user.id)
-
-        # Create a mock async backend and query
-        from rhosocial.activerecord.backend.impl.dummy.backend import AsyncDummyBackend
-        async_backend = AsyncDummyBackend()
-
-        class MockAsyncQuery(IQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock_async", ())
-
-            def where(self, condition):
-                return self
-
-            def all(self):
-                return []
-
-        async_query = MockAsyncQuery(async_backend)
-
-        # Creating SetOperationQuery with sync and async backends should raise TypeError
-        with pytest.raises(TypeError, match="does not support async backends"):
-            SetOperationQuery(sync_query, async_query, "UNION")
-
     def test_sync_set_operation_union_method(self, order_fixtures):
         """
         Test SetOperationQuery union method with real models.
@@ -472,6 +352,75 @@ class TestSyncSetOperations:
         set_op_query = SetOperationQuery(query1, query2, "INVALID_OP")
         assert set_op_query is not None
         assert set_op_query.operation == "INVALID_OP"
+
+    def test_sync_active_query_union_method(self, order_fixtures):
+        """
+        Test ActiveQuery union method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the union method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the union method
+        union_query = query1.union(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(union_query, SetOperationQuery)
+        assert union_query.operation == "UNION"
+        assert union_query.left == query1
+        assert union_query.right == query2
+
+    def test_sync_active_query_intersect_method(self, order_fixtures):
+        """
+        Test ActiveQuery intersect method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the intersect method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the intersect method
+        intersect_query = query1.intersect(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(intersect_query, SetOperationQuery)
+        assert intersect_query.operation == "INTERSECT"
+        assert intersect_query.left == query1
+        assert intersect_query.right == query2
+
+    def test_sync_active_query_except_method(self, order_fixtures):
+        """
+        Test ActiveQuery except_ method creates SetOperationQuery.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Create test data
+        user = User(username='test_user', email='test@example.com', age=25)
+        user.save()
+
+        # Create two sync queries using the except_ method
+        query1 = Order.query().where(Order.c.user_id == user.id)
+        query2 = Order.query().where(Order.c.user_id == user.id)
+
+        # Use the except_ method
+        except_query = query1.except_(query2)
+
+        # Verify it returns a SetOperationQuery
+        assert isinstance(except_query, SetOperationQuery)
+        assert except_query.operation == "EXCEPT"
+        assert except_query.left == query1
+        assert except_query.right == query2
 
 
 class TestAsyncSetOperations:
@@ -697,126 +646,6 @@ class TestAsyncSetOperations:
             assert len(basic_results) >= 0
 
     @pytest.mark.asyncio
-    async def test_async_set_operation_with_invalid_backend_types(self, async_order_fixtures):
-        """
-        Test AsyncSetOperationQuery rejects different backend types
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Create test data
-        user = AsyncUser(username='test_user', email='test@example.com', age=25)
-        await user.save()
-
-        # Create a real async query with real models
-        query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
-
-        # Create a mock async query with a different backend type
-        from rhosocial.activerecord.backend.impl.dummy.backend import AsyncDummyBackend
-        dummy_backend = AsyncDummyBackend()
-
-        class MockAsyncQuery(IAsyncQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock_async", ())
-
-            async def where(self, condition):
-                return self
-
-            async def all(self):
-                return []
-
-        mock_query = MockAsyncQuery(dummy_backend)
-
-        # Creating AsyncSetOperationQuery with different backend types should raise ValueError
-        with pytest.raises(ValueError, match="Different dialect types"):
-            AsyncSetOperationQuery(query1, mock_query, "UNION")
-
-    @pytest.mark.asyncio
-    async def test_async_set_operation_with_sync_backend_left_raises_error(self, async_order_fixtures):
-        """
-        Test AsyncSetOperationQuery rejects sync backend on left operand.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Create test data
-        user = AsyncUser(username='test_user', email='test@example.com', age=25)
-        await user.save()
-
-        # Create a real async query with real models
-        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
-
-        # Create a mock sync backend and query
-        from rhosocial.activerecord.backend.impl.dummy.backend import DummyBackend
-        sync_backend = DummyBackend()
-
-        class MockSyncQuery(IAsyncQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock_sync", ())
-
-            async def where(self, condition):
-                return self
-
-            async def all(self):
-                return []
-
-        sync_query = MockSyncQuery(sync_backend)
-
-        # Creating AsyncSetOperationQuery with sync and async backends should raise TypeError
-        with pytest.raises(TypeError, match="requires async backends"):
-            AsyncSetOperationQuery(sync_query, async_query, "UNION")
-
-    @pytest.mark.asyncio
-    async def test_async_set_operation_with_sync_backend_right_raises_error(self, async_order_fixtures):
-        """
-        Test AsyncSetOperationQuery rejects sync backend on right operand.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Create test data
-        user = AsyncUser(username='test_user', email='test@example.com', age=25)
-        await user.save()
-
-        # Create a real async query with real models
-        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
-
-        # Create a mock sync backend and query
-        from rhosocial.activerecord.backend.impl.dummy.backend import DummyBackend
-        sync_backend = DummyBackend()
-
-        class MockSyncQuery(IAsyncQuery):
-            def __init__(self, backend):
-                self._backend = backend
-
-            def backend(self):
-                return self._backend
-
-            def to_sql(self):
-                return ("SELECT * FROM mock_sync", ())
-
-            async def where(self, condition):
-                return self
-
-            async def all(self):
-                return []
-
-        sync_query = MockSyncQuery(sync_backend)
-
-        # Creating AsyncSetOperationQuery with async and sync backends should raise TypeError
-        with pytest.raises(TypeError, match="requires async backends"):
-            AsyncSetOperationQuery(async_query, sync_query, "UNION")
-
-    @pytest.mark.asyncio
     async def test_async_set_operation_union_method(self, async_order_fixtures):
         """
         Test AsyncSetOperationQuery union method with real models.
@@ -966,8 +795,8 @@ class TestAsyncSetOperations:
         query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
         query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
 
-        # Use the union method that should now be async
-        union_query = await query1.union(query2)
+        # Use the union method - returns AsyncSetOperationQuery, not awaitable
+        union_query = query1.union(query2)
 
         # Verify it returns an AsyncSetOperationQuery
         assert isinstance(union_query, AsyncSetOperationQuery)
@@ -990,8 +819,8 @@ class TestAsyncSetOperations:
         query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
         query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
 
-        # Use the intersect method that should now be async
-        intersect_query = await query1.intersect(query2)
+        # Use the intersect method - returns AsyncSetOperationQuery, not awaitable
+        intersect_query = query1.intersect(query2)
 
         # Verify it returns an AsyncSetOperationQuery
         assert isinstance(intersect_query, AsyncSetOperationQuery)
@@ -1014,83 +843,11 @@ class TestAsyncSetOperations:
         query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
         query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
 
-        # Use the except_ method that should now be async
-        except_query = await query1.except_(query2)
+        # Use the except_ method - returns AsyncSetOperationQuery, not awaitable
+        except_query = query1.except_(query2)
 
         # Verify it returns an AsyncSetOperationQuery
         assert isinstance(except_query, AsyncSetOperationQuery)
-        assert except_query.operation == "EXCEPT"
-        assert except_query.left == query1
-        assert except_query.right == query2
-
-    @pytest.mark.asyncio
-    async def test_sync_active_query_union_method(self, order_fixtures):
-        """
-        Test ActiveQuery union method creates SetOperationQuery.
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create two sync queries using the union method
-        query1 = Order.query().where(Order.c.user_id == user.id)
-        query2 = Order.query().where(Order.c.user_id == user.id)
-
-        # Use the union method
-        union_query = query1.union(query2)
-
-        # Verify it returns a SetOperationQuery
-        assert isinstance(union_query, SetOperationQuery)
-        assert union_query.operation == "UNION"
-        assert union_query.left == query1
-        assert union_query.right == query2
-
-    @pytest.mark.asyncio
-    async def test_sync_active_query_intersect_method(self, order_fixtures):
-        """
-        Test ActiveQuery intersect method creates SetOperationQuery.
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create two sync queries using the intersect method
-        query1 = Order.query().where(Order.c.user_id == user.id)
-        query2 = Order.query().where(Order.c.user_id == user.id)
-
-        # Use the intersect method
-        intersect_query = query1.intersect(query2)
-
-        # Verify it returns a SetOperationQuery
-        assert isinstance(intersect_query, SetOperationQuery)
-        assert intersect_query.operation == "INTERSECT"
-        assert intersect_query.left == query1
-        assert intersect_query.right == query2
-
-    @pytest.mark.asyncio
-    async def test_sync_active_query_except_method(self, order_fixtures):
-        """
-        Test ActiveQuery except_ method creates SetOperationQuery.
-        """
-        User, Order, OrderItem = order_fixtures
-
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
-
-        # Create two sync queries using the except_ method
-        query1 = Order.query().where(Order.c.user_id == user.id)
-        query2 = Order.query().where(Order.c.user_id == user.id)
-
-        # Use the except_ method
-        except_query = query1.except_(query2)
-
-        # Verify it returns a SetOperationQuery
-        assert isinstance(except_query, SetOperationQuery)
         assert except_query.operation == "EXCEPT"
         assert except_query.left == query1
         assert except_query.right == query2

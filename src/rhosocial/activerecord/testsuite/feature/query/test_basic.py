@@ -220,8 +220,8 @@ def test_exists_with_joins(order_fixtures):
 
     # Test exists with JOIN
     exists_result = (Order.query()
-                     .join('JOIN order_items ON orders.id = order_items.order_id')
-                     .join('JOIN users ON orders.user_id = users.id')
+                     .join('order_items', 'orders.id = order_items.order_id')
+                     .join('users', 'orders.user_id = users.id')
                      .where('orders.order_number = ?', ('JOIN-EXISTS-001',))
                      .where('users.username = ?', ('exists_join_user',))
                      .where('order_items.product_name = ?', ('Test Product',))
@@ -230,8 +230,8 @@ def test_exists_with_joins(order_fixtures):
 
     # Test exists with JOIN and non-matching condition
     exists_result = (Order.query()
-                     .join('JOIN order_items ON orders.id = order_items.order_id')
-                     .join('JOIN users ON orders.user_id = users.id')
+                     .join('order_items', 'orders.id = order_items.order_id')
+                     .join('users', 'orders.user_id = users.id')
                      .where('orders.order_number = ?', ('JOIN-EXISTS-001',))
                      .where('order_items.product_name = ?', ('Non-Existent Product',))
                      .exists())

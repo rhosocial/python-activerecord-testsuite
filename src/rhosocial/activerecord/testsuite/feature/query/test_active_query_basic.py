@@ -471,3 +471,122 @@ class TestAsyncActiveQueryBasic:
 
         # Verify that None is returned when no records match
         assert non_existent_order is None
+
+    def test_where_invalid_condition_type(self, order_fixtures):
+        """Test that where method raises TypeError for invalid condition type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Condition must be str or SQLPredicate"):
+            query.where(123)
+
+    def test_select_invalid_column_type(self, order_fixtures):
+        """Test that select method raises TypeError for invalid column type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Column must be str or BaseExpression"):
+            query.select(123)
+
+    def test_order_by_invalid_expression_type(self, order_fixtures):
+        """Test that order_by method raises TypeError for invalid expression type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Expression must be str or BaseExpression"):
+            query.order_by((123, "ASC"))
+
+    def test_order_by_invalid_direction(self, order_fixtures):
+        """Test that order_by method raises ValueError for invalid direction."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(ValueError, match="Order direction must be 'ASC' or 'DESC'"):
+            query.order_by(("name", "INVALID"))
+
+    def test_order_by_invalid_clause_type(self, order_fixtures):
+        """Test that order_by method raises TypeError for invalid clause type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Order clause must be str, BaseExpression, or \\(expression, direction\\) tuple"):
+            query.order_by(123)
+
+    def test_limit_then_offset(self, order_fixtures):
+        """Test calling limit then offset."""
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(5):
+            Order(user_id=user.id, order_number=f'ORD-{i:03d}', total_amount=Decimal(f'{(i+1)*100.00}')).save()
+
+        results = Order.query().limit(3).offset(1).all()
+        assert len(results) == 3
+
+    def test_group_by_invalid_column_type(self, order_fixtures):
+        """Test that group_by method raises TypeError for invalid column type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Column must be str or BaseExpression"):
+            query.group_by(123)
+
+    def test_group_by_extend_existing(self, order_fixtures):
+        """Test calling group_by multiple times extends existing clause."""
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'ORD-{i:03d}', total_amount=Decimal(f'{(i+1)*100.00}')).save()
+
+        results = Order.query().group_by(Order.c.user_id).group_by(Order.c.order_number).all()
+        assert len(results) == 3
+
+    def test_having_invalid_condition_type(self, order_fixtures):
+        """Test that having method raises TypeError for invalid condition type."""
+        User, Order, OrderItem = order_fixtures
+
+        query = Order.query()
+
+        with pytest.raises(TypeError, match="Condition must be str or SQLPredicate"):
+            query.having(123)
+
+    def test_select_append_true(self, order_fixtures):
+        """Test select with append=True extends existing selection."""
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        Order(user_id=user.id, order_number='ORD-001', total_amount=Decimal('100.00')).save()
+
+        query = Order.query()
+        query.select(Order.c.id)
+        query.select(Order.c.order_number, append=True)
+        sql, params = query.to_sql()
+        assert 'order_number' in sql
+
+    def test_order_by_extend_existing(self, order_fixtures):
+        """Test calling order_by multiple times extends existing clause."""
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        Order(user_id=user.id, order_number='ORD-001', total_amount=Decimal('100.00')).save()
+
+        query = Order.query()
+        query.order_by(Order.c.id)
+        query.order_by(Order.c.order_number)
+        sql, params = query.to_sql()
+        assert 'ORDER BY' in sql

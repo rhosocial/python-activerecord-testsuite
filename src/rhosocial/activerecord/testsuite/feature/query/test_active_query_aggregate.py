@@ -533,3 +533,178 @@ class TestAsyncActiveQueryAggregate:
         active_orders = [d for d in orders_data if d['status'] == 'active']
         assert active_count == len(active_orders)
         assert active_total == sum(d['amount'] for d in active_orders)
+
+    def test_count_wildcard_string(self, order_fixtures):
+        """
+        Test count with wildcard string '*' as column argument.
+
+        This test verifies that count("*") correctly counts all records
+        when passed as a string wildcard.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'WLD-{i+1:03d}').save()
+
+        count = Order.query().count("*")
+        assert count == 3
+
+    def test_sum_wildcard_raises_error(self, order_fixtures):
+        """
+        Test sum_ with wildcard string '*' raises ValueError.
+
+        This test verifies that sum_("*") raises an appropriate error
+        since SUM(*) is not valid SQL.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'SUM-{i+1:03d}').save()
+
+        with pytest.raises(ValueError, match="SUM\\(\\*\\)"):
+            Order.query().sum_("*")
+
+    def test_avg_wildcard_raises_error(self, order_fixtures):
+        """
+        Test avg with wildcard string '*' raises ValueError.
+
+        This test verifies that avg("*") raises an appropriate error
+        since AVG(*) is not valid SQL.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'AVG-{i+1:03d}').save()
+
+        with pytest.raises(ValueError, match="AVG\\(\\*\\)"):
+            Order.query().avg("*")
+
+    def test_min_wildcard_raises_error(self, order_fixtures):
+        """
+        Test min_ with wildcard string '*' raises ValueError.
+
+        This test verifies that min_("*") raises an appropriate error
+        since MIN(*) is not valid SQL.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'MIN-{i+1:03d}').save()
+
+        with pytest.raises(ValueError, match="MIN\\(\\*\\)"):
+            Order.query().min_("*")
+
+    def test_max_wildcard_raises_error(self, order_fixtures):
+        """
+        Test max_ with wildcard string '*' raises ValueError.
+
+        This test verifies that max_("*") raises an appropriate error
+        since MAX(*) is not valid SQL.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='test_user', email='test@example.com', age=30)
+        user.save()
+
+        for i in range(3):
+            Order(user_id=user.id, order_number=f'MAX-{i+1:03d}').save()
+
+        with pytest.raises(ValueError, match="MAX\\(\\*\\)"):
+            Order.query().max_("*")
+
+    @pytest.mark.asyncio
+    async def test_count_wildcard_string_async(self, async_order_fixtures):
+        """
+        Test async count with wildcard string '*' as column argument.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_test_user', email='async_test@example.com', age=30)
+        await user.save()
+
+        for i in range(3):
+            order = AsyncOrder(user_id=user.id, order_number=f'AWLD-{i+1:03d}')
+            await order.save()
+
+        count = await AsyncOrder.query().count("*")
+        assert count == 3
+
+    @pytest.mark.asyncio
+    async def test_sum_wildcard_raises_error_async(self, async_order_fixtures):
+        """
+        Test async sum_ with wildcard string '*' raises ValueError.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_test_user', email='async_test@example.com', age=30)
+        await user.save()
+
+        for i in range(3):
+            order = AsyncOrder(user_id=user.id, order_number=f'ASUM-{i+1:03d}')
+            await order.save()
+
+        with pytest.raises(ValueError, match="SUM\\(\\*\\)"):
+            await AsyncOrder.query().sum_("*")
+
+    @pytest.mark.asyncio
+    async def test_avg_wildcard_raises_error_async(self, async_order_fixtures):
+        """
+        Test async avg with wildcard string '*' raises ValueError.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_test_user', email='async_test@example.com', age=30)
+        await user.save()
+
+        for i in range(3):
+            order = AsyncOrder(user_id=user.id, order_number=f'AAVG-{i+1:03d}')
+            await order.save()
+
+        with pytest.raises(ValueError, match="AVG\\(\\*\\)"):
+            await AsyncOrder.query().avg("*")
+
+    @pytest.mark.asyncio
+    async def test_min_wildcard_raises_error_async(self, async_order_fixtures):
+        """
+        Test async min_ with wildcard string '*' raises ValueError.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_test_user', email='async_test@example.com', age=30)
+        await user.save()
+
+        for i in range(3):
+            order = AsyncOrder(user_id=user.id, order_number=f'AMIN-{i+1:03d}')
+            await order.save()
+
+        with pytest.raises(ValueError, match="MIN\\(\\*\\)"):
+            await AsyncOrder.query().min_("*")
+
+    @pytest.mark.asyncio
+    async def test_max_wildcard_raises_error_async(self, async_order_fixtures):
+        """
+        Test async max_ with wildcard string '*' raises ValueError.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='async_test_user', email='async_test@example.com', age=30)
+        await user.save()
+
+        for i in range(3):
+            order = AsyncOrder(user_id=user.id, order_number=f'AMAX-{i+1:03d}')
+            await order.save()
+
+        with pytest.raises(ValueError, match="MAX\\(\\*\\)"):
+            await AsyncOrder.query().max_("*")

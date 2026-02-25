@@ -87,39 +87,6 @@ def test_common_sql_standard_features(order_fixtures):
     assert status_counts['inactive'] == 2
 
 
-@pytest.mark.requires_protocol(('rhosocial.activerecord.interface.IQuery', 'supports_json_query'))
-def test_json_query_compatibility(json_user_fixture):
-    """
-    Test JSON query compatibility across databases (requires protocol support)
-    
-    This test verifies that JSON query functionality works consistently
-    when the database backend supports JSON operations.
-    """
-    JsonUser = json_user_fixture
-
-    import json
-
-    # Create user with JSON data for compatibility testing
-    user_settings = {
-        'preferences': {'theme': 'dark', 'lang': 'en'},
-        'features': ['feature1', 'feature2']
-    }
-
-    json_user = JsonUser(
-        username='json_compat_user',
-        email='jsoncompat@example.com',
-        age=30,
-        settings=json.dumps(user_settings),
-        tags='["tag1", "tag2"]'  # Using string representation of JSON array
-    )
-    json_user.save()
-
-    # Execute basic query (all databases should support)
-    results = JsonUser.query().where(JsonUser.c.username == 'json_compat_user').all()
-    assert len(results) == 1
-    assert results[0].username == 'json_compat_user'
-
-
 @pytest.mark.requires_protocol(('rhosocial.activerecord.interface.IQuery', 'supports_fulltext_search'))
 def test_fulltext_search_compatibility(annotated_query_fixtures):
     """

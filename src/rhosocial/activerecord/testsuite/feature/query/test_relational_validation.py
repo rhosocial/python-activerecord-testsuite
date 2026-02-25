@@ -263,9 +263,9 @@ class TestSyncRelationalValidation:
         query = MockQuery(mock_model)
 
         # First add a relation config
-        query._add_relation_config('test_relation', ['nested'], None)
+        query._add_relation_config('test_relation', ['nested'], lambda q: q.where(True))
 
-        # Then update it
+        # Then update it with a different modifier
         query._update_existing_relation_config('test_relation', ['nested', 'more_nested'],
                                               lambda q: q, True)
 
@@ -273,6 +273,24 @@ class TestSyncRelationalValidation:
         config = query._eager_loads['test_relation']
         assert 'more_nested' in config.nested
         assert config.query_modifier is not None
+
+    def test_update_existing_relation_config_with_lambda(self):
+        """Test _update_existing_relation_config with lambda modifier overwrite warning."""
+        mock_model = create_mock_model_with_relations(['valid_relation'])
+        query = MockQuery(mock_model)
+
+        # First add a relation config with a lambda
+        first_lambda = lambda x: x.where(True)
+        query._add_relation_config('test_relation', ['nested'], first_lambda)
+
+        # Then update it with another lambda - this should trigger the warning
+        second_lambda = lambda q: q
+        query._update_existing_relation_config('test_relation', ['nested', 'more_nested'],
+                                              second_lambda, True)
+
+        # Check that the config was updated
+        config = query._eager_loads['test_relation']
+        assert 'more_nested' in config.nested
 
     def test_add_relation_config(self):
         """Test _add_relation_config method."""
@@ -286,3 +304,45 @@ class TestSyncRelationalValidation:
         assert config.name == 'new_relation'
         assert 'nested' in config.nested
         assert config.query_modifier is not None
+
+    def test_validate_complete_relation_path_get_related_model_returns_none(self):
+        """Test _validate_complete_relation_path when get_related_model returns None."""
+        mock_model = create_mock_model_with_relations(['first'])
+        first_relation = Mock()
+        first_relation.get_related_model = Mock(return_value=None)  # Returns None
+        mock_model.get_relation = Mock(return_value=first_relation)
+
+        query = MockQuery(mock_model)
+
+        with pytest.raises(RelationNotFoundError, match="Could not determine related model for relation 'first'"):
+            query._validate_complete_relation_path("first.second")
+
+    def test_validate_complete_relation_path_get_relation_returns_none_middle_of_path(self):
+        """Test _validate_complete_relation_path when get_relation returns falsy after initial check."""
+        mock_model = create_mock_model_with_relations(['first'])
+        
+        # First check returns truthy (passes initial validation)
+        # Second call returns None (triggers the else branch at line 288-291)
+        mock_model.get_relation = Mock(side_effect=[
+            Mock(),  # First call for validation - returns truthy
+            None,    # Second call for tracking - returns None
+        ])
+
+        query = MockQuery(mock_model)
+
+        # Since there's no second relation 'second', it should fail on the model tracking
+        with pytest.raises(RelationNotFoundError, match="Relation 'first' not found"):
+            query._validate_complete_relation_path("first.second")
+
+    def test_validate_complete_relation_path_exception_during_tracking(self):
+        """Test _validate_complete_relation_path when exception is raised during model tracking."""
+        mock_model = create_mock_model_with_relations(['first'])
+        first_relation = Mock()
+        first_relation.get_related_model = Mock(side_effect=RuntimeError("Test error"))
+
+        mock_model.get_relation = Mock(return_value=first_relation)
+
+        query = MockQuery(mock_model)
+
+        with pytest.raises(RuntimeError, match="Test error"):
+            query._validate_complete_relation_path("first.second")
