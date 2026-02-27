@@ -1,3 +1,31 @@
+## [v1.0.0.dev5] - 2026-02-27
+
+
+### Added
+
+- Added comprehensive CTE query tests with ActiveQuery integration, set operation tests (UNION, INTERSECT, EXCEPT), operator overload tests for set operations, async test classes for validation, field types and column mapping, range query tests, and capability-based skipping for INTERSECT/EXCEPT tests on backends that do not support these operations. ([#5](https://github.com/rhosocial/python-activerecord-testsuite/issues/5))
+
+
+
+### Fixed
+
+- Fixed GROUP BY test to use explicit column selection for SQL standard compliance, fixed async fixture cleanup order, fixed deserialization logic in ListToStringAdapter, updated CTE query set operation tests to properly handle async parameters, and fixed various async test issues. ([#5](https://github.com/rhosocial/python-activerecord-testsuite/issues/5))
+
+
+## [v1.0.0.dev4] - 2025-12-11
+
+
+### Added
+
+- Added new test infrastructure, comprehensive test cases for custom column name mapping and annotated type adapters. Enhanced fixtures for mapping and query tests, and fixed a foreign key constraint violation in mapped models test. ([#4](https://github.com/rhosocial/python-activerecord-testsuite/issues/4))
+
+
+
+### Changed
+
+- Updated tests to use UTC instead of local time to ensure timezone consistency. ([#3](https://github.com/rhosocial/python-activerecord-testsuite/issues/3))
+
+
 ## [1.0.0.dev3] - 2025-11-29
 
 ### Added
