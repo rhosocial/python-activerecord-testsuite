@@ -17,6 +17,8 @@ from decimal import Decimal
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
 from rhosocial.activerecord.backend.expression import statements, core
 from rhosocial.activerecord.testsuite.utils import requires_cte
+from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
 class TestCTEQuerySetOperation:
@@ -68,6 +70,7 @@ class TestCTEQuerySetOperation:
         assert 'completed' in statuses
 
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_cte_with_intersect_of_active_queries(self, order_fixtures):
         """
         Test CTE query that uses an INTERSECT operation between two ActiveQuery instances.
@@ -117,6 +120,7 @@ class TestCTEQuerySetOperation:
             assert row.get('status') == 'active'
 
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_cte_with_except_of_active_queries(self, order_fixtures):
         """
         Test CTE query that uses an EXCEPT operation between two ActiveQuery instances.
@@ -214,6 +218,7 @@ class TestAsyncCTEQuerySetOperation:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_cte_with_intersect_of_active_queries(self, async_order_fixtures):
         """
         Async version of test_cte_with_intersect_of_active_queries.
@@ -261,6 +266,7 @@ class TestAsyncCTEQuerySetOperation:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_cte_with_except_of_active_queries(self, async_order_fixtures):
         """
         Async version of test_cte_with_except_of_active_queries.
@@ -843,6 +849,8 @@ class TestCTEQueryExtendedFunctionalitySetOperations:
         assert results[1]['status'] in ['active', 'completed']
 
     @requires_cte()
+    @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_cte_with_intersect_and_range_conditions(self, order_fixtures):
         """
         Test CTE query with INTERSECT operation and range conditions.
@@ -889,6 +897,8 @@ class TestCTEQueryExtendedFunctionalitySetOperations:
             assert row.get('status') == 'active'
 
     @requires_cte()
+    @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_cte_with_except_and_join_conditions(self, order_fixtures):
         """
         Test CTE query with EXCEPT operation and join conditions.
@@ -1124,6 +1134,7 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_cte_with_intersect_and_range_conditions(self, async_order_fixtures):
         """
         Test Async CTE query with INTERSECT operation and range conditions.
@@ -1172,6 +1183,7 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_cte_with_except_and_join_conditions(self, async_order_fixtures):
         """
         Test Async CTE query with EXCEPT operation and join conditions.
@@ -1266,6 +1278,7 @@ class TestCTEQuerySetOperationWithOtherQueries:
         assert 'completed' in statuses
 
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_cte_query_intersect_with_active_query(self, order_fixtures):
         '''
         Test CTE query INTERSECT operation with ActiveQuery.
@@ -1309,6 +1322,8 @@ class TestCTEQuerySetOperationWithOtherQueries:
             assert row.get('status') == 'active'
 
     @requires_cte()
+    @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_cte_query_except_with_active_query(self, order_fixtures):
         '''
         Test CTE query EXCEPT operation with ActiveQuery.
@@ -1399,6 +1414,7 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_cte_query_intersect_with_async_active_query(self, async_order_fixtures):
         '''
         Test AsyncCTE query INTERSECT operation with AsyncActiveQuery.
@@ -1442,6 +1458,7 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
 
     @pytest.mark.asyncio
     @requires_cte()
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_cte_query_except_with_async_active_query(self, async_order_fixtures):
         '''
         Test AsyncCTE query EXCEPT operation with AsyncActiveQuery.

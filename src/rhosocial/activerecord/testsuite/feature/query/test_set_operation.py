@@ -13,6 +13,8 @@ This module contains comprehensive tests for SQL set operations including:
 
 import pytest
 from rhosocial.activerecord.query.set_operation import SetOperationQuery, AsyncSetOperationQuery
+from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
 class TestSyncSetOperations:
@@ -55,6 +57,7 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) >= 0
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_intersect_operation(self, order_fixtures):
         """
         Test INTERSECT operation functionality with real models
@@ -100,6 +103,7 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) >= 0
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_sync_except_operation(self, order_fixtures):
         """
         Test EXCEPT operation functionality with real models
@@ -144,6 +148,7 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) >= 0
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_multiple_set_operations(self, order_fixtures):
         """
         Test chaining multiple set operations with real models
@@ -248,6 +253,7 @@ class TestSyncSetOperations:
         assert isinstance(union_result, SetOperationQuery)
         assert union_result.operation == "UNION"
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_set_operation_intersect_method(self, order_fixtures):
         """
         Test SetOperationQuery intersect method with real models.
@@ -273,6 +279,7 @@ class TestSyncSetOperations:
         assert isinstance(intersect_result, SetOperationQuery)
         assert intersect_result.operation == "INTERSECT"
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_sync_set_operation_except_method(self, order_fixtures):
         """
         Test SetOperationQuery except_ method with real models.
@@ -298,6 +305,8 @@ class TestSyncSetOperations:
         assert isinstance(except_result, SetOperationQuery)
         assert except_result.operation == "EXCEPT"
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_sync_set_operation_operator_overloading(self, order_fixtures):
         """
         Test SetOperationQuery operator overloading with real models.
@@ -376,6 +385,7 @@ class TestSyncSetOperations:
         assert union_query.left == query1
         assert union_query.right == query2
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_active_query_intersect_method(self, order_fixtures):
         """
         Test ActiveQuery intersect method creates SetOperationQuery.
@@ -399,6 +409,7 @@ class TestSyncSetOperations:
         assert intersect_query.left == query1
         assert intersect_query.right == query2
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_sync_active_query_except_method(self, order_fixtures):
         """
         Test ActiveQuery except_ method creates SetOperationQuery.
@@ -467,6 +478,7 @@ class TestAsyncSetOperations:
             assert len(basic_results) >= 0
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_intersect_operation(self, async_order_fixtures):
         """
         Test async INTERSECT operation functionality with real models
@@ -514,6 +526,7 @@ class TestAsyncSetOperations:
             assert len(basic_results) >= 0
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_except_operation(self, async_order_fixtures):
         """
         Test async EXCEPT operation functionality with real models
@@ -561,6 +574,7 @@ class TestAsyncSetOperations:
             assert len(basic_results) >= 0
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_multiple_set_operations(self, async_order_fixtures):
         """
         Test chaining multiple async set operations with real models
@@ -672,6 +686,7 @@ class TestAsyncSetOperations:
         assert union_result.operation == "UNION"
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_set_operation_intersect_method(self, async_order_fixtures):
         """
         Test AsyncSetOperationQuery intersect method with real models.
@@ -698,6 +713,7 @@ class TestAsyncSetOperations:
         assert intersect_result.operation == "INTERSECT"
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_set_operation_except_method(self, async_order_fixtures):
         """
         Test AsyncSetOperationQuery except_ method with real models.
@@ -724,6 +740,8 @@ class TestAsyncSetOperations:
         assert except_result.operation == "EXCEPT"
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_set_operation_operator_overloading(self, async_order_fixtures):
         """
         Test AsyncSetOperationQuery operator overloading with real models.
@@ -805,6 +823,7 @@ class TestAsyncSetOperations:
         assert union_query.right == query2
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_async_active_query_intersect_method(self, async_order_fixtures):
         """
         Test AsyncActiveQuery intersect method creates AsyncSetOperationQuery.
@@ -829,6 +848,7 @@ class TestAsyncSetOperations:
         assert intersect_query.right == query2
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_async_active_query_except_method(self, async_order_fixtures):
         """
         Test AsyncActiveQuery except_ method creates AsyncSetOperationQuery.

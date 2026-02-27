@@ -12,6 +12,9 @@ This module contains tests for the set operation ActiveQuery operations includin
 import pytest
 from decimal import Decimal
 
+from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
+
 
 class TestSyncActiveQuerySetOperation:
     """
@@ -48,6 +51,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return all orders (active + completed)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_intersect_operation(self, order_fixtures):
         """
         Test INTERSECT operation between two queries
@@ -77,6 +81,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return orders that satisfy both conditions (pending and amount > 150)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_except_operation(self, order_fixtures):
         """
         Test EXCEPT operation between two queries
@@ -109,6 +114,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return non-active orders (pending and completed)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_multiple_set_operations(self, order_fixtures):
         """
         Test chaining multiple set operations
@@ -172,6 +178,7 @@ class TestSyncActiveQuerySetOperation:
 
         assert len(results) >= 0  # Should return combined results
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_set_operation_chaining(self, order_fixtures):
         """
         Test chaining multiple set operations together
@@ -232,6 +239,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return all orders (active + completed)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_intersect_operator(self, order_fixtures):
         """
         Test the & operator for INTERSECT operations on synchronous queries.
@@ -262,6 +270,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return orders that satisfy both conditions (pending and amount > 150)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_except')
     def test_except_operator(self, order_fixtures):
         """
         Test the - operator for EXCEPT operations on synchronous queries.
@@ -295,6 +304,7 @@ class TestSyncActiveQuerySetOperation:
         # Should return non-active orders (pending and completed)
         assert len(results) >= 0  # At least some results should be returned
 
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_operator_precedence(self, order_fixtures):
         """
         Test operator precedence for multiple operations on synchronous queries.
@@ -368,6 +378,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_intersect_operator_async(self, async_order_fixtures):
         """
         Test the & operator for INTERSECT operations on asynchronous queries.
@@ -399,6 +410,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_except_operator_async(self, async_order_fixtures):
         """
         Test the - operator for EXCEPT operations on asynchronous queries.
@@ -433,6 +445,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_operator_precedence_async(self, async_order_fixtures):
         """
         Test operator precedence for multiple operations on asynchronous queries.
@@ -502,6 +515,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_intersect_operation_async(self, async_order_fixtures):
         """
         Test async INTERSECT operation between two queries
@@ -534,6 +548,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_except_operation_async(self, async_order_fixtures):
         """
         Test async EXCEPT operation between two queries
@@ -569,6 +584,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # At least some results should be returned
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_multiple_set_operations_async(self, async_order_fixtures):
         """
         Test async chaining multiple set operations
@@ -638,6 +654,7 @@ class TestAsyncActiveQuerySetOperation:
         assert len(results) >= 0  # Should return combined results
 
     @pytest.mark.asyncio
+    @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_set_operation_chaining_async(self, async_order_fixtures):
         """
         Test async chaining multiple set operations together
