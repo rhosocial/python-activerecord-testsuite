@@ -60,6 +60,28 @@ def user_class(request):
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_user_class(request):
+    """
+    A pytest fixture that provides an async-configured `AsyncUser` model class for testing.
+    It is parameterized to run for each available scenario.
+    It also handles the async setup and teardown for each test.
+    """
+    # `request.param` holds the current scenario name (e.g., "memory", "file").
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # Ask the provider to set up the database and configure the AsyncUser model for this scenario.
+    model = await provider.setup_async_user_model(scenario)
+
+    # `yield` passes the configured model class to the test function.
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def type_case_class(request):
     """
     Provides a configured `TypeCase` model class for each scenario."""
@@ -71,6 +93,21 @@ def type_case_class(request):
     model = provider.setup_type_case_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_case_class(request):
+    """
+    Provides an async-configured `AsyncTypeCase` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_type_case_model(scenario)
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def type_test_model(request):
@@ -86,6 +123,21 @@ def type_test_model(request):
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_test_model(request):
+    """
+    Provides an async-configured `AsyncTypeTestModel` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_type_test_model(scenario)
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def validated_user_class(request):
     """
     Provides a configured `ValidatedFieldUser` model class for each scenario."""
@@ -97,6 +149,21 @@ def validated_user_class(request):
     model = provider.setup_validated_field_user_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_validated_user_class(request):
+    """
+    Provides an async-configured `AsyncValidatedFieldUser` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_validated_field_user_model(scenario)
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def validated_user(request):
@@ -112,6 +179,21 @@ def validated_user(request):
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_validated_user(request):
+    """
+    Provides an async-configured `AsyncValidatedUser` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_validated_user_model(scenario)
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def type_adapter_fixtures(request):
     """
     Provides fixtures for type adapter tests, including the model, backend,
@@ -125,11 +207,31 @@ def type_adapter_fixtures(request):
     # The setup method returns a tuple: (Model, backend_instance)
     model = provider.setup_type_adapter_model_and_schema(scenario)
     yes_no_adapter = provider.get_yes_no_adapter()
-    
+
     # Yield all resources needed by the tests
     yield model
 
     provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_type_adapter_fixtures(request):
+    """
+    Provides async fixtures for type adapter tests, including the async model, backend,
+    and a custom "yes/no" adapter.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The setup method returns an async model
+    model = await provider.setup_async_type_adapter_model_and_schema(scenario)
+
+    # Yield all resources needed by the tests
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
 
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
@@ -153,6 +255,26 @@ def mapped_models_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_mapped_models_fixtures(request):
+    """
+    A pytest fixture that provides async-configured `AsyncMappedUser`, `AsyncMappedPost`,
+    and `AsyncMappedComment` model classes for testing, parameterized by scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # Ask the provider to set up the database and configure the AsyncMapped models for this scenario.
+    user_model, post_model, comment_model = await provider.setup_async_mapped_models(scenario)
+
+    # Yield the configured model classes as a tuple.
+    yield user_model, post_model, comment_model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def mixed_models_fixtures(request):
     """
     A pytest fixture that provides configured models with mixed annotations
@@ -170,3 +292,22 @@ def mixed_models_fixtures(request):
 
     # After the test function finishes, perform cleanup.
     provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_mixed_models_fixtures(request):
+    """
+    Provides async-configured models with mixed annotations
+    (`AsyncColumnMappingModel`, `AsyncMixedAnnotationModel`) for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    # The provider's setup method returns a tuple of configured models
+    models = await provider.setup_async_mixed_models(scenario)
+
+    yield models
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)

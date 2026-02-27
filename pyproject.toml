@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhosocial-activerecord-testsuite"
-version = "1.0.0.dev4"
+version = "1.0.0.dev5"
 description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -36,15 +36,19 @@ classifiers = [
 ]
 
 dependencies = [
-    "pytest>=7.0.0",
+    # Core testing framework with Python version-specific requirements
+    # Python 3.8: Limited to pytest 8.3.5 due to compatibility constraints
+    "pytest~=8.3.5; python_version == '3.8'",
+    # Python 3.9+: Requires pytest 8.4.2+ for full feature support
+    "pytest~=8.4.2; python_version >= '3.9'",
 ]
 
 [project.optional-dependencies]
 # Development dependencies
 test = [
-    "pytest-asyncio>=0.21.0",
+    "pytest-asyncio",
     "pytest-cov>=4.0.0",
-    "pytest-xdist>=3.6.1",
+    "pytest-xdist~=3.8.0",
     "pytest-rerunfailures>=15.0",
 ]
 

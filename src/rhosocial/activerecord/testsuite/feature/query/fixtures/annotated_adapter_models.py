@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/annotated_adapter_models.py
 
 import sys
-from typing import Any, List, Type, Dict, Optional, Set, get_origin
+from typing import Any, List, Type, Dict, Optional, Set, get_origin, ClassVar
 
 # Conditionally import Annotated and field_validator based on Python version
 if sys.version_info >= (3, 9):
@@ -15,6 +15,7 @@ except ImportError:
     from pydantic import validator as field_validator
 
 from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
 from rhosocial.activerecord.base.fields import UseAdapter
 from rhosocial.activerecord.backend.type_adapter import BaseSQLTypeAdapter
@@ -55,6 +56,7 @@ class ListToStringAdapter(BaseSQLTypeAdapter):
 
 class SearchableItem(IntegerPKMixin, ActiveRecord):
     """Model for testing Annotated Type Adapters."""
+    c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = 'searchable_items'
     id: Optional[int] = None
     name: str

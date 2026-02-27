@@ -125,3 +125,100 @@ class IQueryProvider(ABC):
         deleting temporary database files.
         """
         pass
+
+    @abstractmethod
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Should perform any necessary async cleanup after a test has run.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_order_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for the async order-related models (AsyncUser, AsyncOrder, AsyncOrderItem)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncUser, AsyncOrder, AsyncOrderItem) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_blog_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for the async blog-related models (AsyncUser, AsyncPost, AsyncComment)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncUser, AsyncPost, AsyncComment) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_json_user_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], ...]:
+        """
+        Should prepare the testing environment for the async JSON user model
+        under a given scenario and return a tuple containing the AsyncJsonUser model class.
+
+        Returns:
+            Tuple containing (AsyncJsonUser,) model class
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_tree_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], ...]:
+        """
+        Should prepare the testing environment for the async tree structure model (AsyncNode)
+        under a given scenario and return a tuple containing the AsyncNode model class.
+
+        Returns:
+            Tuple containing (AsyncNode,) model class
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_extended_order_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for the async extended order-related models (AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_combined_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for the async combined models (AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_annotated_query_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], ...]:
+        """
+        Should prepare the testing environment for async models using Annotated type adapters in queries,
+        under a given scenario and return a tuple containing the configured model class(es).
+
+        Returns:
+            Tuple containing (AsyncSearchableItem,) model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_mapped_models(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for `AsyncMappedUser`, `AsyncMappedPost`,
+        and `AsyncMappedComment` models under a given scenario and return the
+        configured model classes as a tuple.
+
+        Returns:
+            Tuple of (AsyncMappedUser, AsyncMappedPost, AsyncMappedComment) model classes
+        """
+        pass
+
