@@ -8,6 +8,7 @@ testing their methods and functionality directly to improve code coverage.
 import pytest
 from decimal import Decimal
 from rhosocial.activerecord.query.range import RangeQueryMixin
+from rhosocial.activerecord.backend.dialect.protocols import ILIKESupport
 
 
 def test_get_col_expr_with_string_column(order_fixtures):
@@ -435,7 +436,7 @@ def test_like_with_wildcards(order_fixtures):
     assert 'b_another_user' not in usernames
 
 
-@pytest.mark.skip(reason="ILIKE not supported by SQLite backend")
+@pytest.mark.requires_protocol((ILIKESupport, "supports_ilike"))
 def test_ilike_method(order_fixtures):
     """Test ilike method (case-insensitive like)."""
     User, Order, OrderItem = order_fixtures
@@ -458,7 +459,7 @@ def test_ilike_method(order_fixtures):
     assert results[0].username.lower().find('smith') != -1
 
 
-@pytest.mark.skip(reason="ILIKE not supported by SQLite backend")
+@pytest.mark.requires_protocol((ILIKESupport, "supports_ilike"))
 def test_not_ilike_method(order_fixtures):
     """Test not_ilike method (case-insensitive not like)."""
     User, Order, OrderItem = order_fixtures
