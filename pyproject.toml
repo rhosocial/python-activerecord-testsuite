@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhosocial-activerecord-testsuite"
-version = "1.0.0.dev5"
+version = "1.0.0.dev6"
 description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -85,6 +85,7 @@ python_functions = ["test_*"]
 markers = [
     # Capability requirement markers
     "requires_capability: marks tests requiring specific backend capabilities",
+    "requires_protocol: marks tests requiring specific backend protocol support",
 ]
 
 [tool.black]
