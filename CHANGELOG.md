@@ -1,3 +1,10 @@
+## [v1.0.0.dev6] - 2026-03-12
+
+### Added
+
+- Added `requires_protocol` pytest marker for protocol-based test selection, enabling backends to declare ILIKE support via `ILIKESupport` protocol instead of hardcoded skip reasons. ([#6](https://github.com/rhosocial/python-activerecord-testsuite/issues/6))
+
+
 ## [v1.0.0.dev5] - 2026-02-27
 
 
