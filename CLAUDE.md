@@ -33,4 +33,4 @@ The documentation emphasizes that the test suite only contains test logic and do
 This project adheres to the same version control, branching, commit message, and changelog management standards as the main `python-activerecord` project.
 
 The authoritative specification can be found in the main project's repository:
-[version_control.md](https://github.com/rhosocial/python-activerecord/blob/release/v1.0.0.dev12/.gemini/version_control.md)
+[version_control.md](../python-activerecord/.claude/rules/version_control.md)
