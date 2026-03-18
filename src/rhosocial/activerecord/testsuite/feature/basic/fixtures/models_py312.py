@@ -301,6 +301,12 @@ class AsyncValidatedUser(IntegerPKMixin, AsyncActiveRecord):
             raise ValidationError("Username must be alphanumeric")
         return v
 
+    @classmethod
+    def validate_record(cls, instance: Self) -> None:
+        """Business rule validation using Self type."""
+        if instance.age is not None and instance.age < 13:
+            raise ValidationError("User must be at least 13 years old")
+
 
 class YesOrNoBooleanAdapter(BaseSQLTypeAdapter):
     """Converts Python's True/False to 'yes'/'no' strings."""
