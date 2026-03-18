@@ -76,7 +76,8 @@ Issues = "https://github.com/rhosocial/python-activerecord-testsuite/issues"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["src/rhosocial/activerecord/testsuite"]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 addopts = "-ra -q"
 python_files = ["test_*.py", "*_test.py"]
@@ -99,7 +100,7 @@ multi_line_output = 3
 line_length = 100
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py38"
 select = ["E", "F", "B"]
 ignore = []

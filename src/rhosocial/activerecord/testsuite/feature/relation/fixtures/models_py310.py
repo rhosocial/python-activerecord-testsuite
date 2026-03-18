@@ -1,17 +1,30 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/fixtures/models.py
+# src/rhosocial/activerecord/testsuite/feature/relation/fixtures/models_py310.py
 """
-Relation model fixtures for the testsuite.
+Python 3.10+ fixture model definitions for relation tests.
+
+This file contains model classes using Python 3.10+ syntax features:
+- `X | Y` syntax instead of `Optional[X]` or `Union[X, Y]`
+
+Note: This file should only be imported and used in Python 3.10+ environments.
 """
-from typing import Optional, ClassVar
+from typing import ClassVar
 
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
 
 
+# Declare that this module requires Python 3.10+
+__requires_python__ = (3, 10)
+
+
 class Employee(ActiveRecord):
+    """Employee model with department relation.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "employees"
 
-    id: Optional[int] = None
+    id: int | None = None
     username: str
     department_id: int
 
@@ -23,9 +36,13 @@ class Employee(ActiveRecord):
 
 
 class Department(ActiveRecord):
+    """Department model with employees relation.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "departments"
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str
     description: str = ""
 
@@ -37,9 +54,13 @@ class Department(ActiveRecord):
 
 
 class Author(ActiveRecord):
+    """Author model with books and profile relations.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "authors"
 
-    id: Optional[int] = None
+    id: int | None = None
     name: str
 
     # Relations
@@ -54,9 +75,13 @@ class Author(ActiveRecord):
 
 
 class Book(ActiveRecord):
+    """Book model with author and chapters relations.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "books"
 
-    id: Optional[int] = None
+    id: int | None = None
     title: str
     author_id: int
 
@@ -72,9 +97,13 @@ class Book(ActiveRecord):
 
 
 class Chapter(ActiveRecord):
+    """Chapter model with book relation.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "chapters"
 
-    id: Optional[int] = None
+    id: int | None = None
     title: str
     book_id: int
 
@@ -86,9 +115,13 @@ class Chapter(ActiveRecord):
 
 
 class Profile(ActiveRecord):
+    """Profile model with author relation.
+
+    Python 3.10+ version.
+    """
     __table_name__ = "profiles"
 
-    id: Optional[int] = None
+    id: int | None = None
     bio: str
     author_id: int
 
