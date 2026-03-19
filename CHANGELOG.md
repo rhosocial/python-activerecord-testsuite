@@ -1,3 +1,10 @@
+## [v1.0.0.dev7] - 2026-03-19
+
+### Added
+
+- Added environment-aware fixture selection system with Python version-specific model classes for optimized test fixtures. ([#7](https://github.com/rhosocial/python-activerecord-testsuite/issues/7))
+
+
 ## [v1.0.0.dev6] - 2026-03-12
 
 ### Added
