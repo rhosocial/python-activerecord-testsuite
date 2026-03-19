@@ -346,3 +346,191 @@ class TestSyncRelationalValidation:
 
         with pytest.raises(RuntimeError, match="Test error"):
             query._validate_complete_relation_path("first.second")
+
+
+class TestRefactoredHelperMethods:
+    """Tests for refactored helper methods that reduce cognitive complexity."""
+
+    def test_parse_relation_arg_string(self):
+        """Test _parse_relation_arg with string input."""
+        query = MockQuery()
+        path, modifier = query._parse_relation_arg("posts")
+        assert path == "posts"
+        assert modifier is None
+
+    def test_parse_relation_arg_tuple(self):
+        """Test _parse_relation_arg with tuple input."""
+        query = MockQuery()
+        test_modifier = lambda q: q.where(True)
+        path, modifier = query._parse_relation_arg(("posts", test_modifier))
+        assert path == "posts"
+        assert modifier == test_modifier
+
+    def test_validate_relation_calls_both_validations(self):
+        """Test _validate_relation calls both path and existence validation."""
+        mock_model = create_mock_model_with_relations(['valid_relation'])
+        mock_relation = Mock()
+        mock_relation.get_related_model = Mock(return_value=Mock(__name__="RelatedModel"))
+        mock_model.get_relation = Mock(return_value=mock_relation)
+        query = MockQuery(mock_model)
+
+        # Should not raise any exception for valid relation
+        query._validate_relation("valid_relation")
+
+    def test_validate_relation_propagates_path_error(self):
+        """Test _validate_relation propagates InvalidRelationPathError."""
+        query = MockQuery()
+
+        with pytest.raises(InvalidRelationPathError, match="cannot start with a dot"):
+            query._validate_relation(".invalid")
+
+    def test_validate_relation_propagates_not_found_error(self):
+        """Test _validate_relation propagates RelationNotFoundError."""
+        mock_model = create_mock_model_with_relations([])
+        query = MockQuery(mock_model)
+
+        with pytest.raises(RelationNotFoundError, match="Relation 'nonexistent' not found"):
+            query._validate_relation("nonexistent")
+
+    def test_get_next_level_parts_with_remaining(self):
+        """Test _get_next_level_parts when there are remaining parts."""
+        query = MockQuery()
+        parts = ["user", "posts", "comments"]
+
+        # At index 0, next level should be ["posts"]
+        result = query._get_next_level_parts(parts, 0)
+        assert result == ["posts"]
+
+        # At index 1, next level should be ["comments"]
+        result = query._get_next_level_parts(parts, 1)
+        assert result == ["comments"]
+
+    def test_get_next_level_parts_at_end(self):
+        """Test _get_next_level_parts when at the last element."""
+        query = MockQuery()
+        parts = ["user", "posts"]
+
+        # At last index, next level should be empty
+        result = query._get_next_level_parts(parts, 1)
+        assert result == []
+
+    def test_get_next_level_parts_single_element(self):
+        """Test _get_next_level_parts with single element path."""
+        query = MockQuery()
+        parts = ["user"]
+
+        result = query._get_next_level_parts(parts, 0)
+        assert result == []
+
+    def test_should_update_nested_relation_with_new_nested(self):
+        """Test _should_update_nested_relation returns True when adding new nested."""
+        mock_model = create_mock_model_with_relations(['user'])
+        query = MockQuery(mock_model)
+
+        # Add initial config without the nested relation
+        query._add_relation_config('user', [], None)
+
+        # Should return True because 'posts' is not in nested
+        result = query._should_update_nested_relation('user', ['posts'])
+        assert result is True
+
+    def test_should_update_nested_relation_already_exists(self):
+        """Test _should_update_nested_relation returns False when nested already exists."""
+        mock_model = create_mock_model_with_relations(['user'])
+        query = MockQuery(mock_model)
+
+        # Add initial config with 'posts' already in nested
+        query._add_relation_config('user', ['posts'], None)
+
+        # Should return False because 'posts' is already in nested
+        result = query._should_update_nested_relation('user', ['posts'])
+        assert result is False
+
+    def test_should_update_nested_relation_empty_next_level(self):
+        """Test _should_update_nested_relation returns False when next_level is empty."""
+        mock_model = create_mock_model_with_relations(['user'])
+        query = MockQuery(mock_model)
+
+        query._add_relation_config('user', [], None)
+
+        # Should return False because next_level is empty
+        result = query._should_update_nested_relation('user', [])
+        assert result is False
+
+    def test_determine_modifier_target_relation(self):
+        """Test _determine_modifier returns modifier for target relation."""
+        query = MockQuery()
+        test_modifier = lambda q: q.where(True)
+
+        result = query._determine_modifier(
+            is_target=True,
+            is_adding_new_nested=False,
+            query_modifier=test_modifier
+        )
+        assert result == test_modifier
+
+    def test_determine_modifier_adding_new_nested(self):
+        """Test _determine_modifier returns modifier when adding new nested."""
+        query = MockQuery()
+        test_modifier = lambda q: q.where(True)
+
+        result = query._determine_modifier(
+            is_target=False,
+            is_adding_new_nested=True,
+            query_modifier=test_modifier
+        )
+        assert result == test_modifier
+
+    def test_determine_modifier_neither_condition(self):
+        """Test _determine_modifier returns None when neither condition is met."""
+        query = MockQuery()
+        test_modifier = lambda q: q.where(True)
+
+        result = query._determine_modifier(
+            is_target=False,
+            is_adding_new_nested=False,
+            query_modifier=test_modifier
+        )
+        assert result is None
+
+    def test_determine_modifier_target_takes_precedence(self):
+        """Test _determine_modifier with both conditions True (target takes precedence logically)."""
+        query = MockQuery()
+        test_modifier = lambda q: q.where(True)
+
+        # Both conditions true - should return modifier (target check is first)
+        result = query._determine_modifier(
+            is_target=True,
+            is_adding_new_nested=True,
+            query_modifier=test_modifier
+        )
+        assert result == test_modifier
+
+    def test_with_method_uses_parse_relation_arg(self):
+        """Test with_ method uses _parse_relation_arg helper."""
+        mock_model = create_mock_model_with_relations(['posts'])
+        mock_relation = Mock()
+        mock_relation.get_related_model = Mock(return_value=None)
+        mock_model.get_relation = Mock(return_value=mock_relation)
+        query = MockQuery(mock_model)
+
+        test_modifier = lambda q: q.where(True)
+        query.with_(('posts', test_modifier))
+
+        # Verify the modifier was applied
+        assert 'posts' in query._eager_loads
+        config = query._eager_loads['posts']
+        assert config.query_modifier == test_modifier
+
+    def test_with_method_multiple_relations(self):
+        """Test with_ method with multiple relations."""
+        mock_model = create_mock_model_with_relations(['posts', 'comments'])
+        mock_relation = Mock()
+        mock_relation.get_related_model = Mock(return_value=None)
+        mock_model.get_relation = Mock(return_value=mock_relation)
+        query = MockQuery(mock_model)
+
+        query.with_('posts', 'comments')
+
+        assert 'posts' in query._eager_loads
+        assert 'comments' in query._eager_loads
