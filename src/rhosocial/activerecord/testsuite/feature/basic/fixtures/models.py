@@ -109,6 +109,7 @@ class AsyncTypeTestModel(UUIDMixin, AsyncActiveRecord):
 class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     """A standard User model for general CRUD operation testing."""
     __table_name__ = "users"
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
     id: Optional[int] = None
