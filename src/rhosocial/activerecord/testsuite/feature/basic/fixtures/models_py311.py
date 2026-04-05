@@ -145,6 +145,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     Python 3.11+ version using | syntax and Self type.
     """
     __table_name__ = "users"
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     id: int | None = None
     username: str
