@@ -15,7 +15,7 @@ from typing import Dict, Any
 from decimal import Decimal
 
 import pytest
-from rhosocial.activerecord.worker import WorkerPool
+from rhosocial.activerecord.worker import WorkerPool, TaskContext
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -23,6 +23,7 @@ from rhosocial.activerecord.worker import WorkerPool
 # ─────────────────────────────────────────────────────────────────────────────
 
 def transfer_balance_task(
+    ctx: TaskContext,
     from_user_id: int,
     to_user_id: int,
     amount: float,
@@ -32,6 +33,7 @@ def transfer_balance_task(
     Execute a balance transfer within a transaction.
 
     Args:
+        ctx: Worker task context
         from_user_id: Source user ID
         to_user_id: Target user ID
         amount: Amount to transfer
@@ -109,7 +111,7 @@ def transfer_balance_task(
         User.backend().disconnect()
 
 
-def get_balance_task(user_id: int, conn_params: Dict) -> float:
+def get_balance_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> float:
     """Get user balance."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -133,6 +135,7 @@ def get_balance_task(user_id: int, conn_params: Dict) -> float:
 
 
 def update_order_status_task(
+    ctx: TaskContext,
     order_id: int,
     new_status: str,
     conn_params: Dict
@@ -189,6 +192,7 @@ def update_order_status_task(
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def async_transfer_balance_task(
+    ctx: TaskContext,
     from_user_id: int,
     to_user_id: int,
     amount: float,
@@ -266,7 +270,7 @@ async def async_transfer_balance_task(
         await AsyncUser.backend().disconnect()
 
 
-async def async_get_balance_task(user_id: int, conn_params: Dict) -> float:
+async def async_get_balance_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> float:
     """Get user balance (async)."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -290,6 +294,7 @@ async def async_get_balance_task(user_id: int, conn_params: Dict) -> float:
 
 
 async def async_update_order_status_task(
+    ctx: TaskContext,
     order_id: int,
     new_status: str,
     conn_params: Dict

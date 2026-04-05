@@ -11,18 +11,19 @@ import time
 from typing import Dict, Any, Optional
 
 import pytest
-from rhosocial.activerecord.worker import WorkerPool, PoolState
+from rhosocial.activerecord.worker import WorkerPool, PoolState, TaskContext
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Synchronous Task Functions (must be module-level, pickle-able)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def create_user_task(user_data: Dict[str, Any], conn_params: Dict) -> Optional[int]:
+def create_user_task(ctx: TaskContext, user_data: Dict[str, Any], conn_params: Dict) -> Optional[int]:
     """
     Create a user in Worker process.
 
     Args:
+        ctx: Worker task context
         user_data: User data dictionary (username, email, age, etc.)
         conn_params: Worker connection parameters from WorkerTestProtocol
 
@@ -53,11 +54,12 @@ def create_user_task(user_data: Dict[str, Any], conn_params: Dict) -> Optional[i
         User.backend().disconnect()
 
 
-def read_user_task(user_id: int, conn_params: Dict) -> Optional[Dict[str, Any]]:
+def read_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> Optional[Dict[str, Any]]:
     """
     Read a user in Worker process.
 
     Args:
+        ctx: Worker task context
         user_id: User ID to read
         conn_params: Worker connection parameters
 
@@ -92,11 +94,12 @@ def read_user_task(user_id: int, conn_params: Dict) -> Optional[Dict[str, Any]]:
         User.backend().disconnect()
 
 
-def update_user_task(user_id: int, updates: Dict[str, Any], conn_params: Dict) -> bool:
+def update_user_task(ctx: TaskContext, user_id: int, updates: Dict[str, Any], conn_params: Dict) -> bool:
     """
     Update a user in Worker process.
 
     Args:
+        ctx: Worker task context
         user_id: User ID to update
         updates: Dictionary of fields to update
         conn_params: Worker connection parameters
@@ -130,11 +133,12 @@ def update_user_task(user_id: int, updates: Dict[str, Any], conn_params: Dict) -
         User.backend().disconnect()
 
 
-def delete_user_task(user_id: int, conn_params: Dict) -> bool:
+def delete_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> bool:
     """
     Delete a user in Worker process.
 
     Args:
+        ctx: Worker task context
         user_id: User ID to delete
         conn_params: Worker connection parameters
 
@@ -169,11 +173,12 @@ def delete_user_task(user_id: int, conn_params: Dict) -> bool:
 # Asynchronous Task Functions (must be module-level, pickle-able)
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def async_create_user_task(user_data: Dict[str, Any], conn_params: Dict) -> Optional[int]:
+async def async_create_user_task(ctx: TaskContext, user_data: Dict[str, Any], conn_params: Dict) -> Optional[int]:
     """
     Create a user in Worker process using async model.
 
     Args:
+        ctx: Worker task context
         user_data: User data dictionary
         conn_params: Worker connection parameters
 
@@ -202,7 +207,7 @@ async def async_create_user_task(user_data: Dict[str, Any], conn_params: Dict) -
         await AsyncUser.backend().disconnect()
 
 
-async def async_read_user_task(user_id: int, conn_params: Dict) -> Optional[Dict[str, Any]]:
+async def async_read_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> Optional[Dict[str, Any]]:
     """
     Read a user in Worker process using async model.
     """
@@ -234,7 +239,7 @@ async def async_read_user_task(user_id: int, conn_params: Dict) -> Optional[Dict
         await AsyncUser.backend().disconnect()
 
 
-async def async_update_user_task(user_id: int, updates: Dict[str, Any], conn_params: Dict) -> bool:
+async def async_update_user_task(ctx: TaskContext, user_id: int, updates: Dict[str, Any], conn_params: Dict) -> bool:
     """
     Update a user in Worker process using async model.
     """
@@ -264,7 +269,7 @@ async def async_update_user_task(user_id: int, updates: Dict[str, Any], conn_par
         await AsyncUser.backend().disconnect()
 
 
-async def async_delete_user_task(user_id: int, conn_params: Dict) -> bool:
+async def async_delete_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> bool:
     """
     Delete a user in Worker process using async model.
     """
