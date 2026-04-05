@@ -64,10 +64,10 @@ class TestSyncActiveQuerySetOperation:
         user.save()
 
         # Create orders for intersect operation
-        order1 = Order(user_id=user.id, order_number='INT-001', total_amount=Decimal('100.00'), status='pending')
+        order1 = Order(user_id=user.id, order_number='INT-001', total_amount=Decimal('200.00'), status='pending')
         order1.save()
 
-        order2 = Order(user_id=user.id, order_number='INT-002', total_amount=Decimal('200.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='INT-002', total_amount=Decimal('300.00'), status='active')
         order2.save()
 
         # Create two queries: one selects pending orders, one selects orders with amount > 150
@@ -253,10 +253,10 @@ class TestSyncActiveQuerySetOperation:
         user.save()
 
         # Create orders for intersect operation
-        order1 = Order(user_id=user.id, order_number='INT-OP-001', total_amount=Decimal('100.00'), status='pending')
+        order1 = Order(user_id=user.id, order_number='INT-OP-001', total_amount=Decimal('200.00'), status='pending')
         order1.save()
 
-        order2 = Order(user_id=user.id, order_number='INT-OP-002', total_amount=Decimal('200.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='INT-OP-002', total_amount=Decimal('300.00'), status='active')
         order2.save()
 
         # Create two queries: one selects pending orders, one selects orders with amount > 150
@@ -392,10 +392,10 @@ class TestAsyncActiveQuerySetOperation:
         await user.save()
 
         # Create orders for intersect operation
-        order1 = AsyncOrder(user_id=user.id, order_number='AINT-OP-001', total_amount=Decimal('100.00'), status='pending')
+        order1 = AsyncOrder(user_id=user.id, order_number='AINT-OP-001', total_amount=Decimal('200.00'), status='pending')
         await order1.save()
 
-        order2 = AsyncOrder(user_id=user.id, order_number='AINT-OP-002', total_amount=Decimal('200.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='AINT-OP-002', total_amount=Decimal('300.00'), status='active')
         await order2.save()
 
         # Create two queries: one selects pending orders, one selects orders with amount > 150
@@ -528,10 +528,10 @@ class TestAsyncActiveQuerySetOperation:
         await user.save()
 
         # Create orders for intersect operation
-        order1 = AsyncOrder(user_id=user.id, order_number='AINT-001', total_amount=Decimal('100.00'), status='pending')
+        order1 = AsyncOrder(user_id=user.id, order_number='AINT-001', total_amount=Decimal('200.00'), status='pending')
         await order1.save()
 
-        order2 = AsyncOrder(user_id=user.id, order_number='AINT-002', total_amount=Decimal('200.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='AINT-002', total_amount=Decimal('300.00'), status='active')
         await order2.save()
 
         # Create two queries: one selects pending orders, one selects orders with amount > 150
