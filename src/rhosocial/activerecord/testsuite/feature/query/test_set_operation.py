@@ -51,11 +51,11 @@ class TestSyncSetOperations:
             results = union_query.all()
 
             # Should return all orders (active + completed)
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except AttributeError:
             # If union method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_intersect_operation(self, order_fixtures):
@@ -97,11 +97,11 @@ class TestSyncSetOperations:
 
             # Should return orders that satisfy both conditions (pending and amount > 150)
             # According to data, only INT-003 satisfies both conditions (pending and amount 300 > 150)
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except AttributeError:
             # If intersect method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_sync_except_operation(self, order_fixtures):
@@ -142,11 +142,11 @@ class TestSyncSetOperations:
             results = except_query.all()
 
             # Should return non-active orders (pending and completed)
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except AttributeError:
             # If except method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_sync_multiple_set_operations(self, order_fixtures):
@@ -189,11 +189,11 @@ class TestSyncSetOperations:
             results = final_query.all()
 
             # Result should be orders that are either pending or active, and amount > 250
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except AttributeError:
             # If set operations don't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     def test_sync_set_operations_backend_consistency(self, order_fixtures):
         """
@@ -226,7 +226,7 @@ class TestSyncSetOperations:
         except AttributeError:
             # If set operations don't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     def test_sync_set_operation_union_method(self, order_fixtures):
         """
@@ -471,11 +471,11 @@ class TestAsyncSetOperations:
             results = await union_query.all()
 
             # Should return all orders (active + completed)
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except (AttributeError, TypeError):
             # If union method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -519,11 +519,11 @@ class TestAsyncSetOperations:
             results = await intersect_query.all()
 
             # Should return orders that satisfy both conditions
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except (AttributeError, TypeError):
             # If intersect method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -567,11 +567,11 @@ class TestAsyncSetOperations:
             results = await except_query.all()
 
             # Should return non-active orders (pending and completed)
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except (AttributeError, TypeError):
             # If except method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -617,11 +617,11 @@ class TestAsyncSetOperations:
             results = await final_query.all()
 
             # Result should be orders that are either pending or active, and amount > 250
-            assert len(results) >= 0  # At least some results should be returned
+            assert len(results) > 0  # At least some results should be returned
         except (AttributeError, TypeError):
             # If set operations don't exist or are incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @pytest.mark.asyncio
     async def test_async_set_operations_backend_consistency(self, async_order_fixtures):
@@ -657,7 +657,7 @@ class TestAsyncSetOperations:
         except (AttributeError, TypeError):
             # If set operations don't exist or are incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) >= 0
+            assert len(basic_results) > 0
 
     @pytest.mark.asyncio
     async def test_async_set_operation_union_method(self, async_order_fixtures):

@@ -36,7 +36,7 @@ def test_optimistic_lock(versioned_product_model):
     # Verify final version
     latest_product = versioned_product_model.find_one(product.id)
     assert latest_product.version == 3
-    assert latest_product.price == 20.0
+    assert latest_product.price == pytest.approx(20.0)
 
 
 def test_version_increment(versioned_product_model):
