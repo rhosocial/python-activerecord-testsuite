@@ -10,18 +10,19 @@ import time
 from typing import Dict
 
 import pytest
-from rhosocial.activerecord.worker import WorkerPool
+from rhosocial.activerecord.worker import WorkerPool, TaskContext
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Task Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
-def count_users_task(conn_params: Dict) -> int:
+def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
     """
     Count users in database.
 
     Args:
+        ctx: Worker task context
         conn_params: Worker connection parameters
 
     Returns:
@@ -47,13 +48,14 @@ def count_users_task(conn_params: Dict) -> int:
         User.backend().disconnect()
 
 
-def create_and_count_task(user_data: Dict, conn_params: Dict) -> Dict:
+def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) -> Dict:
     """
     Create a user and return count.
 
     Tests that connection is properly used for both write and read.
 
     Args:
+        ctx: Worker task context
         user_data: User data to create
         conn_params: Worker connection parameters
 
@@ -83,11 +85,12 @@ def create_and_count_task(user_data: Dict, conn_params: Dict) -> Dict:
         User.backend().disconnect()
 
 
-def connection_stress_task(iterations: int, conn_params: Dict) -> int:
+def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict) -> int:
     """
     Repeatedly connect and disconnect to stress test connection management.
 
     Args:
+        ctx: Worker task context
         iterations: Number of connect/disconnect cycles
         conn_params: Worker connection parameters
 
@@ -119,11 +122,12 @@ def connection_stress_task(iterations: int, conn_params: Dict) -> int:
     return success_count
 
 
-def slow_query_task(duration: float, conn_params: Dict) -> bool:
+def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> bool:
     """
     Simulate a slow query to test timeout handling.
 
     Args:
+        ctx: Worker task context
         duration: How long to sleep
         conn_params: Worker connection parameters
 

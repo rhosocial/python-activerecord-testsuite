@@ -11,14 +11,14 @@ from typing import Dict, Any, List
 from decimal import Decimal
 
 import pytest
-from rhosocial.activerecord.worker import WorkerPool
+from rhosocial.activerecord.worker import WorkerPool, TaskContext
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Synchronous Task Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
-def count_users_task(conn_params: Dict) -> int:
+def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
     """Count all users in database."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -40,7 +40,7 @@ def count_users_task(conn_params: Dict) -> int:
         User.backend().disconnect()
 
 
-def count_orders_task(conn_params: Dict) -> int:
+def count_orders_task(ctx: TaskContext, conn_params: Dict) -> int:
     """Count all orders in database."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -62,7 +62,7 @@ def count_orders_task(conn_params: Dict) -> int:
         Order.backend().disconnect()
 
 
-def query_orders_by_user_task(user_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
+def query_orders_by_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
     """Query orders for a specific user."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -93,7 +93,7 @@ def query_orders_by_user_task(user_id: int, conn_params: Dict) -> List[Dict[str,
         Order.backend().disconnect()
 
 
-def aggregate_query_task(conn_params: Dict) -> Dict[str, Any]:
+def aggregate_query_task(ctx: TaskContext, conn_params: Dict) -> Dict[str, Any]:
     """Execute aggregate queries on orders."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -122,7 +122,7 @@ def aggregate_query_task(conn_params: Dict) -> Dict[str, Any]:
         Order.backend().disconnect()
 
 
-def query_order_items_task(order_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
+def query_order_items_task(ctx: TaskContext, order_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
     """Query items for a specific order."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -157,7 +157,7 @@ def query_order_items_task(order_id: int, conn_params: Dict) -> List[Dict[str, A
 # Asynchronous Task Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def async_count_users_task(conn_params: Dict) -> int:
+async def async_count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
     """Count all users in database (async)."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -179,7 +179,7 @@ async def async_count_users_task(conn_params: Dict) -> int:
         await AsyncUser.backend().disconnect()
 
 
-async def async_count_orders_task(conn_params: Dict) -> int:
+async def async_count_orders_task(ctx: TaskContext, conn_params: Dict) -> int:
     """Count all orders in database (async)."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -201,7 +201,7 @@ async def async_count_orders_task(conn_params: Dict) -> int:
         await AsyncOrder.backend().disconnect()
 
 
-async def async_query_orders_by_user_task(user_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
+async def async_query_orders_by_user_task(ctx: TaskContext, user_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
     """Query orders for a specific user (async)."""
     if conn_params is None:
         raise ValueError("conn_params is required")
@@ -232,7 +232,7 @@ async def async_query_orders_by_user_task(user_id: int, conn_params: Dict) -> Li
         await AsyncOrder.backend().disconnect()
 
 
-async def async_aggregate_query_task(conn_params: Dict) -> Dict[str, Any]:
+async def async_aggregate_query_task(ctx: TaskContext, conn_params: Dict) -> Dict[str, Any]:
     """Execute aggregate queries on orders (async)."""
     if conn_params is None:
         raise ValueError("conn_params is required")

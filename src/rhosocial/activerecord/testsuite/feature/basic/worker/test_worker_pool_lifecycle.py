@@ -10,18 +10,19 @@ import time
 from typing import Dict
 
 import pytest
-from rhosocial.activerecord.worker import WorkerPool, PoolState
+from rhosocial.activerecord.worker import WorkerPool, PoolState, TaskContext
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Task Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
-def simple_db_task(value: int, conn_params: Dict) -> int:
+def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
     """
     Simple database task that verifies connection availability.
 
     Args:
+        ctx: Worker task context
         value: Value to double
         conn_params: Worker connection parameters
 
@@ -50,11 +51,12 @@ def simple_db_task(value: int, conn_params: Dict) -> int:
         User.backend().disconnect()
 
 
-def long_running_db_task(duration: float, conn_params: Dict) -> float:
+def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -> float:
     """
     Long-running database task for testing graceful shutdown.
 
     Args:
+        ctx: Worker task context
         duration: Duration to sleep in seconds
         conn_params: Worker connection parameters
 
