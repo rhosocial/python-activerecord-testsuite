@@ -21,10 +21,6 @@ on:
           - testpypi
           - pypi
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   # Check if test workflow completed successfully
   check-tests:

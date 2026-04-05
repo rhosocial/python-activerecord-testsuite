@@ -304,7 +304,7 @@ def test_invalid_sql_syntax_handling(order_fixtures):
 
     # Verify valid syntax still works
     valid_results = Order.query().where(Order.c.user_id == user.id).all()
-    assert len(valid_results) >= 0
+    assert len(valid_results) > 0
 
 
 def test_transaction_rollback_on_error(order_fixtures):
@@ -339,4 +339,4 @@ def test_transaction_rollback_on_error(order_fixtures):
 
     # Verify that valid operations still work correctly
     valid_results = Order.query().where(Order.c.user_id == user.id).all()
-    assert len(valid_results) >= 0
+    assert len(valid_results) > 0

@@ -287,7 +287,8 @@ def test_join_with_conditions(order_fixtures):
             .all()
 
         # Should only return orders with items meeting the additional condition
-        assert len(results) >= 0  # May return 0 or 1 depending on implementation
+        # Result may be 0 or 1 depending on implementation
+        assert isinstance(results, list)
     except Exception:
         # If conditional join doesn't work, test basic functionality
         basic_results = Order.query().where(Order.c.order_number == 'JC-001').all()

@@ -55,8 +55,8 @@ def test_row_number_window_function(order_fixtures):
         assert results[2]['row_num'] == 3
         assert results[3]['row_num'] == 4
 
-        assert float(results[0]['total_amount']) == 300.00
-        assert float(results[1]['total_amount']) == 200.00
+        assert float(results[0]['total_amount']) == pytest.approx(300.00)
+        assert float(results[1]['total_amount']) == pytest.approx(200.00)
         assert float(results[2]['total_amount']) in (100.00, 100.00)
         assert float(results[3]['total_amount']) in (100.00, 100.00)
     except Exception as e:
@@ -105,10 +105,8 @@ def test_partition_by_window_function(order_fixtures):
 
         assert len(results) == 4
         for r in results:
-            if r['status'] == 'paid':
-                assert r['rank'] in (1, 2)
-            else:
-                assert r['rank'] in (1, 2)
+            # All records should have rank in (1, 2) regardless of status
+            assert r['rank'] in (1, 2)
     except Exception as e:
         if 'no such function: ROW_NUMBER' in str(e):
             pytest.skip("SQLite installation doesn't support ROW_NUMBER window function")
@@ -238,7 +236,7 @@ def test_window_frame_specifications(order_fixtures):
         results = query.aggregate()
 
         assert len(results) == 4
-        assert float(results[0]['first_amount']) == 100.00
+        assert float(results[0]['first_amount']) == pytest.approx(100.00)
     except Exception as e:
         if 'no such function' in str(e).lower():
             pytest.skip(f"SQLite installation doesn't support this window function: {e}")
@@ -285,7 +283,7 @@ def test_unbounded_window_frames(order_fixtures):
 
         assert len(results) == 4
         for r in results:
-            assert float(r['total_sum']) == 1000.00
+            assert float(r['total_sum']) == pytest.approx(1000.00)
     except Exception as e:
         if 'no such function' in str(e).lower():
             pytest.skip(f"SQLite installation doesn't support this window function: {e}")

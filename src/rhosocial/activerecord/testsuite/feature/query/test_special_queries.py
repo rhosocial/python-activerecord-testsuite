@@ -164,4 +164,4 @@ def test_subquery_operations(order_fixtures):
     except Exception:
         # If subquery functionality isn't fully implemented, at least verify basic functionality works
         basic_results = Order.query().all()
-        assert len(basic_results) >= 0
+        assert len(basic_results) > 0

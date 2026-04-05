@@ -59,7 +59,7 @@ class TestSyncActiveQueryJoin:
 
         # Join with WHERE condition to get only active orders
         results = User.query().join(Order, User.c.id == Order.c.user_id).where(Order.c.status == 'active').all()
-        assert len(results) >= 0  # Should return users with active orders
+        assert len(results) > 0  # Should return users with active orders
 
     @pytest.mark.requires_inner_join
     def test_multiple_joins(self, blog_fixtures):
@@ -82,7 +82,7 @@ class TestSyncActiveQueryJoin:
 
         # Perform multiple joins: User -> Post -> Comment
         results = User.query().join(Post, User.c.id == Post.c.user_id).join(Comment, Post.c.id == Comment.c.post_id).all()
-        assert len(results) >= 0  # Should return users who have posts with comments
+        assert len(results) > 0  # Should return users who have posts with comments
 
     @pytest.mark.requires_inner_join
     def test_join_with_order_by(self, order_fixtures):
@@ -105,7 +105,7 @@ class TestSyncActiveQueryJoin:
 
         # Join with ordering
         results = User.query().join(Order, User.c.id == Order.c.user_id).order_by(Order.c.total_amount).all()
-        assert len(results) >= 0  # Should return ordered results
+        assert len(results) > 0  # Should return ordered results
 
     @pytest.mark.requires_inner_join
     def test_join_with_limit_offset(self, order_fixtures):
@@ -127,7 +127,7 @@ class TestSyncActiveQueryJoin:
 
         # Join with pagination
         results = User.query().join(Order, User.c.id == Order.c.user_id).order_by(Order.c.order_number).limit(2).offset(1).all()
-        assert len(results) >= 0  # Should return paginated results
+        assert len(results) > 0  # Should return paginated results
 
 
 class TestAsyncActiveQueryJoin:
@@ -179,7 +179,7 @@ class TestAsyncActiveQueryJoin:
 
         # Join with WHERE condition to get only active orders
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).where(AsyncOrder.c.status == 'active').all()
-        assert len(results) >= 0  # Should return users with active orders
+        assert len(results) > 0  # Should return users with active orders
 
     @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
@@ -203,7 +203,7 @@ class TestAsyncActiveQueryJoin:
 
         # Perform multiple joins: User -> Post -> Comment
         results = await AsyncUser.query().join(AsyncPost, AsyncUser.c.id == AsyncPost.c.user_id).join(AsyncComment, AsyncPost.c.id == AsyncComment.c.post_id).all()
-        assert len(results) >= 0  # Should return users who have posts with comments
+        assert len(results) > 0  # Should return users who have posts with comments
 
     @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
@@ -227,7 +227,7 @@ class TestAsyncActiveQueryJoin:
 
         # Join with ordering
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).order_by(AsyncOrder.c.total_amount).all()
-        assert len(results) >= 0  # Should return ordered results
+        assert len(results) > 0  # Should return ordered results
 
     @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
@@ -250,4 +250,4 @@ class TestAsyncActiveQueryJoin:
 
         # Join with pagination
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).order_by(AsyncOrder.c.order_number).limit(2).offset(1).all()
-        assert len(results) >= 0  # Should return paginated results
+        assert len(results) > 0  # Should return paginated results

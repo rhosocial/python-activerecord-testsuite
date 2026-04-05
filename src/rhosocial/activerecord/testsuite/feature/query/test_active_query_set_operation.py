@@ -49,7 +49,7 @@ class TestSyncActiveQuerySetOperation:
         results = union_query.aggregate()
 
         # Should return all orders (active + completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_intersect_operation(self, order_fixtures):
@@ -79,7 +79,7 @@ class TestSyncActiveQuerySetOperation:
         results = intersect_query.aggregate()
 
         # Should return orders that satisfy both conditions (pending and amount > 150)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_except_operation(self, order_fixtures):
@@ -112,7 +112,7 @@ class TestSyncActiveQuerySetOperation:
         results = except_query.aggregate()
 
         # Should return non-active orders (pending and completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_multiple_set_operations(self, order_fixtures):
@@ -147,7 +147,7 @@ class TestSyncActiveQuerySetOperation:
         results = final_query.aggregate()
 
         # Result should be orders that are either pending or active, and amount > 250
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     def test_set_operation_with_conditions(self, order_fixtures):
         """
@@ -176,7 +176,7 @@ class TestSyncActiveQuerySetOperation:
         union_query = active_orders.union(pending_orders)
         results = union_query.aggregate()
 
-        assert len(results) >= 0  # Should return combined results
+        assert len(results) > 0  # Should return combined results
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_set_operation_chaining(self, order_fixtures):
@@ -207,7 +207,7 @@ class TestSyncActiveQuerySetOperation:
         final_result = union_result.except_(high_amount_orders)
         results = final_result.aggregate()
 
-        assert len(results) >= 0  # Should return chained operation results
+        assert len(results) > 0  # Should return chained operation results
 
     def test_union_operator(self, order_fixtures):
         """
@@ -237,7 +237,7 @@ class TestSyncActiveQuerySetOperation:
         results = union_query.aggregate()
 
         # Should return all orders (active + completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_intersect_operator(self, order_fixtures):
@@ -268,7 +268,7 @@ class TestSyncActiveQuerySetOperation:
         results = intersect_query.aggregate()
 
         # Should return orders that satisfy both conditions (pending and amount > 150)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_except_operator(self, order_fixtures):
@@ -302,7 +302,7 @@ class TestSyncActiveQuerySetOperation:
         results = except_query.aggregate()
 
         # Should return non-active orders (pending and completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_operator_precedence(self, order_fixtures):
@@ -338,7 +338,7 @@ class TestSyncActiveQuerySetOperation:
         results = final_query.aggregate()
 
         # Result should be orders that are either pending or active, and amount > 250
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
 class TestAsyncActiveQuerySetOperation:
     """
@@ -375,7 +375,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await union_query.aggregate()
 
         # Should return all orders (active + completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -407,7 +407,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await intersect_query.aggregate()
 
         # Should return orders that satisfy both conditions (pending and amount > 150)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -442,7 +442,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await except_query.aggregate()
 
         # Should return non-active orders (pending and completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -479,7 +479,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await final_query.aggregate()
 
         # Result should be orders that are either pending or active, and amount > 250
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     async def test_union_operation_async(self, async_order_fixtures):
 
@@ -512,7 +512,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await union_query.aggregate()
 
         # Should return all orders (active + completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -545,7 +545,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await intersect_query.aggregate()
 
         # Should return orders that satisfy both conditions (pending and amount > 150)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -581,7 +581,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await except_query.aggregate()
 
         # Should return non-active orders (pending and completed)
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -619,7 +619,7 @@ class TestAsyncActiveQuerySetOperation:
         results = await final_query.aggregate()
 
         # Result should be orders that are either pending or active, and amount > 250
-        assert len(results) >= 0  # At least some results should be returned
+        assert len(results) > 0  # At least some results should be returned
 
     @pytest.mark.asyncio
     async def test_set_operation_with_conditions_async(self, async_order_fixtures):
@@ -651,7 +651,7 @@ class TestAsyncActiveQuerySetOperation:
         union_query = AsyncSetOperationQuery(active_orders, pending_orders, "UNION")
         results = await union_query.aggregate()
 
-        assert len(results) >= 0  # Should return combined results
+        assert len(results) > 0  # Should return combined results
 
     @pytest.mark.asyncio
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -685,4 +685,4 @@ class TestAsyncActiveQuerySetOperation:
         final_result = AsyncSetOperationQuery(union_result, high_amount_orders, "EXCEPT")
         results = await final_result.aggregate()
 
-        assert len(results) >= 0  # Should return chained operation results
+        assert len(results) > 0  # Should return chained operation results

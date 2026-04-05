@@ -3,6 +3,7 @@
 
 This module tests the basic CRUD functionality of the ActiveRecord class.
 """
+import asyncio
 import time
 import uuid
 from decimal import Decimal
@@ -539,7 +540,7 @@ class TestAsyncCRUD:
         # Update fields
         original_created_at = user.created_at
         original_updated_at = user.updated_at
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
         assert user.is_dirty is False
         user.username = 'robert_smith'
         assert user.is_dirty is True
