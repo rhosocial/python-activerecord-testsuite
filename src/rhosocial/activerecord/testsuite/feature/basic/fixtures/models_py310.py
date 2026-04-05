@@ -127,6 +127,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     __table_name__ = "users"
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
     id: int | None = None
