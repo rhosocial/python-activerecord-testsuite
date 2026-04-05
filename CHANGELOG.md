@@ -1,3 +1,11 @@
+## [v1.0.0.dev8] - 2026-04-06
+
+
+### Added
+
+- Added WorkerPool integration tests for ActiveRecord, enabling comprehensive testing of asynchronous database operations with concurrent workers. ([#9](https://github.com/rhosocial/python-activerecord-testsuite/issues/9))
+
+
 ## [v1.0.0.dev7] - 2026-03-19
 
 ### Added
