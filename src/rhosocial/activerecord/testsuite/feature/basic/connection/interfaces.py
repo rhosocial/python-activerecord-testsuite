@@ -42,7 +42,7 @@ class IBasicConnectionProvider(ABC):
         pass
 
     @abstractmethod
-    def setup_async_pool_and_model(self, scenario_name: str) -> Tuple['AsyncBackendPool', Type[AsyncActiveRecord]]:
+    async def setup_async_pool_and_model(self, scenario_name: str) -> Tuple['AsyncBackendPool', Type[AsyncActiveRecord]]:
         """
         Setup an async connection pool and a test model for context awareness tests.
 
