@@ -6,6 +6,34 @@ These tests verify that CRUD operations work correctly within
 connection pool contexts.
 """
 import pytest
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+
+
+def execute_sql(backend, sql: str, params=None):
+    """Helper to execute SQL with proper options."""
+    sql_upper = sql.upper().strip()
+    if 'CREATE' in sql_upper or 'DROP' in sql_upper or 'ALTER' in sql_upper:
+        stmt_type = StatementType.DDL
+    elif sql_upper.startswith('SELECT'):
+        stmt_type = StatementType.DQL
+    else:
+        stmt_type = StatementType.DML
+    options = ExecutionOptions(stmt_type=stmt_type)
+    return backend.execute(sql, params or (), options=options)
+
+
+async def async_execute_sql(backend, sql: str, params=None):
+    """Helper to execute SQL asynchronously with proper options."""
+    sql_upper = sql.upper().strip()
+    if 'CREATE' in sql_upper or 'DROP' in sql_upper or 'ALTER' in sql_upper:
+        stmt_type = StatementType.DDL
+    elif sql_upper.startswith('SELECT'):
+        stmt_type = StatementType.DQL
+    else:
+        stmt_type = StatementType.DML
+    options = ExecutionOptions(stmt_type=stmt_type)
+    return await backend.execute(sql, params or (), options=options)
 
 
 class TestSyncActiveRecordCRUD:
@@ -32,11 +60,11 @@ class TestSyncActiveRecordCRUD:
 
         # Create user first
         with pool.connection() as backend:
-            backend.execute("INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@test.com')")
+            execute_sql(backend, "INSERT INTO test_users (name, email) VALUES ('Bob', 'bob@test.com')")
 
         # Update in transaction
         with pool.transaction() as backend:
-            backend.execute("UPDATE test_users SET name = 'Robert' WHERE name = 'Bob'")
+            execute_sql(backend, "UPDATE test_users SET name = 'Robert' WHERE name = 'Bob'")
 
         # Verify updated
         with pool.connection() as backend:
@@ -49,11 +77,11 @@ class TestSyncActiveRecordCRUD:
 
         # Create user first
         with pool.connection() as backend:
-            backend.execute("INSERT INTO test_users (name, email) VALUES ('Charlie', 'charlie@test.com')")
+            execute_sql(backend, "INSERT INTO test_users (name, email) VALUES ('Charlie', 'charlie@test.com')")
 
         # Delete in transaction
         with pool.transaction() as backend:
-            backend.execute("DELETE FROM test_users WHERE name = 'Charlie'")
+            execute_sql(backend, "DELETE FROM test_users WHERE name = 'Charlie'")
 
         # Verify deleted
         with pool.connection() as backend:
@@ -66,7 +94,7 @@ class TestSyncActiveRecordCRUD:
 
         try:
             with pool.transaction() as backend:
-                backend.execute("INSERT INTO test_users (name, email) VALUES ('Dave', 'dave@test.com')")
+                execute_sql(backend, "INSERT INTO test_users (name, email) VALUES ('Dave', 'dave@test.com')")
                 raise ValueError("Simulated error")
         except ValueError:
             pass
@@ -88,7 +116,7 @@ class TestSyncActiveRecordCRUD:
                 inner_backend = model.backend()
                 assert inner_backend is outer_backend
 
-                inner_backend.execute("INSERT INTO test_users (name, email) VALUES ('Eve', 'eve@test.com')")
+                execute_sql(inner_backend, "INSERT INTO test_users (name, email) VALUES ('Eve', 'eve@test.com')")
 
         # Verify committed
         with pool.connection() as backend:
@@ -105,7 +133,7 @@ class TestAsyncActiveRecordCRUD:
         pool, model = async_pool_for_crud
 
         async with pool.transaction() as backend:
-            await backend.execute("INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@test.com')")
+            await async_execute_sql(backend, "INSERT INTO test_users (name, email) VALUES ('Alice', 'alice@test.com')")
 
         # Verify committed
         async with pool.connection() as backend:
@@ -119,7 +147,7 @@ class TestAsyncActiveRecordCRUD:
 
         try:
             async with pool.transaction() as backend:
-                await backend.execute("INSERT INTO test_users (name, email) VALUES ('Dave', 'dave@test.com')")
+                await async_execute_sql(backend, "INSERT INTO test_users (name, email) VALUES ('Dave', 'dave@test.com')")
                 raise ValueError("Simulated error")
         except ValueError:
             pass
@@ -141,7 +169,7 @@ class TestAsyncActiveRecordCRUD:
                 inner_backend = model.backend()
                 assert inner_backend is outer_backend
 
-                await inner_backend.execute("INSERT INTO test_users (name, email) VALUES ('Eve', 'eve@test.com')")
+                await async_execute_sql(inner_backend, "INSERT INTO test_users (name, email) VALUES ('Eve', 'eve@test.com')")
 
         # Verify committed
         async with pool.connection() as backend:
