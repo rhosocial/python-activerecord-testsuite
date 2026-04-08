@@ -1,3 +1,10 @@
+## [v1.0.0.dev9] - 2026-04-08
+
+### Added
+
+- Added connection pool context awareness tests for ActiveRecord and query classes with backend-agnostic provider interfaces ([#10](https://github.com/rhosocial/python-activerecord-testsuite/issues/10))
+
+
 ## [v1.0.0.dev8] - 2026-04-06
 
 
