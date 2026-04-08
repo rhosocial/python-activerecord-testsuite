@@ -61,3 +61,54 @@ def test_version_increment(versioned_product_model):
     # Verify version in database
     db_product = versioned_product_model.find_one(product.id)
     assert db_product.version == 3
+
+
+def test_version_initializes_to_one_on_insert(versioned_product_model):
+    """Test that AFTER_INSERT ensures version is initialized to 1.
+
+    This verifies the behavior of _handle_version_after_insert handler:
+    - New records should have version = 1 after INSERT
+    - This is handled by the AFTER_INSERT event, not just default value
+    """
+    # Create new record
+    product = versioned_product_model(name="New Product", price=99.99)
+    product.save()
+
+    # Verify version is initialized to 1
+    assert product.version == 1, (
+        "Version should be initialized to 1 on INSERT"
+    )
+
+    # Verify in database
+    db_product = versioned_product_model.find_one(product.id)
+    assert db_product.version == 1, (
+        "Version in database should be 1 after INSERT"
+    )
+
+
+def test_version_events_separation(versioned_product_model):
+    """Test that INSERT and UPDATE use separate event handlers.
+
+    This verifies:
+    - AFTER_INSERT initializes version for new records
+    - AFTER_UPDATE handles version increment and conflict detection
+    """
+    # INSERT: version initialized to 1
+    product = versioned_product_model(name="Test Product", price=50.0)
+    product.save()
+    assert product.version == 1
+
+    # UPDATE 1: version incremented to 2
+    product.price = 60.0
+    product.save()
+    assert product.version == 2
+
+    # UPDATE 2: version incremented to 3
+    product.price = 70.0
+    product.save()
+    assert product.version == 3
+
+    # Verify that the version field is properly managed
+    # by separate INSERT/UPDATE handlers
+    db_product = versioned_product_model.find_one(product.id)
+    assert db_product.version == 3
