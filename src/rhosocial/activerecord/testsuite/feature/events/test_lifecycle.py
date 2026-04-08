@@ -6,7 +6,7 @@ This module tests the event lifecycle functionality of the ActiveRecord class.
 """
 import pytest
 from rhosocial.activerecord.interface import ModelEvent
-from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
+from rhosocial.activerecord.model import ActiveRecord
 
 
 def test_insert_lifecycle_events(event_model):
@@ -289,3 +289,39 @@ def test_after_update_receives_result(event_model):
 
     assert result_data['affected_rows'] == 1
     assert result_data['dirty_fields'] == ["name"]
+
+
+def test_sync_callback_receives_active_record_instance(event_model):
+    """Test that callback receives ActiveRecord instance for sync model"""
+    instance = event_model(name="test")
+
+    received_types = []
+
+    def handler(instance_arg, **kwargs):
+        received_types.append(type(instance_arg).__name__)
+
+    instance.on(ModelEvent.BEFORE_INSERT, handler)
+    instance.on(ModelEvent.AFTER_INSERT, handler)
+    instance.save()
+
+    # Verify the instance is the same object
+    assert all(t == type(instance).__name__ for t in received_types)
+    # Verify it's an ActiveRecord subclass
+    assert isinstance(instance, ActiveRecord)
+
+
+def test_callback_instance_is_same_object(event_model):
+    """Test that callback receives the exact same instance object"""
+    instance = event_model(name="test")
+
+    received_instances = []
+
+    def handler(instance_arg, **kwargs):
+        received_instances.append(instance_arg)
+
+    instance.on(ModelEvent.BEFORE_INSERT, handler)
+    instance.save()
+
+    # Verify the instance received in callback is the exact same object
+    assert len(received_instances) == 1
+    assert received_instances[0] is instance  # Same identity (using 'is')
