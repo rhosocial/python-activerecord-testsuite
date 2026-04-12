@@ -6,11 +6,11 @@ This module tests the event lifecycle functionality of the ActiveRecord class.
 """
 import pytest
 from rhosocial.activerecord.interface import ModelEvent
-from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
+from rhosocial.activerecord.model import ActiveRecord
 
 
-def test_save_lifecycle_events(event_model):
-    """Test save lifecycle events"""
+def test_insert_lifecycle_events(event_model):
+    """Test INSERT lifecycle events for new records"""
     instance = event_model(name="test")
 
     # Record event trigger sequence
@@ -22,30 +22,67 @@ def test_save_lifecycle_events(event_model):
     def on_after_validate(instance, **kwargs):
         event_sequence.append(("AFTER_VALIDATE", instance.revision))
 
-    def on_before_save(instance, **kwargs):
-        event_sequence.append(("BEFORE_SAVE", instance.revision))
+    def on_before_insert(instance, data, **kwargs):
+        event_sequence.append(("BEFORE_INSERT", instance.revision))
         instance.revision += 1
 
-    def on_after_save(instance, **kwargs):
-        event_sequence.append(("AFTER_SAVE", instance.revision))
+    def on_after_insert(instance, data, result, **kwargs):
+        event_sequence.append(("AFTER_INSERT", instance.revision))
 
     # Register all event handlers
     instance.on(ModelEvent.BEFORE_VALIDATE, on_before_validate)
     instance.on(ModelEvent.AFTER_VALIDATE, on_after_validate)
-    instance.on(ModelEvent.BEFORE_SAVE, on_before_save)
-    instance.on(ModelEvent.AFTER_SAVE, on_after_save)
+    instance.on(ModelEvent.BEFORE_INSERT, on_before_insert)
+    instance.on(ModelEvent.AFTER_INSERT, on_after_insert)
 
-    # Save record
+    # Save record (INSERT for new record)
     instance.save()
 
     # Verify event sequence
     expected_sequence = [
         ("BEFORE_VALIDATE", 1),
         ("AFTER_VALIDATE", 1),
-        ("BEFORE_SAVE", 1),
-        ("AFTER_SAVE", 2)
+        ("BEFORE_INSERT", 1),
+        ("AFTER_INSERT", 2)
     ]
     assert event_sequence == expected_sequence
+
+
+def test_update_lifecycle_events(event_model):
+    """Test UPDATE lifecycle events for existing records"""
+    instance = event_model(name="test")
+    instance.save()
+
+    # Reset event sequence
+    event_sequence = []
+
+    def on_before_validate(instance, **kwargs):
+        event_sequence.append("BEFORE_VALIDATE")
+
+    def on_after_validate(instance, **kwargs):
+        event_sequence.append("AFTER_VALIDATE")
+
+    def on_before_update(instance, data, dirty_fields, **kwargs):
+        event_sequence.append(("BEFORE_UPDATE", sorted(dirty_fields)))
+
+    def on_after_update(instance, data, dirty_fields, result, **kwargs):
+        event_sequence.append(("AFTER_UPDATE", sorted(dirty_fields)))
+
+    # Register all event handlers
+    instance.on(ModelEvent.BEFORE_VALIDATE, on_before_validate)
+    instance.on(ModelEvent.AFTER_VALIDATE, on_after_validate)
+    instance.on(ModelEvent.BEFORE_UPDATE, on_before_update)
+    instance.on(ModelEvent.AFTER_UPDATE, on_after_update)
+
+    # Update record
+    instance.name = "updated"
+    instance.save()
+
+    # Verify event sequence
+    assert "BEFORE_VALIDATE" in event_sequence
+    assert "AFTER_VALIDATE" in event_sequence
+    assert ("BEFORE_UPDATE", ["name"]) in event_sequence
+    assert ("AFTER_UPDATE", ["name"]) in event_sequence
 
 
 def test_delete_lifecycle_events(event_model):
@@ -108,37 +145,38 @@ def test_nested_event_handling(event_model):
 
     event_sequence = []
 
-    def parent_save_handler(instance, **kwargs):
-        event_sequence.append("parent_before_save")
+    def parent_insert_handler(instance, data, **kwargs):
+        event_sequence.append("parent_before_insert")
         # Save child object when parent object is saved
         child.save()
 
-    def child_save_handler(instance, **kwargs):
-        event_sequence.append("child_before_save")
+    def child_insert_handler(instance, data, **kwargs):
+        event_sequence.append("child_before_insert")
 
     # Register event handlers
-    parent.on(ModelEvent.BEFORE_SAVE, parent_save_handler)
-    child.on(ModelEvent.BEFORE_SAVE, child_save_handler)
+    parent.on(ModelEvent.BEFORE_INSERT, parent_insert_handler)
+    child.on(ModelEvent.BEFORE_INSERT, child_insert_handler)
 
     # Save parent object
     parent.save()
 
     # Verify execution order of nested events
-    assert event_sequence == ["parent_before_save", "child_before_save"]
+    assert event_sequence == ["parent_before_insert", "child_before_insert"]
 
 
 def test_event_error_handling(event_model):
     """Test event error handling"""
     instance = event_model(name="test")
 
-    def error_handler(instance, **kwargs):
+    def error_handler(instance, data, **kwargs):
         raise ValueError("Test error in event handler")
 
     # Register handler that may raise errors
-    instance.on(ModelEvent.BEFORE_SAVE, error_handler)
+    instance.on(ModelEvent.BEFORE_INSERT, error_handler)
 
-    # Verify error propagates correctly
-    with pytest.raises(ValueError) as exc_info:
+    # Verify error propagates correctly (wrapped in DatabaseError)
+    from rhosocial.activerecord.backend.errors import DatabaseError
+    with pytest.raises(DatabaseError) as exc_info:
         instance.save()
     assert "Test error in event handler" in str(exc_info.value)
 
@@ -146,19 +184,21 @@ def test_event_error_handling(event_model):
 def test_conditional_event_handling(event_model):
     """Test conditional event handling"""
     instance = event_model(name="test", status="draft")
+    instance.save()  # First save as new record
+
     handled_events = []
 
-    def status_change_handler(instance, **kwargs):
-        if instance.is_dirty and "status" in instance.dirty_fields:
+    def status_change_handler(instance, data, dirty_fields, **kwargs):
+        if "status" in dirty_fields:
             handled_events.append(("status_change", instance.status))
 
-    def content_change_handler(instance, **kwargs):
-        if instance.is_dirty and "content" in instance.dirty_fields:
+    def content_change_handler(instance, data, dirty_fields, **kwargs):
+        if "content" in dirty_fields:
             handled_events.append(("content_change", instance.content))
 
-    # Register conditional handlers
-    instance.on(ModelEvent.BEFORE_SAVE, status_change_handler)
-    instance.on(ModelEvent.BEFORE_SAVE, content_change_handler)
+    # Register conditional handlers for UPDATE events
+    instance.on(ModelEvent.BEFORE_UPDATE, status_change_handler)
+    instance.on(ModelEvent.BEFORE_UPDATE, content_change_handler)
 
     # Test status change
     instance.status = "published"
@@ -173,3 +213,115 @@ def test_conditional_event_handling(event_model):
         ("status_change", "published"),
         ("content_change", "new content")
     ]
+
+
+def test_before_insert_can_modify_data(event_model):
+    """Test BEFORE_INSERT event can modify save data"""
+    instance = event_model(name="test")
+
+    def modify_data_handler(instance, data, **kwargs):
+        # Modify data before insert
+        data['name'] = 'modified_name'
+        data['status'] = 'auto_status'
+
+    instance.on(ModelEvent.BEFORE_INSERT, modify_data_handler)
+    instance.save()
+
+    # Verify the data was modified in the database by querying
+    saved = event_model.find_one(instance.id)
+    assert saved.name == 'modified_name'
+    assert saved.status == 'auto_status'
+
+
+def test_before_update_can_modify_data(event_model):
+    """Test BEFORE_UPDATE event can modify save data"""
+    instance = event_model(name="test", status="initial")
+    instance.save()
+
+    def modify_data_handler(instance, data, dirty_fields, **kwargs):
+        # Modify data before update
+        if 'name' in dirty_fields:
+            data['status'] = 'name_changed'
+
+    instance.on(ModelEvent.BEFORE_UPDATE, modify_data_handler)
+
+    # Update name
+    instance.name = "updated_name"
+    instance.save()
+
+    # Verify the data was modified in the database by querying
+    saved = event_model.find_one(instance.id)
+    assert saved.name == "updated_name"
+    assert saved.status == "name_changed"
+
+
+def test_after_insert_receives_result(event_model):
+    """Test AFTER_INSERT event receives QueryResult"""
+    instance = event_model(name="test")
+
+    result_data = {}
+
+    def after_insert_handler(instance, data, result, **kwargs):
+        result_data['affected_rows'] = result.affected_rows
+        result_data['has_data'] = result.data is not None
+
+    instance.on(ModelEvent.AFTER_INSERT, after_insert_handler)
+    instance.save()
+
+    assert result_data['affected_rows'] == 1
+
+
+def test_after_update_receives_result(event_model):
+    """Test AFTER_UPDATE event receives QueryResult and dirty_fields"""
+    instance = event_model(name="test")
+    instance.save()
+
+    result_data = {}
+
+    def after_update_handler(instance, data, dirty_fields, result, **kwargs):
+        result_data['affected_rows'] = result.affected_rows
+        result_data['dirty_fields'] = sorted(dirty_fields)
+
+    instance.on(ModelEvent.AFTER_UPDATE, after_update_handler)
+
+    instance.name = "updated"
+    instance.save()
+
+    assert result_data['affected_rows'] == 1
+    assert result_data['dirty_fields'] == ["name"]
+
+
+def test_sync_callback_receives_active_record_instance(event_model):
+    """Test that callback receives ActiveRecord instance for sync model"""
+    instance = event_model(name="test")
+
+    received_types = []
+
+    def handler(instance_arg, **kwargs):
+        received_types.append(type(instance_arg).__name__)
+
+    instance.on(ModelEvent.BEFORE_INSERT, handler)
+    instance.on(ModelEvent.AFTER_INSERT, handler)
+    instance.save()
+
+    # Verify the instance is the same object
+    assert all(t == type(instance).__name__ for t in received_types)
+    # Verify it's an ActiveRecord subclass
+    assert isinstance(instance, ActiveRecord)
+
+
+def test_callback_instance_is_same_object(event_model):
+    """Test that callback receives the exact same instance object"""
+    instance = event_model(name="test")
+
+    received_instances = []
+
+    def handler(instance_arg, **kwargs):
+        received_instances.append(instance_arg)
+
+    instance.on(ModelEvent.BEFORE_INSERT, handler)
+    instance.save()
+
+    # Verify the instance received in callback is the exact same object
+    assert len(received_instances) == 1
+    assert received_instances[0] is instance  # Same identity (using 'is')

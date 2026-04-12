@@ -1,3 +1,16 @@
+## [v1.0.0.dev10] - 2026-04-12
+
+### Removed
+
+- **BREAKING**: Removed BEFORE_SAVE/AFTER_SAVE events. Use BEFORE_INSERT/AFTER_INSERT and BEFORE_UPDATE/AFTER_UPDATE instead. ([#12](https://github.com/rhosocial/python-activerecord-testsuite/issues/12))
+
+
+
+### Added
+
+- Added BEFORE_INSERT, AFTER_INSERT, BEFORE_UPDATE, and AFTER_UPDATE events for more fine-grained control over insert vs update operations. Event callbacks now receive operation-specific parameters: INSERT events receive data dict, UPDATE events receive data dict and dirty_fields set. ([#12](https://github.com/rhosocial/python-activerecord-testsuite/issues/12))
+
+
 ## [v1.0.0.dev9] - 2026-04-08
 
 ### Added
