@@ -15,7 +15,7 @@ import pytest
 from decimal import Decimal
 
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
-from rhosocial.activerecord.backend.expression import statements, core
+from rhosocial.activerecord.backend.expression import statements, core, query_parts
 from rhosocial.activerecord.testsuite.utils import requires_cte
 from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
 from rhosocial.activerecord.testsuite.utils import requires_protocol
@@ -344,7 +344,7 @@ class TestCTEQueryWithQueryExpression:
             dialect,
             select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
             from_=core.TableExpression(dialect, Order.table_name()),
-            where=statements.WhereClause(dialect, condition=core.Column(dialect, "status") == core.Literal(dialect, 'active'))
+            where=query_parts.WhereClause(dialect, condition=core.Column(dialect, "status") == core.Literal(dialect, 'active'))
         )
 
         # Create a CTE that uses the QueryExpression as its source
@@ -503,7 +503,7 @@ class TestAsyncCTEQueryWithQueryExpression:
             dialect,
             select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
             from_=core.TableExpression(dialect, AsyncOrder.table_name()),
-            where=statements.WhereClause(dialect, condition=core.Column(dialect, "status") == core.Literal(dialect, 'active'))
+            where=query_parts.WhereClause(dialect, condition=core.Column(dialect, "status") == core.Literal(dialect, 'active'))
         )
 
         # Create a CTE that uses the QueryExpression as its source

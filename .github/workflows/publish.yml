@@ -1,14 +1,6 @@
 name: Python Package Publish
 
 on:
-  # When test workflow successfully completes, automatically trigger release approval process
-  workflow_run:
-    workflows: ["Python Test and Coverage"]
-    types:
-      - completed
-    branches:
-      - main
-
   # Manually trigger publish workflow
   workflow_dispatch:
     inputs:
