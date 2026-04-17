@@ -1,3 +1,11 @@
+## [v1.0.0.dev11] - 2026-04-17
+
+
+### Fixed
+
+- Updated test expectation for LRU cache eviction to properly reflect behavior change. Registered `requires_inner_join` pytest marker for capability-based tests. ([#14](https://github.com/rhosocial/python-activerecord-testsuite/issues/14))
+
+
 ## [v1.0.0.dev10] - 2026-04-12
 
 ### Removed
