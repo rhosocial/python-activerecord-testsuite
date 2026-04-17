@@ -93,10 +93,10 @@ class TestRelationCache:
         assert cache.get(instance1) == "value1"
         assert cache.get(instance2) == "value2"
 
-        # Add one more entry, should clear cache
+        # Add one more entry, should evict oldest entry (LRU)
         cache.set(instance3, "value3")
         assert cache.get(instance1) is None
-        assert cache.get(instance2) is None
+        assert cache.get(instance2) == "value2"
         assert cache.get(instance3) == "value3"
 
     def test_relation_cache_disabled(self):
