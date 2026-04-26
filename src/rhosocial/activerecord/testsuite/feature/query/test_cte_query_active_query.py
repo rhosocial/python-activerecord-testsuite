@@ -375,7 +375,8 @@ class TestCTEQueryExtendedFunctionality:
         assert 'WITH' in sql.upper()
         assert 'basic_orders_cte' in sql
         assert 'SELECT' in sql.upper()
-        assert 'status IN (?, ?)' in sql
+        ph = backend.dialect.get_parameter_placeholder()
+        assert f'status IN ({ph}, {ph})' in sql
         assert 'ORDER BY' in sql.upper()
         assert params == ('active', 'completed')
 
@@ -523,7 +524,8 @@ class TestAsyncCTEQueryExtendedFunctionality:
         assert 'WITH' in sql.upper()
         assert 'basic_orders_cte' in sql
         assert 'SELECT' in sql.upper()
-        assert 'status IN (?, ?)' in sql
+        ph = backend.dialect.get_parameter_placeholder()
+        assert f'status IN ({ph}, {ph})' in sql
         assert 'ORDER BY' in sql.upper()
         assert params == ('active', 'completed')
 
