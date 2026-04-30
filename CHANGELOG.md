@@ -1,3 +1,11 @@
+## [v1.0.0.dev12] - 2026-05-01
+
+
+### Fixed
+
+- Fixed CTE test assertions to be dialect-aware for placeholder format. ([#15](https://github.com/rhosocial/python-activerecord-testsuite/pull/15)) ([#15](https://github.com/rhosocial/python-activerecord-testsuite/issues/15))
+
+
 ## [v1.0.0.dev11] - 2026-04-17
 
 
