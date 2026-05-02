@@ -28,18 +28,19 @@ def pytest_configure(config):
     """
     # Register custom markers to allow for selective test runs.
     # For example, `pytest -m feature` will run only the core feature tests.
-    config.addinivalue_line("markers", "requires_capability: Mark tests that require specific database capabilities")
+    config.addinivalue_line("markers", "requires_protocol: Mark tests that require specific database protocol support")
+    config.addinivalue_line("markers", "requires_functions: Mark tests that require specific database functions")
 
 def pytest_collection_modifyitems(config, items):
     """
-    Hook to automatically skip tests that require unsupported capabilities.
-    
+    Hook to automatically skip tests that require unsupported protocols or functions.
+
     Note: During collection time, we can't access backend-specific capabilities
     through the provider interface since providers set up backends per test scenario.
-    Capability checking happens during test execution when provider-configured
+    Protocol and function checking happens during test execution when provider-configured
     models are available.
     """
-    # For now, we just ensure tests with requires_capability markers exist properly
+    # For now, we just ensure tests with requires_protocol/requires_functions markers exist properly
     # Actual capability checking occurs at test runtime via fixtures and decorators
     pass
 

@@ -107,6 +107,44 @@ def skip_test_if_protocol_unsupported(model_class, protocol_class, method_name=N
                         )
 
 
+def skip_test_if_functions_unsupported(model_class, required_functions):
+    """
+    Skip a test if the backend dialect does not support the required functions.
+
+    This function checks the backend dialect's supports_functions() method
+    to determine if all required functions are available.
+
+    Args:
+        model_class: A provider-configured model class with backend access
+        required_functions: List of function names that must be supported
+
+    Raises:
+        pytest.skip: If any required function is not supported
+    """
+    if not required_functions:
+        return
+
+    backend = get_backend_from_model(model_class)
+    dialect = backend.dialect
+
+    if not hasattr(dialect, 'supports_functions'):
+        pytest.skip(
+            "Skipping test - backend dialect does not implement supports_functions()"
+        )
+
+    supported_functions = dialect.supports_functions()
+
+    unsupported = []
+    for func_name in required_functions:
+        if not supported_functions.get(func_name, False):
+            unsupported.append(func_name)
+
+    if unsupported:
+        pytest.skip(
+            f"Skipping test - backend dialect does not support required functions: {', '.join(unsupported)}"
+        )
+
+
 # ============================================================================
 # Protocol Requirement Decorators
 # ============================================================================
@@ -138,6 +176,34 @@ def requires_protocol(protocol_class, method_name=None):
             pass
     """
     return pytest.mark.requires_protocol((protocol_class, method_name))
+
+
+def requires_functions(*required_functions):
+    """
+    Decorator to mark a test function as requiring specific database functions.
+
+    This decorator checks if the backend dialect's supports_functions() method
+    returns True for all specified function names. If any function is not supported,
+    the test will be skipped.
+
+    Args:
+        *required_functions: Variable number of function names to check (e.g., 'json_array_insert', 'jsonb_array_insert')
+
+    Returns:
+        pytest.mark.requires_functions decorator that will be processed by conftest.py
+
+    Examples:
+        # Single function requirement
+        @requires_functions('json_array_insert')
+        def test_json_insert(fixtures):
+            pass
+
+        # Multiple function requirements
+        @requires_functions('json_array_insert', 'jsonb_array_insert')
+        def test_json_operations(fixtures):
+            pass
+    """
+    return pytest.mark.requires_functions(list(required_functions))
 
 
 # ============================================================================
@@ -258,11 +324,13 @@ __all__ = [
     'get_current_backend',
     'get_backend_from_model',
 
-    # Protocol checking
+    # Protocol and function checking
     'skip_test_if_protocol_unsupported',
+    'skip_test_if_functions_unsupported',
 
     # Decorators
     'requires_protocol',
+    'requires_functions',
 
     # Convenience decorators
     'requires_window_functions',
