@@ -52,40 +52,42 @@ def pytest_sessionstart(session):
     to alert developers about backend limitations.
     """
     try:
-        # Import required capability classes
-        from rhosocial.activerecord.backend.capabilities import (
-            CapabilityCategory,
-            AdvancedGroupingCapability,
-            CTECapability,
-            ReturningCapability,
-            WindowFunctionCapability
+        from rhosocial.activerecord.backend.dialect.protocols import (
+            WindowFunctionSupport,
+            AdvancedGroupingSupport,
+            CTESupport,
+            ReturningSupport,
         )
-        
-        # Get current backend
+
         from .utils import get_current_backend
         backend = get_current_backend()
-        
-        # Generate warnings for important unsupported capabilities
-        capabilities = backend.capabilities
-        
+
+        if backend is None:
+            return
+
+        dialect = backend.dialect
         unsupported_important_capabilities = []
-        
-        # Check for important capabilities
-        if not capabilities.supports_category(CapabilityCategory.WINDOW_FUNCTIONS):
+
+        if not isinstance(dialect, WindowFunctionSupport) or not dialect.supports_window_functions():
             unsupported_important_capabilities.append("Window Functions")
-        
-        if not capabilities.supports_advanced_grouping(AdvancedGroupingCapability.CUBE):
-            unsupported_important_capabilities.append("CUBE Grouping")
-        
-        if not capabilities.supports_advanced_grouping(AdvancedGroupingCapability.ROLLUP):
-            unsupported_important_capabilities.append("ROLLUP Grouping")
-        
-        if not capabilities.supports_cte(CTECapability.BASIC_CTE):
+
+        if not isinstance(dialect, AdvancedGroupingSupport):
+            if not (hasattr(dialect, 'supports_cube') and dialect.supports_cube()):
+                unsupported_important_capabilities.append("CUBE Grouping")
+            if not (hasattr(dialect, 'supports_rollup') and dialect.supports_rollup()):
+                unsupported_important_capabilities.append("ROLLUP Grouping")
+        else:
+            if hasattr(dialect, 'supports_cube') and not dialect.supports_cube():
+                unsupported_important_capabilities.append("CUBE Grouping")
+            if hasattr(dialect, 'supports_rollup') and not dialect.supports_rollup():
+                unsupported_important_capabilities.append("ROLLUP Grouping")
+
+        if not isinstance(dialect, CTESupport) or not dialect.supports_basic_cte():
             unsupported_important_capabilities.append("Common Table Expressions")
-        
-        if not capabilities.supports_returning(ReturningCapability.BASIC_RETURNING):
+
+        if not isinstance(dialect, ReturningSupport) or not dialect.supports_returning_clause():
             unsupported_important_capabilities.append("RETURNING Clause")
-        
+
         if unsupported_important_capabilities:
             warnings.warn(
                 f"Current backend does not support important capabilities: "
@@ -94,5 +96,4 @@ def pytest_sessionstart(session):
                 UserWarning
             )
     except Exception as e:
-        # If we can't determine capability support, continue normally
         warnings.warn(f"Could not check capability support at session start: {e}", UserWarning)
