@@ -1,104 +1,88 @@
 # src/rhosocial/activerecord/testsuite/feature/examples/capability_usage_example.py
-"""Example showing how to use the capability system in tests."""
+"""
+Example showing how to use the protocol-based requirement system in tests.
+
+This module demonstrates how to use requires_protocol and requires_functions
+decorators to mark tests that require specific database capabilities.
+"""
 
 import pytest
-from rhosocial.activerecord.backend.capabilities import (
-    WindowFunctionCapability,
-    AdvancedGroupingCapability,
-    CTECapability,
-    JSONCapability,
-    ReturningCapability
-)
-from ..utils import (
-    requires_capability,
+from rhosocial.activerecord.testsuite.utils import (
+    requires_protocol,
     requires_window_functions,
     requires_cube,
     requires_cte,
     requires_json_operations,
-    requires_returning_clause
+    requires_returning_clause,
+    requires_functions,
 )
 
-# Example 1: Using the generic requires_capability decorator
-@requires_capability(WindowFunctionCapability.ROW_NUMBER)
-def test_row_number_function():
-    """Test the ROW_NUMBER window function."""
-    # This test will be automatically skipped if the backend
-    # doesn't support the ROW_NUMBER window function
-    assert True  # Placeholder for actual test
 
-# Example 2: Using convenience decorators
+# Example 1: Using requires_protocol with protocol class
+@requires_protocol(WindowFunctionSupport, 'supports_window_functions')
+def test_window_functions_protocol():
+    """Test window functions using requires_protocol."""
+    # This test will be automatically skipped if the backend
+    # doesn't support window functions
+    assert True
+
+
+# Example 2: Using convenience decorators (recommended)
 @requires_window_functions()
-def test_window_functions():
-    """Test window functions in general."""
+def test_window_functions_convenience():
+    """Test window functions using convenience decorator."""
     # This test will be automatically skipped if the backend
     # doesn't support any window functions
-    assert True  # Placeholder for actual test
+    assert True
+
 
 @requires_cube()
 def test_cube_grouping():
-    """Test CUBE grouping."""
+    """Test CUBE grouping using convenience decorator."""
     # This test will be automatically skipped if the backend
     # doesn't support CUBE grouping
-    assert True  # Placeholder for actual test
+    assert True
+
 
 @requires_cte()
 def test_common_table_expressions():
-    """Test common table expressions."""
+    """Test common table expressions using convenience decorator."""
     # This test will be automatically skipped if the backend
     # doesn't support basic CTEs
-    assert True  # Placeholder for actual test
+    assert True
+
 
 @requires_json_operations()
 def test_json_operations():
-    """Test JSON operations."""
+    """Test JSON operations using convenience decorator."""
     # This test will be automatically skipped if the backend
     # doesn't support any JSON operations
-    assert True  # Placeholder for actual test
+    assert True
+
 
 @requires_returning_clause()
 def test_returning_clause():
-    """Test RETURNING clause."""
+    """Test RETURNING clause using convenience decorator."""
     # This test will be automatically skipped if the backend
     # doesn't support the RETURNING clause
-    assert True  # Placeholder for actual test
+    assert True
 
-# Example 3: Requiring multiple specific capabilities
-@requires_capability([
-    WindowFunctionCapability.ROW_NUMBER,
-    AdvancedGroupingCapability.CUBE
-])
-def test_window_functions_with_cube():
-    """Test window functions combined with CUBE grouping."""
+
+# Example 3: Using requires_functions for function-level requirements
+@requires_functions('json_array_insert', 'jsonb_array_insert')
+def test_json_array_functions():
+    """Test JSON array insert functions."""
     # This test will be automatically skipped if the backend
-    # doesn't support both ROW_NUMBER and CUBE
-    assert True  # Placeholder for actual test
+    # doesn't support json_array_insert or jsonb_array_insert
+    assert True
 
-# Example 4: Checking capabilities directly in a test
-def test_dynamic_capability_checking(backend):
-    """Dynamically check capabilities in a test."""
-    # This approach is useful when you need to conditionally
-    # execute parts of a test based on capabilities
 
-    if backend.capabilities.supports_window_function(WindowFunctionCapability.RANK):
-        # Test RANK function if supported
-        pass  # Actual test implementation
+# Example 4: Using requires_protocol with specific method
+@requires_protocol(AdvancedGroupingSupport, 'supports_cube')
+def test_cube_specific_method():
+    """Test CUBE using requires_protocol with specific method."""
+    assert True
 
-    if backend.capabilities.supports_json(JSONCapability.JSON_EXTRACT):
-        # Test JSON extraction if supported
-        pass  # Actual test implementation
-
-# Example 5: Using category-level checks
-def test_category_level_features(backend):
-    """Test features based on capability categories."""
-    # Check if backend supports window functions in general
-    if backend.capabilities.supports_category(CapabilityCategory.WINDOW_FUNCTIONS):
-        # Test window function features
-        pass  # Actual test implementation
-
-    # Check if backend supports JSON operations in general
-    if backend.capabilities.supports_category(CapabilityCategory.JSON_OPERATIONS):
-        # Test JSON operation features
-        pass  # Actual test implementation
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    pytest.main([__file__, "-v"])

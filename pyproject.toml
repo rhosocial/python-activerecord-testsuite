@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhosocial-activerecord-testsuite"
-version = "1.0.0.dev12"
+version = "1.0.0.dev13"
 description = "A standardized test suite for rhosocial-activerecord backends, providing contracts for features, real-world scenarios, and benchmarks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -107,9 +107,6 @@ line-length = 120
 target-version = "py38"
 select = ["E", "F", "B"]
 ignore = []
-
-[project.entry-points."pytest11"]
-rhosocial-activerecord-capabilities = "rhosocial.activerecord.testsuite.plugin.pytest_activerecord_capabilities"
 
 [tool.mypy]
 python_version = "3.8"

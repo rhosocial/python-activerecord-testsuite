@@ -14,11 +14,13 @@ from .common import (
     get_current_backend,
     get_backend_from_model,
 
-    # Protocol checking
+    # Protocol and function checking
     skip_test_if_protocol_unsupported,
+    skip_test_if_functions_unsupported,
 
     # Decorators
     requires_protocol,
+    requires_functions,
 
     # Convenience decorators
     requires_window_functions,
@@ -49,11 +51,13 @@ __all__ = [
     'get_current_backend',
     'get_backend_from_model',
 
-    # Protocol checking
+    # Protocol and function checking
     'skip_test_if_protocol_unsupported',
+    'skip_test_if_functions_unsupported',
 
     # Decorators
     'requires_protocol',
+    'requires_functions',
 
     # Convenience decorators
     'requires_window_functions',

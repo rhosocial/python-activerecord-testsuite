@@ -284,6 +284,40 @@ def check_protocol_requirements(request):
         # If no appropriate model was found, the test will continue normally
         # This might happen if the protocol decorator is used inappropriately
 
+    # Check for requires_functions marker
+    requires_functions_marker = request.node.get_closest_marker("requires_functions")
+    if requires_functions_marker:
+        required_functions = requires_functions_marker.args[0]
+
+        # Look for model fixture (similar to requires_protocol)
+        model_to_check = None
+        for fixture_name in fixture_options:
+            if fixture_name in request.fixturenames:
+                try:
+                    fixture_value = request.getfixturevalue(fixture_name)
+                    if isinstance(fixture_value, tuple):
+                        for model in fixture_value:
+                            if hasattr(model, 'backend') or hasattr(model, '__backend__'):
+                                model_to_check = model
+                                break
+                    elif hasattr(fixture_value, 'backend') or hasattr(fixture_value, '__backend__'):
+                        model_to_check = fixture_value
+                    elif hasattr(fixture_value, '__getitem__') and len(fixture_value) > 0:
+                        first_item = fixture_value[0]
+                        if hasattr(first_item, 'backend') or hasattr(first_item, '__backend__'):
+                            model_to_check = first_item
+                    if model_to_check is not None:
+                        break
+                except Exception:
+                    continue
+
+        if model_to_check is not None and (hasattr(model_to_check, 'backend') or hasattr(model_to_check, '__backend__')):
+            from rhosocial.activerecord.testsuite.utils import skip_test_if_functions_unsupported
+            try:
+                skip_test_if_functions_unsupported(model_to_check, required_functions)
+            except Exception:
+                pass
+
 
 # --- Async Fixtures ---
 
