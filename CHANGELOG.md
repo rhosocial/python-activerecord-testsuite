@@ -1,3 +1,16 @@
+## [v1.0.0.dev13] - 2026-05-15
+
+### Removed
+
+- Removed deprecated `requires_capability` marker and `pytest_activerecord_capabilities` plugin. Use `requires_protocol` and `requires_functions` markers instead, which check dialect protocol support via `isinstance` and `supports_functions()` dictionary. ([#16](https://github.com/rhosocial/python-activerecord-testsuite/pull/16)) ([#16](https://github.com/rhosocial/python-activerecord-testsuite/issues/16))
+
+
+
+### Changed
+
+- Migrated capability-based test selection to dialect protocol system. Added `requires_functions` decorator for function-level capability checking and `skip_test_if_functions_unsupported()` runtime checker. Removed `test_capability_integration.py` (moved to core library). ([#16](https://github.com/rhosocial/python-activerecord-testsuite/pull/16)) ([#16](https://github.com/rhosocial/python-activerecord-testsuite/issues/16))
+
+
 ## [v1.0.0.dev12] - 2026-05-01
 
 
