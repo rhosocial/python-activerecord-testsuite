@@ -419,11 +419,12 @@ class TestCTEQueryExtendedFunctionality:
         cte_query.with_cte('range_orders_cte', (f"SELECT id, status, total_amount FROM {Order.table_name()} ORDER BY total_amount DESC", ()))
 
         # Verify the SQL generation for range conditions
-        sql_query = cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').limit(2).offset(1)
+        sql_query = cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1)
         sql, params = sql_query.to_sql()
 
         # Assert the generated SQL contains expected range elements
         assert 'WITH' in sql.upper()
+        assert 'ORDER BY' in sql.upper()
         assert 'LIMIT' in sql.upper()
         assert 'OFFSET' in sql.upper()
         assert 'range_orders_cte' in sql
@@ -569,7 +570,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
         cte_query.with_cte('range_orders_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()} ORDER BY total_amount DESC", ()))
 
         # Use the new API: specify which CTE to use and apply range conditions
-        results = await cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').limit(2).offset(1).aggregate()
+        results = await cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1).aggregate()
 
         # Verify results contain limited and offset records
         assert len(results) == 2
