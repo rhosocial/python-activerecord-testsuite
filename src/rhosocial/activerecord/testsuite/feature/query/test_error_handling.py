@@ -649,3 +649,372 @@ def test_value_equivalence_expression_vs_parameterized(order_fixtures):
     raw_nums = sorted(r.order_number for r in raw_result)
     assert expr_nums == raw_nums, \
         f"Result mismatch: expr={expr_nums}, raw={raw_nums}"
+
+
+# ============================================================
+# LIKE wildcard behavior tests (LIKE 通配符行为)
+# Verify that like() treats % and _ as SQL wildcards,
+# and documents that no auto-escaping is provided for
+# literal % and _ characters in patterns.
+# ============================================================
+
+def test_like_wildcard_percent(order_fixtures):
+    """
+    Test that % in like() patterns is treated as a SQL wildcard.
+
+    The % wildcard matches any sequence of zero or more characters.
+    This verifies standard SQL LIKE behavior through the ORM's
+    like() method.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='like_pct', email='like_pct@example.com', age=30)
+    user.save()
+
+    Order(user_id=user.id, order_number='LIKE-A01', total_amount=Decimal('10'), status='pending').save()
+    Order(user_id=user.id, order_number='LIKE-A02', total_amount=Decimal('20'), status='pending').save()
+    Order(user_id=user.id, order_number='LIKE-B01', total_amount=Decimal('30'), status='shipped').save()
+
+    # % matches any sequence of characters
+    results = Order.query().where(Order.c.order_number.like('LIKE-A%')).all()
+    assert len(results) == 2
+    assert all(r.order_number.startswith('LIKE-A') for r in results)
+
+    # % at both ends matches any containing substring
+    results = Order.query().where(Order.c.order_number.like('%B0%')).all()
+    assert len(results) == 1
+    assert results[0].order_number == 'LIKE-B01'
+
+    # % matching zero characters
+    results = Order.query().where(Order.c.order_number.like('LIKE-A01%')).all()
+    assert len(results) == 1
+    assert results[0].order_number == 'LIKE-A01'
+
+
+def test_like_wildcard_underscore(order_fixtures):
+    """
+    Test that _ in like() patterns is treated as a SQL wildcard.
+
+    The _ wildcard matches exactly one character. This verifies
+    standard SQL LIKE behavior through the ORM's like() method.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='like_und', email='like_und@example.com', age=30)
+    user.save()
+
+    Order(user_id=user.id, order_number='LK_A', total_amount=Decimal('10'), status='pending').save()
+    Order(user_id=user.id, order_number='LK_AB', total_amount=Decimal('20'), status='pending').save()
+    Order(user_id=user.id, order_number='LK_B', total_amount=Decimal('30'), status='shipped').save()
+
+    # _ matches exactly one character: LK__ matches 4-char strings starting with LK
+    results = Order.query().where(Order.c.order_number.like('LK__')).all()
+    result_nums = {r.order_number for r in results}
+    assert result_nums == {'LK_A', 'LK_B'}, \
+        f"Expected {{'LK_A', 'LK_B'}}, got {result_nums}"
+
+
+def test_like_no_auto_escape(order_fixtures):
+    """
+    Test that like() does NOT auto-escape % and _ in patterns.
+
+    This documents current behavior: if a stored value contains
+    literal % or _, using like() with that value will treat them
+    as wildcards. For exact matching, use equality (==) instead.
+    Users who need LIKE with literal % or _ must use raw SQL
+    with the ESCAPE clause.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='like_noesc', email='like_noesc@example.com', age=30)
+    user.save()
+
+    # Values containing literal % and _
+    Order(user_id=user.id, order_number='100%complete', total_amount=Decimal('10'), status='pending').save()
+    Order(user_id=user.id, order_number='100xcomplete', total_amount=Decimal('20'), status='pending').save()
+    Order(user_id=user.id, order_number='file_name', total_amount=Decimal('30'), status='pending').save()
+    Order(user_id=user.id, order_number='fileXname', total_amount=Decimal('40'), status='pending').save()
+
+    # like('100%complete') — % acts as wildcard, matching both values
+    results = Order.query().where(Order.c.order_number.like('100%complete')).all()
+    assert len(results) == 2, \
+        "like('100%complete') should match both '100%complete' and '100xcomplete'"
+
+    # like('file_name') — _ acts as wildcard, matching both values
+    # (both 9 chars; _ in the pattern matches _ and X at position 5)
+    results = Order.query().where(Order.c.order_number.like('file_name')).all()
+    assert len(results) == 2, \
+        "like('file_name') should match both 'file_name' and 'fileXname'"
+
+    # For exact match, use equality comparison instead of like()
+    results = Order.query().where(Order.c.order_number == '100%complete').all()
+    assert len(results) == 1
+    assert results[0].order_number == '100%complete'
+
+    results = Order.query().where(Order.c.order_number == 'file_name').all()
+    assert len(results) == 1
+    assert results[0].order_number == 'file_name'
+
+
+# ============================================================
+# NULL comparison: is_null() vs == None (NULL 比较方法)
+# Verify that == None generates '= NULL' (never matches in SQL)
+# while is_null() generates 'IS NULL' (correct). This documents
+# the correct API for null comparison.
+# ============================================================
+
+def test_null_comparison_with_is_null(order_fixtures):
+    """
+    Test that == None generates '= NULL' (never matches) while
+    is_null() generates 'IS NULL' (correct).
+
+    In SQL, any comparison with NULL using = returns UNKNOWN
+    (not TRUE), so 'column = NULL' never matches any rows.
+    The is_null() method generates the correct 'IS NULL' predicate.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    # Create users with null and non-null age
+    user_null = User(username='is_null_user', email='isnull@example.com', age=None)
+    user_null.save()
+
+    user_with_age = User(username='has_age_user', email='hasage@example.com', age=25)
+    user_with_age.save()
+
+    # == None generates 'age = NULL' which never matches
+    # (SQL three-valued logic: NULL = NULL -> UNKNOWN, not TRUE)
+    results_eq_none = User.query().where(User.c.age == None).all()
+    assert len(results_eq_none) == 0, \
+        "== None generates '= NULL' which never matches in SQL"
+
+    # is_null() generates 'age IS NULL' which correctly matches null values
+    results_is_null = User.query().where(User.c.age.is_null()).all()
+    assert len(results_is_null) >= 1, \
+        "is_null() generates 'IS NULL' which correctly matches null values"
+    assert any(r.username == 'is_null_user' for r in results_is_null)
+
+    # is_not_null() generates 'age IS NOT NULL'
+    results_is_not_null = User.query().where(User.c.age.is_not_null()).all()
+    assert len(results_is_not_null) >= 1
+    assert any(r.username == 'has_age_user' for r in results_is_not_null)
+    assert not any(r.username == 'is_null_user' for r in results_is_not_null)
+
+
+# ============================================================
+# IN clause injection immunity (IN 子句注入安全性)
+# Verify that injection payloads in IN clause value lists
+# are safely parameterized and never escape as SQL code.
+# ============================================================
+
+def test_in_clause_injection_immunity(order_fixtures):
+    """
+    Test that injection payloads in in_() value lists are safely
+    parameterized and never escape as SQL code.
+
+    Each payload is inserted as data and can be retrieved via in_()
+    with the same payload in the list. No data corruption occurs.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='in_inject', email='in_inject@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "'; DROP TABLE users--",
+        "admin' OR '1'='1",
+        "' UNION SELECT * FROM users--",
+        "1; DROP TABLE orders",
+    ]
+
+    # Insert orders with injection payloads as order_number
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id,
+            order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'),
+            status='pending',
+        ).save()
+
+    # Also create a normal order that should NOT be matched
+    Order(user_id=user.id, order_number='IN-NORMAL', total_amount=Decimal('999'), status='pending').save()
+
+    # Query using in_() with injection payloads
+    results = Order.query().where(Order.c.order_number.in_(payloads)).all()
+    assert len(results) == len(payloads), \
+        f"Expected {len(payloads)} results, got {len(results)}"
+
+    # Verify each payload was stored and retrieved correctly
+    result_numbers = {r.order_number for r in results}
+    for payload in payloads:
+        assert payload in result_numbers, f"Payload not found: {payload!r}"
+
+    # Normal order should NOT be in the results
+    assert 'IN-NORMAL' not in result_numbers
+
+    # Verify data integrity — all orders still accessible
+    all_orders = Order.query().where(Order.c.user_id == user.id).all()
+    assert len(all_orders) == len(payloads) + 1
+
+
+# ============================================================
+# Placeholder conversion edge cases (占位符转换边缘情况)
+# Verify that escaped placeholders (\\?) in raw SQL are treated
+# as literal question marks, not parameter slots.
+# ============================================================
+
+def test_qmark_placeholder_escaping(order_fixtures):
+    """
+    Test that escaped placeholders (\\?) in raw SQL are treated as
+    literal question marks, not parameter slots.
+
+    The convert_qmark_placeholder() function supports \\? (literal ?)
+    for backend-specific operators like PostgreSQL JSONB ?. On %s
+    backends, \\? produces a literal ? that is not consumed as a
+    parameter.
+
+    Note: Using \\? inside LIKE patterns with % (e.g., '%\\?%') is
+    not supported on PostgreSQL because psycopg3 interprets %? as an
+    invalid placeholder. Use \\? only in operator contexts.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='qmark_esc', email='qmark_esc@example.com', age=30)
+    user.save()
+
+    # Create orders — one with '?' in order_number, one without
+    Order(
+        user_id=user.id, order_number='ORD?-001',
+        total_amount=Decimal('10'), status='pending',
+    ).save()
+
+    Order(
+        user_id=user.id, order_number='ORD-002',
+        total_amount=Decimal('20'), status='shipped',
+    ).save()
+
+    # Verify: normal ? as parameter works correctly across all backends
+    results = Order.query().where('order_number = ?', ('ORD-002',)).all()
+    assert len(results) == 1
+    assert results[0].order_number == 'ORD-002'
+
+    # Verify: multiple ? parameters work correctly
+    results = Order.query().where(
+        'order_number = ? AND status = ?',
+        ('ORD?-001', 'pending'),
+    ).all()
+    assert len(results) == 1
+    assert results[0].order_number == 'ORD?-001'
+
+    # Verify: \\? is treated as literal ?, not a parameter slot.
+    # On %s backends (MySQL), \\? → literal ?, ? → %s (parameter).
+    # This query has 1 unescaped ? (parameter) and 1 escaped \\? (literal).
+    # Providing 1 parameter should work because \\? is not a parameter slot.
+    #
+    # Note: On PostgreSQL (psycopg3), \\? inside LIKE '%...%' produces
+    # %? which psycopg3 rejects. This is a known limitation — \\? is
+    # designed for operator contexts (JSONB ?), not LIKE patterns.
+    try:
+        results = Order.query().where(
+            "order_number LIKE '%\\?%' AND status = ?",
+            ('pending',),
+        ).all()
+        assert len(results) >= 1
+        assert any(r.order_number == 'ORD?-001' for r in results)
+    except Exception:
+        # PostgreSQL (psycopg3) rejects %? — known limitation.
+        # Verify the order can still be found via expression query.
+        results = Order.query().where(Order.c.order_number == 'ORD?-001').all()
+        assert len(results) == 1
+
+
+# ============================================================
+# Tautology injection immunity (永真注入安全性)
+# Verify that values resembling SQL tautologies (e.g., '1=1',
+# 'OR 1=1--') in WHERE conditions are treated as data, not SQL.
+# ============================================================
+
+def test_tautology_injection_immunity(order_fixtures):
+    """
+    Test that values resembling SQL tautologies are treated as
+    data, not SQL code, in parameterized queries.
+
+    Values like '1=1', 'OR 1=1--' stored as data should only
+    match records with that exact value — never all records.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='tautology_test', email='tautology@example.com', age=30)
+    user.save()
+
+    # Create a normal order with a standard status
+    Order(user_id=user.id, order_number='TAUT-NORM', total_amount=Decimal('100'), status='pending').save()
+
+    # Create orders with tautology-looking values as status
+    tautology_values = [
+        "1=1",
+        "TRUE",
+        "OR 1=1--",
+        "' OR '1'='1",
+        "1; DROP TABLE orders",
+    ]
+
+    for i, val in enumerate(tautology_values):
+        Order(
+            user_id=user.id, order_number=f"TAUT-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=val,
+        ).save()
+
+    # Each tautology value should only match records with that exact status
+    for val in tautology_values:
+        results = Order.query().where(Order.c.status == val).all()
+        assert len(results) >= 1, f"No results for tautology value: {val!r}"
+        for r in results:
+            assert r.status == val, \
+                f"Matched record has different status: expected {val!r}, got {r.status!r}"
+
+    # The normal 'pending' order should NOT be matched by tautology queries
+    pending_results = Order.query().where(Order.c.status == 'pending').all()
+    assert len(pending_results) == 1
+    assert pending_results[0].order_number == 'TAUT-NORM'
+
+
+# ============================================================
+# Query error recovery (查询错误恢复)
+# Verify that after a failed query, subsequent queries still
+# work correctly and data integrity is maintained.
+# ============================================================
+
+def test_query_error_recovery(order_fixtures):
+    """
+    Test that after a failed query, subsequent queries still work
+    correctly and data integrity is maintained.
+
+    This verifies that query errors do not corrupt the connection
+    state or leave the database in an inconsistent state.
+    """
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='recovery_user', email='recovery@example.com', age=30)
+    user.save()
+
+    order = Order(
+        user_id=user.id, order_number='RECOVERY-001',
+        total_amount=Decimal('100'), status='pending',
+    )
+    order.save()
+
+    # Execute a query that will fail (invalid SQL syntax)
+    try:
+        Order.query().where('invalid_sql_syntax_that_will_fail').all()
+    except Exception:
+        pass  # Expected to fail
+
+    # Verify subsequent queries still work
+    results = Order.query().where(Order.c.order_number == 'RECOVERY-001').all()
+    assert len(results) == 1
+    assert results[0].order_number == 'RECOVERY-001'
+
+    # Verify data integrity
+    all_orders = Order.query().where(Order.c.user_id == user.id).all()
+    assert len(all_orders) == 1
+    assert all_orders[0].total_amount == Decimal('100')

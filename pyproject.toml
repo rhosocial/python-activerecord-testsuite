@@ -186,6 +186,7 @@ namespaces = true
 [tool.setuptools.package-data]
 "rhosocial" = ["py.typed"]
 "rhosocial.activerecord" = ["py.typed"]
+"rhosocial.activerecord.testsuite.feature.query" = ["samples/*.html", "samples/*.xml", "samples/*.json"]
 
 # ===== Editable Install Configuration =====
 # This is the key to making IDE work properly in dev mode
