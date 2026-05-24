@@ -9,6 +9,18 @@ import pytest
 from rhosocial.activerecord.logging import LoggingConfig, LogDataMode, SummarizerConfig
 
 
+def _normalize_json_value(value):
+    """Normalize a JSON field value for cross-backend comparison.
+
+    Backends with native JSON types (MySQL JSON, PostgreSQL JSONB) may
+    return Python dict/list instead of str. Convert everything to a
+    consistent string representation for comparison and summarization.
+    """
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    return value
+
+
 SAMPLES_DIR = Path(__file__).parent / "samples"
 SAMPLE_SOURCES = {
     "python_home.html": "https://www.python.org/",
@@ -183,6 +195,7 @@ class TestLoggingDataSummarization:
     def test_json_fixture_preserves_sample_json_round_trip(self, json_user_fixture):
         JsonUser = json_user_fixture
         json_content = _read_sample("jsonplaceholder_posts.json")
+        original_data = json.loads(json_content)
         user = JsonUser(
             username="json-content-user",
             email="json-content@example.com",
@@ -194,12 +207,15 @@ class TestLoggingDataSummarization:
         results = JsonUser.query().where(JsonUser.c.username == "json-content-user").all()
         assert len(results) == 1
         found = results[0]
-        assert found.preferences == json_content
-        assert json.loads(found.preferences)[0]["userId"] == 1
 
-        summary = _make_logging_config().summarize_data({"preferences": found.preferences})
-        _assert_truncated(summary["preferences"], json_content)
-        assert found.preferences == json_content
+        # Backends with native JSON types return dict/list; normalize for comparison
+        retrieved_data = json.loads(_normalize_json_value(found.preferences))
+        assert retrieved_data == original_data
+        assert retrieved_data[0]["userId"] == 1
+
+        prefs_str = _normalize_json_value(found.preferences)
+        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
+        _assert_truncated(summary["preferences"], prefs_str)
 
     def test_unicode_multilingual_content_round_trip(self, blog_fixtures):
         User, Post, _ = blog_fixtures
@@ -242,13 +258,16 @@ class TestLoggingDataSummarization:
         results = JsonUser.query().where(JsonUser.c.username == "unicode-json-user").all()
         assert len(results) == 1
         found = results[0]
-        retrieved = json.loads(found.preferences)
+
+        # Backends with native JSON types return dict/list; normalize for comparison
+        retrieved = json.loads(_normalize_json_value(found.preferences))
         assert retrieved == original_data
         assert retrieved[0]["greetings"]["zh"] == "你好，世界！"
         assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!"
 
-        summary = _make_logging_config().summarize_data({"preferences": found.preferences})
-        _assert_truncated(summary["preferences"], found.preferences)
+        prefs_str = _normalize_json_value(found.preferences)
+        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
+        _assert_truncated(summary["preferences"], prefs_str)
 
 
 def _assert_unicode_integrity(samples):
