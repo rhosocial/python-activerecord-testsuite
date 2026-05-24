@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl"?>
+<UNICODE_CATALOG
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:lang="http://www.w3.org/XML/1998/namespace">
+  <DESCRIPTION>🌐 Multilingual Unicode Test Catalog 🚀</DESCRIPTION>
+  <VERSION>16.0</VERSION>
+  <DATE>2026-05-24</DATE>
+
+  <!-- ============ EAST ASIAN LANGUAGES ============ -->
+  <LANGUAGE_ENTRY lang:lang="zh">
+    <NAME>简体中文 / 繁體中文</NAME>
+    <GREETING>你好，世界！</GREETING>
+    <POEM>春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。</POEM>
+    <TRADITIONAL>乾坤玄黃 宇宙洪荒 日月盈昃 辰宿列張</TRADITIONAL>
+    <CJK_EXT_B>𠮷𠮟𩷶𪚲𫜴𫝀𫝁𫝂𫝃𫝄𫝅𫝆𫝇𫝈𫝉𫝊</CJK_EXT_B>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="ja">
+    <NAME>日本語</NAME>
+    <GREETING>こんにちは世界！</GREETING>
+    <POEM>いろはにほへと ちりぬるを わかよたれそ つねならむ</POEM>
+    <KANA>あいうえお かきくけこ さしすせそ たちつてと なにぬねの</KANA>
+    <OLD_CHAR>𠮟る（叱るの旧字体）</OLD_CHAR>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="ko">
+    <NAME>한국어</NAME>
+    <GREETING>안녕하세요, 세계!</GREETING>
+    <HANGEUL>한글은 세종대왕이 창제한 과학적인 문자입니다.</HANGEUL>
+    <OLD>한글 모ᇰ골 붙이</OLD>
+  </LANGUAGE_ENTRY>
+
+  <!-- ============ RTL LANGUAGES ============ -->
+  <LANGUAGE_ENTRY lang:lang="ar" xml:lang="ar" dir="rtl">
+    <NAME>العربية</NAME>
+    <GREETING>مرحباً بالعالم!</GREETING>
+    <ALPHABET>أبجد هوز حطي كلمن سعفص قرشت ثخذ ضظغ</ALPHABET>
+    <TEXT>هذا النص يحتوي على اللغة العربية الفصحى والكثير من الكلمات المتنوعة</TEXT>
+    <NUMBERS>٠١٢٣٤٥٦٧٨٩</NUMBERS>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="he" xml:lang="he" dir="rtl">
+    <NAME>עברית</NAME>
+    <GREETING>שלום עולם!</GREETING>
+    <ALPHABET dir="ltr">אבגדהוזחטיכלמנסעפצקרשת</ALPHABET>
+    <TEXT dir="rtl">זוהי דוגמה לטקסט בעברית שנכתב מימין לשמאל</TEXT>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="ur" xml:lang="ur" dir="rtl">
+    <NAME>اردو</NAME>
+    <GREETING>ہیلو دنیا!</GREETING>
+    <TEXT>یہ اردو زبان میں ایک نمونہ متن ہے</TEXT>
+  </LANGUAGE_ENTRY>
+
+  <!-- ============ SOUTH ASIAN SCRIPTS ============ -->
+  <LANGUAGE_ENTRY lang:lang="hi">
+    <NAME>हिन्दी</NAME>
+    <GREETING>नमस्ते दुनिया!</GREETING>
+    <DEVANAGARI>कः खी गुं घृ ङे च्छौ ज्ञा झ्रीं ञै टौ ठ्वं डाँ ढृ णे त्सौ थ्वं द्स्र ध्नं न्म प्त फ्ल ब्र भ्व म्न य्र ल्व श्र ष्व स्र ह्न क्ष त्र ज्ञ</DEVANAGARI>
+    <SANSKRIT>ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि धियो यो नः प्रचोदयात्</SANSKRIT>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="ta">
+    <NAME>தமிழ்</NAME>
+    <GREETING>வணக்கம் உலகம்!</GREETING>
+    <TEXT>தமிழ் உலகின் மிகப் பழமையான மொழிகளில் ஒன்றாகும்</TEXT>
+    <THIRUKKURAL>அறத்துப்பால் இன்பத்துப்பால் பொருட்பால் காமத்துப்பால்</THIRUKKURAL>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="te">
+    <NAME>తెలుగు</NAME>
+    <GREETING>నమస్కారం ప్రపంచం!</GREETING>
+    <TEXT>తెలుగు అక్షరమాల ప్రపంచంలోనే అత్యంత సంక్లిష్టమైన వర్ణమాలలలో ఒకటి</TEXT>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="th">
+    <NAME>ภาษาไทย</NAME>
+    <GREETING>สวัสดีชาวโลก!</GREETING>
+    <TEXT>ภาษาไทยมีพยัญชนะ สระ วรรณยุกต์ และเครื่องหมายต่าง ๆ รวมกันกว่า 80 ตัวอักษร</TEXT>
+    <NUMBERS>๐๑๒๓๔๕๖๗๘๙</NUMBERS>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="km">
+    <NAME>ភាសាខ្មែរ</NAME>
+    <GREETING>សួស្តីពិភពលោក!</GREETING>
+    <TEXT>ភាសាខ្មែរមានអក្សរច្រើនជាងគេក្នុងចំណោមអក្សរនៅអាស៊ី</TEXT>
+  </LANGUAGE_ENTRY>
+
+  <!-- ============ CYRILLIC & EURASIAN ============ -->
+  <LANGUAGE_ENTRY lang:lang="ru">
+    <NAME>Русский</NAME>
+    <GREETING>Здравствуй, мир!</GREETING>
+    <TONGUE_TWISTER>Съешь ещё этих мягких французских булок да выпей чаю</TONGUE_TWISTER>
+    <CYRILLIC>ЁёъЫьЭэЮюЯяЩщШшЧчЦцХхФфУуТтСсРрПпОоНнМмЛлКкЙйИиЗзЖжЁёЕеДдГгВвБбАа</CYRILLIC>
+  </LANGUAGE_ENTRY>
+
+  <LANGUAGE_ENTRY lang:lang="el">
+    <NAME>Ελληνικά</NAME>
+    <GREETING>Γειά σου, κόσμε!</GREETING>
+    <ALPHABET>ΑαΒβΓγΔδΕεΖζΗηΘθΙιΚκΛλΜμΝνΞξΟοΠπΡρΣσςΤτΥυΦφΧχΨψΩω</ALPHABET>
+    <TEXT>Ξεσκεπάζω την ψυχοφθόρα βδελυγμία — contains all Greek letters</TEXT>
+  </LANGUAGE_ENTRY>
+
+  <!-- ============ EMOJI & SYMBOLS ============ -->
+  <EMOJI_CATEGORY category="smileys">
+    <ITEMS>😀😃😄😁😆😅🤣😂🙂🙃🫠😉😊😇🥰😍🤩😘😗☺️😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😏😒🙄😬🤥🫨😌😔😪🤤😴😷🤒🤕🤢🤮🤧🥵🥶🥴😵🤯🤠🥳🥸😎🤓🧐😕🫤😟🙁☹️😮😯😲😳🥺😦😧😨😰😥😢😭😱😖😣😞😓😩😫🥱😤😡🤬</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <EMOJI_CATEGORY category="hands_skin_tones">
+    <ITEMS>👍👍🏻👍🏼👍🏽👍🏾👍🏿👋👋🏻👋🏼👋🏽👋🏾👋🏿✊✊🏻✊🏼✊🏽✊🏾✊🏿🤲🤲🏻🤲🏼🤲🏽🤲🏾🤲🏿🙌🙌🏻🙌🏼🙌🏽🙌🏾🙌🏿🙏🙏🏻🙏🏼🙏🏽🙏🏾🙏🏿</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <EMOJI_CATEGORY category="zwj_sequences">
+    <ITEMS>👨‍👩‍👧‍👦 👨‍👩‍👧‍👧‍👦 👨‍👨‍👧 👩‍👩‍👦 👨‍👧‍👦 👩‍👧‍👧 🧑‍🤝‍🧑 👩‍⚕️ 👨‍⚕️ 👩‍🎓 👨‍🎓 👩‍💻 👨‍💻 👩‍🎤 👨‍🎤 👩‍🏫 👨‍🏫 👩‍🚒 👨‍🚒 👩‍🚀 👨‍🚀 👩‍🔧 👨‍🔧 🧑‍🧑‍🧒 🧑‍🧒‍🧒 🫱‍🫲 🧔‍♀️ 🧔‍♂️</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <EMOJI_CATEGORY category="animals">
+    <ITEMS>🐶🐱🐭🐹🐰🦊🐻🐼🐻‍❄️🐨🐯🦁🐮🐷🐸🐵🐔🐧🐦🐤🦆🦅🦉🦇🐺🐗🐴🦄🐝🪱🐛🦋🐌🐞🐜🪰🪲🪳🦟🦗🕷️🦂🐢🐍🦎🦖🦕🐙🦑🪼🦐🦞🦀🐡🐠🐟🐬🐳🐋🦈🪸</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <EMOJI_CATEGORY category="food">
+    <ITEMS>🍏🍎🍐🍊🍋🍌🍉🍇🍓🫐🍈🍒🍑🥭🍍🥥🥝🍅🍆🥑🥦🥬🥒🌶️🫑🌽🥕🫒🧄🧅🥔🍠🫘🥐🍞🥖🥨🧀🥚🍳🧈🥞🧇🥓🥩🍗🍖🦴🌭🍔🍟🍕🫓🥪🥙🧆🌮🌯🫔🥗🫕🥘🍝🍜🍲🍛🍣🍱🥟🦪🍤🍙🍚🍘🍥🥠🥮🍢🍡🍧🍨🍦🥧🧁🍰🎂🍮🍭🍬🍫🍿🍩🍪🌰🥜</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <EMOJI_CATEGORY category="flags">
+    <ITEMS>🇺🇳🇺🇸🇬🇧🇫🇷🇩🇪🇯🇵🇨🇳🇷🇺🇧🇷🇮🇳🇦🇺🇨🇦🏴󠁧󠁢󠁥󠁮󠁧󠁿🏴󠁧󠁢󠁳󠁣󠁴󠁿🏴󠁧󠁢󠁷󠁬󠁳󠁿🏳️‍🌈🏳️‍⚧️🏁🚩🎌</ITEMS>
+  </EMOJI_CATEGORY>
+
+  <!-- ============ SPECIAL CHARACTERS IN CDATA ============ -->
+  <CDATA_TEST>
+    <DESCRIPTION>CDATA sections with special characters</DESCRIPTION>
+    <CONTENT><![CDATA[This contains <script>alert('xss')</script> and &amp; &lt; &gt; &quot; &#39; entities as text]]></CONTENT>
+    <SQL_PAYLOADS><![CDATA[
+      '; DROP TABLE users--
+      admin' OR '1'='1
+      1' ORDER BY 1--
+      ' UNION SELECT * FROM users--
+      x'; WAITFOR DELAY '0:0:5'--
+    ]]></SQL_PAYLOADS>
+    <UNICODE_CDATA><![CDATA[
+      🌍 🌎 🌏 Unicode 16.0 emoji 😀🎉🚀
+      日本語テスト 中文测试 한국어測試
+      العربية اللغة العربية
+      𓀀𓀁𓀂𓀃𓀄𓀅𓀆𓀇𓀈𓀉
+    ]]></UNICODE_CDATA>
+  </CDATA_TEST>
+
+  <!-- ============ SQL INJECTION AS DATA ============ -->
+  <INJECTION_TEST>
+    <DESCRIPTION>SQL Injection payloads stored as XML data values</DESCRIPTION>
+    <PAYLOAD id="1" type="tautology">' OR '1'='1</PAYLOAD>
+    <PAYLOAD id="2" type="union">' UNION SELECT * FROM information_schema.tables--</PAYLOAD>
+    <PAYLOAD id="3" type="comment">admin'--</PAYLOAD>
+    <PAYLOAD id="4" type="stacked">'; DROP TABLE users; --</PAYLOAD>
+    <PAYLOAD id="5" type="timeblind">1' AND SLEEP(5)--</PAYLOAD>
+    <PAYLOAD id="6" type="mssql">'; EXEC xp_cmdshell 'dir'--</PAYLOAD>
+    <PAYLOAD id="7" type="postgres">1' AND (SELECT pg_sleep(5))--</PAYLOAD>
+    <PAYLOAD id="8" type="mysql">1' AND BENCHMARK(10000000,MD5(1))--</PAYLOAD>
+    <PAYLOAD id="9" type="oracle">1' AND rownum=1 UNION SELECT NULL FROM dual--</PAYLOAD>
+    <PAYLOAD id="10" type="nested">1' OR (SELECT CASE WHEN (1=1) THEN 1 ELSE 0 END FROM users)--</PAYLOAD>
+  </INJECTION_TEST>
+
+  <!-- ============ NUMERIC & SPECIAL UNICODE ============ -->
+  <UNICODE_BLOCKS>
+    <BLOCK name="Mathematical Operators">∑∏∫√∂∆∐≈≠≡≤≥⊕⊗⊖⊛⊥∞∠∟∡∢∣∥∧∨∩∪⊂⊃⊆⊇∀∃∄∈∉∋∌</BLOCK>
+    <BLOCK name="Miscellaneous Symbols">☀️☁️☂️☃️☄️★☆☎️☘️☠️☢️☣️⚠️♻️⚡️⚜️🔱〽️❄️❇️✅✴️✳️</BLOCK>
+    <BLOCK name="Arrows">←↑→↓↔↕↖↗↘↙↚↛↜↝↞↟↠↡↢↣↤↥↦↧↨↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻↼↽↾↿⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇒⇓⇔⇕⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟</BLOCK>
+    <BLOCK name="Playing Cards">🂠🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂬🂭🂮🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂼🂽🂾🂿🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃌🃍🃎🃏</BLOCK>
+    <BLOCK name="CJK Unified Ideographs Extension B">𠀀𠀁𠀂𠀃𠀄𠀅𠀆𠀇𠀈𠀉𠀊𠀋𠀌𠀍𠀎𠀏</BLOCK>
+    <BLOCK name="Egyptian Hieroglyphs">𓀀𓀁𓀂𓀃𓀄𓀅𓀆𓀇𓀈𓀉𓀊𓀋𓀌𓀍𓀎𓀏𓀐𓀑𓀒𓀓𓀔𓀕𓀖𓀗𓀘𓀙𓀚𓀛𓀜𓀝𓀞𓀟𓀠𓀡𓀢𓀣𓀤𓀥𓀦𓀧𓀨𓀩𓀪𓀫𓀬</BLOCK>
+    <BLOCK name="Cuneiform">𒀀𒀁𒀂𒀃𒀄𒀅𒀆𒀇𒀈𒀉𒀊𒀋𒀌𒀍𒀎𒀏𒀐𒀑𒀒𒀓𒀔𒀕𒀖𒀗𒀘𒀙𒀚𒀛𒀜𒀝𒀞𒀟𒀠𒀡𒀢𒀣𒀤𒀥𒀦𒀧𒀨𒀩𒀪</BLOCK>
+    <BLOCK name="Runic">ᚠᚡᚢᚣᚤᚥᚦᚧᚨᚩᚪᚫᚬᚭᚮᚯᚰᚱᚲᚳᚴᚵᚶᚷᚸᚹᚺᚻᚼᚽᚾᚿᛀᛁᛂᛃᛄᛅᛆᛇᛈᛉᛊᛋᛌᛍᛎᛏᛐᛑᛒᛓᛔᛕᛖᛗᛘᛙᛚᛛᛜᛝᛞᛟᛠᛡᛢᛣᛤᛥᛦᛧᛨᛩᛪ᛫᛬᛭ᛮᛯᛰ</BLOCK>
+  </UNICODE_BLOCKS>
+
+  <!-- ============ EDGE CASES ============ -->
+  <EDGE_CASES>
+    <CASE name="empty"> </CASE>
+    <CASE name="whitespace_only">  	
+   </CASE>
+    <CASE name="null_char_xml10">&#x0;</CASE>
+    <CASE name="line_breaks">line1
+line2
+line3</CASE>
+    <CASE name="tabs_and_spaces">col1	col2	col3</CASE>
+    <CASE name="mixed_bidi">
+      <![CDATA[שָׁלוֹם עֲלֵיכֶם 你好 こんにちは 안녕하세요]]>
+    </CASE>
+    <CASE name="combining_chars">Z̧̨̡̢̤̥̲̦̬̮̰̹̺̻̼̽̾̿̀́͂̓̈́ͅ</CASE>
+    <CASE name="zalgo">n͂͗̊͑̽͆̋̎̐̌o͌͗̆̎̑̋̊̉̉r͌̒̾̈̾̊̌m̑̆̏̈͆̓̾a͊̓̑͝l̾̑̄̊͋̏̉</CASE>
+    <CASE name="fullwidth">ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ１２３４５６７８９！”＃＄％＆’（）</CASE>
+    <CASE name="halfwidth">ﾊﾝｶｸｶﾀｶﾅ ｶﾀｶﾅ ﾃｽﾄ ｱｲｳｴｵ</CASE>
+    <CASE name="invisible">
+      <![CDATA[​‌‍‎‏⁠﻿]]>
+    </CASE>
+    <CASE name="heteronyms">我能吞下玻璃而不伤身体（I can eat glass, it doesn't hurt me）Ich kann Glas essen, ohne mir zu schaden. Ég get etið gler án þess að meiða mig.</CASE>
+  </EDGE_CASES>
+
+  <METADATA>
+    <TEST_PURPOSE>Unicode multi-language XML roundtrip test data</TEST_PURPOSE>
+    <ENCODING>UTF-8</ENCODING>
+    <UNICODE_VERSION>16.0</UNICODE_VERSION>
+    <LANGUAGES>37</LANGUAGES>
+    <TOTAL_CHARS><![CDATA[😀中文русскийالعربيةעבריתहिन्दीภาษาไทยភាសាខ្មែរឋ កាក់]]></TOTAL_CHARS>
+  </METADATA>
+</UNICODE_CATALOG>
