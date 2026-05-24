@@ -14,6 +14,9 @@ SAMPLE_SOURCES = {
     "python_home.html": "https://www.python.org/",
     "plant_catalog.xml": "https://www.w3schools.com/xml/plant_catalog.xml",
     "jsonplaceholder_posts.json": "https://jsonplaceholder.typicode.com/posts",
+    "unicode_multilingual.html": "https://example.com/unicode_multilingual.html",
+    "unicode_multilingual.xml": "https://example.com/unicode_multilingual.xml",
+    "unicode_multilingual.json": "https://example.com/unicode_multilingual.json",
 }
 MASKED = "***MASKED***"
 MAX_STRING_LENGTH = 80
@@ -28,6 +31,14 @@ def _sample_contents():
         "html_content": _read_sample("python_home.html"),
         "xml_content": _read_sample("plant_catalog.xml"),
         "json_content": _read_sample("jsonplaceholder_posts.json"),
+    }
+
+
+def _unicode_sample_contents():
+    return {
+        "unicode_html": _read_sample("unicode_multilingual.html"),
+        "unicode_xml": _read_sample("unicode_multilingual.xml"),
+        "unicode_json": _read_sample("unicode_multilingual.json"),
     }
 
 
@@ -190,6 +201,179 @@ class TestLoggingDataSummarization:
         _assert_truncated(summary["preferences"], json_content)
         assert found.preferences == json_content
 
+    def test_unicode_multilingual_content_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        samples = _unicode_sample_contents()
+        _assert_unicode_integrity(samples)
+
+        user = _create_user(User)
+        _create_unicode_posts(Post, user.id, samples)
+
+        _assert_unicode_round_trip(Post, samples)
+
+    def test_unicode_emoji_burst_truncated_in_summary(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        _assert_unicode_emoji_round_trip(Post)
+
+    def test_sql_injection_payloads_as_content_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        content, _ = _create_injection_payload_post(Post, user.id)
+        _assert_injection_payloads_preserved(Post, content)
+
+    def test_multilingual_text_preserved_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        _assert_multilingual_text_round_trip(Post)
+
+    def test_unicode_json_fixture_json_field_round_trip(self, json_user_fixture):
+        JsonUser = json_user_fixture
+        json_content = _read_sample("unicode_multilingual.json")
+        original_data = json.loads(json_content)
+        user = JsonUser(
+            username="unicode-json-user",
+            email="unicode-json@example.com",
+            age=28,
+            preferences=json_content,
+        )
+        user.save()
+
+        results = JsonUser.query().where(JsonUser.c.username == "unicode-json-user").all()
+        assert len(results) == 1
+        found = results[0]
+        retrieved = json.loads(found.preferences)
+        assert retrieved == original_data
+        assert retrieved[0]["greetings"]["zh"] == "你好，世界！"
+        assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!"
+
+        summary = _make_logging_config().summarize_data({"preferences": found.preferences})
+        _assert_truncated(summary["preferences"], found.preferences)
+
+
+def _assert_unicode_integrity(samples):
+    unicode_html = samples["unicode_html"]
+    unicode_xml = samples["unicode_xml"]
+    unicode_json = samples["unicode_json"]
+
+    # Verify multi-script content is preserved
+    assert "中文" in unicode_html or "日本語" in unicode_html
+    assert "العربية" in unicode_html or "עברית" in unicode_html
+    assert "हिन्दी" in unicode_html or "ภาษาไทย" in unicode_html
+
+    # Verify emoji content is preserved
+    assert "😀" in unicode_html
+    assert "👍" in unicode_html
+    assert "👨‍👩‍👧‍👦" in unicode_html
+
+    # Verify XML structure
+    assert "<UNICODE_CATALOG" in unicode_xml
+    assert "你好" in unicode_xml
+    assert "😀" in unicode_xml
+
+    # Verify JSON structure
+    parsed = json.loads(unicode_json)
+    assert isinstance(parsed, list)
+    assert len(parsed) >= 7
+    greetings = parsed[0].get("greetings", {})
+    assert "zh" in greetings and "ar" in greetings and "he" in greetings
+    assert "😀" in str(parsed)
+
+
+def _create_unicode_posts(Post, user_id: int, samples):
+    posts = []
+    for title, key in (
+        ("Unicode HTML sample", "unicode_html"),
+        ("Unicode XML sample", "unicode_xml"),
+        ("Unicode JSON sample", "unicode_json"),
+    ):
+        post = Post(user_id=user_id, title=title, content=samples[key], status="published")
+        post.save()
+        posts.append(post)
+    return posts
+
+
+def _assert_unicode_round_trip(Post, samples):
+    config = _make_logging_config()
+    payload = {}
+
+    for title, key in (
+        ("Unicode HTML sample", "unicode_html"),
+        ("Unicode XML sample", "unicode_xml"),
+        ("Unicode JSON sample", "unicode_json"),
+    ):
+        found = _find_post(Post, title)
+        original = samples[key]
+        assert found.content == original
+        assert len(found.content) == len(original)
+        payload[key] = found.content
+
+    before = copy.deepcopy(payload)
+    summary = config.summarize_data(payload)
+
+    for key, original in payload.items():
+        _assert_truncated(summary[key], original)
+
+    assert payload == before
+
+
+def _assert_unicode_emoji_round_trip(Post):
+    long_emoji = "😀" * 200
+    post = Post(user_id=1, title="Emoji burst", content=long_emoji, status="published")
+    post.save()
+    results = Post.query().where(Post.c.title == "Emoji burst").all()
+    assert len(results) == 1
+    found = results[0]
+    assert found.content == long_emoji
+    assert len(found.content) == len(long_emoji)
+
+    config = _make_logging_config()
+    summary = config.summarize_data({"content": found.content})
+    _assert_truncated(summary["content"], long_emoji)
+    assert found.content == long_emoji
+
+
+def _create_injection_payload_post(Post, user_id: int):
+    payloads = [
+        "'; DROP TABLE users--",
+        "admin' OR '1'='1",
+        "' UNION SELECT * FROM information_schema.tables--",
+        "x'; WAITFOR DELAY '0:0:5'--",
+        "'; EXEC xp_cmdshell 'dir'--",
+        "1' AND SLEEP(5)--",
+        "1' AND BENCHMARK(10000000,MD5(1))--",
+    ]
+    content = "\n---PAYLOAD-SEPARATOR---\n".join(payloads)
+    post = Post(user_id=user_id, title="SQL injection payloads", content=content, status="published")
+    post.save()
+    return content, post
+
+
+def _assert_injection_payloads_preserved(Post, original_content: str):
+    found = _find_post(Post, "SQL injection payloads")
+    assert found.content == original_content
+    assert len(found.content) == len(original_content)
+
+
+def _assert_multilingual_text_round_trip(Post):
+    texts = {
+        "Chinese": "春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。",
+        "Arabic": "هذا النص باللغة العربية يحتوي على اختبار شامل للترجمة",
+        "Hebrew": "זוהי דוגמה לטקסט בעברית שנכתב מימין לשמאל",
+        "Hindi": "यह हिन्दी भाषा में लिखा गया पाठ है। देवनागरी लिपि में",
+        "Thai": "นี่คือข้อความภาษาไทย ภาษาไทยมีพยัญชนะ สระ วรรณยุกต์",
+        "Russian": "Съешь ещё этих мягких французских булок да выпей чаю",
+        "Korean": "한글은 세종대왕이 창제한 과학적인 문자입니다",
+        "Japanese": "いろはにほへと ちりぬるを わかよたれそ つねならむ",
+    }
+    for lang, text in texts.items():
+        post = Post(user_id=1, title=f"Multilingual-{lang}", content=text, status="published")
+        post.save()
+
+        found = _find_post(Post, f"Multilingual-{lang}")
+        assert found.content == text
+        assert len(found.content) == len(text)
+
 
 async def _async_create_user(User):
     user = User(username="async-web-content-user", email="async-web-content@example.com", age=30)
@@ -214,6 +398,95 @@ async def _async_find_post(Post, title: str):
     results = await Post.query().where(Post.c.title == title).all()
     assert len(results) == 1
     return results[0]
+
+
+async def _async_create_unicode_posts(Post, user_id: int, samples):
+    posts = []
+    for title, key in (
+        ("Unicode HTML sample", "unicode_html"),
+        ("Unicode XML sample", "unicode_xml"),
+        ("Unicode JSON sample", "unicode_json"),
+    ):
+        post = Post(user_id=user_id, title=title, content=samples[key], status="published")
+        await post.save()
+        posts.append(post)
+    return posts
+
+
+async def _async_assert_unicode_round_trip(Post, samples):
+    config = _make_logging_config()
+    payload = {}
+
+    for title, key in (
+        ("Unicode HTML sample", "unicode_html"),
+        ("Unicode XML sample", "unicode_xml"),
+        ("Unicode JSON sample", "unicode_json"),
+    ):
+        found = await _async_find_post(Post, title)
+        original = samples[key]
+        assert found.content == original
+        assert len(found.content) == len(original)
+        payload[key] = found.content
+
+    before = copy.deepcopy(payload)
+    summary = config.summarize_data(payload)
+
+    for key, original in payload.items():
+        _assert_truncated(summary[key], original)
+
+    assert payload == before
+
+
+async def _async_create_injection_payload_post(Post, user_id: int):
+    payloads = [
+        "'; DROP TABLE users--",
+        "admin' OR '1'='1",
+        "' UNION SELECT * FROM information_schema.tables--",
+        "x'; WAITFOR DELAY '0:0:5'--",
+        "'; EXEC xp_cmdshell 'dir'--",
+        "1' AND SLEEP(5)--",
+        "1' AND BENCHMARK(10000000,MD5(1))--",
+    ]
+    content = "\n---PAYLOAD-SEPARATOR---\n".join(payloads)
+    post = Post(user_id=user_id, title="SQL injection payloads", content=content, status="published")
+    await post.save()
+    return content, post
+
+
+async def _async_assert_multilingual_text_round_trip(Post):
+    texts = {
+        "Chinese": "春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。",
+        "Arabic": "هذا النص باللغة العربية يحتوي على اختبار شامل للترجمة",
+        "Hebrew": "זוהי דוגמה לטקסט בעברית שנכתב מימין לשמאל",
+        "Hindi": "यह हिन्दी भाषा में लिखा गया पाठ है। देवनागरी लिपि में",
+        "Thai": "นี่คือข้อความภาษาไทย ภาษาไทยมีพยัญชนะ สระ วรรณยุกต์",
+        "Russian": "Съешь ещё этих мягких французских булок да выпей чаю",
+        "Korean": "한글은 세종대왕이 창제한 과학적인 문자입니다",
+        "Japanese": "いろはにほへと ちりぬるを わかよたれそ つねならむ",
+    }
+    for lang, text in texts.items():
+        post = Post(user_id=1, title=f"Multilingual-{lang}", content=text, status="published")
+        await post.save()
+
+        found = await _async_find_post(Post, f"Multilingual-{lang}")
+        assert found.content == text
+        assert len(found.content) == len(text)
+
+
+async def _async_assert_emoji_round_trip(Post):
+    long_emoji = "😀" * 200
+    post = Post(user_id=1, title="Emoji burst", content=long_emoji, status="published")
+    await post.save()
+    results = await Post.query().where(Post.c.title == "Emoji burst").all()
+    assert len(results) == 1
+    found = results[0]
+    assert found.content == long_emoji
+    assert len(found.content) == len(long_emoji)
+
+    config = _make_logging_config()
+    summary = config.summarize_data({"content": found.content})
+    _assert_truncated(summary["content"], long_emoji)
+    assert found.content == long_emoji
 
 
 async def _async_assert_round_trip_and_summary(Post, samples):
@@ -264,3 +537,35 @@ class TestAsyncLoggingDataSummarization:
         _assert_sensitive_payload_summary(posts[0], samples)
         found_html = await _async_find_post(Post, "HTML sample")
         assert found_html.content == samples["html_content"]
+
+    @pytest.mark.asyncio
+    async def test_unicode_multilingual_content_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        samples = _unicode_sample_contents()
+        _assert_unicode_integrity(samples)
+
+        user = await _async_create_user(User)
+        await _async_create_unicode_posts(Post, user.id, samples)
+
+        await _async_assert_unicode_round_trip(Post, samples)
+
+    @pytest.mark.asyncio
+    async def test_unicode_emoji_burst_truncated_in_summary(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        await _async_assert_emoji_round_trip(Post)
+
+    @pytest.mark.asyncio
+    async def test_sql_injection_payloads_as_content_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        content, _ = await _async_create_injection_payload_post(Post, user.id)
+        found = await _async_find_post(Post, "SQL injection payloads")
+        assert found.content == content
+        assert len(found.content) == len(content)
+
+    @pytest.mark.asyncio
+    async def test_multilingual_text_preserved_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        await _async_assert_multilingual_text_round_trip(Post)

