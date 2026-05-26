@@ -14,7 +14,7 @@ from decimal import Decimal
 from typing import Type, Literal, Any, Dict, List
 import json
 
-from pydantic import EmailStr, Field, field_validator
+from pydantic import EmailStr, Field, field_validator, model_validator
 
 from rhosocial.activerecord.backend.type_adapter import BaseSQLTypeAdapter
 from rhosocial.activerecord.base.fields import UseAdapter, UseColumn
@@ -273,6 +273,46 @@ class AsyncValidatedUser(IntegerPKMixin, AsyncActiveRecord):
         """Business rule validation"""
         if instance.age is not None and instance.age < 13:
             raise ValidationError("User must be at least 13 years old")
+
+
+# Keep this mixin I/O-free: fields, validators, and the FieldProxy descriptor are shared by sync/async models.
+# FieldProxy builds expressions from configured model metadata; concrete models still own table metadata and I/O bases.
+class PydanticValidatedFieldsMixin:
+    """Shared Pydantic fields and validators for sync/async contract tests."""
+
+    c: ClassVar[FieldProxy] = FieldProxy()
+    code: str = Field(..., pattern=r"^[A-Z]{3}-\d{3}$")
+    quantity: int = Field(..., ge=1, le=999)
+    price: Decimal = Field(..., ge=Decimal("0.01"))
+    start_at: datetime
+    end_at: datetime
+    status: Literal["draft", "active", "archived"] = "draft"
+    normalized_name: str = Field(..., min_length=1, max_length=50)
+    created_token: str = Field(default_factory=lambda: "generated-token")
+
+    @field_validator("normalized_name")
+    def normalize_name(cls, value: str) -> str:
+        return value.strip().lower()
+
+    @model_validator(mode="after")
+    def validate_period(self):
+        if self.end_at <= self.start_at:
+            raise ValueError("end_at must be after start_at")
+        return self
+
+
+class PydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, ActiveRecord):
+    """Model for Pydantic native validation contract tests."""
+    __table_name__ = "pydantic_validated_models"
+
+    id: int | None = None
+
+
+class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, AsyncActiveRecord):
+    """Async model for Pydantic native validation contract tests."""
+    __table_name__ = "pydantic_validated_models"
+
+    id: int | None = None
 
 
 class YesOrNoBooleanAdapter(BaseSQLTypeAdapter):

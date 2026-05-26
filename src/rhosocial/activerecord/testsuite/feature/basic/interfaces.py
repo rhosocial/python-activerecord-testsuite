@@ -84,6 +84,17 @@ class IBasicProvider(ABC):
         pass
 
     @abstractmethod
+    def setup_pydantic_validated_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `PydanticValidatedModel`
+        under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured PydanticValidatedModel class.
+        """
+        pass
+
+    @abstractmethod
     def setup_mapped_models(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
         """
         Should prepare the testing environment for `MappedUser`, `MappedPost`,
@@ -207,6 +218,17 @@ class IBasicProvider(ABC):
 
         Returns:
             Type[ActiveRecord]: The configured AsyncValidatedFieldUser model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_pydantic_validated_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncPydanticValidatedModel`
+        under a given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncPydanticValidatedModel class.
         """
         pass
 

@@ -194,6 +194,34 @@ async def async_validated_user(request):
     await provider.cleanup_after_test_async(scenario)
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def pydantic_validated_model(request):
+    """
+    Provides a configured `PydanticValidatedModel` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = provider.setup_pydantic_validated_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_pydantic_validated_model(request):
+    """
+    Provides an async-configured `AsyncPydanticValidatedModel` model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_pydantic_validated_model(scenario)
+    yield model
+
+    # Cleanup: let provider handle both dropping tables AND disconnecting.
+    await provider.cleanup_after_test_async(scenario)
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def type_adapter_fixtures(request):
     """
     Provides fixtures for type adapter tests, including the model, backend,
