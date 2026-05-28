@@ -281,8 +281,15 @@ class PydanticValidatedFieldsMixin:
     """Shared Pydantic fields and validators for sync/async contract tests."""
 
     c: ClassVar[FieldProxy] = FieldProxy()
-    code: str = Field(..., pattern=r"^[A-Z]{3}-\d{3}$")
+    code: str = Field(
+        ...,
+        pattern=r"^[A-Z]{3}-\d{3}$",
+        title="Validation code",
+        description="Business code used by Pydantic compatibility tests.",
+        json_schema_extra={"active_record_test": "pydantic-native"},
+    )
     quantity: int = Field(..., ge=1, le=999)
+    step_count: int = Field(..., gt=0, lt=100, multiple_of=5)
     price: Decimal = Field(..., ge=Decimal("0.01"))
     start_at: datetime
     end_at: datetime

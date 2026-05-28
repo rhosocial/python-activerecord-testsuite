@@ -1,0 +1,99 @@
+"""Reusable backend direct benchmark workloads."""
+
+from typing import Any, Dict, List
+
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+
+DML_OPTIONS = ExecutionOptions(stmt_type=StatementType.DML, process_result_set=False)
+DQL_OPTIONS = ExecutionOptions(stmt_type=StatementType.DQL, process_result_set=True)
+
+
+def execute_insert_one(context: Any, payload: Dict[str, object]) -> Any:
+    params = context.params_factory("insert", payload)
+    result = context.backend.execute(context.sql["insert"], params, options=DML_OPTIONS)
+    if result.affected_rows != 1:
+        raise AssertionError("backend insert benchmark did not affect exactly one row")
+    return result.last_insert_id
+
+
+async def execute_insert_one_async(context: Any, payload: Dict[str, object]) -> Any:
+    params = context.params_factory("insert", payload)
+    result = await context.backend.execute(context.sql["insert"], params, options=DML_OPTIONS)
+    if result.affected_rows != 1:
+        raise AssertionError("async backend insert benchmark did not affect exactly one row")
+    return result.last_insert_id
+
+
+def execute_find_one(context: Any, record_id: Any) -> Dict[str, object]:
+    result = context.backend.execute(context.sql["find_one"], (record_id,), options=DQL_OPTIONS)
+    if len(result.data) != 1 or result.data[0]["id"] != record_id:
+        raise AssertionError("backend find benchmark returned an unexpected row")
+    return result.data[0]
+
+
+async def execute_find_one_async(context: Any, record_id: Any) -> Dict[str, object]:
+    result = await context.backend.execute(context.sql["find_one"], (record_id,), options=DQL_OPTIONS)
+    if len(result.data) != 1 or result.data[0]["id"] != record_id:
+        raise AssertionError("async backend find benchmark returned an unexpected row")
+    return result.data[0]
+
+
+def execute_update_one(context: Any, record_id: Any, username: str) -> None:
+    result = context.backend.execute(
+        context.sql["update"],
+        (username, record_id),
+        options=DML_OPTIONS,
+    )
+    if result.affected_rows != 1:
+        raise AssertionError("backend update benchmark did not affect exactly one row")
+    row = execute_find_one(context, record_id)
+    if row["username"] != username:
+        raise AssertionError("backend update benchmark did not persist expected value")
+
+
+async def execute_update_one_async(context: Any, record_id: Any, username: str) -> None:
+    result = await context.backend.execute(
+        context.sql["update"],
+        (username, record_id),
+        options=DML_OPTIONS,
+    )
+    if result.affected_rows != 1:
+        raise AssertionError("async backend update benchmark did not affect exactly one row")
+    row = await execute_find_one_async(context, record_id)
+    if row["username"] != username:
+        raise AssertionError("async backend update benchmark did not persist expected value")
+
+
+def execute_delete_one(context: Any, record_id: Any) -> None:
+    result = context.backend.execute(context.sql["delete"], (record_id,), options=DML_OPTIONS)
+    if result.affected_rows != 1:
+        raise AssertionError("backend delete benchmark did not affect exactly one row")
+    result = context.backend.execute(context.sql["find_one"], (record_id,), options=DQL_OPTIONS)
+    if result.data:
+        raise AssertionError("backend delete benchmark row still exists")
+
+
+async def execute_delete_one_async(context: Any, record_id: Any) -> None:
+    result = await context.backend.execute(context.sql["delete"], (record_id,), options=DML_OPTIONS)
+    if result.affected_rows != 1:
+        raise AssertionError("async backend delete benchmark did not affect exactly one row")
+    result = await context.backend.execute(context.sql["find_one"], (record_id,), options=DQL_OPTIONS)
+    if result.data:
+        raise AssertionError("async backend delete benchmark row still exists")
+
+
+def execute_many_insert(context: Any, payloads: List[Dict[str, object]]) -> int:
+    params_list = [context.params_factory("insert", payload) for payload in payloads]
+    result = context.backend.execute_many(context.sql["insert"], params_list)
+    if result.affected_rows != len(payloads):
+        raise AssertionError("backend execute_many insert affected unexpected row count")
+    return result.affected_rows
+
+
+async def execute_many_insert_async(context: Any, payloads: List[Dict[str, object]]) -> int:
+    params_list = [context.params_factory("insert", payload) for payload in payloads]
+    result = await context.backend.execute_many(context.sql["insert"], params_list)
+    if result.affected_rows != len(payloads):
+        raise AssertionError("async backend execute_many insert affected unexpected row count")
+    return result.affected_rows

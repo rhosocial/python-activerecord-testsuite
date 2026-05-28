@@ -47,6 +47,7 @@ dependencies = [
 # Development dependencies
 test = [
     "pytest-asyncio",
+    "pytest-benchmark>=4.0.0",
     "pytest-cov>=4.0.0",
     "pytest-xdist~=3.8.0",
     "pytest-rerunfailures>=15.0",
@@ -90,6 +91,16 @@ markers = [
     "requires_capability: marks tests requiring specific backend capabilities",
     "requires_protocol: marks tests requiring specific backend protocol support",
     "requires_inner_join: marks tests requiring INNER JOIN support",
+    "benchmark: marks tests as performance benchmarks",
+    "benchmark_sync: marks synchronous benchmark tests",
+    "benchmark_async: marks asynchronous benchmark tests",
+    "benchmark_read: marks read-oriented benchmark tests",
+    "benchmark_write: marks write-oriented benchmark tests",
+    "benchmark_crud: marks CRUD benchmark tests",
+    "benchmark_backend: marks backend direct benchmark tests",
+    "benchmark_query: marks query benchmark tests",
+    "benchmark_transaction: marks transaction benchmark tests",
+    "benchmark_mixin: marks mixin benchmark tests",
 ]
 
 [tool.black]
