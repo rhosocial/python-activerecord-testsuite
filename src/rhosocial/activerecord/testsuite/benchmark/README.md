@@ -15,7 +15,7 @@ Performance benchmarks are designed to:
 
 ## Structure
 
-Currently, this directory is planned for performance benchmark tests but is not yet populated with specific test cases. Implementation will include various performance test scenarios with standardized metrics collection.
+This directory contains backend-agnostic ActiveRecord benchmarks for CRUD, query, transaction, and mixin behavior. Direct `StorageBackend.execute()` benchmarks are intentionally maintained in each backend repository, because insert result handling and SQL details differ across database implementations.
 
 ## Usage
 
