@@ -36,7 +36,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark_read: Mark read-oriented benchmark tests")
     config.addinivalue_line("markers", "benchmark_write: Mark write-oriented benchmark tests")
     config.addinivalue_line("markers", "benchmark_crud: Mark CRUD benchmark tests")
-    config.addinivalue_line("markers", "benchmark_backend: Mark backend direct benchmark tests")
+    config.addinivalue_line("markers", "benchmark_backend: Mark backend-owned direct benchmark tests")
     config.addinivalue_line("markers", "benchmark_query: Mark query benchmark tests")
     config.addinivalue_line("markers", "benchmark_transaction: Mark transaction benchmark tests")
     config.addinivalue_line("markers", "benchmark_mixin: Mark mixin benchmark tests")
