@@ -40,6 +40,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark_query: Mark query benchmark tests")
     config.addinivalue_line("markers", "benchmark_transaction: Mark transaction benchmark tests")
     config.addinivalue_line("markers", "benchmark_mixin: Mark mixin benchmark tests")
+    config.addinivalue_line("markers", "benchmark_fastapi: Mark FastAPI benchmark tests")
 
 def pytest_collection_modifyitems(config, items):
     """
