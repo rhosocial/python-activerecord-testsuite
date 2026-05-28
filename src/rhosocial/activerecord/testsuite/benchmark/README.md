@@ -15,7 +15,22 @@ Performance benchmarks are designed to:
 
 ## Structure
 
-This directory contains backend-agnostic ActiveRecord benchmarks for CRUD, query, transaction, and mixin behavior. Direct `StorageBackend.execute()` benchmarks are intentionally maintained in each backend repository, because insert result handling and SQL details differ across database implementations.
+This directory contains backend-agnostic ActiveRecord benchmarks for CRUD, query, transaction, and mixin behavior. These shared benchmark categories use the same provider pattern as feature tests:
+
+- the testsuite defines benchmark contexts, provider protocols, fixtures, workloads, and common test logic
+- each backend repository implements the provider, schema, setup, teardown, seed data, model or backend configuration, and backend-specific differences
+- each backend repository registers its provider in `tests/providers/registry.py`
+
+The shared provider-backed benchmark categories are:
+
+- `crud`
+- `query`
+- `transaction`
+- `mixin`
+
+`backend` is the exception. It is a contract-only category for direct `StorageBackend.execute()` and `execute_many()` benchmarks. The testsuite does not provide shared pytest tests or a provider interface for it, and backend repositories must not register `benchmark.backend.IBackendBenchmarkProvider`. Each backend maintains its own `tests/benchmark/backend/` files because SQL placeholders, DDL, insert id handling, and batch execution behavior differ across database implementations.
+
+Future benchmark categories that can share workload and assertions across backends, such as FastAPI HTTP/database benchmarks, should be added as new provider-backed testsuite subdirectories instead of being copied into each backend repository.
 
 ## Usage
 
