@@ -30,6 +30,16 @@ def pytest_configure(config):
     # For example, `pytest -m feature` will run only the core feature tests.
     config.addinivalue_line("markers", "requires_protocol: Mark tests that require specific database protocol support")
     config.addinivalue_line("markers", "requires_functions: Mark tests that require specific database functions")
+    config.addinivalue_line("markers", "benchmark: Mark tests as performance benchmarks")
+    config.addinivalue_line("markers", "benchmark_sync: Mark synchronous benchmark tests")
+    config.addinivalue_line("markers", "benchmark_async: Mark asynchronous benchmark tests")
+    config.addinivalue_line("markers", "benchmark_read: Mark read-oriented benchmark tests")
+    config.addinivalue_line("markers", "benchmark_write: Mark write-oriented benchmark tests")
+    config.addinivalue_line("markers", "benchmark_crud: Mark CRUD benchmark tests")
+    config.addinivalue_line("markers", "benchmark_backend: Mark backend direct benchmark tests")
+    config.addinivalue_line("markers", "benchmark_query: Mark query benchmark tests")
+    config.addinivalue_line("markers", "benchmark_transaction: Mark transaction benchmark tests")
+    config.addinivalue_line("markers", "benchmark_mixin: Mark mixin benchmark tests")
 
 def pytest_collection_modifyitems(config, items):
     """

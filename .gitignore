@@ -136,3 +136,6 @@ dmypy.json
 # IDEs
 .idea/
 .vscode/
+
+# Claude local planning artifacts
+.claude/plan/
