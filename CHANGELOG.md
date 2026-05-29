@@ -1,3 +1,11 @@
+## [v1.0.0.dev14] - 2026-05-29
+
+
+### Added
+
+- Added FastAPI concurrent benchmark suite with multi-strategy connection pool testing, configurable rounds, and pool warmup exclusion; expanded Pydantic validation contracts and SQL injection immunity tests. ([#17](https://github.com/rhosocial/python-activerecord-testsuite/issues/17))
+
+
 ## [v1.0.0.dev13] - 2026-05-15
 
 ### Removed
