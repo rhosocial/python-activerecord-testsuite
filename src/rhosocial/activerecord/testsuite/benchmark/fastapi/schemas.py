@@ -28,3 +28,8 @@ class UserResponse(BaseModel):
     balance: float
     notes: Optional[str] = None
     is_active: bool
+
+
+class TransactionalUpdatePayload(BaseModel):
+    phase_1: str
+    phase_2: str
