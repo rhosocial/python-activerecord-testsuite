@@ -24,23 +24,49 @@ def _get_scenarios():
     return provider_class().get_benchmark_scenarios()
 
 
-SCENARIO_PARAMS = _get_scenarios() or [
-    pytest.param("default", marks=pytest.mark.skip(reason="No FastAPI benchmark provider found"))
+def _get_connection_strategies(provider):
+    get_strategies = getattr(provider, "get_connection_strategies", None)
+    if not get_strategies:
+        return ["context"]
+    return get_strategies()
+
+
+def _get_scenario_strategy_params():
+    provider_class = _get_provider_class()
+    if not provider_class:
+        return []
+    provider = provider_class()
+    return [
+        pytest.param((scenario, strategy), id=f"{scenario}-{strategy}")
+        for scenario in provider.get_benchmark_scenarios()
+        for strategy in _get_connection_strategies(provider)
+    ]
+
+
+SCENARIO_STRATEGY_PARAMS = _get_scenario_strategy_params() or [
+    pytest.param(
+        ("default", "context"),
+        marks=pytest.mark.skip(reason="No FastAPI benchmark provider found"),
+    )
 ]
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_STRATEGY_PARAMS)
 def fastapi_async_context(request, benchmark_size):
     provider_class = _get_provider_class()
     if not provider_class:
         pytest.skip("No FastAPI benchmark provider found")
     provider = provider_class()
-    scenario = request.param
+    scenario, connection_strategy = request.param
     loop = asyncio.new_event_loop()
     try:
         try:
             context = loop.run_until_complete(
-                provider.setup_benchmark_async(scenario, benchmark_size)
+                provider.setup_benchmark_async(
+                    scenario,
+                    benchmark_size,
+                    connection_strategy,
+                )
             )
         except UnsupportedBenchmarkScenario as exc:
             pytest.skip(str(exc))
