@@ -3,6 +3,7 @@
 import pytest
 
 from rhosocial.activerecord.testsuite.benchmark.fastapi.interfaces import (
+    FASTAPI_CONTEXT_STRATEGY,
     FASTAPI_POOL_NEAR_MAX_STRATEGY,
     FASTAPI_POOL_NEAR_MIN_STRATEGY,
     FASTAPI_POOL_OVER_MAX_STRATEGY,
@@ -44,13 +45,15 @@ def assert_pool_stats(context, before, after):
 @pytest.mark.benchmark_fastapi
 @pytest.mark.benchmark_async
 @pytest.mark.benchmark_read
-def test_fastapi_concurrent_read_async(benchmark, fastapi_async_context):
+def test_fastapi_concurrent_read_async(benchmark, fastapi_async_context, fastapi_concurrent_rounds):
     context, run_async = fastapi_async_context
+    warmup = 0 if context.connection_strategy == FASTAPI_CONTEXT_STRATEGY else 1
     before = context.pool_stats().to_dict() if context.pool_stats else None
     result = benchmark.pedantic(
         lambda: run_async(concurrent_get_users_by_email(context)),
-        rounds=1,
+        rounds=fastapi_concurrent_rounds,
         iterations=1,
+        warmup_rounds=warmup,
     )
     after = context.pool_stats().to_dict() if context.pool_stats else None
 
