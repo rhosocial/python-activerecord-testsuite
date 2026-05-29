@@ -1,7 +1,7 @@
 """Provider contracts for FastAPI benchmark scenarios."""
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Protocol, Type, runtime_checkable
+from typing import Any, Callable, List, Optional, Protocol, Type, runtime_checkable
 
 
 @dataclass
@@ -15,6 +15,8 @@ class FastAPIBenchmarkContext:
     record_ids: List[Any]
     backend_namespace: str
     backend_name: str
+    connection_strategy: str
+    pool_stats: Optional[Callable[[], Any]] = None
 
 
 class UnsupportedBenchmarkScenario(Exception):
@@ -25,10 +27,13 @@ class UnsupportedBenchmarkScenario(Exception):
 class IFastAPIBenchmarkProvider(Protocol):
     def get_benchmark_scenarios(self) -> List[str]: ...
 
+    def get_connection_strategies(self) -> List[str]: ...
+
     async def setup_benchmark_async(
         self,
         scenario: str,
         size: str,
+        connection_strategy: str = "context",
     ) -> Optional[FastAPIBenchmarkContext]: ...
 
     async def teardown_benchmark_async(

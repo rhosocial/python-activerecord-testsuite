@@ -14,3 +14,4 @@ def test_fastapi_health_async(benchmark, fastapi_async_context):
     result = benchmark(lambda: run_async(health(context.client)))
     assert result["backend"] == context.backend_name
     assert result["scenario"] == context.scenario
+    assert context.connection_strategy in {"context", "pool"}
