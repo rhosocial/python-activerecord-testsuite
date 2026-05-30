@@ -339,3 +339,39 @@ async def async_mixed_models_fixtures(request):
 
     # Cleanup: let provider handle both dropping tables AND disconnecting.
     await provider.cleanup_after_test_async(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def bulk_user_class(request):
+    """
+    A pytest fixture that provides a configured `BulkUser` model class for testing
+    bulk operations. Parameterized to run for each available scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = provider.setup_bulk_user_model(scenario)
+
+    yield model
+
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_bulk_user_class(request):
+    """
+    An async pytest fixture that provides a configured `AsyncBulkUser` model class
+    for testing bulk operations. Parameterized to run for each available scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+
+    model = await provider.setup_async_bulk_user_model(scenario)
+
+    yield model
+
+    await provider.cleanup_after_test_async(scenario)

@@ -661,4 +661,22 @@ class AsyncMixedAnnotationModel(AsyncActiveRecord):
     status: str = "active"
 
 
+class BulkUser(IntegerPKMixin, ActiveRecord):
+    __table_name__ = "bulk_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    name: str
+    age: int = 0
+    email: str = ""
+
+
+class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
+    __table_name__ = "bulk_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    name: str
+    age: int = 0
+    email: str = ""
 
