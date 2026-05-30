@@ -1,6 +1,6 @@
 """Reusable CRUD benchmark workloads."""
 
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 
 def insert_one(model_class: Type[Any], payload: Dict[str, object]) -> Any:
@@ -81,3 +81,61 @@ async def delete_one_async(model_class: Type[Any], record_id: Any) -> None:
         raise AssertionError("async delete benchmark did not delete exactly one row")
     if await model_class.find_one(record_id) is not None:
         raise AssertionError("async delete benchmark row still exists")
+
+
+def insert_sequential(model_class: Type[Any], payloads: List[Dict[str, object]]) -> List[Any]:
+    """Sequential insert (one save per record, no transaction wrapper) as baseline."""
+    inserted = []
+    for payload in payloads:
+        instance = model_class(**payload)
+        rows = instance.save()
+        if rows != 1 or instance.id is None:
+            raise AssertionError("sequential insert did not persist a row")
+        inserted.append(instance)
+    for instance in inserted:
+        found = model_class.find_one(instance.id)
+        if found is None or found.username != instance.username:
+            raise AssertionError("sequential insert produced inconsistent data")
+    return inserted
+
+
+async def insert_sequential_async(
+    model_class: Type[Any], payloads: List[Dict[str, object]]
+) -> List[Any]:
+    """Async sequential insert as baseline."""
+    inserted = []
+    for payload in payloads:
+        instance = model_class(**payload)
+        rows = await instance.save()
+        if rows != 1 or instance.id is None:
+            raise AssertionError("async sequential insert did not persist a row")
+        inserted.append(instance)
+    for instance in inserted:
+        found = await model_class.find_one(instance.id)
+        if found is None or found.username != instance.username:
+            raise AssertionError("async sequential insert produced inconsistent data")
+    return inserted
+
+
+def bulk_create_batch(model_class: Type[Any], payloads: List[Dict[str, object]]) -> List[Any]:
+    """Bulk create using the bulk_create API."""
+    records = [model_class(**p) for p in payloads]
+    result = model_class.bulk_create(records)
+    for instance in result:
+        found = model_class.find_one(instance.id)
+        if found is None or found.username != instance.username:
+            raise AssertionError("bulk_create produced inconsistent data")
+    return result
+
+
+async def bulk_create_batch_async(
+    model_class: Type[Any], payloads: List[Dict[str, object]]
+) -> List[Any]:
+    """Async bulk create using the bulk_create API."""
+    records = [model_class(**p) for p in payloads]
+    result = await model_class.bulk_create(records)
+    for instance in result:
+        found = await model_class.find_one(instance.id)
+        if found is None or found.username != instance.username:
+            raise AssertionError("async bulk_create produced inconsistent data")
+    return result
