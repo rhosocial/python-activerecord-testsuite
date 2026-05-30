@@ -265,3 +265,25 @@ class IBasicProvider(ABC):
         deleting temporary database files.
         """
         pass
+
+    @abstractmethod
+    def setup_bulk_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `BulkUser` model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured BulkUser model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_bulk_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the `AsyncBulkUser` model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured AsyncBulkUser model class.
+        """
+        pass
