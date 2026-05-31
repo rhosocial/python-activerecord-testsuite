@@ -72,6 +72,18 @@ class TestDerivedFieldQuery:
         result = product_class.find_one(p.id, derived=True)
         assert result.discounted_price == pytest.approx(72.0)
 
+    def test_find_one_or_fail_derived(self, product_class):
+        p = self._insert(product_class, "D2", 80.0, 4)
+        result = product_class.find_one_or_fail(p.id, derived=True)
+        assert result.discounted_price == pytest.approx(72.0)
+        assert result.total_value is None
+
+    def test_find_one_or_fail_derived_list(self, product_class):
+        p = self._insert(product_class, "D3", 80.0, 4)
+        result = product_class.find_one_or_fail(p.id, derived=["discounted_price", "total_value"])
+        assert result.discounted_price == pytest.approx(72.0)
+        assert result.total_value == pytest.approx(320.0)
+
     def test_find_all_derived_false_default(self, product_class):
         self._insert(product_class, "E", 60.0, 1)
         results = product_class.find_all()

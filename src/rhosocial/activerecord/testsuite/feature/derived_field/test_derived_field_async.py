@@ -32,6 +32,20 @@ class TestAsyncDerivedFieldQuery:
         assert result.discounted_price == pytest.approx(72.0)
 
     @pytest.mark.asyncio
+    async def test_find_one_or_fail_derived(self, async_product_class):
+        p = await self._insert(async_product_class, "C2", 80.0, 4)
+        result = await async_product_class.find_one_or_fail(p.id, derived=True)
+        assert result.discounted_price == pytest.approx(72.0)
+        assert result.total_value is None
+
+    @pytest.mark.asyncio
+    async def test_find_one_or_fail_derived_list(self, async_product_class):
+        p = await self._insert(async_product_class, "C3", 80.0, 4)
+        result = await async_product_class.find_one_or_fail(p.id, derived=["discounted_price", "total_value"])
+        assert result.discounted_price == pytest.approx(72.0)
+        assert result.total_value == pytest.approx(320.0)
+
+    @pytest.mark.asyncio
     async def test_find_all_derived_false(self, async_product_class):
         await self._insert(async_product_class, "D", 60.0, 1)
         results = await async_product_class.find_all()
