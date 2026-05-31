@@ -8,7 +8,7 @@ from rhosocial.activerecord.testsuite.benchmark.crud.workloads import (
     insert_sequential,
 )
 
-BATCH_SIZE = 50
+BATCH_SIZE = 1000
 
 
 @pytest.mark.benchmark
