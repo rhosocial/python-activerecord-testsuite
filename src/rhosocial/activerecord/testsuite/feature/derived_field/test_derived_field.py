@@ -1,7 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/derived_field/test_derived_field.py
 import pytest
+from typing import ClassVar, Optional
+from typing_extensions import Annotated
 
-from rhosocial.activerecord.base import DerivedField
+from rhosocial.activerecord.base import DerivedField, UseColumn
+from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.backend.expression import Column, Literal
 
 
@@ -226,3 +229,76 @@ class TestDerivedFieldWithProxy:
         fresh = product_with_proxy_class.find_one(p.id, derived=True)
         assert fresh.name == "P5_modified"
         assert fresh.discounted_price == pytest.approx(54.0)
+
+
+class TestDerivedFieldWithUseColumnAndAdapter:
+    """Tests for DerivedField with UseColumn and UseAdapter annotations."""
+
+    def _insert(self, Model, name, price, quantity):
+        p = Model(name=name, price=price, quantity=quantity)
+        p.save()
+        return p
+
+    def test_use_column_alias_in_select(self, product_with_column_and_adapter_class):
+        """UseColumn controls the SELECT alias; result maps back to Python field name."""
+        self._insert(product_with_column_and_adapter_class, "UC1", 100.0, 5)
+        results = product_with_column_and_adapter_class.find_all(derived=True)
+        # discounted_price has UseColumn("disc") — alias is "disc" in SQL,
+        # but the value is accessible via the Python attribute name
+        assert results[0].discounted_price == pytest.approx(90.0)
+
+    def test_use_adapter_from_database(self, product_with_column_and_adapter_class):
+        """UseAdapter applies from_database conversion on the derived field value."""
+        self._insert(product_with_column_and_adapter_class, "UA1", 33.3, 3)
+        results = product_with_column_and_adapter_class.find_all(derived=["total_int"])
+        # 33.3 * 3 = 99.9, adapter rounds to int → 100
+        assert results[0].total_int == 100
+        assert isinstance(results[0].total_int, int)
+
+    def test_use_column_field_not_in_model_fields(self, product_with_column_and_adapter_class):
+        assert "discounted_price" not in product_with_column_and_adapter_class.model_fields
+        assert "total_int" not in product_with_column_and_adapter_class.model_fields
+
+    def test_use_column_column_name_stored(self, product_with_column_and_adapter_class):
+        df = product_with_column_and_adapter_class.__derived_fields__["discounted_price"]
+        assert df.column_name == "disc"
+
+    def test_use_adapter_stored(self, product_with_column_and_adapter_class):
+        df = product_with_column_and_adapter_class.__derived_fields__["total_int"]
+        assert df.adapter is not None
+
+    def test_use_column_and_adapter_together(self, product_with_column_and_adapter_class):
+        """Both UseColumn and UseAdapter can coexist on the same derived field."""
+        self._insert(product_with_column_and_adapter_class, "CA1", 50.0, 4)
+        results = product_with_column_and_adapter_class.find_all(
+            derived=["discounted_price", "total_int"]
+        )
+        assert results[0].discounted_price == pytest.approx(45.0)
+        assert results[0].total_int == 200
+
+
+class TestDerivedFieldColumnConflict:
+    """Tests that column name conflicts between regular and derived fields are detected."""
+
+    def test_use_column_conflict_raises(self):
+        """UseColumn on derived field must not duplicate a regular field's column name."""
+        with pytest.raises(TypeError, match="conflicts with a regular field's column name"):
+            class ConflictModel(ActiveRecord):
+                __table_name__ = "conflict"
+                id: Optional[int] = None
+                discount_rate: Annotated[float, UseColumn("disc")]
+                discounted: ClassVar[Annotated[float, DerivedField(
+                    lambda d: Column(d, "price") * Literal(d, 0.9),
+                ), UseColumn("disc")]]
+
+    def test_use_column_no_conflict_different_names(self):
+        """Different column names should not conflict."""
+        class NoConflict(ActiveRecord):
+            __table_name__ = "no_conflict"
+            id: Optional[int] = None
+            discount_rate: Annotated[float, UseColumn("rate")]
+            discounted: ClassVar[Annotated[float, DerivedField(
+                lambda d: Column(d, "price") * Literal(d, 0.9),
+            ), UseColumn("disc")]]
+
+        assert NoConflict.__derived_fields__["discounted"].column_name == "disc"
