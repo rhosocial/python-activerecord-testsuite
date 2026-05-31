@@ -50,3 +50,47 @@ def product_with_proxy_class(request):
     model = provider.setup_product_with_proxy_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def product_with_column_and_adapter_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_product_with_column_and_adapter_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_product_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_product_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_product_with_proxy_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_product_with_proxy_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_product_with_column_and_adapter_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_product_with_column_and_adapter_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
