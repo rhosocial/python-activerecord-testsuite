@@ -590,5 +590,5 @@ class TestAsyncActiveQueryBasic:
         query = Order.query()
         query.order_by(Order.c.id)
         query.order_by(Order.c.order_number)
-        sql, params = query.to_sql()
-        assert 'ORDER BY' in sql
+        results = query.all()
+        assert [order.order_number for order in results] == ['ORD-001']
