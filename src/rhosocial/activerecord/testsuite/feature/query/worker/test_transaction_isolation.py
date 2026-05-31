@@ -70,9 +70,11 @@ def transfer_balance_task(
             first_id, second_id = (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
 
             if supports_for_update:
-                # Lock users in fixed order using FOR UPDATE (MySQL, PostgreSQL)
-                first_user = User.query().where(User.c.id == first_id).for_update().one()
-                second_user = User.query().where(User.c.id == second_id).for_update().one()
+                # Lock rows without single-row wrappers that some backends cannot lock.
+                first_matches = User.query().where(User.c.id == first_id).for_update().all()
+                second_matches = User.query().where(User.c.id == second_id).for_update().all()
+                first_user = first_matches[0] if first_matches else None
+                second_user = second_matches[0] if second_matches else None
             else:
                 # SQLite doesn't support FOR UPDATE - use regular queries
                 # SQLite's database-level locking provides serialization
@@ -229,9 +231,11 @@ async def async_transfer_balance_task(
             first_id, second_id = (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
 
             if supports_for_update:
-                # Lock users in fixed order using FOR UPDATE (MySQL, PostgreSQL)
-                first_user = await AsyncUser.query().where(AsyncUser.c.id == first_id).for_update().one()
-                second_user = await AsyncUser.query().where(AsyncUser.c.id == second_id).for_update().one()
+                # Lock rows without single-row wrappers that some backends cannot lock.
+                first_matches = await AsyncUser.query().where(AsyncUser.c.id == first_id).for_update().all()
+                second_matches = await AsyncUser.query().where(AsyncUser.c.id == second_id).for_update().all()
+                first_user = first_matches[0] if first_matches else None
+                second_user = second_matches[0] if second_matches else None
             else:
                 # SQLite doesn't support FOR UPDATE - use regular queries
                 # SQLite's database-level locking provides serialization
