@@ -19,7 +19,6 @@ class Product(ActiveRecord):
 
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: Column(d, "price") * Literal(d, 0.9),
-        default_included=True,
     )]]
 
     total_value: ClassVar[Annotated[float, DerivedField(
@@ -38,7 +37,6 @@ class ProductFormA(ActiveRecord):
 
     discounted_price: ClassVar[DerivedField] = DerivedField(
         lambda d: Column(d, "price") * Literal(d, 0.9),
-        default_included=True,
     )
 
     total_value: ClassVar[DerivedField] = DerivedField(
@@ -56,7 +54,6 @@ class AsyncProduct(AsyncActiveRecord):
 
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: Column(d, "price") * Literal(d, 0.9),
-        default_included=True,
     )]]
 
     total_value: ClassVar[Annotated[float, DerivedField(
@@ -76,7 +73,6 @@ class ProductWithProxy(ActiveRecord):
 
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: ProductWithProxy.c.price * Literal(d, 0.9),
-        default_included=True,
     )]]
 
     total_value: ClassVar[Annotated[float, DerivedField(
@@ -110,7 +106,6 @@ class ProductWithColumnAndAdapter(ActiveRecord):
     # UseColumn: SELECT alias is "disc" but Python attr is "discounted_price"
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: Column(d, "price") * Literal(d, 0.9),
-        default_included=True,
     ), UseColumn("disc")]]
 
     # UseAdapter: rounds the float result to int
@@ -131,7 +126,6 @@ class AsyncProductWithProxy(AsyncActiveRecord):
 
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: AsyncProductWithProxy.c.price * Literal(d, 0.9),
-        default_included=True,
     )]]
 
     total_value: ClassVar[Annotated[float, DerivedField(
@@ -150,7 +144,6 @@ class AsyncProductWithColumnAndAdapter(AsyncActiveRecord):
 
     discounted_price: ClassVar[Annotated[float, DerivedField(
         lambda d: Column(d, "price") * Literal(d, 0.9),
-        default_included=True,
     ), UseColumn("disc")]]
 
     total_int: ClassVar[Annotated[int, DerivedField(

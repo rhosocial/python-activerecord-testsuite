@@ -14,10 +14,6 @@ class TestDerivedFieldDeclaration:
         assert "discounted_price" in product_class.__derived_fields__
         assert "total_value" in product_class.__derived_fields__
 
-    def test_default_included_flag(self, product_class):
-        assert product_class.__derived_fields__["discounted_price"].default_included is True
-        assert product_class.__derived_fields__["total_value"].default_included is False
-
     def test_descriptor_class_access(self, product_class):
         assert isinstance(product_class.discounted_price, DerivedField)
 
@@ -52,7 +48,7 @@ class TestDerivedFieldQuery:
         results = product_class.find_all(derived=True)
         assert len(results) == 1
         assert results[0].discounted_price == pytest.approx(90.0)
-        assert results[0].total_value is None
+        assert results[0].total_value == pytest.approx(500.0)
 
     def test_find_all_derived_list_by_name(self, product_class):
         self._insert(product_class, "B", 50.0, 3)
@@ -76,7 +72,7 @@ class TestDerivedFieldQuery:
         p = self._insert(product_class, "D2", 80.0, 4)
         result = product_class.find_one_or_fail(p.id, derived=True)
         assert result.discounted_price == pytest.approx(72.0)
-        assert result.total_value is None
+        assert result.total_value == pytest.approx(320.0)
 
     def test_find_one_or_fail_derived_list(self, product_class):
         p = self._insert(product_class, "D3", 80.0, 4)
@@ -90,6 +86,25 @@ class TestDerivedFieldQuery:
         assert results[0].discounted_price is None
         assert results[0].total_value is None
 
+    def test_find_all_derived_all(self, product_class):
+        self._insert(product_class, "F", 100.0, 5)
+        results = product_class.find_all(derived="all")
+        assert len(results) == 1
+        assert results[0].discounted_price == pytest.approx(90.0)
+        assert results[0].total_value == pytest.approx(500.0)
+
+    def test_find_one_derived_all(self, product_class):
+        p = self._insert(product_class, "G", 80.0, 4)
+        result = product_class.find_one(p.id, derived="all")
+        assert result.discounted_price == pytest.approx(72.0)
+        assert result.total_value == pytest.approx(320.0)
+
+    def test_find_one_or_fail_derived_all(self, product_class):
+        p = self._insert(product_class, "H", 60.0, 3)
+        result = product_class.find_one_or_fail(p.id, derived="all")
+        assert result.discounted_price == pytest.approx(54.0)
+        assert result.total_value == pytest.approx(180.0)
+
 
 class TestDerivedFieldFormA:
     """Tests for Form A declaration: ClassVar[DerivedField] = DerivedField(...)."""
@@ -98,15 +113,12 @@ class TestDerivedFieldFormA:
         assert "discounted_price" in product_form_a_class.__derived_fields__
         assert "total_value" in product_form_a_class.__derived_fields__
 
-    def test_form_a_default_included(self, product_form_a_class):
-        assert product_form_a_class.__derived_fields__["discounted_price"].default_included is True
-        assert product_form_a_class.__derived_fields__["total_value"].default_included is False
-
     def test_form_a_query(self, product_form_a_class):
         p = product_form_a_class(name="FA", price=100.0, quantity=3)
         p.save()
         results = product_form_a_class.find_all(derived=True)
         assert results[0].discounted_price == pytest.approx(90.0)
+        assert results[0].total_value == pytest.approx(300.0)
 
     def test_form_a_source_id_mapping(self, product_form_a_class):
         df = product_form_a_class.__derived_fields__["discounted_price"]
@@ -192,6 +204,7 @@ class TestExtraDerived:
             extra_derived={"double_qty": lambda d: Column(d, "quantity") * Literal(d, 2)}
         )
         assert results[0].discounted_price == pytest.approx(36.0)
+        assert results[0].total_value == pytest.approx(200.0)
         assert results[0].__dict__["double_qty"] == pytest.approx(10.0)
 
 
@@ -207,6 +220,7 @@ class TestDerivedFieldWithProxy:
         self._insert(product_with_proxy_class, "P1", 100.0, 4)
         results = product_with_proxy_class.find_all(derived=True)
         assert results[0].discounted_price == pytest.approx(90.0)
+        assert results[0].total_value == pytest.approx(400.0)
 
     def test_proxy_derived_all_fields(self, product_with_proxy_class):
         self._insert(product_with_proxy_class, "P2", 200.0, 3)
@@ -258,6 +272,7 @@ class TestDerivedFieldWithUseColumnAndAdapter:
         # discounted_price has UseColumn("disc") — alias is "disc" in SQL,
         # but the value is accessible via the Python attribute name
         assert results[0].discounted_price == pytest.approx(90.0)
+        assert results[0].total_int == 500
 
     def test_use_adapter_from_database(self, product_with_column_and_adapter_class):
         """UseAdapter applies from_database conversion on the derived field value."""
