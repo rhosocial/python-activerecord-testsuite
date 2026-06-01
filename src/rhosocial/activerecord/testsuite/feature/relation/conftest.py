@@ -175,3 +175,125 @@ def chapter():
 @pytest.fixture
 def profile():
     return Profile(id=1, bio="Test Bio", author_id=1)
+
+
+# ── Provider-based fixtures for query tests ──────────────
+
+PROVIDER_KEY = "feature.relation.IRelationProvider"
+
+
+def get_scenarios():
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    if not provider_class:
+        return []
+    return provider_class().get_test_scenarios()
+
+
+_scenarios = get_scenarios()
+SCENARIO_PARAMS = _scenarios if _scenarios else [
+    pytest.param("default", marks=pytest.mark.skip(reason="No relation testsuite scenarios found"))
+]
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def user_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_user_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def post_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_post_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def comment_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_comment_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def user_post_comment_classes(request):
+    """Combined fixture that provides User, Post, Comment classes sharing the same backend."""
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    user = provider.setup_user_model(scenario)
+    post = provider.setup_post_model(scenario)
+    comment = provider.setup_comment_model(scenario)
+    yield user, post, comment
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_user_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_user_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_post_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_post_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_comment_class(request):
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    model = provider.setup_async_comment_model(scenario)
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_user_post_comment_classes(request):
+    """Combined fixture that provides async User, Post, Comment classes sharing the same backend."""
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    user = provider.setup_async_user_model(scenario)
+    post = provider.setup_async_post_model(scenario)
+    comment = provider.setup_async_comment_model(scenario)
+    yield user, post, comment
+    provider.cleanup_after_test(scenario)

@@ -10,7 +10,8 @@ these abstract methods.
 """
 from abc import ABC, abstractmethod
 from typing import Type, List, Tuple
-from rhosocial.activerecord.model import ActiveRecord
+
+from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 
 class IRelationProvider(ABC):
@@ -45,6 +46,48 @@ class IRelationProvider(ABC):
 
         Returns:
             Tuple of (Author, Book, Chapter, Profile) model classes
+        """
+        pass
+
+    @abstractmethod
+    def setup_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup User model with HasMany posts, FieldProxy, DerivedField, and JSON fields.
+        """
+        pass
+
+    @abstractmethod
+    def setup_post_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup Post model with BelongsTo user, HasMany comments, FieldProxy, DerivedField, and JSON fields.
+        """
+        pass
+
+    @abstractmethod
+    def setup_comment_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup Comment model with BelongsTo post, FieldProxy, DerivedField, and JSON fields.
+        """
+        pass
+
+    @abstractmethod
+    def setup_async_user_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
+        """
+        Setup async User model.
+        """
+        pass
+
+    @abstractmethod
+    def setup_async_post_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
+        """
+        Setup async Post model.
+        """
+        pass
+
+    @abstractmethod
+    def setup_async_comment_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
+        """
+        Setup async Comment model.
         """
         pass
 
