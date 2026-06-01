@@ -18,6 +18,7 @@ from rhosocial.activerecord.backend.expression.functions import (
     json_extract_text, length, concat, coalesce
 )
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
+from rhosocial.activerecord.relation.async_descriptors import AsyncBelongsTo, AsyncHasMany, AsyncHasOne
 
 
 # ── Basic Relation Models ────────────────────────────────
@@ -231,7 +232,7 @@ class AsyncUser(AsyncActiveRecord):
         lambda d: json_extract_text(d, Column(d, "settings"), "$.theme"),
     )]]
 
-    posts: ClassVar[HasMany["AsyncPost"]] = HasMany(
+    posts: ClassVar[AsyncHasMany["AsyncPost"]] = AsyncHasMany(
         foreign_key="user_id",
         inverse_of="user"
     )
@@ -264,11 +265,11 @@ class AsyncPost(AsyncActiveRecord):
         lambda d: json_extract_text(d, Column(d, "metadata"), "$.source"),
     )]]
 
-    user: ClassVar[BelongsTo["AsyncUser"]] = BelongsTo(
+    user: ClassVar[AsyncBelongsTo["AsyncUser"]] = AsyncBelongsTo(
         foreign_key="user_id",
         inverse_of="posts"
     )
-    comments: ClassVar[HasMany["AsyncComment"]] = HasMany(
+    comments: ClassVar[AsyncHasMany["AsyncComment"]] = AsyncHasMany(
         foreign_key="post_id",
         inverse_of="post"
     )
@@ -291,7 +292,7 @@ class AsyncComment(AsyncActiveRecord):
         lambda d: json_extract_text(d, Column(d, "meta"), "$.platform"),
     )]]
 
-    post: ClassVar[BelongsTo["AsyncPost"]] = BelongsTo(
+    post: ClassVar[AsyncBelongsTo["AsyncPost"]] = AsyncBelongsTo(
         foreign_key="post_id",
         inverse_of="comments"
     )
