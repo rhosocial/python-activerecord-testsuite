@@ -9,7 +9,7 @@ running the tests. Each backend must provide a concrete class that implements
 these abstract methods.
 """
 from abc import ABC, abstractmethod
-from typing import Type, List, Tuple
+from typing import Dict, List, Tuple, Type
 
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
@@ -92,9 +92,66 @@ class IRelationProvider(ABC):
         pass
 
     @abstractmethod
+    def setup_relation_boundary_fixtures(
+        self,
+        scenario_name: str,
+    ) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Setup models for backend-agnostic relation boundary tests.
+
+        Returns:
+            Tuple of (Owner, Profile, Post) model classes.
+        """
+        pass
+
+    @abstractmethod
+    def setup_async_relation_boundary_fixtures(
+        self,
+        scenario_name: str,
+    ) -> Tuple[Type[AsyncActiveRecord], Type[AsyncActiveRecord], Type[AsyncActiveRecord]]:
+        """
+        Setup async models for backend-agnostic relation boundary tests.
+
+        Returns:
+            Tuple of (AsyncOwner, AsyncProfile, AsyncPost) model classes.
+        """
+        pass
+
+    @abstractmethod
+    def load_relation_boundary_dataset(
+        self,
+        scenario_name: str,
+        dataset_name: str,
+    ) -> Dict[str, int]:
+        """
+        Load a named relation boundary dataset.
+
+        Implementations should return stable IDs keyed by semantic names so tests
+        can query records without knowing backend-specific insert details.
+        """
+        pass
+
+    @abstractmethod
+    async def load_async_relation_boundary_dataset(
+        self,
+        scenario_name: str,
+        dataset_name: str,
+    ) -> Dict[str, int]:
+        """
+        Load a named async relation boundary dataset.
+        """
+        pass
+
+    @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """
         Should perform any necessary cleanup after a test has run, such as
         deleting temporary database files.
         """
         pass
+
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Async cleanup hook for providers that manage async resources.
+        """
+        self.cleanup_after_test(scenario_name)

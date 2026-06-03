@@ -5,7 +5,7 @@ Integration tests: relations + derived fields + field proxy + JSON.
 import pytest
 
 from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
-from rhosocial.activerecord.testsuite.utils import requires_protocol
+from rhosocial.activerecord.testsuite.utils import requires_functions, requires_protocol
 
 
 class TestIntegration:
@@ -71,6 +71,7 @@ class TestIntegration:
         assert results[0].display_name is not None
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     def test_eager_load_with_json_derived(self, user_post_comment_classes):
         """Eager loading should work with JSON derived fields."""
         user_class, post_class, comment_class = user_post_comment_classes
@@ -96,6 +97,7 @@ class TestIntegration:
         assert results[0].theme == "dark"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     def test_full_integration(self, user_post_comment_classes):
         """Full integration: relations + derived + proxy + JSON."""
         user_class, post_class, comment_class = user_post_comment_classes

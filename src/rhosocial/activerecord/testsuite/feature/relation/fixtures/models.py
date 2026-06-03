@@ -296,3 +296,89 @@ class AsyncComment(AsyncActiveRecord):
         foreign_key="post_id",
         inverse_of="comments"
     )
+
+
+# ── Relation Boundary Models ──────────────────────────────
+
+class BoundaryOwner(ActiveRecord):
+    __table_name__ = "relation_boundary_owners"
+
+    id: Optional[int] = None
+    name: str
+
+    profile: ClassVar[HasOne["BoundaryProfile"]] = HasOne(
+        foreign_key="owner_id",
+        inverse_of="owner"
+    )
+    posts: ClassVar[HasMany["BoundaryPost"]] = HasMany(
+        foreign_key="owner_id",
+        inverse_of="owner"
+    )
+
+
+class BoundaryProfile(ActiveRecord):
+    __table_name__ = "relation_boundary_profiles"
+
+    id: Optional[int] = None
+    bio: str
+    owner_id: Optional[int] = None
+
+    owner: ClassVar[BelongsTo["BoundaryOwner"]] = BelongsTo(
+        foreign_key="owner_id",
+        inverse_of="profile"
+    )
+
+
+class BoundaryPost(ActiveRecord):
+    __table_name__ = "relation_boundary_posts"
+
+    id: Optional[int] = None
+    title: str
+    owner_id: Optional[int] = None
+
+    owner: ClassVar[BelongsTo["BoundaryOwner"]] = BelongsTo(
+        foreign_key="owner_id",
+        inverse_of="posts"
+    )
+
+
+class AsyncBoundaryOwner(AsyncActiveRecord):
+    __table_name__ = "relation_boundary_owners"
+
+    id: Optional[int] = None
+    name: str
+
+    profile: ClassVar[AsyncHasOne["AsyncBoundaryProfile"]] = AsyncHasOne(
+        foreign_key="owner_id",
+        inverse_of="owner"
+    )
+    posts: ClassVar[AsyncHasMany["AsyncBoundaryPost"]] = AsyncHasMany(
+        foreign_key="owner_id",
+        inverse_of="owner"
+    )
+
+
+class AsyncBoundaryProfile(AsyncActiveRecord):
+    __table_name__ = "relation_boundary_profiles"
+
+    id: Optional[int] = None
+    bio: str
+    owner_id: Optional[int] = None
+
+    owner: ClassVar[AsyncBelongsTo["AsyncBoundaryOwner"]] = AsyncBelongsTo(
+        foreign_key="owner_id",
+        inverse_of="profile"
+    )
+
+
+class AsyncBoundaryPost(AsyncActiveRecord):
+    __table_name__ = "relation_boundary_posts"
+
+    id: Optional[int] = None
+    title: str
+    owner_id: Optional[int] = None
+
+    owner: ClassVar[AsyncBelongsTo["AsyncBoundaryOwner"]] = AsyncBelongsTo(
+        foreign_key="owner_id",
+        inverse_of="posts"
+    )

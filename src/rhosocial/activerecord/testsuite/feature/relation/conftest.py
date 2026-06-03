@@ -197,6 +197,51 @@ SCENARIO_PARAMS = _scenarios if _scenarios else [
 ]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def check_relation_capability_requirements(request):
+    model_to_check = None
+    fixture_options = [
+        "user_class",
+        "post_class",
+        "comment_class",
+        "user_post_comment_classes",
+        "async_user_class",
+        "async_post_class",
+        "async_comment_class",
+        "async_user_post_comment_classes",
+    ]
+
+    for fixture_name in fixture_options:
+        if fixture_name not in request.fixturenames:
+            continue
+        try:
+            fixture_value = request.getfixturevalue(fixture_name)
+        except Exception:
+            continue
+
+        values = fixture_value if isinstance(fixture_value, tuple) else (fixture_value,)
+        for value in values:
+            if hasattr(value, "backend") or hasattr(value, "__backend__"):
+                model_to_check = value
+                break
+        if model_to_check is not None:
+            break
+
+    if model_to_check is None:
+        return
+
+    protocol_marker = request.node.get_closest_marker("requires_protocol")
+    if protocol_marker:
+        from rhosocial.activerecord.testsuite.utils import skip_test_if_protocol_unsupported
+        protocol_class, method_name = protocol_marker.args[0]
+        skip_test_if_protocol_unsupported(model_to_check, protocol_class, method_name)
+
+    functions_marker = request.node.get_closest_marker("requires_functions")
+    if functions_marker:
+        from rhosocial.activerecord.testsuite.utils import skip_test_if_functions_unsupported
+        skip_test_if_functions_unsupported(model_to_check, functions_marker.args[0])
+
+
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def user_class(request):
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
@@ -296,4 +341,30 @@ def async_user_post_comment_classes(request):
     post = provider.setup_async_post_model(scenario)
     comment = provider.setup_async_comment_model(scenario)
     yield user, post, comment
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def relation_boundary_context(request):
+    """Provides relation boundary models, provider, and scenario."""
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    owner, profile, post = provider.setup_relation_boundary_fixtures(scenario)
+    yield provider, scenario, owner, profile, post
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_relation_boundary_context(request):
+    """Provides async relation boundary models, provider, and scenario."""
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    owner, profile, post = provider.setup_async_relation_boundary_fixtures(scenario)
+    yield provider, scenario, owner, profile, post
     provider.cleanup_after_test(scenario)
