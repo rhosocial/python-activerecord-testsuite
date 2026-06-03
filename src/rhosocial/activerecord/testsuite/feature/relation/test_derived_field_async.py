@@ -4,6 +4,9 @@ Async tests for derived fields in relation models.
 """
 import pytest
 
+from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
+from rhosocial.activerecord.testsuite.utils import requires_functions, requires_protocol
+
 
 class TestAsyncDerivedFieldBasic:
     """Async tests for basic derived fields."""
@@ -40,6 +43,8 @@ class TestAsyncDerivedFieldBasic:
         assert user.display_name is None
         assert user.language is None
 
+    @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_find_all_derived_true(self, async_user_class):
         """derived=True should return all derived fields."""
@@ -61,6 +66,8 @@ class TestAsyncDerivedFieldBasic:
         assert results[0].display_name is not None
         assert results[0].language is None
 
+    @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_find_one_derived(self, async_user_class):
         """find_one with derived should return derived fields."""
