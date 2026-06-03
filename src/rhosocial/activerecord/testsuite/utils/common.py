@@ -136,7 +136,12 @@ def skip_test_if_functions_unsupported(model_class, required_functions):
 
     unsupported = []
     for func_name in required_functions:
-        if not supported_functions.get(func_name, False):
+        support_info = supported_functions.get(func_name, False)
+        if hasattr(support_info, "supported"):
+            is_supported = support_info.supported
+        else:
+            is_supported = bool(support_info)
+        if not is_supported:
             unsupported.append(func_name)
 
     if unsupported:

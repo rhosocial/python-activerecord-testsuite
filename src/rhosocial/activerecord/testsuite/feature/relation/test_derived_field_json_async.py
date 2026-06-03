@@ -7,13 +7,14 @@ These tests require JSON support from the backend dialect.
 import pytest
 
 from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
-from rhosocial.activerecord.testsuite.utils import requires_protocol
+from rhosocial.activerecord.testsuite.utils import requires_functions, requires_protocol
 
 
 class TestAsyncJsonDerivedField:
     """Async tests for JSON derived fields (requires JSON support)."""
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_extract_user_language(self, async_user_class):
         """Should extract language from JSON settings."""
@@ -29,6 +30,7 @@ class TestAsyncJsonDerivedField:
         assert results[0].language == "zh-CN"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_extract_user_theme(self, async_user_class):
         """Should extract theme from JSON settings."""
@@ -44,6 +46,7 @@ class TestAsyncJsonDerivedField:
         assert results[0].theme == "light"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_extract_post_first_tag(self, async_post_class, async_user_class):
         """Should extract first tag from JSON metadata."""
@@ -63,6 +66,7 @@ class TestAsyncJsonDerivedField:
         assert results[0].first_tag == "python"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_extract_post_source(self, async_post_class, async_user_class):
         """Should extract source from JSON metadata."""
@@ -82,6 +86,7 @@ class TestAsyncJsonDerivedField:
         assert results[0].source == "newsletter"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_extract_comment_platform(self, async_comment_class, async_post_class, async_user_class):
         """Should extract platform from JSON meta."""
@@ -103,6 +108,7 @@ class TestAsyncJsonDerivedField:
         assert results[0].platform == "web"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_json_derived_all(self, async_user_class):
         """derived='all' should include JSON derived fields."""
