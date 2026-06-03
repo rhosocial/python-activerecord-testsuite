@@ -4,6 +4,9 @@ Tests for derived fields in relation models.
 """
 import pytest
 
+from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
+from rhosocial.activerecord.testsuite.utils import requires_functions, requires_protocol
+
 
 class TestDerivedFieldBasic:
     """Tests for basic derived fields (no JSON dependency)."""
@@ -44,6 +47,8 @@ class TestDerivedFieldBasic:
         assert hasattr(post_class.c, 'title')
         assert hasattr(post_class.c, 'body')
 
+    @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     def test_find_all_derived_true(self, user_class):
         """derived=True should return all derived fields."""
         user = user_class(name="Alice", email="alice@example.com")
@@ -64,6 +69,8 @@ class TestDerivedFieldBasic:
         assert results[0].display_name is not None
         assert results[0].language is None
 
+    @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
     def test_find_one_derived(self, user_class):
         """find_one with derived should return derived fields."""
         user = user_class(name="Charlie", email="charlie@example.com")
