@@ -17,7 +17,7 @@ from pydantic import Field, EmailStr
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
-from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
+from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig
 from rhosocial.activerecord.base.fields import UseColumn
 
 
@@ -39,6 +39,11 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
         inverse_of='user'
     )
     comments: ClassVar[HasMany['Comment']] = HasMany(
+        foreign_key='user_id',
+        inverse_of='user'
+    )
+
+    profile: ClassVar[HasOne['Profile']] = HasOne(
         foreign_key='user_id',
         inverse_of='user'
     )
@@ -169,6 +174,26 @@ class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
         foreign_key='post_id',
         inverse_of='comments'
     )
+
+
+class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Profile model with HasOne relation to User.
+
+    Used for testing HasOne batch loading via with_().
+    """
+    c: ClassVar[FieldProxy] = FieldProxy()
+    __table_name__ = "profiles"
+
+    id: Optional[int] = None
+    user_id: int
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+    user: ClassVar[HasOne['User']] = HasOne(
+        foreign_key='user_id',
+        inverse_of='profile'
+    )
+
 
 # --- Mapped Models (Added from new version) ---
 
