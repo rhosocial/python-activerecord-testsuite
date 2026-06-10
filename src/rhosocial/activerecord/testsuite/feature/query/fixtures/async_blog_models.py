@@ -1,29 +1,21 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/async_blog_models.py
+"""Async blog model fixtures.
+
+NOTE: AsyncUser is imported from async_models to guarantee sync/async parity —
+the sync models.User is a single class, so the async AsyncUser must also be
+a single class.  Importing avoids a second, incompatible AsyncUser class.
+"""
 from decimal import Decimal
 from typing import Optional, ClassVar
 
-from pydantic import Field, EmailStr
+from pydantic import Field
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
-from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo, AsyncHasOne
+from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo
 
-
-class AsyncUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
-    """Async User model with basic relations."""
-    c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "users"
-
-    id: Optional[int] = None
-    username: str
-    email: EmailStr
-    age: Optional[int] = Field(..., ge=0, le=100)
-    balance: float = 0.0
-    is_active: bool = True
-
-    posts: ClassVar[AsyncHasMany['AsyncPost']] = AsyncHasMany(foreign_key='user_id', inverse_of='author')
-    comments: ClassVar[AsyncHasMany['AsyncComment']] = AsyncHasMany(foreign_key='user_id', inverse_of='author')
+from .async_models import AsyncUser
 
 
 class AsyncPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
