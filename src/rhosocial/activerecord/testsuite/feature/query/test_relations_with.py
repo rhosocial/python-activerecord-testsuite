@@ -325,9 +325,6 @@ class TestSyncRelationsWith:
         # Verify both approaches return same number of results
         assert len(orders_without_eager) == len(orders_with_eager)
         assert len(orders_with_eager) == 5
-
-
-class TestAsyncRelationsWith:
     """Asynchronous tests for relation 'with' functionality"""
     
     async def test_relations_with_single_relation(self, async_order_fixtures):
@@ -644,7 +641,3 @@ class TestAsyncRelationsWith:
             else:
                 # If relation not set, still need to query
                 accessed_users_eager.append(await AsyncUser.find_one(order.user_id))
-    
-        # Verify both approaches return same number of results
-        assert len(orders_without_eager) == len(orders_with_eager)
-        assert len(orders_with_eager) == 5

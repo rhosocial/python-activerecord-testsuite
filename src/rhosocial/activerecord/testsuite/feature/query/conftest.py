@@ -323,7 +323,7 @@ def check_protocol_requirements(request):
 
 # Add imports for async models
 from rhosocial.activerecord.testsuite.feature.query.fixtures.async_models import AsyncUser, AsyncOrder, AsyncOrderItem
-from rhosocial.activerecord.testsuite.feature.query.fixtures.async_blog_models import AsyncUser as AsyncBlogUser, AsyncPost, AsyncComment
+from rhosocial.activerecord.testsuite.feature.query.fixtures.async_blog_models import AsyncPost, AsyncComment
 from rhosocial.activerecord.testsuite.feature.query.fixtures.async_cte_models import AsyncNode
 from rhosocial.activerecord.testsuite.feature.query.fixtures.async_extended_models import AsyncUser as AsyncExtendedUser, AsyncExtendedOrder, AsyncExtendedOrderItem
 
