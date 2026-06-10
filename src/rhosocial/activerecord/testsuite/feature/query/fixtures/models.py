@@ -189,7 +189,7 @@ class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
 
-    user: ClassVar[HasOne['User']] = HasOne(
+    user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
         inverse_of='profile'
     )
