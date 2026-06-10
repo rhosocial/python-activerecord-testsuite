@@ -75,7 +75,7 @@ class AsyncProfile(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
 
-    user: ClassVar[AsyncHasOne['AsyncUser']] = AsyncHasOne(
+    user: ClassVar[AsyncBelongsTo['AsyncUser']] = AsyncBelongsTo(
         foreign_key='user_id',
         inverse_of='profile'
     )
