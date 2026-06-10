@@ -534,3 +534,42 @@ async def async_mapped_models_fixtures(request):
 
     # Cleanup after test
     await provider.cleanup_after_test_async(scenario)
+
+# --- Profile fixtures ---
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def profile_fixtures(request):
+    """
+    A pytest fixture that provides configured (User, Profile) model classes
+    for testing HasOne batch loading via with_().
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider = provider_class()
+
+    User, Profile = provider.setup_profile_fixtures(scenario)
+
+    yield User, Profile
+
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_profile_fixtures(request):
+    """
+    A pytest fixture that provides async-configured (AsyncUser, AsyncProfile) model classes
+    for testing HasOne batch loading via with_().
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider = provider_class()
+
+    AsyncUser, AsyncProfile = await provider.setup_async_profile_fixtures(scenario)
+
+    yield AsyncUser, AsyncProfile
+
+    backend_to_close = AsyncUser.__backend__
+    await backend_to_close.disconnect()
+
+    await provider.cleanup_after_test_async(scenario)

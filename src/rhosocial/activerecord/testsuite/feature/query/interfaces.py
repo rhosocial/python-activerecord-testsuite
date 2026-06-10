@@ -222,3 +222,27 @@ class IQueryProvider(ABC):
         """
         pass
 
+    # --- Profile fixtures ---
+
+    @abstractmethod
+    def setup_profile_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for Profile (HasOne to User)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (User, Profile) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_async_profile_fixtures(self, scenario_name: str) -> Tuple[Type['AsyncActiveRecord'], Type['AsyncActiveRecord']]:
+        """
+        Should prepare the testing environment for AsyncProfile (HasOne to AsyncUser)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncUser, AsyncProfile) model classes
+        """
+        pass
+
