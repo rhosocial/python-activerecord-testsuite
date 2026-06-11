@@ -16,7 +16,7 @@ from pydantic import Field, EmailStr
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
-from rhosocial.activerecord.relation import HasMany, BelongsTo, CacheConfig
+from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig
 from rhosocial.activerecord.base.fields import UseColumn
 from typing import Annotated
 
@@ -48,6 +48,30 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     comments: ClassVar[HasMany['Comment']] = HasMany(
         foreign_key='user_id',
         inverse_of='user'
+    )
+
+    profile: ClassVar[HasOne['Profile']] = HasOne(
+        foreign_key='user_id',
+        inverse_of='user'
+    )
+
+
+class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Profile model with HasOne relation to User.
+
+    Python 3.10+ version using | syntax instead of Optional.
+    """
+    c: ClassVar[FieldProxy] = FieldProxy()
+    __table_name__ = "profiles"
+
+    id: int | None = None
+    user_id: int
+    bio: str | None = None
+    avatar_url: str | None = None
+
+    user: ClassVar[BelongsTo['User']] = BelongsTo(
+        foreign_key='user_id',
+        inverse_of='profile'
     )
 
 
