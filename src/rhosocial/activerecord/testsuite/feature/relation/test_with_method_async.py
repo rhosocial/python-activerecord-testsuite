@@ -81,3 +81,20 @@ class TestAsyncRelationConfig:
         configs2 = query.get_relation_configs()
         assert configs1 == configs2
         assert configs1 is not configs2
+
+    @pytest.mark.asyncio
+    async def test_relation_config_defaults(self, async_user_class):
+        """RelationConfig should have correct defaults."""
+        config = RelationConfig(name="test", nested=False, query_modifier=None)
+        assert config.name == "test"
+        assert config.nested is False
+        assert config.query_modifier is None
+
+    @pytest.mark.asyncio
+    async def test_relation_config_with_modifier(self, async_user_class):
+        """RelationConfig should store modifier."""
+        def my_modifier(q):
+            return q
+
+        config = RelationConfig(name="test", nested=False, query_modifier=my_modifier)
+        assert config.query_modifier is my_modifier

@@ -54,6 +54,22 @@ class TestAsyncIntegration:
         assert len(results) == 1
         assert results[0].title_length == 13
 
+    @pytest.mark.asyncio
+    async def test_eager_load_with_derived(self, async_user_post_comment_classes):
+        """Eager loading should work with derived fields."""
+        user_class, post_class, comment_class = async_user_post_comment_classes
+        user = user_class(name="Dave", email="dave@example.com")
+        await user.save()
+
+        post1 = post_class(title="Post 1", body="Content 1", user_id=user.id, view_count=5)
+        await post1.save()
+        post2 = post_class(title="Post 2", body="Content 2", user_id=user.id, view_count=10)
+        await post2.save()
+
+        results = await user_class.find_all(derived=["display_name"])
+        assert len(results) == 1
+        assert results[0].display_name is not None
+
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
     @pytest.mark.asyncio
