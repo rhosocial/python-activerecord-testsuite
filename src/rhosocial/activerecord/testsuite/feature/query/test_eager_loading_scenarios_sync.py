@@ -365,3 +365,221 @@ class TestSyncMixedEagerLazy:
         u2 = result.user()
         assert u2 is not None
         assert u2.id == u1.id
+
+
+# ---------------------------------------------------------------------------
+# 8. Post.comments (HasMany) and Comment.user/post (BelongsTo) eager loading
+# ---------------------------------------------------------------------------
+class TestSyncBlogEagerLoading:
+    """Verify Post.comments HasMany and Comment BelongsTo eager loading."""
+
+    def _install_counter(self, model_class) -> QueryCounter:
+        return QueryCounter(model_class.backend()).install()
+
+    def test_post_comments_eager(self, blog_fixtures):
+        """with_('comments') on Post should preload HasMany comments."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='be_user', email='be_user@example.com', age=25)
+        user.save()
+        post = Post(title='BE Post', content='Blog content', user_id=user.id, status='published')
+        post.save()
+        for i in range(3):
+            Comment(content=f'Comment {i}', user_id=user.id, post_id=post.id).save()
+
+        result = Post.query().with_('comments').where(Post.c.id == post.id).one()
+        assert result is not None
+        comments = result.comments()
+        assert len(comments) == 3
+        for c in comments:
+            assert c.post_id == post.id
+
+    def test_post_comments_count(self, blog_fixtures):
+        """with_('comments') → 2 queries regardless of N."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='be_count', email='be_count@example.com', age=25)
+        user.save()
+        for pi in range(3):
+            post = Post(title=f'BE Post {pi}', content='x', user_id=user.id, status='published')
+            post.save()
+            for ci in range(2):
+                Comment(content=f'C {pi}-{ci}', user_id=user.id, post_id=post.id).save()
+
+        counter = self._install_counter(Post)
+        results = Post.query().with_('comments').all()
+        assert len(results) == 3
+        for p in results:
+            assert len(p.comments()) == 2
+        assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
+
+    def test_comment_user_eager(self, blog_fixtures):
+        """with_('user') on Comment should preload BelongsTo user."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='cu_user', email='cu_user@example.com', age=25)
+        user.save()
+        post = Post(title='CU Post', content='x', user_id=user.id, status='published')
+        post.save()
+        comment = Comment(content='Hello', user_id=user.id, post_id=post.id)
+        comment.save()
+
+        result = Comment.query().with_('user').where(Comment.c.id == comment.id).one()
+        assert result is not None
+        u = result.user()
+        assert u is not None
+        assert u.username == 'cu_user'
+
+    def test_comment_post_eager(self, blog_fixtures):
+        """with_('post') on Comment should preload BelongsTo post."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='cp_user', email='cp_user@example.com', age=25)
+        user.save()
+        post = Post(title='CP Post', content='x', user_id=user.id, status='published')
+        post.save()
+        comment = Comment(content='Hello', user_id=user.id, post_id=post.id)
+        comment.save()
+
+        result = Comment.query().with_('post').where(Comment.c.id == comment.id).one()
+        assert result is not None
+        p = result.post()
+        assert p is not None
+        assert p.title == 'CP Post'
+
+    def test_post_comments_empty(self, blog_fixtures):
+        """Post with no comments → .comments() returns []."""
+        User, Post, _ = blog_fixtures
+        user = User(username='be_empty', email='be_empty@example.com', age=25)
+        user.save()
+        post = Post(title='BE Empty', content='x', user_id=user.id, status='published')
+        post.save()
+
+        result = Post.query().with_('comments').where(Post.c.id == post.id).one()
+        assert result is not None
+        assert result.comments() == []
+
+
+# ---------------------------------------------------------------------------
+# 9. User.comments HasMany eager loading
+# ---------------------------------------------------------------------------
+class TestSyncUserCommentsEager:
+    """Verify User.comments HasMany eager loading."""
+
+    def _install_counter(self, model_class) -> QueryCounter:
+        return QueryCounter(model_class.backend()).install()
+
+    def test_user_comments_eager(self, blog_fixtures):
+        """with_('comments') on User should preload HasMany comments."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='uc_user', email='uc_user@example.com', age=25)
+        user.save()
+        post = Post(title='UC Post', content='x', user_id=user.id, status='published')
+        post.save()
+        for i in range(3):
+            Comment(content=f'UC {i}', user_id=user.id, post_id=post.id).save()
+
+        result = User.query().with_('comments').where(User.c.id == user.id).one()
+        assert result is not None
+        comments = result.comments()
+        assert len(comments) == 3
+
+    def test_user_comments_count(self, blog_fixtures):
+        """with_('comments') → 2 queries regardless of N."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='uc_count', email='uc_count@example.com', age=25)
+        user.save()
+        post1 = Post(title='UC Post 1', content='x', user_id=user.id, status='published')
+        post1.save()
+        post2 = Post(title='UC Post 2', content='x', user_id=user.id, status='published')
+        post2.save()
+        for i in range(4):
+            Comment(content=f'UC C {i}', user_id=user.id, post_id=post1.id).save()
+
+        counter = self._install_counter(User)
+        results = User.query().with_('comments').where(User.c.id == user.id).all()
+        assert len(results) == 1
+        assert len(results[0].comments()) == 4
+        assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
+
+
+# ---------------------------------------------------------------------------
+# 10. Nested eager loading: posts.comments (dot-path) — end-to-end SQL execution
+# ---------------------------------------------------------------------------
+class TestSyncNestedEagerLoading:
+    """Verify dot-path nested eager loading executes correct SQL and returns correct data."""
+
+    def _install_counter(self, model_class) -> QueryCounter:
+        return QueryCounter(model_class.backend()).install()
+
+    def test_nested_posts_comments(self, blog_fixtures):
+        """with_('posts.comments') preloads HasMany(HasMany) in 3 queries."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='ne_user', email='ne_user@example.com', age=25)
+        user.save()
+        for pi in range(3):
+            post = Post(title=f'NE Post {pi}', content=f'Content {pi}',
+                        user_id=user.id, status='published')
+            post.save()
+            for ci in range(2):
+                Comment(content=f'NE C {pi}-{ci}', user_id=user.id, post_id=post.id).save()
+
+        counter = self._install_counter(User)
+        results = User.query().with_('posts.comments').where(User.c.id == user.id).all()
+        assert len(results) == 1
+        posts = results[0].posts()
+        assert len(posts) == 3
+        for p in posts:
+            assert len(p.comments()) == 2
+        assert counter.select_count == 3, f"Expected 3 queries (user + posts + comments), got {counter.select_count}"
+
+    def test_nested_posts_comments_empty_posts(self, blog_fixtures):
+        """User with no posts → posts() returns [], no batch for comments."""
+        User, _, _ = blog_fixtures
+        user = User(username='ne_empty', email='ne_empty@example.com', age=25)
+        user.save()
+
+        result = User.query().with_('posts.comments').where(User.c.id == user.id).one()
+        assert result is not None
+        assert result.posts() == []
+
+    def test_nested_posts_comments_no_comments(self, blog_fixtures):
+        """Post with no comments → comments() returns [] for each post."""
+        User, Post, _ = blog_fixtures
+        user = User(username='ne_nocom', email='ne_nocom@example.com', age=25)
+        user.save()
+        for pi in range(2):
+            Post(title=f'NE Post {pi}', content=f'Content {pi}',
+                 user_id=user.id, status='published').save()
+
+        result = User.query().with_('posts.comments').where(User.c.id == user.id).one()
+        assert result is not None
+        posts = result.posts()
+        assert len(posts) == 2
+        for p in posts:
+            assert p.comments() == []
+
+    def test_nested_posts_comments_eager_vs_lazy(self, blog_fixtures):
+        """Eager dot-path and lazy produce identical data."""
+        User, Post, Comment = blog_fixtures
+        user = User(username='ne_parity', email='ne_parity@example.com', age=30)
+        user.save()
+        for pi in range(2):
+            post = Post(title=f'NE P {pi}', content=f'C {pi}',
+                        user_id=user.id, status='published')
+            post.save()
+            for ci in range(2):
+                Comment(content=f'NE {pi}-{ci}', user_id=user.id, post_id=post.id).save()
+
+        eager = User.query().with_('posts.comments').where(User.c.id == user.id).one()
+        eager_posts = sorted(eager.posts(), key=lambda p: p.id)
+        eager_comments = []
+        for p in eager_posts:
+            eager_comments.extend(p.comments())
+
+        lazy_user = User.find_one(user.id)
+        lazy_posts = sorted(lazy_user.posts(), key=lambda p: p.id)
+        lazy_comments = []
+        for p in lazy_posts:
+            lazy_comments.extend(p.comments())
+
+        assert len(eager_comments) == len(lazy_comments)
+        for ec, lc in zip(sorted(eager_comments, key=lambda c: c.id),
+                          sorted(lazy_comments, key=lambda c: c.id)):
+            assert ec.content == lc.content
