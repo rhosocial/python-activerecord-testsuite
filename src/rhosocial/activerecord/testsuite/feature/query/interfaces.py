@@ -246,3 +246,19 @@ class IQueryProvider(ABC):
         """
         pass
 
+    # --- Optional capability declarations ---
+
+    def supports_orphan_relations(self) -> bool:
+        """
+        Whether this provider can create records whose FK points to
+        non-existent parent records.
+
+        Returns True if the schema does NOT enforce FK constraints
+        (or uses ON DELETE SET NULL / CASCADE), allowing orphan FK
+        references for testing purposes.
+
+        Returns:
+            bool: True if orphan FK references are possible.
+        """
+        return False
+
