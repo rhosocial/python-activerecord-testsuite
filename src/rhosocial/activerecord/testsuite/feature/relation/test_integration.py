@@ -99,9 +99,13 @@ class TestIntegration:
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
     def test_full_integration(self, user_post_comment_classes):
-        """Full integration: relations + derived + proxy + JSON."""
+        """Full integration: relations + derived + proxy + JSON.
+
+        Creates and persists User (with JSON settings) + Post (with JSON metadata)
+        + Comment (with JSON meta), then queries all three with derived="all" to
+        verify all derived field values are computed correctly across the full graph.
+        """
         user_class, post_class, comment_class = user_post_comment_classes
-        # Create user with JSON settings
         user = user_class(
             name="Frank",
             email="frank@example.com",
@@ -109,7 +113,6 @@ class TestIntegration:
         )
         user.save()
 
-        # Create post with JSON metadata
         post = post_class(
             title="Full Integration Test",
             body="This is a comprehensive test",
@@ -119,7 +122,6 @@ class TestIntegration:
         )
         post.save()
 
-        # Create comment with JSON meta
         comment = comment_class(
             body="Excellent integration test!",
             post_id=post.id,
@@ -127,22 +129,22 @@ class TestIntegration:
         )
         comment.save()
 
-        # Query user with all derived fields
+        # User derived fields: display_name=coalesce(email,name), language/theme from JSON
         users = user_class.find_all(derived="all")
         assert len(users) == 1
         assert users[0].display_name is not None
         assert users[0].language == "de"
         assert users[0].theme == "auto"
 
-        # Query post with all derived fields
+        # Post derived fields: title_length, hotness=view_count+1, first_tag, source
         posts = post_class.find_all(derived="all")
         assert len(posts) == 1
         assert posts[0].title_length == 21  # len("Full Integration Test")
-        assert posts[0].hotness == 101  # 100 + 1
+        assert posts[0].hotness == 101  # view_count(100) + 1
         assert posts[0].first_tag == "integration"
         assert posts[0].source == "ci"
 
-        # Query comment with all derived fields
+        # Comment derived fields: body_length, platform
         comments = comment_class.find_all(derived="all")
         assert len(comments) == 1
         assert comments[0].body_length == 27  # len("Excellent integration test!")

@@ -43,6 +43,13 @@ class TestAsyncDerivedFieldBasic:
         assert user.display_name is None
         assert user.language is None
 
+    @pytest.mark.asyncio
+    async def test_field_proxy_on_post(self, async_post_class):
+        """Post should have FieldProxy that provides column access."""
+        assert hasattr(async_post_class, 'c')
+        assert hasattr(async_post_class.c, 'title')
+        assert hasattr(async_post_class.c, 'body')
+
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
     @pytest.mark.asyncio
@@ -132,3 +139,20 @@ class TestAsyncDerivedFieldBasic:
         results = await comment_class.find_all(derived=["body_length"])
         assert len(results) == 1
         assert results[0].body_length == 17
+
+
+class TestAsyncDerivedFieldWithProxy:
+    """Async tests for derived fields using FieldProxy."""
+
+    @pytest.mark.asyncio
+    async def test_post_title_uses_proxy(self, async_user_post_comment_classes):
+        """Post.title_length should use FieldProxy internally."""
+        user_class, post_class, comment_class = async_user_post_comment_classes
+        user = user_class(name="Hank", email="hank@example.com")
+        await user.save()
+
+        post = post_class(title="Proxy Test", body="Content", user_id=user.id)
+        await post.save()
+
+        results = await post_class.find_all(derived=["title_length"])
+        assert results[0].title_length == 10

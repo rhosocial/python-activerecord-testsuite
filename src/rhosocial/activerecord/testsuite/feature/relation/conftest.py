@@ -26,6 +26,7 @@ from rhosocial.activerecord.relation.interfaces import IRelationLoader
 
 
 class Employee(RelationManagementMixin, BaseModel):
+    """Memory-based Employee model: used for BelongsTo -> Department testing."""
     id: int
     name: str
     department_id: int
@@ -36,6 +37,7 @@ class Employee(RelationManagementMixin, BaseModel):
 
 
 class Department(RelationManagementMixin, BaseModel):
+    """Memory-based Department model: used for HasMany -> Employee testing."""
     id: int
     name: str
     employees: ClassVar[HasMany["Employee"]] = HasMany(
@@ -46,25 +48,31 @@ class Department(RelationManagementMixin, BaseModel):
 
 @pytest.fixture
 def employee():
+    """A single Employee instance (memory-based) for BelongsTo relation tests."""
     return Employee(id=1, name="John Doe", department_id=1)
 
 
 @pytest.fixture
 def department():
+    """A single Department instance (memory-based) for HasMany relation tests."""
     return Department(id=1, name="Engineering")
 
 
 @pytest.fixture
 def employee_class():
+    """The Employee model class (memory-based) for class-level relation queries."""
     return Employee
 
 
 @pytest.fixture
 def department_class():
+    """The Department model class (memory-based) for class-level relation queries."""
     return Department
 
 
 class CustomBookLoaderI(IRelationLoader):
+    """Loader returning a synthetic Book list: used by Author.books."""
+
     def load(self, instance: Any) -> Optional[List[Any]]:
         return [Book(id=1, title="Test Book", author_id=instance.id)]
 
@@ -73,6 +81,8 @@ class CustomBookLoaderI(IRelationLoader):
 
 
 class CustomAuthorLoaderI(IRelationLoader):
+    """Loader returning a synthetic Author: used by Book.author."""
+
     def load(self, instance: Any) -> Optional[Any]:
         return Author(id=instance.author_id, name="Test Author")
 
@@ -81,6 +91,8 @@ class CustomAuthorLoaderI(IRelationLoader):
 
 
 class CustomProfileLoaderI(IRelationLoader):
+    """Loader returning a synthetic Profile: used by Author.profile."""
+
     def load(self, instance: Any) -> Optional[Any]:
         return Profile(id=1, bio="Test Bio", author_id=instance.id)
 
@@ -89,6 +101,8 @@ class CustomProfileLoaderI(IRelationLoader):
 
 
 class CustomChapterLoaderI(IRelationLoader):
+    """Loader returning a synthetic Chapter list: used by Book.chapters."""
+
     def load(self, instance: Any) -> Optional[List[Any]]:
         return [Chapter(id=1, title="Test Chapter", book_id=instance.id)]
 
@@ -97,6 +111,8 @@ class CustomChapterLoaderI(IRelationLoader):
 
 
 class CustomAuthorProfileLoaderI(IRelationLoader):
+    """Loader returning a synthetic Author: used by Profile.author."""
+
     def load(self, instance: Any) -> Optional[Any]:
         return Author(id=instance.author_id, name="Test Author")
 
@@ -105,6 +121,8 @@ class CustomAuthorProfileLoaderI(IRelationLoader):
 
 
 class Author(RelationManagementMixin, BaseModel):
+    """Memory-based Author with HasMany->books and HasOne->profile, custom loader + cache TTL=1s."""
+
     id: int
     name: str
     books: ClassVar[HasMany["Book"]] = HasMany(
@@ -121,6 +139,8 @@ class Author(RelationManagementMixin, BaseModel):
 
 
 class Book(RelationManagementMixin, BaseModel):
+    """Memory-based Book with BelongsTo->author and HasMany->chapters, custom loaders."""
+
     id: int
     title: str
     author_id: int
@@ -137,6 +157,8 @@ class Book(RelationManagementMixin, BaseModel):
 
 
 class Chapter(RelationManagementMixin, BaseModel):
+    """Memory-based Chapter with BelongsTo->book, no custom loader (tests default loader)."""
+
     id: int
     title: str
     book_id: int
@@ -147,6 +169,8 @@ class Chapter(RelationManagementMixin, BaseModel):
 
 
 class Profile(RelationManagementMixin, BaseModel):
+    """Memory-based Profile with BelongsTo->author, custom loader for the inverse side."""
+
     id: int
     bio: str
     author_id: int
@@ -159,21 +183,25 @@ class Profile(RelationManagementMixin, BaseModel):
 
 @pytest.fixture
 def author():
+    """An Author instance with HasMany-books and HasOne-profile, using custom loaders."""
     return Author(id=1, name="Test Author")
 
 
 @pytest.fixture
 def book():
+    """A Book instance linked to author_id=1 with BelongsTo-author and HasMany-chapters."""
     return Book(id=1, title="Test Book", author_id=1)
 
 
 @pytest.fixture
 def chapter():
+    """A Chapter instance linked to book_id=1 with BelongsTo-book."""
     return Chapter(id=1, title="Chapter 1", book_id=1)
 
 
 @pytest.fixture
 def profile():
+    """A Profile instance linked to author_id=1 with BelongsTo-author + custom loader."""
     return Profile(id=1, bio="Test Bio", author_id=1)
 
 
@@ -199,6 +227,12 @@ SCENARIO_PARAMS = _scenarios if _scenarios else [
 
 @pytest.fixture(scope="function", autouse=True)
 def check_relation_capability_requirements(request):
+    """Auto-use fixture: skips tests that require unsupported backend capabilities.
+
+    For each test, checks whether it needs a specific protocol or function support
+    (via @requires_protocol / @requires_functions markers). If the model's backend
+    doesn't support the required capability, the test is skipped automatically.
+    """
     model_to_check = None
     fixture_options = [
         "user_class",
@@ -244,6 +278,12 @@ def check_relation_capability_requirements(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def user_class(request):
+    """Provider-backed User model class (ActiveRecord) for sync relation tests.
+
+    Each scenario from provider.get_test_scenarios() yields a differently-configured
+    User model (e.g., different database or table name). The provider cleans up
+    after each test.
+    """
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
@@ -256,6 +296,7 @@ def user_class(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def post_class(request):
+    """Provider-backed Post model class (ActiveRecord) for sync relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
@@ -268,6 +309,7 @@ def post_class(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def comment_class(request):
+    """Provider-backed Comment model class (ActiveRecord) for sync relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
@@ -295,6 +337,7 @@ def user_post_comment_classes(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def async_user_class(request):
+    """Provider-backed async User model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
@@ -307,6 +350,7 @@ def async_user_class(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def async_post_class(request):
+    """Provider-backed async Post model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
@@ -319,6 +363,7 @@ def async_post_class(request):
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def async_comment_class(request):
+    """Provider-backed async Comment model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()

@@ -1,6 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
 """
 Tests for relation cache functionality.
+
+Covers CacheConfig, GlobalCacheConfig (singleton), CacheEntry (expiration/ttl),
+RelationCache (set/get/delete/clear, max_size LRU eviction, disabled mode),
+and thread-safe concurrent access.
 """
 import pytest
 import time
@@ -14,7 +18,7 @@ from rhosocial.activerecord.relation.cache import (
 
 
 class TestRelationCache:
-    """Tests for the relation cache functionality."""
+    """Tests for cache configuration, entry expiration, basic operations, max-size eviction, disabled mode, and concurrency."""
 
     def test_cache_config(self):
         """Test CacheConfig initialization and defaults."""
