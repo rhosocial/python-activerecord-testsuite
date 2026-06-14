@@ -1,6 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/test_descriptors.py
 """
 Tests for relation descriptor functionality.
+
+Tests BelongsTo/HasOne/HasMany descriptor types, registration on
+RelationManagementMixin models, query method creation, and descriptor
+type validation — using memory-based fixtures.
 """
 import pytest
 from typing import ClassVar
@@ -12,7 +16,7 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMa
 
 
 class TestRelationDescriptors:
-    """Tests for the relation descriptor functionality."""
+    """Tests for relation descriptor types: init, registration, and type validation."""
 
     # Mock QuerySet for testing
     class MockQuerySet:

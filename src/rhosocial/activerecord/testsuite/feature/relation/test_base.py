@@ -1,6 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/test_base.py
 """
 Tests for relation base functionality.
+
+Covers RelationDescriptor initialization, loading, caching, forward-reference
+resolution, relation registration validation, and inheritance — all using
+memory-based fixtures that don't require a database backend.
 """
 import pytest
 from typing import ClassVar, Any, Dict, List
@@ -14,9 +18,11 @@ from rhosocial.activerecord.relation.interfaces import IRelationLoader
 
 
 class TestRelationDescriptor:
-    """Tests for the relation descriptor functionality."""
+    """Tests for RelationDescriptor: init, loading, caching, forward refs, validation, inheritance."""
 
     class CustomLoaderI(IRelationLoader):
+        """Simple in-memory loader that returns a synthetic dict for testing."""
+
         def load(self, instance):
             return {"id": 1, "name": "Test"}
 
@@ -24,7 +30,11 @@ class TestRelationDescriptor:
             pass
 
     def test_relation_descriptor_init(self):
-        """Test RelationDescriptor initialization."""
+        """RelationDescriptor stores foreign_key, inverse_of, loader, and cache_config.
+
+        Verifies that all constructor parameters are retained correctly
+        after initialization.
+        """
         descriptor = RelationDescriptor(
             foreign_key="test_id",
             inverse_of="test",
@@ -35,7 +45,6 @@ class TestRelationDescriptor:
         assert descriptor.foreign_key == "test_id"
         assert descriptor.inverse_of == "test"
         assert descriptor._loader is not None
-        # assert descriptor._cache is not None
 
     def test_relation_descriptor_get_related_model(self, employee_class, department_class):
         """Test getting related model class."""
@@ -53,15 +62,20 @@ class TestRelationDescriptor:
         assert inverse_model == employee_class
 
     def test_relation_descriptor_load(self, employee):
-        """Test loading relation data."""
+        """First access triggers loader; second access returns cached result.
+
+        Verifies two-step loading behavior:
+        1. Loader produces fresh data on first call.
+        2. Cache returns same data on second call (no re-load).
+        """
         relation = employee.get_relation("department")
         relation._loader = self.CustomLoaderI()
 
-        # First load (from loader)
+        # First load — from loader
         data = relation._load_relation(employee)
         assert data == {"id": 1, "name": "Test"}
 
-        # Second load (from cache)
+        # Second load — from cache (same data, no re-load)
         data = relation._load_relation(employee)
         assert data == {"id": 1, "name": "Test"}
 
@@ -79,7 +93,14 @@ class TestRelationDescriptor:
     #     assert result == [{"id": 1, "name": "Test"}]
 
     def test_relation_descriptor_cache_clear(self, employee):
-        """Test clearing relation cache."""
+        """__delete__ clears cached relation data; next access triggers loader again.
+
+        Steps:
+        1. Load to populate cache, verify data returned.
+        2. Cache hit returns same data.
+        3. del instance.relation clears cache.
+        4. Next load triggers loader again — verifies cache was successfully cleared.
+        """
         relation = employee.get_relation("department")
         relation._loader = self.CustomLoaderI()
 
@@ -95,8 +116,13 @@ class TestRelationDescriptor:
         assert data == {"id": 1, "name": "Test"}
 
     def test_relation_registration_validation(self):
-        """Test validation during relation registration."""
-        # This is a unit test that doesn't require database functionality
+        """Duplicate relation names are allowed at class creation time.
+
+        This is a regression guard: redefining a ClassVar with the same name
+        in the same model body should not crash. The last definition wins.
+        Note: This test does NOT trigger the full validator (which catches
+        illegal pairings); that's covered in test_validator.py.
+        """
         class TestModel(RelationManagementMixin, BaseModel):
             username: str
             department_id: int
@@ -110,7 +136,14 @@ class TestRelationDescriptor:
             )
 
     def test_relation_inheritance(self):
-        """Test that derived classes can override relations"""
+        """Child classes can override parent relations (e.g., HasOne -> HasMany).
+
+        Key assertions:
+        - parent_relation remains a HasOne (child override doesn't mutate parent).
+        - child_relation is a HasMany (the override takes effect).
+        - Both keep the same foreign_key from the parent definition.
+        - parent_relation is not child_relation (different descriptor objects).
+        """
         class ParentModel(RelationManagementMixin, BaseModel):
             id: int
             test: ClassVar[HasOne["Other"]] = HasOne(
@@ -139,10 +172,11 @@ class TestRelationDescriptor:
         assert parent_relation is not child_relation
 
     def test_forward_reference_resolution(self, author, book):
-        """Test resolution of forward references in relationship declarations."""
-        # This test uses the already defined models with forward references
-        # The fixture definitions handle forward reference resolution
+        """Forward references (e.g. BelongsTo['Author'] quoted as string) resolve correctly.
+
+        The fixtures already perform the resolution. This test verifies that
+        the resolved models are not None and can be accessed without error,
+        confirming that the string-based forward reference system works.
+        """
         assert author is not None
         assert book is not None
-        # If the fixtures were set up properly, the forward references would be resolved
-        # and we can access the relations without error

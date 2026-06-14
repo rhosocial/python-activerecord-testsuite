@@ -92,7 +92,12 @@ class TestAsyncIntegration:
     @requires_functions('json_extract_text')
     @pytest.mark.asyncio
     async def test_full_integration(self, async_user_post_comment_classes):
-        """Full integration: relations + derived + proxy + JSON."""
+        """Full async integration: relations + derived + proxy + JSON.
+
+        Creates User (JSON settings), Post (JSON metadata), Comment (JSON meta),
+        and queries all three with derived="all" to verify all async derived
+        field computations.
+        """
         user_class, post_class, comment_class = async_user_post_comment_classes
         user = user_class(
             name="Frank",
@@ -117,19 +122,22 @@ class TestAsyncIntegration:
         )
         await comment.save()
 
+        # User: JSON derived fields
         users = await user_class.find_all(derived="all")
         assert len(users) == 1
         assert users[0].display_name is not None
         assert users[0].language == "de"
         assert users[0].theme == "auto"
 
+        # Post: title_length, hotness=view_count+1, first_tag, source
         posts = await post_class.find_all(derived="all")
         assert len(posts) == 1
         assert posts[0].title_length == 21  # len("Full Integration Test")
-        assert posts[0].hotness == 101
+        assert posts[0].hotness == 101  # view_count(100) + 1
         assert posts[0].first_tag == "integration"
         assert posts[0].source == "ci"
 
+        # Comment: body_length, platform
         comments = await comment_class.find_all(derived="all")
         assert len(comments) == 1
         assert comments[0].body_length == 27  # len("Excellent integration test!")

@@ -1,6 +1,14 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/test_boundary.py
 """
 Backend-agnostic relation boundary tests.
+
+Tests how relations behave when foreign keys are null, orphaned
+(missing target), or no matching child records exist — for BelongsTo,
+HasOne, and HasMany descriptors.
+
+Uses provider-loaded fixture datasets (null_foreign_key, orphan_foreign_key,
+owner_without_children, multiple_has_one_matches) so each backend injects
+its own pre-built test data.
 """
 
 

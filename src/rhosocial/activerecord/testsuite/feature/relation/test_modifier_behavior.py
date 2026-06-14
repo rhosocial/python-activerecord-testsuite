@@ -1,6 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/test_modifier_behavior.py
 """
 Tests for with_() method modifier behavior.
+
+Tests modifier targeting (leaf-only, intermediate untouched),
+modifier overwrite semantics (later overwrites earlier), and
+documentation example parity. Both sync and async variants exist.
 """
 import pytest
 

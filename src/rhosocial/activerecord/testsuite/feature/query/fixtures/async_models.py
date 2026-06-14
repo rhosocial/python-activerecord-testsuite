@@ -79,3 +79,33 @@ class AsyncProfile(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
         foreign_key='user_id',
         inverse_of='profile'
     )
+
+
+class AsyncPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async Post model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
+    __table_name__ = "posts"
+
+    id: Optional[int] = None
+    user_id: int
+    title: str
+    content: str
+    status: str = 'published'
+
+    author: ClassVar[AsyncBelongsTo['AsyncUser']] = AsyncBelongsTo(foreign_key='user_id', inverse_of='posts')
+    comments: ClassVar[AsyncHasMany['AsyncComment']] = AsyncHasMany(foreign_key='post_id', inverse_of='post')
+
+
+class AsyncComment(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async Comment model with basic relations."""
+    c: ClassVar[FieldProxy] = FieldProxy()
+    __table_name__ = "comments"
+
+    id: Optional[int] = None
+    user_id: int
+    post_id: int
+    content: str
+    is_hidden: bool = False
+
+    author: ClassVar[AsyncBelongsTo['AsyncUser']] = AsyncBelongsTo(foreign_key='user_id', inverse_of='comments')
+    post: ClassVar[AsyncBelongsTo['AsyncPost']] = AsyncBelongsTo(foreign_key='post_id', inverse_of='comments')

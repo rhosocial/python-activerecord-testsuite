@@ -5,9 +5,6 @@ Mirrors test_eager_loading_scenarios_sync.py exactly for sync/async parity.
 """
 from decimal import Decimal
 
-from rhosocial.activerecord.backend.base import AsyncStorageBackend
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helper: async query-counting wrapper
@@ -84,27 +81,24 @@ class TestAsyncQueryCount:
         assert counter.select_count == 2, f"Expected 2 async queries, got {counter.select_count}"
 
     async def test_multiple_relations_count(self, async_combined_fixtures):
-        """Multiple with_: with_('orders') on 1 user → 2 queries (async).
-
-        Note: We only test a single relation here. Multi-relation eager loading
-        (e.g. with_('orders', 'posts')) is limited in async due to forward
-        reference resolution across separate fixture modules (AsyncPost in
-        async_blog_models vs AsyncUser in async_models). This is a known
-        fixture organizational limitation, not a framework bug.
-        """
-        AsyncUser, AsyncOrder, _, _, _ = async_combined_fixtures
+        """Multiple with_: with_('orders', 'posts') on 1 user → 3 queries (async)."""
+        AsyncUser, AsyncOrder, _, AsyncPost, _ = async_combined_fixtures
         user = AsyncUser(username='aqc_mr', email='aqc_mr@example.com', age=25)
         await user.save()
         for i in range(2):
             o = AsyncOrder(user_id=user.id, order_number=f'AQC-MR-{i:03d}',
                            total_amount=Decimal('10'))
             await o.save()
+            p = AsyncPost(title=f'AQC-MR-{i}', content='x', user_id=user.id,
+                          status='published')
+            await p.save()
 
         counter = self._install_counter(AsyncUser)
-        results = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).all()
+        results = await AsyncUser.query().with_('orders', 'posts').where(AsyncUser.c.id == user.id).all()
         assert len(results) == 1
         assert len(await results[0].orders()) == 2
-        assert counter.select_count == 2, f"Expected 2 async queries, got {counter.select_count}"
+        assert len(await results[0].posts()) == 2
+        assert counter.select_count == 3, f"Expected 3 queries, got {counter.select_count}"
 
     async def test_without_eager_is_nplus1(self, async_combined_fixtures):
         """Baseline: without with_() causes N+1 (1 + N queries) (async)."""
@@ -440,61 +434,133 @@ class TestAsyncBlogEagerLoading:
 
 # ---------------------------------------------------------------------------
 # 9. User.comments HasMany eager loading
-#
-# NOTE: AsyncUser.comments is defined in async_models.py as forward reference
-# AsyncHasMany['AsyncComment'], but AsyncComment is defined in async_blog_models.py
-# (import cycle prevents resolution). This is a known fixture organizational
-# limitation — the sync tests cover this path fully.  When the fixture modules
-# are consolidated, these async tests can be enabled.
 # ---------------------------------------------------------------------------
 class TestAsyncUserCommentsEager:
-    """Async: verify User.comments HasMany eager loading.
+    """Async: verify User.comments HasMany eager loading."""
 
-    NOTE: Currently skipped due to fixture module cross-reference limitation.
-    AsyncUser.comments (in async_models.py) forward-refs AsyncComment (in
-    async_blog_models.py) which cannot be resolved at runtime.
-    """
+    def _install_counter(self, model_class) -> AsyncQueryCounter:
+        return AsyncQueryCounter(model_class).install()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: AsyncComment forward ref in async_models.py cannot be resolved")
     async def test_user_comments_eager(self, async_blog_fixtures):
         """with_('comments') on User should preload HasMany comments (async)."""
-        ...
+        AsyncUser, AsyncPost, AsyncComment = async_blog_fixtures
+        user = AsyncUser(username='auc_user', email='auc_user@example.com', age=25)
+        await user.save()
+        post = AsyncPost(title='AUC Post', content='x', user_id=user.id, status='published')
+        await post.save()
+        for i in range(3):
+            c = AsyncComment(content=f'AUC {i}', user_id=user.id, post_id=post.id)
+            await c.save()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: same as above")
+        result = await AsyncUser.query().with_('comments').where(AsyncUser.c.id == user.id).one()
+        assert result is not None
+        comments = await result.comments()
+        assert len(comments) == 3
+
     async def test_user_comments_count(self, async_blog_fixtures):
         """with_('comments') → 2 queries regardless of N (async)."""
-        ...
+        AsyncUser, AsyncPost, AsyncComment = async_blog_fixtures
+        user = AsyncUser(username='auc_count', email='auc_count@example.com', age=25)
+        await user.save()
+        post1 = AsyncPost(title='AUC Post 1', content='x', user_id=user.id, status='published')
+        await post1.save()
+        post2 = AsyncPost(title='AUC Post 2', content='x', user_id=user.id, status='published')
+        await post2.save()
+        for i in range(4):
+            c = AsyncComment(content=f'AUC C {i}', user_id=user.id, post_id=post1.id)
+            await c.save()
+
+        counter = self._install_counter(AsyncUser)
+        results = await AsyncUser.query().with_('comments').where(AsyncUser.c.id == user.id).all()
+        assert len(results) == 1
+        assert len(await results[0].comments()) == 4
+        assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
 
 # ---------------------------------------------------------------------------
 # 10. Nested eager loading: posts.comments (dot-path) — end-to-end SQL execution
-#
-# NOTE: AsyncUser.posts forward-refs AsyncPost (in async_blog_models.py).
-# Same fixture module organization limitation as above.
 # ---------------------------------------------------------------------------
 class TestAsyncNestedEagerLoading:
-    """Async: verify dot-path nested eager loading.
+    """Async: verify dot-path nested eager loading."""
 
-    NOTE: Currently skipped — AsyncUser.posts forward-refs AsyncPost which
-    cannot be resolved due to cross-module fixture layout.
-    """
+    def _install_counter(self, model_class) -> AsyncQueryCounter:
+        return AsyncQueryCounter(model_class).install()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: AsyncPost forward ref in async_models.py cannot be resolved")
     async def test_nested_posts_comments(self, async_blog_fixtures):
         """with_('posts.comments') preloads HasMany(HasMany) in 3 queries (async)."""
-        ...
+        AsyncUser, AsyncPost, AsyncComment = async_blog_fixtures
+        user = AsyncUser(username='ane_user', email='ane_user@example.com', age=25)
+        await user.save()
+        for pi in range(3):
+            post = AsyncPost(title=f'ANE Post {pi}', content=f'Content {pi}',
+                             user_id=user.id, status='published')
+            await post.save()
+            for ci in range(2):
+                c = AsyncComment(content=f'ANE C {pi}-{ci}', user_id=user.id, post_id=post.id)
+                await c.save()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: same as above")
+        counter = self._install_counter(AsyncUser)
+        results = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).all()
+        assert len(results) == 1
+        posts = await results[0].posts()
+        assert len(posts) == 3
+        for p in posts:
+            assert len(await p.comments()) == 2
+        assert counter.select_count == 3, f"Expected 3 queries (user + posts + comments), got {counter.select_count}"
+
     async def test_nested_posts_comments_empty_posts(self, async_blog_fixtures):
         """User with no posts → posts() returns [], no batch for comments (async)."""
-        ...
+        AsyncUser, _, _ = async_blog_fixtures
+        user = AsyncUser(username='ane_empty', email='ane_empty@example.com', age=25)
+        await user.save()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: same as above")
+        result = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).one()
+        assert result is not None
+        assert await result.posts() == []
+
     async def test_nested_posts_comments_no_comments(self, async_blog_fixtures):
         """Post with no comments → comments() returns [] for each post (async)."""
-        ...
+        AsyncUser, AsyncPost, _ = async_blog_fixtures
+        user = AsyncUser(username='ane_nocom', email='ane_nocom@example.com', age=25)
+        await user.save()
+        for pi in range(2):
+            post = AsyncPost(title=f'ANE Post {pi}', content=f'Content {pi}',
+                             user_id=user.id, status='published')
+            await post.save()
 
-    @pytest.mark.skip(reason="Known fixture module limitation: same as above")
+        result = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).one()
+        assert result is not None
+        posts = await result.posts()
+        assert len(posts) == 2
+        for p in posts:
+            assert await p.comments() == []
+
     async def test_nested_posts_comments_eager_vs_lazy(self, async_blog_fixtures):
         """Eager dot-path and lazy produce identical data (async)."""
-        ...
+        AsyncUser, AsyncPost, AsyncComment = async_blog_fixtures
+        user = AsyncUser(username='ane_parity', email='ane_parity@example.com', age=30)
+        await user.save()
+        for pi in range(2):
+            post = AsyncPost(title=f'ANE P {pi}', content=f'C {pi}',
+                             user_id=user.id, status='published')
+            await post.save()
+            for ci in range(2):
+                c = AsyncComment(content=f'ANE {pi}-{ci}', user_id=user.id, post_id=post.id)
+                await c.save()
+
+        eager = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).one()
+        eager_posts = sorted(await eager.posts(), key=lambda p: p.id)
+        eager_comments = []
+        for p in eager_posts:
+            eager_comments.extend(await p.comments())
+
+        lazy_user = await AsyncUser.find_one(user.id)
+        lazy_posts = sorted(await lazy_user.posts(), key=lambda p: p.id)
+        lazy_comments = []
+        for p in lazy_posts:
+            lazy_comments.extend(await p.comments())
+
+        assert len(eager_comments) == len(lazy_comments)
+        for ec, lc in zip(sorted(eager_comments, key=lambda c: c.id),
+                          sorted(lazy_comments, key=lambda c: c.id)):
+            assert ec.content == lc.content

@@ -87,6 +87,22 @@ class TestAsyncModifierOverwrite:
         assert configs["posts"].query_modifier is second_modifier
 
     @pytest.mark.asyncio
+    async def test_longer_path_overwrites_shorter_path(self, async_user_class):
+        """Longer path should overwrite shorter path when adding new nested."""
+        def short_modifier(q):
+            return q
+
+        def long_modifier(q):
+            return q
+
+        query = async_user_class.query()
+        query.with_(("posts", short_modifier), ("posts.comments", long_modifier))
+
+        configs = query.get_relation_configs()
+        assert configs["posts"].query_modifier is long_modifier
+        assert configs["posts.comments"].query_modifier is long_modifier
+
+    @pytest.mark.asyncio
     async def test_correct_order_preserves_modifiers(self, async_user_class):
         """Correct order (child before parent) preserves modifiers."""
         def parent_modifier(q):
@@ -102,3 +118,52 @@ class TestAsyncModifierOverwrite:
         configs = query.get_relation_configs()
         assert configs["posts"].query_modifier is parent_modifier
         assert configs["posts.comments"].query_modifier is child_modifier
+
+
+class TestAsyncModifierDocumentationExamples:
+    """Async tests for documentation examples."""
+
+    @pytest.mark.asyncio
+    async def test_documentation_example_expansion(self, async_user_class):
+        """Test documentation example: expansion rule."""
+        def modifier(q):
+            return q
+
+        query = async_user_class.query()
+        query.with_(("posts.comments", modifier))
+
+        configs = query.get_relation_configs()
+        assert configs["posts"].query_modifier is None
+        assert configs["posts.comments"].query_modifier is modifier
+
+    @pytest.mark.asyncio
+    async def test_documentation_example_overwrite(self, async_user_class):
+        """Test documentation example: overwrite rule."""
+        def first(q):
+            return q
+
+        def second(q):
+            return q
+
+        query = async_user_class.query()
+        query.with_(("posts", first))
+        query.with_(("posts", second))
+
+        configs = query.get_relation_configs()
+        assert configs["posts"].query_modifier is second
+
+    @pytest.mark.asyncio
+    async def test_documentation_correct_order(self, async_user_class):
+        """Test documentation example: correct order (child before parent)."""
+        def posts_mod(q):
+            return q
+
+        def comments_mod(q):
+            return q
+
+        query = async_user_class.query()
+        query.with_(("posts.comments", comments_mod), ("posts", posts_mod))
+
+        configs = query.get_relation_configs()
+        assert configs["posts"].query_modifier is posts_mod
+        assert configs["posts.comments"].query_modifier is comments_mod

@@ -110,6 +110,23 @@ class TestAsyncJsonDerivedField:
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
     @pytest.mark.asyncio
+    async def test_json_derived_with_relation(self, async_user_class):
+        """JSON derived fields should work with relation queries."""
+        user = async_user_class(
+            name="Frank",
+            email="frank@example.com",
+            settings='{"language": "ja", "theme": "dark"}'
+        )
+        await user.save()
+
+        results = await async_user_class.find_all(derived=["language", "theme"])
+        assert len(results) == 1
+        assert results[0].language == "ja"
+        assert results[0].theme == "dark"
+
+    @requires_protocol(JSONSupport, 'supports_json_type')
+    @requires_functions('json_extract_text')
+    @pytest.mark.asyncio
     async def test_json_derived_all(self, async_user_class):
         """derived='all' should include JSON derived fields."""
         user = async_user_class(
