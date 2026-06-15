@@ -1,3 +1,17 @@
+## [v1.0.0.dev15] - 2026-06-15
+
+
+### Internal
+
+- Derived field test contracts, fixtures, and async coverage
+  Bulk operations test contracts and benchmark comparisons
+  Eager loading test coverage expansion with nested and async parity
+  Profile model fixtures for sync/async parity testing
+  Synchronous/Asynchronous descriptor mixing prohibition
+  Dialect mixins refactored into directory-based modules
+  Update pytest dependency constraints for broader compatibility ([#18](https://github.com/rhosocial/python-activerecord-testsuite/issues/18))
+
+
 ## [v1.0.0.dev14] - 2026-05-29
 
 
