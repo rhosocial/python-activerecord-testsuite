@@ -87,7 +87,9 @@ def test_common_sql_standard_features(order_fixtures):
     assert status_counts['inactive'] == 2
 
 
-@pytest.mark.requires_protocol(('rhosocial.activerecord.interface.IQuery', 'supports_fulltext_search'))
+@pytest.mark.requires_protocol(
+    ('rhosocial.activerecord.backend.dialect.protocols.IndexSupport',
+     'supports_fulltext_search'))
 def test_fulltext_search_compatibility(annotated_query_fixtures):
     """
     Test full-text search compatibility across databases (requires protocol support)
