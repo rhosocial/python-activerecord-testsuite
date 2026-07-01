@@ -74,7 +74,9 @@ def skip_test_if_protocol_unsupported(model_class, protocol_class, method_name=N
 
     Args:
         model_class: A provider-configured model class
-        protocol_class: The protocol class to check for (e.g., WindowFunctionSupport), or None for no specific protocol
+        protocol_class: The protocol class to check for (e.g., WindowFunctionSupport),
+            or a fully-qualified dotted string (e.g. 'rhosocial.activerecord.backend.dialect.protocols.IndexSupport'),
+            or None for no specific protocol
         method_name: Optional specific method name to check for (e.g., 'supports_window_functions')
 
     Raises:
@@ -82,10 +84,20 @@ def skip_test_if_protocol_unsupported(model_class, protocol_class, method_name=N
         ValueError: If protocol_class is not provided and not None (when no specific protocol is required)
     """
     if protocol_class is None:
-        # If no specific protocol is required, just return without skipping
         return
 
-    # Get the backend from the model
+    # Resolve string protocol_class to actual class
+    if isinstance(protocol_class, str):
+        import importlib
+        try:
+            module_path, class_name = protocol_class.rsplit('.', 1)
+            module = importlib.import_module(module_path)
+            protocol_class = getattr(module, class_name)
+        except (ImportError, AttributeError, ValueError) as e:
+            pytest.skip(
+                f"Skipping test - unable to resolve protocol class '{protocol_class}': {e}"
+            )
+
     backend = get_backend_from_model(model_class)
 
     # Check if backend implements the required protocol
