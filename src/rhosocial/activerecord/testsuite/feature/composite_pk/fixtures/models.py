@@ -6,7 +6,13 @@ from pydantic import Field
 
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.field import CompositePKMixin, IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.base.fields import UseColumn
 from rhosocial.activerecord.base.field_proxy import FieldProxy
+
+try:
+    from typing import Annotated
+except ImportError:
+    from typing_extensions import Annotated
 
 
 class OrderItem(CompositePKMixin, ActiveRecord):
@@ -75,3 +81,26 @@ class AsyncOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
 
     id: Optional[int] = None
     total: Decimal = Decimal("0.00")
+
+
+class MappedOrderItem(CompositePKMixin, ActiveRecord):
+    """Composite PK with UseColumn mapping — Python field names differ from DB column names."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class AsyncMappedOrderItem(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of MappedOrderItem."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
