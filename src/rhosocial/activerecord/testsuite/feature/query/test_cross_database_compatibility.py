@@ -94,6 +94,13 @@ def test_fulltext_search_compatibility(annotated_query_fixtures):
     """
     Test full-text search compatibility across databases (requires protocol support)
     
+    The ``supports_fulltext_search`` capability gate is the query-side notion of
+    fulltext support, distinct from ``supports_fulltext_index`` (DDL). The test
+    is therefore gated on the query capability so that backends like PostgreSQL,
+    which can do fulltext searching via ``tsvector``/``tsquery`` without a
+    MySQL-style ``CREATE FULLTEXT INDEX``, are still exercised here — while
+    genuinely unsupported backends skip the test cleanly.
+    
     This test verifies that full-text search functionality works consistently
     when the database backend supports full-text indexing and search.
     """

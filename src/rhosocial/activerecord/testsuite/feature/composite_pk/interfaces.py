@@ -22,6 +22,10 @@ class ICompositePKProvider(ABC):
         pass
 
     @abstractmethod
+    def setup_mapped_order_item_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        pass
+
+    @abstractmethod
     async def setup_async_order_item_model(self, scenario_name: str) -> Type[ActiveRecord]:
         pass
 
@@ -31,6 +35,10 @@ class ICompositePKProvider(ABC):
 
     @abstractmethod
     async def setup_async_order_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        pass
+
+    @abstractmethod
+    async def setup_async_mapped_order_item_model(self, scenario_name: str) -> Type[ActiveRecord]:
         pass
 
     @abstractmethod
