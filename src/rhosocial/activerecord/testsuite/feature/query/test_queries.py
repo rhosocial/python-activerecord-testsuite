@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_sync_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_queries.py
 """
 Synchronous query tests
 
@@ -9,7 +9,7 @@ This module contains tests for synchronous query operations including:
 - Sync basic operations (all, one, first, exists)
 - Sync JOIN operations
 
-This file is the synchronous counterpart to test_async_queries.py,
+This file is the synchronous counterpart to test_queries_async.py,
 following the sync/async parity principle of the framework.
 """
 import pytest

@@ -12,7 +12,8 @@ from typing import ClassVar
 from pydantic import BaseModel
 
 from rhosocial.activerecord.relation.base import RelationManagementMixin
-from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMany
+from rhosocial.activerecord.relation.descriptors import BelongsTo, HasOne, HasMany, DefaultIRelationLoader
+from rhosocial.activerecord.relation.cache import CacheConfig
 
 
 class TestRelationDescriptors:
@@ -99,3 +100,34 @@ class TestRelationDescriptors:
         assert isinstance(relation, HasOne)
         assert relation.foreign_key == "author_id"
         assert relation.inverse_of == "author"
+
+    def test_descriptor_default_loader(self):
+        """When no loader is supplied, the descriptor creates DefaultIRelationLoader."""
+        desc = BelongsTo(foreign_key="user_id")
+        assert isinstance(desc._loader, DefaultIRelationLoader)
+
+    def test_descriptor_custom_cache_config(self):
+        """Custom CacheConfig (disabled, ttl=60, max_size=10) is stored correctly."""
+        config = CacheConfig(enabled=False, ttl=60, max_size=10)
+        desc = BelongsTo(foreign_key="user_id", cache_config=config)
+        assert desc._cache_config is config
+        assert desc._cache_config.enabled is False
+        assert desc._cache_config.ttl == 60
+        assert desc._cache_config.max_size == 10
+
+    def test_descriptor_default_cache_config(self):
+        """No cache_config supplied -> default CacheConfig (enabled=True, ttl=300, max_size=1000)."""
+        desc = BelongsTo(foreign_key="user_id")
+        assert desc._cache_config.enabled is True
+        assert desc._cache_config.ttl == 300
+        assert desc._cache_config.max_size == 1000
+
+    def test_descriptor_foreign_key_type_error(self):
+        """Passing a non-string foreign_key raises TypeError."""
+        with pytest.raises(TypeError, match="foreign_key must be a string or tuple of strings"):
+            BelongsTo(foreign_key=123)
+
+    def test_descriptor_cache_config_type_error(self):
+        """Passing a non-CacheConfig object raises TypeError."""
+        with pytest.raises(TypeError, match="cache_config must be instance of CacheConfig"):
+            BelongsTo(foreign_key="user_id", cache_config="invalid")

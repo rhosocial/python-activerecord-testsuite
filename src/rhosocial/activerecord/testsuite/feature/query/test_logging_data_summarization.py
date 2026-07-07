@@ -172,104 +172,6 @@ def _assert_sensitive_payload_summary(post, samples):
     assert payload == before
 
 
-class TestLoggingDataSummarization:
-    def test_long_web_content_is_truncated_in_summary_not_storage(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        samples = _sample_contents()
-        _assert_sample_integrity(samples)
-
-        user = _create_user(User)
-        _create_posts(Post, user.id, samples)
-
-        _assert_round_trip_and_summary(Post, samples)
-
-    def test_sensitive_fields_are_masked_in_query_payload(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        samples = _sample_contents()
-        user = _create_user(User)
-        posts = _create_posts(Post, user.id, samples)
-
-        _assert_sensitive_payload_summary(posts[0], samples)
-        assert _find_post(Post, "HTML sample").content == samples["html_content"]
-
-    def test_json_fixture_preserves_sample_json_round_trip(self, json_user_fixture):
-        JsonUser = json_user_fixture
-        json_content = _read_sample("jsonplaceholder_posts.json")
-        original_data = json.loads(json_content)
-        user = JsonUser(
-            username="json-content-user",
-            email="json-content@example.com",
-            age=28,
-            preferences=json_content,
-        )
-        user.save()
-
-        results = JsonUser.query().where(JsonUser.c.username == "json-content-user").all()
-        assert len(results) == 1
-        found = results[0]
-
-        # Backends with native JSON types return dict/list; normalize for comparison
-        retrieved_data = json.loads(_normalize_json_value(found.preferences))
-        assert retrieved_data == original_data
-        assert retrieved_data[0]["userId"] == 1
-
-        prefs_str = _normalize_json_value(found.preferences)
-        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
-        _assert_truncated(summary["preferences"], prefs_str)
-
-    def test_unicode_multilingual_content_round_trip(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        samples = _unicode_sample_contents()
-        _assert_unicode_integrity(samples)
-
-        user = _create_user(User)
-        _create_unicode_posts(Post, user.id, samples)
-
-        _assert_unicode_round_trip(Post, samples)
-
-    def test_unicode_emoji_burst_truncated_in_summary(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        user = _create_user(User)
-        _assert_unicode_emoji_round_trip(Post)
-
-    def test_sql_injection_payloads_as_content_round_trip(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        user = _create_user(User)
-        content, _ = _create_injection_payload_post(Post, user.id)
-        _assert_injection_payloads_preserved(Post, content)
-
-    def test_multilingual_text_preserved_round_trip(self, blog_fixtures):
-        User, Post, _ = blog_fixtures
-        user = _create_user(User)
-        _assert_multilingual_text_round_trip(Post)
-
-    def test_unicode_json_fixture_json_field_round_trip(self, json_user_fixture):
-        JsonUser = json_user_fixture
-        json_content = _read_sample("unicode_multilingual.json")
-        original_data = json.loads(json_content)
-        user = JsonUser(
-            username="unicode-json-user",
-            email="unicode-json@example.com",
-            age=28,
-            preferences=json_content,
-        )
-        user.save()
-
-        results = JsonUser.query().where(JsonUser.c.username == "unicode-json-user").all()
-        assert len(results) == 1
-        found = results[0]
-
-        # Backends with native JSON types return dict/list; normalize for comparison
-        retrieved = json.loads(_normalize_json_value(found.preferences))
-        assert retrieved == original_data
-        assert retrieved[0]["greetings"]["zh"] == "你好，世界！"
-        assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!"
-
-        prefs_str = _normalize_json_value(found.preferences)
-        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
-        _assert_truncated(summary["preferences"], prefs_str)
-
-
 def _assert_unicode_integrity(samples):
     unicode_html = samples["unicode_html"]
     unicode_xml = samples["unicode_xml"]
@@ -394,197 +296,99 @@ def _assert_multilingual_text_round_trip(Post):
         assert len(found.content) == len(text)
 
 
-async def _async_create_user(User):
-    user = User(username="async-web-content-user", email="async-web-content@example.com", age=30)
-    await user.save()
-    return user
-
-
-async def _async_create_posts(Post, user_id: int, samples):
-    posts = []
-    for title, key in (
-        ("HTML sample", "html_content"),
-        ("XML sample", "xml_content"),
-        ("JSON sample", "json_content"),
-    ):
-        post = Post(user_id=user_id, title=title, content=samples[key], status="published")
-        await post.save()
-        posts.append(post)
-    return posts
-
-
-async def _async_find_post(Post, title: str):
-    results = await Post.query().where(Post.c.title == title).all()
-    assert len(results) == 1
-    return results[0]
-
-
-async def _async_create_unicode_posts(Post, user_id: int, samples):
-    posts = []
-    for title, key in (
-        ("Unicode HTML sample", "unicode_html"),
-        ("Unicode XML sample", "unicode_xml"),
-        ("Unicode JSON sample", "unicode_json"),
-    ):
-        post = Post(user_id=user_id, title=title, content=samples[key], status="published")
-        await post.save()
-        posts.append(post)
-    return posts
-
-
-async def _async_assert_unicode_round_trip(Post, samples):
-    config = _make_logging_config()
-    payload = {}
-
-    for title, key in (
-        ("Unicode HTML sample", "unicode_html"),
-        ("Unicode XML sample", "unicode_xml"),
-        ("Unicode JSON sample", "unicode_json"),
-    ):
-        found = await _async_find_post(Post, title)
-        original = samples[key]
-        assert found.content == original
-        assert len(found.content) == len(original)
-        payload[key] = found.content
-
-    before = copy.deepcopy(payload)
-    summary = config.summarize_data(payload)
-
-    for key, original in payload.items():
-        _assert_truncated(summary[key], original)
-
-    assert payload == before
-
-
-async def _async_create_injection_payload_post(Post, user_id: int):
-    payloads = [
-        "'; DROP TABLE users--",
-        "admin' OR '1'='1",
-        "' UNION SELECT * FROM information_schema.tables--",
-        "x'; WAITFOR DELAY '0:0:5'--",
-        "'; EXEC xp_cmdshell 'dir'--",
-        "1' AND SLEEP(5)--",
-        "1' AND BENCHMARK(10000000,MD5(1))--",
-    ]
-    content = "\n---PAYLOAD-SEPARATOR---\n".join(payloads)
-    post = Post(user_id=user_id, title="SQL injection payloads", content=content, status="published")
-    await post.save()
-    return content, post
-
-
-async def _async_assert_multilingual_text_round_trip(Post):
-    texts = {
-        "Chinese": "春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。",
-        "Arabic": "هذا النص باللغة العربية يحتوي على اختبار شامل للترجمة",
-        "Hebrew": "זוהי דוגמה לטקסט בעברית שנכתב מימין לשמאל",
-        "Hindi": "यह हिन्दी भाषा में लिखा गया पाठ है। देवनागरी लिपि में",
-        "Thai": "นี่คือข้อความภาษาไทย ภาษาไทยมีพยัญชนะ สระ วรรณยุกต์",
-        "Russian": "Съешь ещё этих мягких французских булок да выпей чаю",
-        "Korean": "한글은 세종대왕이 창제한 과학적인 문자입니다",
-        "Japanese": "いろはにほへと ちりぬるを わかよたれそ つねならむ",
-    }
-    for lang, text in texts.items():
-        post = Post(user_id=1, title=f"Multilingual-{lang}", content=text, status="published")
-        await post.save()
-
-        found = await _async_find_post(Post, f"Multilingual-{lang}")
-        assert found.content == text
-        assert len(found.content) == len(text)
-
-
-async def _async_assert_emoji_round_trip(Post):
-    long_emoji = "😀" * 200
-    post = Post(user_id=1, title="Emoji burst", content=long_emoji, status="published")
-    await post.save()
-    results = await Post.query().where(Post.c.title == "Emoji burst").all()
-    assert len(results) == 1
-    found = results[0]
-    assert found.content == long_emoji
-    assert len(found.content) == len(long_emoji)
-
-    config = _make_logging_config()
-    summary = config.summarize_data({"content": found.content})
-    _assert_truncated(summary["content"], long_emoji)
-    assert found.content == long_emoji
-
-
-async def _async_assert_round_trip_and_summary(Post, samples):
-    config = _make_logging_config()
-    payload = {}
-
-    for title, key in (
-        ("HTML sample", "html_content"),
-        ("XML sample", "xml_content"),
-        ("JSON sample", "json_content"),
-    ):
-        found = await _async_find_post(Post, title)
-        original = samples[key]
-        assert found.content == original
-        assert len(found.content) == len(original)
-        payload[key] = found.content
-
-    before = copy.deepcopy(payload)
-    summary = config.summarize_data(payload)
-
-    for key, original in payload.items():
-        _assert_truncated(summary[key], original)
-
-    assert payload == before
-    found_json = await _async_find_post(Post, "JSON sample")
-    assert json.loads(found_json.content)[0]["userId"] == 1
-
-
-class TestAsyncLoggingDataSummarization:
-    @pytest.mark.asyncio
-    async def test_long_web_content_is_truncated_in_summary_not_storage(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
+class TestLoggingDataSummarization:
+    def test_long_web_content_is_truncated_in_summary_not_storage(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
         samples = _sample_contents()
         _assert_sample_integrity(samples)
 
-        user = await _async_create_user(User)
-        await _async_create_posts(Post, user.id, samples)
+        user = _create_user(User)
+        _create_posts(Post, user.id, samples)
 
-        await _async_assert_round_trip_and_summary(Post, samples)
+        _assert_round_trip_and_summary(Post, samples)
 
-    @pytest.mark.asyncio
-    async def test_sensitive_fields_are_masked_in_query_payload(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
+    def test_sensitive_fields_are_masked_in_query_payload(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
         samples = _sample_contents()
-        user = await _async_create_user(User)
-        posts = await _async_create_posts(Post, user.id, samples)
+        user = _create_user(User)
+        posts = _create_posts(Post, user.id, samples)
 
         _assert_sensitive_payload_summary(posts[0], samples)
-        found_html = await _async_find_post(Post, "HTML sample")
-        assert found_html.content == samples["html_content"]
+        assert _find_post(Post, "HTML sample").content == samples["html_content"]
 
-    @pytest.mark.asyncio
-    async def test_unicode_multilingual_content_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
+    def test_json_fixture_preserves_sample_json_round_trip(self, json_user_fixture):
+        JsonUser = json_user_fixture
+        json_content = _read_sample("jsonplaceholder_posts.json")
+        original_data = json.loads(json_content)
+        user = JsonUser(
+            username="json-content-user",
+            email="json-content@example.com",
+            age=28,
+            preferences=json_content,
+        )
+        user.save()
+
+        results = JsonUser.query().where(JsonUser.c.username == "json-content-user").all()
+        assert len(results) == 1
+        found = results[0]
+
+        # Backends with native JSON types return dict/list; normalize for comparison
+        retrieved_data = json.loads(_normalize_json_value(found.preferences))
+        assert retrieved_data == original_data
+        assert retrieved_data[0]["userId"] == 1
+
+        prefs_str = _normalize_json_value(found.preferences)
+        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
+        _assert_truncated(summary["preferences"], prefs_str)
+
+    def test_unicode_multilingual_content_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
         samples = _unicode_sample_contents()
         _assert_unicode_integrity(samples)
 
-        user = await _async_create_user(User)
-        await _async_create_unicode_posts(Post, user.id, samples)
+        user = _create_user(User)
+        _create_unicode_posts(Post, user.id, samples)
 
-        await _async_assert_unicode_round_trip(Post, samples)
+        _assert_unicode_round_trip(Post, samples)
 
-    @pytest.mark.asyncio
-    async def test_unicode_emoji_burst_truncated_in_summary(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        await _async_assert_emoji_round_trip(Post)
+    def test_unicode_emoji_burst_truncated_in_summary(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        _assert_unicode_emoji_round_trip(Post)
 
-    @pytest.mark.asyncio
-    async def test_sql_injection_payloads_as_content_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        content, _ = await _async_create_injection_payload_post(Post, user.id)
-        found = await _async_find_post(Post, "SQL injection payloads")
-        assert found.content == content
-        assert len(found.content) == len(content)
+    def test_sql_injection_payloads_as_content_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        content, _ = _create_injection_payload_post(Post, user.id)
+        _assert_injection_payloads_preserved(Post, content)
 
-    @pytest.mark.asyncio
-    async def test_multilingual_text_preserved_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        await _async_assert_multilingual_text_round_trip(Post)
+    def test_multilingual_text_preserved_round_trip(self, blog_fixtures):
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        _assert_multilingual_text_round_trip(Post)
+
+    def test_unicode_json_fixture_json_field_round_trip(self, json_user_fixture):
+        JsonUser = json_user_fixture
+        json_content = _read_sample("unicode_multilingual.json")
+        original_data = json.loads(json_content)
+        user = JsonUser(
+            username="unicode-json-user",
+            email="unicode-json@example.com",
+            age=28,
+            preferences=json_content,
+        )
+        user.save()
+
+        results = JsonUser.query().where(JsonUser.c.username == "unicode-json-user").all()
+        assert len(results) == 1
+        found = results[0]
+
+        # Backends with native JSON types return dict/list; normalize for comparison
+        retrieved = json.loads(_normalize_json_value(found.preferences))
+        assert retrieved == original_data
+        assert retrieved[0]["greetings"]["zh"] == "你好，世界！"
+        assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!"
+
+        prefs_str = _normalize_json_value(found.preferences)
+        summary = _make_logging_config().summarize_data({"preferences": prefs_str})
+        _assert_truncated(summary["preferences"], prefs_str)
