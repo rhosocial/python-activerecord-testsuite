@@ -3,8 +3,6 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
-
-
 class TestCTEQueryCompositePK:
     @pytest.fixture
     def seeded(self, order_item_class):
@@ -59,29 +57,3 @@ class TestCTEQueryCompositePK:
         from rhosocial.activerecord.query import CTEQuery
         with pytest.raises(UnsupportedFeatureError):
             CTEQuery(backend)
-
-
-class TestAsyncCTEQueryCompositePK:
-    @pytest.mark.asyncio
-    async def test_async_cte_aggregate(self, async_order_item_class):
-        backend = async_order_item_class.backend()
-        dialect = backend.dialect
-        if not dialect.supports_basic_cte():
-            pytest.skip("Backend does not support CTE")
-
-        items = [
-            async_order_item_class(order_id=1, product_id=101, quantity=2),
-            async_order_item_class(order_id=1, product_id=102, quantity=1),
-        ]
-        await async_order_item_class.bulk_create(items)
-
-        from rhosocial.activerecord.query import AsyncCTEQuery
-        from rhosocial.activerecord.backend.expression import Column
-
-        base = async_order_item_class.query()
-        cte = AsyncCTEQuery(backend)
-        cte.with_cte("order_summary", base)
-        result = await cte.from_cte("order_summary").select(
-            Column(dialect, "order_id")
-        ).where(Column(dialect, "order_id") == 1).aggregate()
-        assert len(result) == 2

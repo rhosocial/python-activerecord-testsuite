@@ -15,7 +15,7 @@ BATCH_SIZE = 1000
 @pytest.mark.benchmark_crud
 @pytest.mark.benchmark_sync
 @pytest.mark.benchmark_write
-def test_sequential_insert_sync(benchmark, crud_sync_context):
+def test_sequential_insert(benchmark, crud_sync_context):
     payloads = make_user_payloads(BATCH_SIZE)
     inserted = benchmark(insert_sequential, crud_sync_context.model_class, payloads)
     assert len(inserted) == BATCH_SIZE
@@ -25,7 +25,7 @@ def test_sequential_insert_sync(benchmark, crud_sync_context):
 @pytest.mark.benchmark_crud
 @pytest.mark.benchmark_sync
 @pytest.mark.benchmark_write
-def test_bulk_create_sync(benchmark, crud_sync_context):
+def test_bulk_create(benchmark, crud_sync_context):
     payloads = make_user_payloads(BATCH_SIZE)
     result = benchmark(bulk_create_batch, crud_sync_context.model_class, payloads)
     assert len(result) == BATCH_SIZE

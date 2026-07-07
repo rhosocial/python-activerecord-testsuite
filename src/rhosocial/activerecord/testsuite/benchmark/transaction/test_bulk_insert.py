@@ -11,7 +11,7 @@ from rhosocial.activerecord.testsuite.benchmark.transaction.workloads import (
 @pytest.mark.benchmark_transaction
 @pytest.mark.benchmark_sync
 @pytest.mark.benchmark_write
-def test_bulk_insert_transaction_sync(benchmark, transaction_sync_context):
+def test_bulk_insert_transaction(benchmark, transaction_sync_context):
     payloads = transaction_sync_context.payloads[:10]
     inserted = benchmark(
         bulk_insert_transaction,

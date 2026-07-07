@@ -264,7 +264,6 @@ async def async_aggregate_query_task(ctx: TaskContext, conn_params: Dict) -> Dic
 # ─────────────────────────────────────────────────────────────────────────────
 # Test Classes - Synchronous
 # ─────────────────────────────────────────────────────────────────────────────
-
 class TestParallelQueries:
     """Test parallel query operations with synchronous models."""
 
@@ -352,77 +351,3 @@ class TestParallelQueries:
             results = [f.result(timeout=60) for f in futures]
 
         assert len(results) == len(order_ids)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Test Classes - Asynchronous
-# ─────────────────────────────────────────────────────────────────────────────
-
-class TestAsyncParallelQueries:
-    """Test parallel query operations with asynchronous models."""
-
-    @pytest.mark.asyncio
-    async def test_parallel_count_queries(self, async_order_fixtures_for_worker):
-        """Test parallel async count queries."""
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
-        conn_params = async_order_fixtures_for_worker['conn_params']
-
-        if conn_params is None:
-            pytest.skip("Provider does not implement WorkerTestProtocol")
-
-        with WorkerPool(n_workers=4) as pool:
-            futures = [
-                pool.submit(async_count_users_task, conn_params)
-                for _ in range(10)
-            ]
-            results = [f.result(timeout=60) for f in futures]
-
-        assert len(set(results)) == 1
-
-    @pytest.mark.asyncio
-    async def test_parallel_order_queries_by_user(self, async_order_fixtures_for_worker):
-        """Test parallel async queries for orders by user."""
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
-        conn_params = async_order_fixtures_for_worker['conn_params']
-
-        if conn_params is None:
-            pytest.skip("Provider does not implement WorkerTestProtocol")
-
-        # Use the same event loop as the fixture
-        users = await AsyncUser.query().limit(5).all()
-        user_ids = [u.id for u in users]
-
-        with WorkerPool(n_workers=4) as pool:
-            futures = [
-                pool.submit(async_query_orders_by_user_task, uid, conn_params)
-                for uid in user_ids
-            ]
-            results = [f.result(timeout=60) for f in futures]
-
-        assert len(results) == len(user_ids)
-        assert all(isinstance(r, list) for r in results)
-
-    @pytest.mark.asyncio
-    async def test_parallel_aggregate_queries(self, async_order_fixtures_for_worker):
-        """Test parallel async aggregate queries."""
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
-        conn_params = async_order_fixtures_for_worker['conn_params']
-
-        if conn_params is None:
-            pytest.skip("Provider does not implement WorkerTestProtocol")
-
-        with WorkerPool(n_workers=4) as pool:
-            futures = [
-                pool.submit(async_aggregate_query_task, conn_params)
-                for _ in range(5)
-            ]
-            results = [f.result(timeout=60) for f in futures]
-
-        totals = {r['total'] for r in results}
-        counts = {r['count'] for r in results}
-        assert len(totals) == 1
-        assert len(counts) == 1
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

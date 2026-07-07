@@ -4,8 +4,6 @@ import pytest
 
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression import ComparisonPredicate, Literal
-
-
 class TestActiveQueryCompositePK:
     @pytest.fixture
     def seeded(self, order_item_class):
@@ -54,27 +52,3 @@ class TestActiveQueryCompositePK:
         result = order_item_class.query().explain().aggregate()
         assert isinstance(result, list)
         assert len(result) > 0
-
-
-class TestAsyncActiveQueryCompositePK:
-    @pytest.mark.asyncio
-    async def test_async_where_pk_predicate(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        await item.save()
-        predicate = async_order_item_class._build_pk_where_predicate(
-            {"order_id": 1, "product_id": 101}
-        )
-        result = await async_order_item_class.query().where(predicate).one()
-        assert result is not None
-        assert result.order_id == 1
-        assert result.product_id == 101
-
-    @pytest.mark.asyncio
-    async def test_async_count(self, async_order_item_class):
-        items = [
-            async_order_item_class(order_id=1, product_id=101, quantity=2),
-            async_order_item_class(order_id=1, product_id=102, quantity=1),
-        ]
-        await async_order_item_class.bulk_create(items)
-        count = await async_order_item_class.query().count()
-        assert count == 2

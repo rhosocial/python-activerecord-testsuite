@@ -1,4 +1,4 @@
-# tests/rhosocial/activerecord_test/feature/query/test_async_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_queries_async.py
 """
 Async query tests
 

@@ -13,7 +13,7 @@ from rhosocial.activerecord.testsuite.benchmark.mixin.workloads import (
 @pytest.mark.benchmark_mixin
 @pytest.mark.benchmark_sync
 @pytest.mark.benchmark_write
-def test_timestamp_insert_sync(benchmark, mixin_sync_context):
+def test_timestamp_insert(benchmark, mixin_sync_context):
     payload = dict(mixin_sync_context.payloads[0])
     payload["username"] = "bench_timestamp_insert_sync"
     inserted = benchmark(timestamp_insert, mixin_sync_context.model_class, payload)
@@ -25,7 +25,7 @@ def test_timestamp_insert_sync(benchmark, mixin_sync_context):
 @pytest.mark.benchmark_mixin
 @pytest.mark.benchmark_sync
 @pytest.mark.benchmark_write
-def test_timestamp_update_sync(benchmark, mixin_sync_context):
+def test_timestamp_update(benchmark, mixin_sync_context):
     counter = {"value": 0}
 
     def update_seed_row():

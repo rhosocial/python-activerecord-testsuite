@@ -3,8 +3,6 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.backend.errors import RecordNotFound
-
-
 class TestCompositePKMeta:
     def test_is_composite_pk(self, order_item_class):
         assert order_item_class.is_composite_pk() is True
@@ -25,7 +23,6 @@ class TestCompositePKMeta:
 
     def test_pk_auto_generated(self, order_item_class):
         assert order_item_class.__pk_auto_generated__ is False
-
 
 class TestCompositePKInsert:
     def test_insert_and_is_new_record(self, order_item_class):
@@ -59,7 +56,6 @@ class TestCompositePKInsert:
         item.save()
         item.order_id = None
         assert item.is_new_record is True
-
 
 class TestCompositePKFind:
     @pytest.fixture
@@ -116,7 +112,6 @@ class TestCompositePKFind:
         assert found is not None
         assert found.total == Decimal("50.00")
 
-
 class TestCompositePKUpdateDelete:
     @pytest.fixture
     def seeded_item(self, order_item_class):
@@ -150,7 +145,6 @@ class TestCompositePKUpdateDelete:
         assert found is not None
         assert found.quantity == 5
 
-
 class TestCompositePKMethods:
     def test_get_pk_value(self, order_item_class):
         item = order_item_class(order_id=1, product_id=101, quantity=3)
@@ -169,7 +163,6 @@ class TestCompositePKMethods:
     def test_build_pk_where_predicate_missing_col(self, order_item_class):
         with pytest.raises(ValueError):
             order_item_class._build_pk_where_predicate({"order_id": 1})
-
 
 class TestCompositePKBulk:
     @pytest.fixture
@@ -200,62 +193,6 @@ class TestCompositePKBulk:
     def test_bulk_empty_list(self, order_item_class):
         order_item_class.bulk_delete([])
         order_item_class.bulk_update([], fields=["quantity"])
-
-
-class TestAsyncCompositePKCRUD:
-    @pytest.mark.asyncio
-    async def test_async_insert(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        assert item.is_new_record is True
-        rows = await item.save()
-        assert rows == 1
-        assert item.is_new_record is False
-
-    @pytest.mark.asyncio
-    async def test_async_find_one(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        await item.save()
-        found = await async_order_item_class.find_one({"order_id": 1, "product_id": 101})
-        assert found is not None
-
-    @pytest.mark.asyncio
-    async def test_async_find_one_tuple(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        await item.save()
-        found = await async_order_item_class.find_one((1, 101))
-        assert found is not None
-
-    @pytest.mark.asyncio
-    async def test_async_update(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        await item.save()
-        item.quantity = 10
-        rows = await item.save()
-        assert rows == 1
-        await item.refresh()
-        assert item.quantity == 10
-
-    @pytest.mark.asyncio
-    async def test_async_delete(self, async_order_item_class):
-        item = async_order_item_class(order_id=1, product_id=101, quantity=3)
-        await item.save()
-        rows = await item.delete()
-        assert rows == 1
-        found = await async_order_item_class.find_one((1, 101))
-        assert found is None
-
-    @pytest.mark.asyncio
-    async def test_async_is_composite_pk(self, async_order_item_class):
-        assert async_order_item_class.is_composite_pk() is True
-
-    @pytest.mark.asyncio
-    async def test_async_backward_compat(self, async_order_class):
-        order = async_order_class(total=Decimal("99.99"))
-        await order.save()
-        assert order.id is not None
-        found = await async_order_class.find_one(order.id)
-        assert found is not None
-
 
 class TestCompositePKWithColumnMapping:
     """Test composite primary key with UseColumn field-to-column mapping."""
@@ -400,62 +337,3 @@ class TestCompositePKWithColumnMapping:
         item.save()
         item.order_ref = None
         assert item.is_new_record is True
-
-
-class TestAsyncCompositePKWithColumnMapping:
-    @pytest.mark.asyncio
-    async def test_async_insert(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=1, product_ref=101, quantity=3)
-        assert item.is_new_record is True
-        rows = await item.save()
-        assert rows == 1
-        assert item.is_new_record is False
-
-    @pytest.mark.asyncio
-    async def test_async_find_one_by_field_names(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=2, product_ref=102, quantity=3)
-        await item.save()
-        found = await async_mapped_order_item_class.find_one({"order_ref": 2, "product_ref": 102})
-        assert found is not None
-        assert found.order_ref == 2
-
-    @pytest.mark.asyncio
-    async def test_async_find_one_by_column_names(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=3, product_ref=103, quantity=3)
-        await item.save()
-        found = await async_mapped_order_item_class.find_one({"order_id": 3, "product_id": 103})
-        assert found is not None
-
-    @pytest.mark.asyncio
-    async def test_async_find_one_tuple(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=4, product_ref=104, quantity=3)
-        await item.save()
-        found = await async_mapped_order_item_class.find_one((4, 104))
-        assert found is not None
-
-    @pytest.mark.asyncio
-    async def test_async_update(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=5, product_ref=105, quantity=3)
-        await item.save()
-        item.quantity = 10
-        rows = await item.save()
-        assert rows == 1
-        await item.refresh()
-        assert item.quantity == 10
-
-    @pytest.mark.asyncio
-    async def test_async_delete(self, async_mapped_order_item_class):
-        item = async_mapped_order_item_class(order_ref=6, product_ref=106, quantity=3)
-        await item.save()
-        rows = await item.delete()
-        assert rows == 1
-        found = await async_mapped_order_item_class.find_one((6, 106))
-        assert found is None
-
-    @pytest.mark.asyncio
-    async def test_async_is_composite_pk(self, async_mapped_order_item_class):
-        assert async_mapped_order_item_class.is_composite_pk() is True
-
-    @pytest.mark.asyncio
-    async def test_async_meta_primary_key_fields(self, async_mapped_order_item_class):
-        assert async_mapped_order_item_class.primary_key_fields() == ("order_ref", "product_ref")
