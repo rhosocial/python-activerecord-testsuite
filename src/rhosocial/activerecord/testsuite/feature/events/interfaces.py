@@ -42,6 +42,29 @@ class IEventsProvider(ABC):
         """
         pass
 
+    async def setup_async_event_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async event model under a
+        given scenario and return the configured model class.
+
+        Default implementation raises NotImplementedError. Backends should override
+        this method to support async event model tests.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_event_model"
+        )
+
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Should perform any necessary cleanup after an async test has run.
+
+        Default implementation raises NotImplementedError. Backends should override
+        this method to support async event model tests.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support cleanup_after_test_async"
+        )
+
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """

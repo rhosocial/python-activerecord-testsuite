@@ -12,10 +12,10 @@ from rhosocial.activerecord.backend.errors import DatabaseError
 @pytest.mark.asyncio
 
 
-async def test_combined_update(combined_article_model):
+async def test_combined_update(async_combined_article_model):
     """Test combined functionality when updating records"""
     # Create and update article
-    article = combined_article_model(title="Test", content="Test")
+    article = async_combined_article_model(title="Test", content="Test")
     await article.save()
     original_updated_at = article.updated_at
 
@@ -33,20 +33,20 @@ async def test_combined_update(combined_article_model):
 @pytest.mark.asyncio
 
 
-async def test_combined_delete(combined_article_model):
+async def test_combined_delete(async_combined_article_model):
     """Test combined functionality when deleting records"""
     # Create and delete article
-    article = combined_article_model(title="Test", content="Test")
+    article = async_combined_article_model(title="Test", content="Test")
     await article.save()
     await article.delete()
 
     # Verify soft delete status
     assert article.deleted_at is not None
-    assert await combined_article_model.find_one(article.id) is None
+    assert await async_combined_article_model.find_one(article.id) is None
 
     # Verify deleted records can be found
-    found_article = combined_article_model.query_with_deleted().where(
-        f"{combined_article_model.primary_key()} = ?",
+    found_article = await async_combined_article_model.query_with_deleted().where(
+        f"{async_combined_article_model.primary_key()} = ?",
         (article.id,)
     ).one()
     assert found_article is not None
@@ -57,15 +57,15 @@ async def test_combined_delete(combined_article_model):
 @pytest.mark.asyncio
 
 
-async def test_combined_concurrent_update(combined_article_model):
+async def test_combined_concurrent_update(async_combined_article_model):
     """Test combined functionality during concurrent updates"""
     # Create article
-    article = combined_article_model(title="Test", content="Test")
+    article = async_combined_article_model(title="Test", content="Test")
     await article.save()
 
     # Simulate concurrent updates
-    concurrent_article = combined_article_model.query_with_deleted().where(
-        f"{combined_article_model.primary_key()} = ?",
+    concurrent_article = await async_combined_article_model.query_with_deleted().where(
+        f"{async_combined_article_model.primary_key()} = ?",
         (article.id,)
     ).one()
 
@@ -79,6 +79,6 @@ async def test_combined_concurrent_update(combined_article_model):
         await concurrent_article.save()
 
     # Verify final state
-    final_article = await combined_article_model.find_one(article.id)
+    final_article = await async_combined_article_model.find_one(article.id)
     assert final_article.content == "Updated by first"
     assert final_article.version == 2

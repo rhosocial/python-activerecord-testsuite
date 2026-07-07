@@ -61,6 +61,30 @@ def event_model(request):
 
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_event_model(request):
+    """
+    An async pytest fixture that provides a configured `AsyncEventTestModel` model class for testing.
+    It is parameterized to run for each available scenario.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.events.IEventsProvider")
+    provider = provider_class()
+
+    try:
+        Model = await provider.setup_async_event_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async event model")
+
+    yield Model
+
+    try:
+        await provider.cleanup_after_test_async(scenario)
+    except NotImplementedError:
+        provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def event_tracking_model(request):
     """
     A pytest fixture that provides a configured `EventTrackingModel` model class for testing.

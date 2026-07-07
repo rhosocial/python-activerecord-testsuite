@@ -32,6 +32,7 @@ def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -41,7 +42,7 @@ def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    AsyncUser.configure(config, backend_class)
+    asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
         # Verify connection by counting users
@@ -66,6 +67,7 @@ def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -75,7 +77,7 @@ def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    AsyncUser.configure(config, backend_class)
+    asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
         time.sleep(duration)

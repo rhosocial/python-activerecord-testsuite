@@ -58,6 +58,51 @@ class IMixinsProvider(ABC):
         """
         pass
 
+    async def setup_async_timestamped_post_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async timestamped post model.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_timestamped_post_model"
+        )
+
+    async def setup_async_versioned_product_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async versioned product model.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_versioned_product_model"
+        )
+
+    async def setup_async_task_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async task model.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_task_model"
+        )
+
+    async def setup_async_combined_article_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async combined article model.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_combined_article_model"
+        )
+
+    async def cleanup_after_test_async(self, scenario_name: str):
+        """
+        Should perform any necessary cleanup after an async test has run.
+        Default implementation raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support cleanup_after_test_async"
+        )
+
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """

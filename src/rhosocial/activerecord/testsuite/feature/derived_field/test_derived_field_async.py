@@ -141,25 +141,25 @@ class TestAsyncDerivedFieldFormA:
 
     @pytest.mark.asyncio
 
-    async def test_form_a_fields_registered(self, product_form_a_class):
-        assert "discounted_price" in product_form_a_class.__derived_fields__
-        assert "total_value" in product_form_a_class.__derived_fields__
+    async def test_form_a_fields_registered(self, async_product_form_a_class):
+        assert "discounted_price" in async_product_form_a_class.__derived_fields__
+        assert "total_value" in async_product_form_a_class.__derived_fields__
 
     @pytest.mark.asyncio
 
-    async def test_form_a_query(self, product_form_a_class):
-        p = product_form_a_class(name="FA", price=100.0, quantity=3)
+    async def test_form_a_query(self, async_product_form_a_class):
+        p = async_product_form_a_class(name="FA", price=100.0, quantity=3)
         await p.save()
-        results = await product_form_a_class.find_all(derived=True)
+        results = await async_product_form_a_class.find_all(derived=True)
         assert results[0].discounted_price == pytest.approx(90.0)
         assert results[0].total_value == pytest.approx(300.0)
 
     @pytest.mark.asyncio
 
-    async def test_form_a_source_id_mapping(self, product_form_a_class):
-        df = product_form_a_class.__derived_fields__["discounted_price"]
+    async def test_form_a_source_id_mapping(self, async_product_form_a_class):
+        df = async_product_form_a_class.__derived_fields__["discounted_price"]
         assert df._source_id is not None
-        assert product_form_a_class.__derived_field_names__[df._source_id] == "discounted_price"
+        assert async_product_form_a_class.__derived_field_names__[df._source_id] == "discounted_price"
 
 
 class TestAsyncDerivedFieldDictForm:
@@ -269,17 +269,17 @@ class TestAsyncDerivedFieldWithProxy:
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_query(self, product_with_proxy_class):
-        await self._insert(product_with_proxy_class, "P1", 100.0, 4)
-        results = await product_with_proxy_class.find_all(derived=True)
+    async def test_proxy_derived_query(self, async_product_with_proxy_class):
+        await self._insert(async_product_with_proxy_class, "P1", 100.0, 4)
+        results = await async_product_with_proxy_class.find_all(derived=True)
         assert results[0].discounted_price == pytest.approx(90.0)
         assert results[0].total_value == pytest.approx(400.0)
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_all_fields(self, product_with_proxy_class):
-        await self._insert(product_with_proxy_class, "P2", 200.0, 3)
-        results = await product_with_proxy_class.find_all(
+    async def test_proxy_derived_all_fields(self, async_product_with_proxy_class):
+        await self._insert(async_product_with_proxy_class, "P2", 200.0, 3)
+        results = await async_product_with_proxy_class.find_all(
             derived=["discounted_price", "total_value"]
         )
         assert results[0].discounted_price == pytest.approx(180.0)
@@ -287,35 +287,35 @@ class TestAsyncDerivedFieldWithProxy:
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_not_in_model_fields(self, product_with_proxy_class):
-        assert "discounted_price" not in product_with_proxy_class.model_fields
-        assert "total_value" not in product_with_proxy_class.model_fields
+    async def test_proxy_derived_not_in_model_fields(self, async_product_with_proxy_class):
+        assert "discounted_price" not in async_product_with_proxy_class.model_fields
+        assert "total_value" not in async_product_with_proxy_class.model_fields
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_not_in_dirty_fields(self, product_with_proxy_class):
-        await self._insert(product_with_proxy_class, "P3", 50.0, 2)
-        instance = await product_with_proxy_class.find_all(derived=True)[0]
+    async def test_proxy_derived_not_in_dirty_fields(self, async_product_with_proxy_class):
+        await self._insert(async_product_with_proxy_class, "P3", 50.0, 2)
+        instance = await async_product_with_proxy_class.find_all(derived=True)[0]
         instance.__dict__["discounted_price"] = 999.0
         assert "discounted_price" not in instance.dirty_fields
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_read_only(self, product_with_proxy_class):
-        await self._insert(product_with_proxy_class, "P4", 80.0, 1)
-        instance = await product_with_proxy_class.find_all(derived=True)[0]
+    async def test_proxy_derived_read_only(self, async_product_with_proxy_class):
+        await self._insert(async_product_with_proxy_class, "P4", 80.0, 1)
+        instance = await async_product_with_proxy_class.find_all(derived=True)[0]
         with pytest.raises(AttributeError):
             instance.discounted_price = 123.0
 
     @pytest.mark.asyncio
 
-    async def test_proxy_derived_not_saved_to_db(self, product_with_proxy_class):
-        p = await self._insert(product_with_proxy_class, "P5", 60.0, 2)
-        instance = await product_with_proxy_class.find_one(p.id, derived=True)
+    async def test_proxy_derived_not_saved_to_db(self, async_product_with_proxy_class):
+        p = await self._insert(async_product_with_proxy_class, "P5", 60.0, 2)
+        instance = await async_product_with_proxy_class.find_one(p.id, derived=True)
         assert instance.discounted_price == pytest.approx(54.0)
         instance.name = "P5_modified"
         await instance.save()
-        fresh = await product_with_proxy_class.find_one(p.id, derived=True)
+        fresh = await async_product_with_proxy_class.find_one(p.id, derived=True)
         assert fresh.name == "P5_modified"
         assert fresh.discounted_price == pytest.approx(54.0)
 
@@ -330,10 +330,10 @@ class TestAsyncDerivedFieldWithUseColumnAndAdapter:
 
     @pytest.mark.asyncio
 
-    async def test_use_column_alias_in_select(self, product_with_column_and_adapter_class):
+    async def test_use_column_alias_in_select(self, async_product_with_column_and_adapter_class):
         """UseColumn controls the SELECT alias; result maps back to Python field name."""
-        await self._insert(product_with_column_and_adapter_class, "UC1", 100.0, 5)
-        results = await product_with_column_and_adapter_class.find_all(derived=True)
+        await self._insert(async_product_with_column_and_adapter_class, "UC1", 100.0, 5)
+        results = await async_product_with_column_and_adapter_class.find_all(derived=True)
         # discounted_price has UseColumn("disc") — alias is "disc" in SQL,
         # but the value is accessible via the Python attribute name
         assert results[0].discounted_price == pytest.approx(90.0)
@@ -341,38 +341,38 @@ class TestAsyncDerivedFieldWithUseColumnAndAdapter:
 
     @pytest.mark.asyncio
 
-    async def test_use_adapter_from_database(self, product_with_column_and_adapter_class):
+    async def test_use_adapter_from_database(self, async_product_with_column_and_adapter_class):
         """UseAdapter applies from_database conversion on the derived field value."""
-        await self._insert(product_with_column_and_adapter_class, "UA1", 33.3, 3)
-        results = await product_with_column_and_adapter_class.find_all(derived=["total_int"])
+        await self._insert(async_product_with_column_and_adapter_class, "UA1", 33.3, 3)
+        results = await async_product_with_column_and_adapter_class.find_all(derived=["total_int"])
         # 33.3 * 3 = 99.9, adapter rounds to int → 100
         assert results[0].total_int == 100
         assert isinstance(results[0].total_int, int)
 
     @pytest.mark.asyncio
 
-    async def test_use_column_field_not_in_model_fields(self, product_with_column_and_adapter_class):
-        assert "discounted_price" not in product_with_column_and_adapter_class.model_fields
-        assert "total_int" not in product_with_column_and_adapter_class.model_fields
+    async def test_use_column_field_not_in_model_fields(self, async_product_with_column_and_adapter_class):
+        assert "discounted_price" not in async_product_with_column_and_adapter_class.model_fields
+        assert "total_int" not in async_product_with_column_and_adapter_class.model_fields
 
     @pytest.mark.asyncio
 
-    async def test_use_column_column_name_stored(self, product_with_column_and_adapter_class):
-        df = product_with_column_and_adapter_class.__derived_fields__["discounted_price"]
+    async def test_use_column_column_name_stored(self, async_product_with_column_and_adapter_class):
+        df = async_product_with_column_and_adapter_class.__derived_fields__["discounted_price"]
         assert df.column_name == "disc"
 
     @pytest.mark.asyncio
 
-    async def test_use_adapter_stored(self, product_with_column_and_adapter_class):
-        df = product_with_column_and_adapter_class.__derived_fields__["total_int"]
+    async def test_use_adapter_stored(self, async_product_with_column_and_adapter_class):
+        df = async_product_with_column_and_adapter_class.__derived_fields__["total_int"]
         assert df.adapter is not None
 
     @pytest.mark.asyncio
 
-    async def test_use_column_and_adapter_together(self, product_with_column_and_adapter_class):
+    async def test_use_column_and_adapter_together(self, async_product_with_column_and_adapter_class):
         """Both UseColumn and UseAdapter can coexist on the same derived field."""
-        await self._insert(product_with_column_and_adapter_class, "CA1", 50.0, 4)
-        results = await product_with_column_and_adapter_class.find_all(
+        await self._insert(async_product_with_column_and_adapter_class, "CA1", 50.0, 4)
+        results = await async_product_with_column_and_adapter_class.find_all(
             derived=["discounted_price", "total_int"]
         )
         assert results[0].discounted_price == pytest.approx(45.0)
