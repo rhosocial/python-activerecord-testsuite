@@ -64,6 +64,20 @@ def product_with_column_and_adapter_class(request):
 
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+def async_product_form_a_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider = provider_class()
+    try:
+        model = provider.setup_async_product_form_a_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async product form A model")
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def async_product_class(request):
     scenario = request.param
     provider_registry = get_provider_registry()

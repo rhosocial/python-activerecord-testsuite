@@ -127,3 +127,95 @@ def combined_article_model(request):
 
     # After the test function finishes, the code below this line runs as a teardown.
     provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_timestamped_post_model(request):
+    """
+    An async pytest fixture that provides a configured `AsyncTimestampedPost` model class for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
+    provider = provider_class()
+
+    try:
+        Model = await provider.setup_async_timestamped_post_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async timestamped post model")
+
+    yield Model
+
+    try:
+        await provider.cleanup_after_test_async(scenario)
+    except NotImplementedError:
+        provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_versioned_product_model(request):
+    """
+    An async pytest fixture that provides a configured `AsyncVersionedProduct` model class for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
+    provider = provider_class()
+
+    try:
+        Model = await provider.setup_async_versioned_product_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async versioned product model")
+
+    yield Model
+
+    try:
+        await provider.cleanup_after_test_async(scenario)
+    except NotImplementedError:
+        provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_task_model(request):
+    """
+    An async pytest fixture that provides a configured `AsyncTask` model class for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
+    provider = provider_class()
+
+    try:
+        Model = await provider.setup_async_task_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async task model")
+
+    yield Model
+
+    try:
+        await provider.cleanup_after_test_async(scenario)
+    except NotImplementedError:
+        provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+async def async_combined_article_model(request):
+    """
+    An async pytest fixture that provides a configured `AsyncCombinedArticle` model class for testing.
+    """
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider("feature.mixins.IMixinsProvider")
+    provider = provider_class()
+
+    try:
+        Model = await provider.setup_async_combined_article_model(scenario)
+    except NotImplementedError:
+        pytest.skip(f"Provider {type(provider).__name__} does not support async combined article model")
+
+    yield Model
+
+    try:
+        await provider.cleanup_after_test_async(scenario)
+    except NotImplementedError:
+        provider.cleanup_after_test(scenario)

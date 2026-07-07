@@ -12,7 +12,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin
 
 
@@ -45,6 +45,43 @@ class Task(IntegerPKMixin, SoftDeleteMixin, ActiveRecord):
 
 class CombinedArticle(IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin, ActiveRecord):
     """Article model combining all mixins"""
+    __table_name__ = "combined_articles"
+
+    id: Optional[int] = None
+    title: str
+    content: str
+    status: str = Field(default="draft")
+
+
+class AsyncTimestampedPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Blog post model with timestamps (async version)"""
+    __table_name__ = "timestamped_posts"
+
+    id: Optional[int] = None
+    title: str
+    content: str
+
+
+class AsyncVersionedProduct(IntegerPKMixin, OptimisticLockMixin, AsyncActiveRecord):
+    """Product model with optimistic locking (async version)"""
+    __table_name__ = "versioned_products"
+
+    id: Optional[int] = None
+    name: str
+    price: float = Field(default=0.0)
+
+
+class AsyncTask(IntegerPKMixin, SoftDeleteMixin, AsyncActiveRecord):
+    """Task model supporting soft deletion (async version)"""
+    __table_name__ = "tasks"
+
+    id: Optional[int] = None
+    title: str
+    is_completed: bool = Field(default=False)
+
+
+class AsyncCombinedArticle(IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin, AsyncActiveRecord):
+    """Article model combining all mixins (async version)"""
     __table_name__ = "combined_articles"
 
     id: Optional[int] = None

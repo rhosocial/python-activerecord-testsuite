@@ -31,6 +31,7 @@ def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -40,7 +41,7 @@ def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    AsyncUser.configure(config, backend_class)
+    asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
         return AsyncUser.query().count()
@@ -65,6 +66,7 @@ def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) 
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -74,7 +76,7 @@ def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) 
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    AsyncUser.configure(config, backend_class)
+    asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
         user = AsyncUser(**user_data)
@@ -100,6 +102,7 @@ def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict)
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -112,7 +115,7 @@ def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict)
     success_count = 0
 
     for _ in range(iterations):
-        AsyncUser.configure(config, backend_class)
+        asyncio.run(AsyncUser.configure(config, backend_class))
         try:
             AsyncUser.query().count()
             success_count += 1
@@ -137,6 +140,7 @@ def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> boo
     if conn_params is None:
         raise ValueError("conn_params is required")
 
+    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -146,7 +150,7 @@ def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> boo
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    AsyncUser.configure(config, backend_class)
+    asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
         time.sleep(duration)

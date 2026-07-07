@@ -12,9 +12,9 @@ from rhosocial.activerecord.model import ActiveRecord
 @pytest.mark.asyncio
 
 
-async def test_insert_lifecycle_events(event_model):
+async def test_insert_lifecycle_events(async_event_model):
     """Test INSERT lifecycle events for new records"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     # Record event trigger sequence
     event_sequence = []
@@ -54,9 +54,9 @@ async def test_insert_lifecycle_events(event_model):
 @pytest.mark.asyncio
 
 
-async def test_update_lifecycle_events(event_model):
+async def test_update_lifecycle_events(async_event_model):
     """Test UPDATE lifecycle events for existing records"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
     await instance.save()
 
     # Reset event sequence
@@ -94,9 +94,9 @@ async def test_update_lifecycle_events(event_model):
 @pytest.mark.asyncio
 
 
-async def test_delete_lifecycle_events(event_model):
+async def test_delete_lifecycle_events(async_event_model):
     """Test delete lifecycle events"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
     await instance.save()
 
     event_sequence = []
@@ -123,9 +123,9 @@ async def test_delete_lifecycle_events(event_model):
 @pytest.mark.asyncio
 
 
-async def test_validation_lifecycle_events(event_model):
+async def test_validation_lifecycle_events(async_event_model):
     """Test validation lifecycle events"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     validation_data = {}
 
@@ -153,10 +153,10 @@ async def test_validation_lifecycle_events(event_model):
 @pytest.mark.asyncio
 
 
-async def test_nested_event_handling(event_model):
+async def test_nested_event_handling(async_event_model):
     """Test nested event handling"""
-    parent = event_model(name="parent")
-    child = event_model(name="child")
+    parent = async_event_model(name="parent")
+    child = async_event_model(name="child")
 
     event_sequence = []
 
@@ -182,9 +182,9 @@ async def test_nested_event_handling(event_model):
 @pytest.mark.asyncio
 
 
-async def test_event_error_handling(event_model):
+async def test_event_error_handling(async_event_model):
     """Test event error handling"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     def error_handler(instance, data, **kwargs):
         raise ValueError("Test error in event handler")
@@ -202,9 +202,9 @@ async def test_event_error_handling(event_model):
 @pytest.mark.asyncio
 
 
-async def test_conditional_event_handling(event_model):
+async def test_conditional_event_handling(async_event_model):
     """Test conditional event handling"""
-    instance = event_model(name="test", status="draft")
+    instance = async_event_model(name="test", status="draft")
     await instance.save()  # First save as new record
 
     handled_events = []
@@ -239,9 +239,9 @@ async def test_conditional_event_handling(event_model):
 @pytest.mark.asyncio
 
 
-async def test_before_insert_can_modify_data(event_model):
+async def test_before_insert_can_modify_data(async_event_model):
     """Test BEFORE_INSERT event can modify save data"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     def modify_data_handler(instance, data, **kwargs):
         # Modify data before insert
@@ -252,7 +252,7 @@ async def test_before_insert_can_modify_data(event_model):
     await instance.save()
 
     # Verify the data was modified in the database by querying
-    saved = await event_model.find_one(instance.id)
+    saved = await async_event_model.find_one(instance.id)
     assert saved.name == 'modified_name'
     assert saved.status == 'auto_status'
 
@@ -260,9 +260,9 @@ async def test_before_insert_can_modify_data(event_model):
 @pytest.mark.asyncio
 
 
-async def test_before_update_can_modify_data(event_model):
+async def test_before_update_can_modify_data(async_event_model):
     """Test BEFORE_UPDATE event can modify save data"""
-    instance = event_model(name="test", status="initial")
+    instance = async_event_model(name="test", status="initial")
     await instance.save()
 
     def modify_data_handler(instance, data, dirty_fields, **kwargs):
@@ -277,7 +277,7 @@ async def test_before_update_can_modify_data(event_model):
     await instance.save()
 
     # Verify the data was modified in the database by querying
-    saved = await event_model.find_one(instance.id)
+    saved = await async_event_model.find_one(instance.id)
     assert saved.name == "updated_name"
     assert saved.status == "name_changed"
 
@@ -285,9 +285,9 @@ async def test_before_update_can_modify_data(event_model):
 @pytest.mark.asyncio
 
 
-async def test_after_insert_receives_result(event_model):
+async def test_after_insert_receives_result(async_event_model):
     """Test AFTER_INSERT event receives QueryResult"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     result_data = {}
 
@@ -304,9 +304,9 @@ async def test_after_insert_receives_result(event_model):
 @pytest.mark.asyncio
 
 
-async def test_after_update_receives_result(event_model):
+async def test_after_update_receives_result(async_event_model):
     """Test AFTER_UPDATE event receives QueryResult and dirty_fields"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
     await instance.save()
 
     result_data = {}
@@ -327,9 +327,9 @@ async def test_after_update_receives_result(event_model):
 @pytest.mark.asyncio
 
 
-async def test_sync_callback_receives_active_record_instance(event_model):
+async def test_sync_callback_receives_active_record_instance(async_event_model):
     """Test that callback receives ActiveRecord instance for async model"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     received_types = []
 
@@ -342,16 +342,17 @@ async def test_sync_callback_receives_active_record_instance(event_model):
 
     # Verify the instance is the same object
     assert all(t == type(instance).__name__ for t in received_types)
-    # Verify it's an ActiveRecord subclass
-    assert isinstance(instance, ActiveRecord)
+    # Verify it's an AsyncActiveRecord subclass
+    from rhosocial.activerecord.model import AsyncActiveRecord
+    assert isinstance(instance, AsyncActiveRecord)
 
 
 @pytest.mark.asyncio
 
 
-async def test_callback_instance_is_same_object(event_model):
+async def test_callback_instance_is_same_object(async_event_model):
     """Test that callback receives the exact same instance object"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     received_instances = []
 

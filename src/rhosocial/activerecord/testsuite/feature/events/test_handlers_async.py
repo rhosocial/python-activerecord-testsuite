@@ -11,9 +11,9 @@ from rhosocial.activerecord.interface import ModelEvent
 @pytest.mark.asyncio
 
 
-async def test_event_handler_registration(event_model):
+async def test_event_handler_registration(async_event_model):
     """Test event handler registration"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     # Register event handlers
     def handler1(instance, **kwargs):
@@ -35,9 +35,9 @@ async def test_event_handler_registration(event_model):
 @pytest.mark.asyncio
 
 
-async def test_event_handler_removal(event_model):
+async def test_event_handler_removal(async_event_model):
     """Test event handler removal"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     def handler(instance, **kwargs):
         instance.log_event(ModelEvent.BEFORE_INSERT, handler="handler", **kwargs)
@@ -53,9 +53,9 @@ async def test_event_handler_removal(event_model):
 @pytest.mark.asyncio
 
 
-async def test_event_handler_execution(event_model):
+async def test_event_handler_execution(async_event_model):
     """Test event handler execution"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
     execution_order = []
 
     def handler1(instance, **kwargs):
@@ -86,9 +86,9 @@ async def test_event_handler_execution(event_model):
 @pytest.mark.asyncio
 
 
-async def test_multiple_event_types(event_model):
+async def test_multiple_event_types(async_event_model):
     """Test multiple event types"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     def insert_handler(instance, **kwargs):
         instance.log_event(ModelEvent.BEFORE_INSERT, type="insert", **kwargs)
@@ -116,9 +116,9 @@ async def test_multiple_event_types(event_model):
 @pytest.mark.asyncio
 
 
-async def test_event_data_passing(event_model):
+async def test_event_data_passing(async_event_model):
     """Test event data passing"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
     received_data = {}
 
     def handler(instance, **kwargs):
@@ -142,9 +142,9 @@ async def test_event_data_passing(event_model):
 @pytest.mark.asyncio
 
 
-async def test_insert_update_handlers_separate(event_model):
+async def test_insert_update_handlers_separate(async_event_model):
     """Test that INSERT and UPDATE handlers are triggered separately"""
-    instance = event_model(name="test")
+    instance = async_event_model(name="test")
 
     insert_called = []
     update_called = []

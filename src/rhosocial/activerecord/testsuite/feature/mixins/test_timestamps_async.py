@@ -11,10 +11,10 @@ from datetime import datetime
 @pytest.mark.asyncio
 
 
-async def test_timestamps(timestamped_post_model):
+async def test_timestamps(async_timestamped_post_model):
     """Test timestamp functionality"""
     # Create new record
-    post = timestamped_post_model(title="Test AsyncPost", content="Test Content")
+    post = async_timestamped_post_model(title="Test AsyncPost", content="Test Content")
     await post.save()
 
     # Verify timestamps exist and have correct type
@@ -40,7 +40,7 @@ async def test_timestamps(timestamped_post_model):
 @pytest.mark.asyncio
 
 
-async def test_timestamps_set_both_on_insert(timestamped_post_model):
+async def test_timestamps_set_both_on_insert(async_timestamped_post_model):
     """Test that BEFORE_INSERT sets both created_at and updated_at to the same value.
 
     This verifies the behavior of _set_timestamps_on_insert handler:
@@ -48,7 +48,7 @@ async def test_timestamps_set_both_on_insert(timestamped_post_model):
     - This ensures consistency for new records
     """
     # Create new record
-    post = timestamped_post_model(title="New AsyncPost", content="Content")
+    post = async_timestamped_post_model(title="New AsyncPost", content="Content")
     await post.save()
 
     # Verify both timestamps are set and equal for new records
@@ -63,7 +63,7 @@ async def test_timestamps_set_both_on_insert(timestamped_post_model):
 @pytest.mark.asyncio
 
 
-async def test_timestamps_only_updated_at_changes_on_update(timestamped_post_model):
+async def test_timestamps_only_updated_at_changes_on_update(async_timestamped_post_model):
     """Test that BEFORE_UPDATE only modifies updated_at, not created_at.
 
     This verifies the separation of INSERT and UPDATE event handlers:
@@ -71,7 +71,7 @@ async def test_timestamps_only_updated_at_changes_on_update(timestamped_post_mod
     - BEFORE_UPDATE only modifies updated_at
     """
     # Create new record
-    post = timestamped_post_model(title="Original Title", content="Original Content")
+    post = async_timestamped_post_model(title="Original Title", content="Original Content")
     await post.save()
 
     original_created_at = post.created_at

@@ -35,6 +35,16 @@ class IDerivedFieldProvider(ABC):
         """Setup async product model."""
         pass
 
+    def setup_async_product_form_a_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
+        """Setup async product model using Form A declaration (ClassVar assignment).
+
+        Default implementation raises NotImplementedError. Backends should override
+        this method to support async product form A model tests.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support setup_async_product_form_a_model"
+        )
+
     @abstractmethod
     def setup_async_product_with_proxy_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
         """Setup async product model using FieldProxy."""
@@ -44,6 +54,16 @@ class IDerivedFieldProvider(ABC):
     def setup_async_product_with_column_and_adapter_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
         """Setup async product model using UseColumn and UseAdapter."""
         pass
+
+    async def cleanup_after_test_async(self, scenario_name: str) -> None:
+        """Perform async cleanup after a test.
+
+        Default implementation raises NotImplementedError. Backends should override
+        this method to support async cleanup.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support cleanup_after_test_async"
+        )
 
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str) -> None:

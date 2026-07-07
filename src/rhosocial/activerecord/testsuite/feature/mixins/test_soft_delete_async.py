@@ -10,11 +10,11 @@ from datetime import datetime, timezone
 @pytest.mark.asyncio
 
 
-async def test_soft_delete_basic(task_model):
+async def test_soft_delete_basic(async_task_model):
     """Test basic soft delete functionality"""
     from datetime import timedelta
     # Create new record
-    t = task_model(title="Test Task")
+    t = async_task_model(title="Test Task")
     await t.save()
 
     # Verify initial state
@@ -37,7 +37,7 @@ async def test_soft_delete_basic(task_model):
     assert t.deleted_at.astimezone(utc_plus_8).utcoffset() == timedelta(hours=8)
 
     # Verify database record consistency
-    db_task = task_model.query_with_deleted().where(f"{task_model.primary_key()} = ?", (t.id,)).one()
+    db_task = await async_task_model.query_with_deleted().where(f"{async_task_model.primary_key()} = ?", (t.id,)).one()
     assert db_task is not None
     assert db_task.deleted_at == t.deleted_at
 
@@ -47,30 +47,30 @@ async def test_soft_delete_basic(task_model):
 
 
 
-async def test_soft_delete_query(task_model):
+async def test_soft_delete_query(async_task_model):
     """Test soft delete query functionality"""
     # Create test data
-    t1 = task_model(title="Task 1")
+    t1 = async_task_model(title="Task 1")
     await t1.save()
-    t2 = (task_model(title="Task 2"))
+    t2 = (async_task_model(title="Task 2"))
     await t2.save()
-    t3 = task_model(title="Task 3")
+    t3 = async_task_model(title="Task 3")
     await t3.save()
 
     # Delete one record
     await t2.delete()
 
     # Test normal query (should only see undeleted records)
-    active_tasks = await task_model.find_all()
+    active_tasks = await async_task_model.find_all()
     assert len(active_tasks) == 2
     assert all(t.deleted_at is None for t in active_tasks)
 
     # Test query including deleted records
-    all_tasks = task_model.query_with_deleted().all()
+    all_tasks = await async_task_model.query_with_deleted().all()
     assert len(all_tasks) == 3
 
     # Test query only deleted records
-    deleted_tasks = task_model.query_only_deleted().all()
+    deleted_tasks = await async_task_model.query_only_deleted().all()
     assert len(deleted_tasks) == 1
     assert deleted_tasks[0].id == t2.id
 
@@ -78,23 +78,23 @@ async def test_soft_delete_query(task_model):
 @pytest.mark.asyncio
 
 
-async def test_soft_delete_restore(task_model):
+async def test_soft_delete_restore(async_task_model):
     """Test restoring deleted records"""
     # Create and delete record
-    t = task_model(title="Test Task")
+    t = async_task_model(title="Test Task")
     await t.save()
     await t.delete()
 
     # Confirm record is soft deleted
     assert t.deleted_at is not None
-    assert await task_model.find_one(t.id) is None
+    assert await async_task_model.find_one(t.id) is None
 
     # Restore record
     t.restore()
 
     # Verify restore result
     assert t.deleted_at is None
-    restored_task = await task_model.find_one(t.id)
+    restored_task = await async_task_model.find_one(t.id)
     assert restored_task is not None
     assert restored_task.deleted_at is None
 
@@ -102,9 +102,9 @@ async def test_soft_delete_restore(task_model):
 @pytest.mark.asyncio
 
 
-async def test_soft_delete_identity(task_model):
+async def test_soft_delete_identity(async_task_model):
     """Test identity preservation after soft delete"""
-    t = task_model(title="Test Task")
+    t = async_task_model(title="Test Task")
     await t.save()
     original_id = t.id
 
@@ -115,7 +115,7 @@ async def test_soft_delete_identity(task_model):
     assert t.id == original_id
 
     # Verify deleted record can be queried by primary key
-    found = task_model.query_with_deleted().where(f"{task_model.primary_key()} = ?", (original_id,)).one()
+    found = await async_task_model.query_with_deleted().where(f"{async_task_model.primary_key()} = ?", (original_id,)).one()
     assert found is not None
     assert found.id == original_id
 

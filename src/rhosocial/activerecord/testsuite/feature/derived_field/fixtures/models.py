@@ -44,6 +44,24 @@ class ProductFormA(ActiveRecord):
     )
 
 
+class AsyncProductFormA(AsyncActiveRecord):
+    """Async product model using Form A declaration (ClassVar assignment)."""
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    )
+
+    total_value: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    )
+
+
 class AsyncProduct(AsyncActiveRecord):
     __table_name__ = "product"
 
