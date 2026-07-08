@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_type_adapter.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_type_adapter_async.py
 import pytest
 from datetime import datetime, timezone
 from rhosocial.activerecord.backend.options import ExecutionOptions

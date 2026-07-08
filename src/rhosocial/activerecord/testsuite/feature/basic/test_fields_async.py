@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_fields.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_fields_async.py
 """Basic Fields Test Module
 
 This module tests the basic field processing functionality of the ActiveRecord class.

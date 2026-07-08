@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_range_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_range_queries_async.py
 """
 Range query tests
 
@@ -34,7 +34,7 @@ async def test_in_list_with_values(async_order_fixtures):
     # Create multiple orders with different statuses for IN testing
     statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
     for i, status in enumerate(statuses):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'IN-{i+1:03d}',
             status=status,
@@ -42,7 +42,7 @@ async def test_in_list_with_values(async_order_fixtures):
         ).save()
 
     # Test IN query with specific status values
-    results = AsyncOrder.query().in_list(AsyncOrder.c.status, ['pending', 'shipped', 'delivered']).all()
+    results = await AsyncOrder.query().in_list(AsyncOrder.c.status, ['pending', 'shipped', 'delivered']).all()
     assert len(results) == 3  # Should match 3 statuses
     
     result_statuses = [r.status for r in results]
@@ -72,14 +72,14 @@ async def test_in_list_empty_result_true(async_order_fixtures):
 
     # Create some orders for testing
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'EMPTY-{i+1:03d}',
             status='active'
         ).save()
 
     # Empty list query with empty_result=True (default), should return empty results
-    results = AsyncOrder.query().in_list(AsyncOrder.c.status, [], empty_result=True).all()
+    results = await AsyncOrder.query().in_list(AsyncOrder.c.status, [], empty_result=True).all()
     assert len(results) == 0
 
 
@@ -102,14 +102,14 @@ async def test_in_list_empty_result_false(async_order_fixtures):
 
     # Create some orders for testing
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'NOEMPTY-{i+1:03d}',
             status='active'
         ).save()
 
     # Empty list query with empty_result=False, should return all results
-    results = AsyncOrder.query().in_list(AsyncOrder.c.status, [], empty_result=False).all()
+    results = await AsyncOrder.query().in_list(AsyncOrder.c.status, [], empty_result=False).all()
     assert len(results) == 3
 
 
@@ -132,7 +132,7 @@ async def test_not_in_with_values(async_order_fixtures):
     # Create multiple orders with different statuses for NOT IN testing
     statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
     for i, status in enumerate(statuses):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'NOTIN-{i+1:03d}',
             status=status,
@@ -140,7 +140,7 @@ async def test_not_in_with_values(async_order_fixtures):
         ).save()
 
     # Test NOT IN query to exclude specific statuses
-    results = AsyncOrder.query().not_in(AsyncOrder.c.status, ['pending', 'cancelled']).all()
+    results = await AsyncOrder.query().not_in(AsyncOrder.c.status, ['pending', 'cancelled']).all()
     assert len(results) == 3  # Should exclude pending and cancelled, leaving 3
     
     result_statuses = [r.status for r in results]
@@ -169,18 +169,18 @@ async def test_not_in_empty_behavior(async_order_fixtures):
 
     # Create some orders for testing
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'NOTEMPTY-{i+1:03d}',
             status='active'
         ).save()
 
     # Empty list NOT IN query with empty_result=False (default), should return all results
-    results = AsyncOrder.query().not_in(AsyncOrder.c.status, [], empty_result=False).all()
+    results = await AsyncOrder.query().not_in(AsyncOrder.c.status, [], empty_result=False).all()
     assert len(results) == 3
 
     # Empty list NOT IN query with empty_result=True, should return empty results
-    results = AsyncOrder.query().not_in(AsyncOrder.c.status, [], empty_result=True).all()
+    results = await AsyncOrder.query().not_in(AsyncOrder.c.status, [], empty_result=True).all()
     assert len(results) == 0
 
 
@@ -203,14 +203,14 @@ async def test_between_operation(async_order_fixtures):
     # Create multiple orders with different amounts for BETWEEN testing
     amounts = [Decimal('50.00'), Decimal('100.00'), Decimal('150.00'), Decimal('200.00'), Decimal('250.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'BET-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Test BETWEEN query using WHERE conditions (simulated BETWEEN)
-    results = AsyncOrder.query() \
+    results = await AsyncOrder.query() \
         .where((AsyncOrder.c.total_amount >= Decimal('100.00')) & (AsyncOrder.c.total_amount <= Decimal('200.00'))) \
         .all()
     
@@ -240,14 +240,14 @@ async def test_not_between_operation(async_order_fixtures):
     # Create multiple orders with different amounts for NOT BETWEEN testing
     amounts = [Decimal('50.00'), Decimal('100.00'), Decimal('150.00'), Decimal('200.00'), Decimal('250.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'NBET-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Test NOT BETWEEN query using WHERE conditions (simulated NOT BETWEEN)
-    results = AsyncOrder.query() \
+    results = await AsyncOrder.query() \
         .where((AsyncOrder.c.total_amount < Decimal('100.00')) | (AsyncOrder.c.total_amount > Decimal('200.00'))) \
         .all()
     
@@ -277,32 +277,32 @@ async def test_comparison_operators(async_order_fixtures):
     # Create multiple orders with different amounts for comparison testing
     amounts = [Decimal('50.00'), Decimal('100.00'), Decimal('150.00'), Decimal('200.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'COMP-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Test greater than operation
-    results_gt = AsyncOrder.query().where(AsyncOrder.c.total_amount > Decimal('100.00')).all()
+    results_gt = await AsyncOrder.query().where(AsyncOrder.c.total_amount > Decimal('100.00')).all()
     assert len(results_gt) == 2  # 150 and 200 are greater than 100
 
     # Test greater than or equal operation
-    results_gte = AsyncOrder.query().where(AsyncOrder.c.total_amount >= Decimal('100.00')).all()
+    results_gte = await AsyncOrder.query().where(AsyncOrder.c.total_amount >= Decimal('100.00')).all()
     assert len(results_gte) == 3  # 100, 150 and 200 are greater than or equal to 100
 
     # Test less than operation
-    results_lt = AsyncOrder.query().where(AsyncOrder.c.total_amount < Decimal('150.00')).all()
+    results_lt = await AsyncOrder.query().where(AsyncOrder.c.total_amount < Decimal('150.00')).all()
     assert len(results_lt) == 2  # 50 and 100 are less than 150
 
     # Test less than or equal operation
-    results_lte = AsyncOrder.query().where(AsyncOrder.c.total_amount <= Decimal('150.00')).all()
+    results_lte = await AsyncOrder.query().where(AsyncOrder.c.total_amount <= Decimal('150.00')).all()
     assert len(results_lte) == 3  # 50, 100 and 150 are less than or equal to 150
 
     # Test equals operation
-    results_eq = AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal('100.00')).all()
+    results_eq = await AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal('100.00')).all()
     assert len(results_eq) == 1  # Only 100 equals 100
 
     # Test not equals operation
-    results_ne = AsyncOrder.query().where(AsyncOrder.c.total_amount != Decimal('100.00')).all()
+    results_ne = await AsyncOrder.query().where(AsyncOrder.c.total_amount != Decimal('100.00')).all()
     assert len(results_ne) == 3  # All except 100

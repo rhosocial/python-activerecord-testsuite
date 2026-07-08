@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_all.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_all_async.py
 """Test eager loading using all() method.
 
 Verifies that relations configured via with_() are eagerly loaded and accessible

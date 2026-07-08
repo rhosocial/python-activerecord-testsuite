@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_basic.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_basic_async.py
 """
 ActiveQuery basic functionality tests
 

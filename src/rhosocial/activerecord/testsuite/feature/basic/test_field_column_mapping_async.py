@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_field_column_mapping.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_field_column_mapping_async.py
 """
 This test file is dedicated to verifying the functionality of field-to-column
 mapping and the use of type adapters in ActiveRecord models.

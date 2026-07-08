@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_relational_validation_async.py
 """
 Detailed RelationalQueryMixin implementation tests to increase coverage of src/rhosocial/activerecord/query/relational.py
 
@@ -15,7 +16,7 @@ from rhosocial.activerecord.backend.impl.dummy.backend import DummyBackend
 class MockQuery(RelationalQueryMixin):
     """Mock query class to test RelationalQueryMixin methods."""
 
-    async def __init__(self, model_class=None):
+    def __init__(self, model_class=None):
         # Use dummy backend for testing
         backend = DummyBackend()
         # Call the mixin's init method with the backend
@@ -23,7 +24,7 @@ class MockQuery(RelationalQueryMixin):
         self.model_class = model_class
         self._logger = Mock()
 
-    async def _log(self, level, message):
+    def _log(self, level, message):
         """Mock logging method."""
         self._logger.log(level, message)
 

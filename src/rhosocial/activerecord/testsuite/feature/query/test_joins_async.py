@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_joins.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_joins_async.py
 """
 JOIN query tests
 
@@ -52,7 +52,7 @@ async def test_inner_join(async_order_fixtures):
     # For JOINs that return fields from multiple tables, we need to use a different approach
     # since the result can't be mapped to a single model
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .inner_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrder.c.id == order.id) \
             .all()
@@ -61,7 +61,7 @@ async def test_inner_join(async_order_fixtures):
         assert len(results) >= 1
     except Exception:
         # If JOIN with model mapping doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
 
 
@@ -103,7 +103,7 @@ async def test_left_join(async_order_fixtures):
     # Perform left join to preserve all orders even without matching items
     # For JOINs that return fields from multiple tables, we need to handle the result appropriately
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select(AsyncOrder.c.id, AsyncOrder.c.order_number, AsyncOrderItem.c.product_name) \
             .left_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrder.c.user_id == user.id) \
@@ -115,7 +115,7 @@ async def test_left_join(async_order_fixtures):
         # So this might fail with validation error - which is expected behavior
     except Exception:
         # If JOIN with mixed fields doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
         assert len(basic_results) == 2
 
 
@@ -156,7 +156,7 @@ async def test_right_join(async_order_fixtures):
 
     # Perform right join to preserve all order items
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select(AsyncOrder.c.order_number, AsyncOrderItem.c.product_name) \
             .right_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrderItem.c.order_id == order.id) \
@@ -166,7 +166,7 @@ async def test_right_join(async_order_fixtures):
         assert len(results) == 2  # Should return two rows for order items
     except Exception:
         # If right join with mixed fields doesn't work, test basic functionality
-        basic_results = AsyncOrderItem.query().where(AsyncOrderItem.c.order_id == order.id).all()
+        basic_results = await AsyncOrderItem.query().where(AsyncOrderItem.c.order_id == order.id).all()
         assert len(basic_results) == 2
 
 
@@ -203,7 +203,7 @@ async def test_join_with_aliases(async_order_fixtures):
 
     # Use aliases for JOIN to improve readability and avoid conflicts
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select('o.order_number', 'oi.product_name') \
             .inner_join(AsyncOrderItem, alias='oi', on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrder.c.id == order.id) \
@@ -213,7 +213,7 @@ async def test_join_with_aliases(async_order_fixtures):
         assert len(results) >= 1
     except Exception:
         # If alias join doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
 
 
@@ -250,7 +250,7 @@ async def test_multiple_joins_chain(async_order_fixtures):
 
     # Chain multiple JOINs to connect user, order, and order item data
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select(AsyncOrder.c.order_number, AsyncOrderItem.c.product_name, AsyncUser.c.username) \
             .inner_join(AsyncUser, on=(AsyncOrder.c.user_id == AsyncUser.c.id)) \
             .inner_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
@@ -261,7 +261,7 @@ async def test_multiple_joins_chain(async_order_fixtures):
         assert len(results) >= 1
     except Exception:
         # If multi-join doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
 
 
@@ -288,7 +288,7 @@ async def test_join_with_conditions(async_order_fixtures):
 
     # Create multiple order items with different quantities
     for i in range(2):
-        AsyncOrderItem(
+        await AsyncOrderItem(
             order_id=order.id,
             product_name=f'Product {i+1}',
             quantity=i + 1,
@@ -298,7 +298,7 @@ async def test_join_with_conditions(async_order_fixtures):
 
     # Join with additional condition to only include items with quantity > 1
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .inner_join(AsyncOrderItem, on=(
                 (AsyncOrder.c.id == AsyncOrderItem.c.order_id) &
                 (AsyncOrderItem.c.quantity > 1)
@@ -311,7 +311,7 @@ async def test_join_with_conditions(async_order_fixtures):
         assert isinstance(results, list)
     except Exception:
         # If conditional join doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'JC-001').all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'JC-001').all()
         assert len(basic_results) == 1
 
 
@@ -352,7 +352,7 @@ async def test_natural_join(async_blog_fixtures):
 
     # Perform JOIN using explicit condition (simulating natural join behavior)
     try:
-        results = AsyncPost.query() \
+        results = await AsyncPost.query() \
             .inner_join(AsyncComment, on=(AsyncPost.c.post_id == AsyncComment.c.post_id)) \
             .where(AsyncPost.c.id == post.id) \
             .all()
@@ -361,7 +361,7 @@ async def test_natural_join(async_blog_fixtures):
         assert len(results) >= 1
     except Exception:
         # If join doesn't work, test basic functionality
-        basic_results = AsyncPost.query().where(AsyncPost.c.id == post.id).all()
+        basic_results = await AsyncPost.query().where(AsyncPost.c.id == post.id).all()
         assert len(basic_results) == 1
 
 
@@ -398,7 +398,7 @@ async def test_join_with_model_classes(async_order_fixtures):
 
     # Use model classes for JOIN to maintain type safety
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select(AsyncOrder.c.order_number, AsyncOrderItem.c.product_name) \
             .inner_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrder.c.user_id == user.id) \
@@ -408,7 +408,7 @@ async def test_join_with_model_classes(async_order_fixtures):
         assert len(results) >= 1
     except Exception:
         # If model class join doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
         assert len(basic_results) >= 1
 
 
@@ -445,7 +445,7 @@ async def test_join_with_table_expressions(async_order_fixtures):
 
     # Use table expressions for JOIN (model classes are table expressions)
     try:
-        results = AsyncOrder.query() \
+        results = await AsyncOrder.query() \
             .select(AsyncOrder.c.order_number, AsyncOrderItem.c.product_name) \
             .inner_join(AsyncOrderItem, on=(AsyncOrder.c.id == AsyncOrderItem.c.order_id)) \
             .where(AsyncOrder.c.id == order.id) \
@@ -456,5 +456,5 @@ async def test_join_with_table_expressions(async_order_fixtures):
         assert results[0].order_number == 'EXPR-001'
     except Exception:
         # If table expression join doesn't work, test basic functionality
-        basic_results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+        basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1

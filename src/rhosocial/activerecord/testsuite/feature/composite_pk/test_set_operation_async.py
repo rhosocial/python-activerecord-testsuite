@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_set_operation.py
+# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_set_operation_async.py
 from decimal import Decimal
 import pytest
 
@@ -31,7 +31,7 @@ class TestAsyncSetOperationCompositePK:
         q2 = async_order_item_class.query().where(
             async_order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
         )
-        result = q1.union(q2).aggregate()
+        result = await q1.union(q2).aggregate()
         assert len(result) == 2
 
     @pytest.mark.asyncio
@@ -48,7 +48,7 @@ class TestAsyncSetOperationCompositePK:
         q2 = async_order_item_class.query().where(
             async_order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
         )
-        result = q1.intersect(q2).aggregate()
+        result = await q1.intersect(q2).aggregate()
         assert len(result) == 0  # No overlap
 
     @pytest.mark.asyncio
@@ -66,5 +66,5 @@ class TestAsyncSetOperationCompositePK:
             async_order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
         )
         # EXCEPT of same set should yield empty
-        result = q1.except_(q2).aggregate()
+        result = await q1.except_(q2).aggregate()
         assert len(result) == 0

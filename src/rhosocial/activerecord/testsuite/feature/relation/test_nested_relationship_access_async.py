@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_nested_relationship_access_async.py
 """
 Tests for nested relationship access functionality.
 
@@ -7,7 +7,7 @@ bidirectional consistency, HasOne/BelongsTo pairs, and
 custom-loader caching behavior with TTL expiration.
 """
 import pytest
-import time
+import asyncio
 
 
 class TestAsyncNestedRelationshipAccess:
@@ -15,21 +15,21 @@ class TestAsyncNestedRelationshipAccess:
 
     @pytest.mark.asyncio
 
-    async def test_nested_relationship_access(self, author, book, chapter):
+    async def test_nested_relationship_access(self, async_author, async_book, async_chapter):
         """Author -> books -> chapters (deeply nested chain access)."""
         try:
-            author_books = author.books()
+            author_books = await async_author.books()
             assert author_books is not None
 
             if author_books:
-                book_chapters = author_books[0].chapters() if hasattr(author_books[0], 'chapters') else None
+                book_chapters = await author_books[0].chapters() if hasattr(author_books[0], 'chapters') else None
                 assert book_chapters is not None
         except AttributeError:
             pass
 
     @pytest.mark.asyncio
 
-    async def test_bidirectional_relationship_consistency(self, author, book):
+    async def test_bidirectional_relationship_consistency(self, async_author, async_book):
         """Forward (author -> books) and backward (book -> author) relations are consistent.
 
         Key assertions:
@@ -37,16 +37,16 @@ class TestAsyncNestedRelationshipAccess:
         - The first book's author_id matches author.id.
         - await book.author() returns the same author object (by id).
         """
-        author_books = author.books()
+        author_books = await async_author.books()
         assert len(author_books) > 0
         first_book = author_books[0]
 
         book_author = await first_book.author()
-        assert book_author.id == author.id
+        assert book_author.id == async_author.id
 
     @pytest.mark.asyncio
 
-    async def test_custom_loader_caching(self, author):
+    async def test_custom_loader_caching(self, async_author):
         """Custom loader: first access uses loader, second hits cache, TTL expiry reloads.
 
         Key assertions:
@@ -54,20 +54,20 @@ class TestAsyncNestedRelationshipAccess:
         - Second call returns the same object (cache hit).
         - After TTL=1s expires, third call triggers loader again (new object).
         """
-        books = author.books()
+        books = await async_author.books()
         assert books is not None
 
-        cached_books = author.books()
+        cached_books = await async_author.books()
         assert cached_books == books  # cache hit: same data
 
-        time.sleep(1.1)  # wait for TTL expiration
+        await asyncio.sleep(1.1)  # wait for TTL expiration
 
-        new_books = author.books()
+        new_books = await async_author.books()
         assert new_books is not None  # loader fires again after TTL
 
     @pytest.mark.asyncio
 
-    async def test_one_to_one_relationship(self, author, profile):
+    async def test_one_to_one_relationship(self, async_author, async_profile):
         """HasOne <-> BelongsTo bidirectional pair returns consistent data.
 
         Key assertions:
@@ -75,10 +75,10 @@ class TestAsyncNestedRelationshipAccess:
         - await profile.author() returns the Author linked to this profile.
         - Both sides agree on the foreign key values.
         """
-        author_profile = await author.profile()
+        author_profile = await async_author.profile()
         assert author_profile is not None
-        assert author_profile.author_id == author.id
+        assert author_profile.author_id == async_author.id
 
-        profile_author = await profile.author()
+        profile_author = await async_profile.author()
         assert profile_author is not None
-        assert profile_author.id == profile.author_id
+        assert profile_author.id == async_profile.author_id

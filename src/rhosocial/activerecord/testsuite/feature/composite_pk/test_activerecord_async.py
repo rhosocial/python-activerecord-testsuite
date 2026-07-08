@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_activerecord.py
+# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_activerecord_async.py
 from decimal import Decimal
 import pytest
 
@@ -85,7 +85,7 @@ class TestAsyncCompositePKFind:
             async_order_item_class(order_id=1, product_id=102, quantity=1, unit_price=Decimal("20.00")),
             async_order_item_class(order_id=2, product_id=101, quantity=5, unit_price=Decimal("15.00")),
         ]
-        async_order_item_class.bulk_create(items)
+        await async_order_item_class.bulk_create(items)
         return items
 
     @pytest.mark.asyncio
@@ -135,7 +135,7 @@ class TestAsyncCompositePKFind:
     @pytest.mark.asyncio
 
     async def test_find_one_scalar_on_composite_pk_raises(self, async_order_item_class):
-        async_order_item_class(order_id=1, product_id=101, quantity=1).save()
+        await async_order_item_class(order_id=1, product_id=101, quantity=1).save()
         with pytest.raises(TypeError):
             await async_order_item_class.find_one(1)
 
@@ -221,14 +221,14 @@ class TestAsyncCompositePKBulk:
             async_order_item_class(order_id=1, product_id=102, quantity=1, unit_price=Decimal("20.00")),
             async_order_item_class(order_id=2, product_id=101, quantity=5, unit_price=Decimal("15.00")),
         ]
-        async_order_item_class.bulk_create(items)
+        await async_order_item_class.bulk_create(items)
         return items
 
     @pytest.mark.asyncio
 
     async def test_bulk_delete(self, seeded_items, async_order_item_class):
         to_delete = await async_order_item_class.find_all([(1, 101), (1, 102)])
-        async_order_item_class.bulk_delete(to_delete)
+        await async_order_item_class.bulk_delete(to_delete)
         remaining = await async_order_item_class.find_all()
         assert len(remaining) == 1
 
@@ -238,7 +238,7 @@ class TestAsyncCompositePKBulk:
         items = await async_order_item_class.find_all([(1, 101), (2, 101)])
         for item in items:
             item.quantity = 99
-        async_order_item_class.bulk_update(items, fields=["quantity"])
+        await async_order_item_class.bulk_update(items, fields=["quantity"])
         refreshed = await async_order_item_class.find_all([(1, 101), (2, 101)])
         for r in refreshed:
             assert r.quantity == 99
@@ -246,8 +246,8 @@ class TestAsyncCompositePKBulk:
     @pytest.mark.asyncio
 
     async def test_bulk_empty_list(self, async_order_item_class):
-        async_order_item_class.bulk_delete([])
-        async_order_item_class.bulk_update([], fields=["quantity"])
+        await async_order_item_class.bulk_delete([])
+        await async_order_item_class.bulk_update([], fields=["quantity"])
 
 class TestAsyncCompositePKWithColumnMapping:
     """Test composite primary key with UseColumn field-to-column mapping."""
@@ -346,7 +346,7 @@ class TestAsyncCompositePKWithColumnMapping:
             async_mapped_order_item_class(order_ref=40, product_ref=502, quantity=3,
                                     unit_price=Decimal("2.00")),
         ]
-        async_mapped_order_item_class.bulk_create(items)
+        await async_mapped_order_item_class.bulk_create(items)
         results = await async_mapped_order_item_class.find_all([
             {"order_ref": 40, "product_ref": 501},
             {"order_ref": 40, "product_ref": 502},
@@ -362,7 +362,7 @@ class TestAsyncCompositePKWithColumnMapping:
             async_mapped_order_item_class(order_ref=50, product_ref=602, quantity=2,
                                     unit_price=Decimal("20.00")),
         ]
-        async_mapped_order_item_class.bulk_create(items)
+        await async_mapped_order_item_class.bulk_create(items)
         results = await async_mapped_order_item_class.find_all([
             {"order_id": 50, "product_id": 601},
             {"order_id": 50, "product_id": 602},
@@ -378,7 +378,7 @@ class TestAsyncCompositePKWithColumnMapping:
             async_mapped_order_item_class(order_ref=60, product_ref=702, quantity=2,
                                     unit_price=Decimal("6.00")),
         ]
-        async_mapped_order_item_class.bulk_create(items)
+        await async_mapped_order_item_class.bulk_create(items)
         results = await async_mapped_order_item_class.find_all([(60, 701), (60, 702)])
         assert len(results) == 2
 

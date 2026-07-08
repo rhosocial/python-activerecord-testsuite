@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/connection/test_active_record_context.py
+# src/rhosocial/activerecord/testsuite/feature/basic/connection/test_active_record_context_async.py
 """
 Test ActiveRecord context awareness with connection pool.
 
@@ -93,6 +93,51 @@ class TestAsyncActiveRecordContext:
                 conn_model_backend = model.backend()
                 assert conn_model_backend is tx_backend
                 assert conn_backend is tx_backend
+
+    @pytest.mark.asyncio
+    async def test_transaction_nested_in_connection(self, async_pool_and_model):
+        """Async transaction nested in a connection reuses the connection backend.
+
+        Mirrors the sync test_transaction_nested_in_connection: opening a transaction
+        inside an active connection context must reuse the same connection backend
+        rather than acquiring a new one.
+        """
+        pool, model = async_pool_and_model
+
+        async with pool.connection() as conn_backend:
+            conn_model_backend = model.backend()
+            assert conn_model_backend is conn_backend
+
+            async with pool.transaction() as tx_backend:
+                tx_model_backend = model.backend()
+                # Transaction inside a connection reuses the same connection backend
+                assert tx_model_backend is conn_backend
+                assert tx_backend is conn_backend
+
+    @pytest.mark.asyncio
+    async def test_deeply_nested_contexts(self, async_pool_and_model):
+        """Async deeply nested contexts all resolve to the outermost backend.
+
+        Mirrors the sync test_deeply_nested_contexts: a chain of
+        connection -> connection -> transaction -> connection must keep resolving
+        to the outermost backend at every level.
+        """
+        pool, model = async_pool_and_model
+
+        async with pool.connection() as level1:
+            assert model.backend() is level1
+
+            async with pool.connection() as level2:
+                assert model.backend() is level1
+                assert level2 is level1
+
+                async with pool.transaction() as level3:
+                    assert model.backend() is level1
+                    assert level3 is level1
+
+                    async with pool.connection() as level4:
+                        assert model.backend() is level1
+                        assert level4 is level1
 
 class TestSyncAsyncIsolation:
     """Test that sync and async contexts are properly isolated."""

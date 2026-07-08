@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_modifier.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_modifier_async.py
 """Test eager loading with query_modifier.
 
 Verifies that query_modifier callables passed via with_((path, modifier))

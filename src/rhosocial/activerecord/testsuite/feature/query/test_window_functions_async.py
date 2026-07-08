@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_window_functions.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_window_functions_async.py
 """Test window function functionality in ActiveQuery."""
 from decimal import Decimal
 
@@ -48,7 +48,7 @@ async def test_row_number_window_function(async_order_fixtures):
         query = AsyncOrder.query().select("id", "total_amount", "status", window_func)
         query.order_by("row_num")
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         assert results[0]['row_num'] == 1
@@ -103,7 +103,7 @@ async def test_partition_by_window_function(async_order_fixtures):
         query = AsyncOrder.query().select("id", "status", "total_amount", window_func)
         query.order_by(("status", "ASC"), ("rank", "ASC"))
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         for r in results:
@@ -144,7 +144,7 @@ async def test_aggregate_window_functions(async_order_fixtures):
         query = AsyncOrder.query().select("id", "total_amount", sum_func)
         query.order_by(("total_amount", "DESC"))
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         assert results[0]['running_sum'] == Decimal('400.00')
@@ -191,7 +191,7 @@ async def test_named_window_definitions(async_order_fixtures):
         query = AsyncOrder.query().select("id", "total_amount", window_func)
         query.order_by("row_num")
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         assert results[0]['row_num'] == 1
@@ -238,7 +238,7 @@ async def test_window_frame_specifications(async_order_fixtures):
         query = AsyncOrder.query().select("id", "total_amount", first_value_func)
         query.order_by(("total_amount", "ASC"))
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         assert float(results[0]['first_amount']) == pytest.approx(100.00)
@@ -285,7 +285,7 @@ async def test_unbounded_window_frames(async_order_fixtures):
         query = AsyncOrder.query().select("id", "total_amount", sum_func)
         query.order_by(("total_amount", "ASC"))
 
-        results = query.aggregate()
+        results = await query.aggregate()
 
         assert len(results) == 4
         for r in results:

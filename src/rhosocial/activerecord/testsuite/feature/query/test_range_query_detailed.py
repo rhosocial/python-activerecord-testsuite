@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_range_query_detailed.py
 """
 Detailed RangeQueryMixin implementation tests to increase coverage of src/rhosocial/activerecord/query/range.py
 

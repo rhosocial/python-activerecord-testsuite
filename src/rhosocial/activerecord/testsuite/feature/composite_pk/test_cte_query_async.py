@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_cte_query.py
+# src/rhosocial/activerecord/testsuite/feature/composite_pk/test_cte_query_async.py
 from decimal import Decimal
 import pytest
 

@@ -1,7 +1,6 @@
-from decimal import Decimal
-from typing import Optional, ClassVar, Dict, Any, List
+from typing import Optional, ClassVar
 
-from pydantic import Field
+from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
@@ -15,13 +14,14 @@ class AsyncJsonUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
 
     id: Optional[int] = None
     username: str
-    email: str
-    age: Optional[int] = Field(..., ge=0, le=100)
+    email: EmailStr
+    age: Optional[int] = Field(None, ge=0, le=100)
+
     # JSON fields
-    settings: Optional[Dict[str, Any]] = Field(default={})
-    tags: Optional[List[str]] = Field(default=[])
-    profile: Optional[Dict[str, Any]] = Field(default={})
-    roles: Optional[List[str]] = Field(default=[])
-    scores: Optional[List[int]] = Field(default=[])
-    subscription: Optional[Dict[str, Any]] = Field(default={})
-    preferences: Optional[Dict[str, Any]] = Field(default={})
+    settings: Optional[str] = None
+    tags: Optional[str] = None
+    profile: Optional[str] = None
+    roles: Optional[str] = None
+    scores: Optional[str] = None
+    subscription: Optional[str] = None
+    preferences: Optional[str] = None

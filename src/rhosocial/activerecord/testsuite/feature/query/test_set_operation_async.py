@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_set_operation.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_set_operation_async.py
 """
 Set operation tests using real backend implementations through the provider pattern.
 
@@ -454,25 +454,27 @@ class TestAsyncSetOperations:
         assert except_query.right == query2
 
     @pytest.mark.asyncio
-    async def test_mixed_sync_async_set_operations_should_fail(self, order_fixtures, async_order_fixtures):
-        """
-        Test that mixing sync and async queries in set operations raises TypeError.
-        """
-        User, Order, OrderItem = order_fixtures
+    async def test_mixed_sync_async_set_operations_should_fail(self, async_order_fixtures):
+        """Test that mixing sync and async queries raises TypeError."""
+        from rhosocial.activerecord.query import SetOperationQuery, AsyncSetOperationQuery
+        from unittest.mock import Mock
+        from rhosocial.activerecord.backend.base import StorageBackend
+        from rhosocial.activerecord.query.active_query import ActiveQuery
+
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
-        # Create test data
-        user = User(username='test_user', email='test@example.com', age=25)
-        user.save()
+        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == 1)
 
-        async_user = AsyncUser(username='async_test_user', email='async_test@example.com', age=25)
-        await async_user.save()
+        # Build a real ActiveQuery. It carries a sync backend reference and
+        # must not be embedded into an async AsyncSetOperationQuery. A mock
+        # sync model/backend is used only to satisfy construction; the
+        # rejection fires before any backend interaction occurs.
+        mock_sync_backend = Mock(spec=StorageBackend)
+        mock_sync_backend.dialect = Mock()
+        mock_sync_model = Mock()
+        mock_sync_model.backend.return_value = mock_sync_backend
+        sync_query = ActiveQuery(mock_sync_model)
 
-        # Create sync and async queries
-        sync_query = Order.query().where(Order.c.user_id == user.id)
-        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == async_user.id)
-
-        # Attempting to mix sync and async queries should raise TypeError
         with pytest.raises(TypeError, match="does not support async backends"):
             SetOperationQuery(sync_query, async_query, "UNION")
 

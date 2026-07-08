@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/connection/test_active_query_context.py
+# src/rhosocial/activerecord/testsuite/feature/query/connection/test_active_query_context_async.py
 """
 Test ActiveQuery context awareness with connection pool.
 

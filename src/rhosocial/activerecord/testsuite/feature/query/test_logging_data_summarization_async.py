@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_logging_data_summarization.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_logging_data_summarization_async.py
 import copy
 import json
 from pathlib import Path
@@ -170,6 +170,37 @@ def _assert_sensitive_payload_summary(post, samples):
     _assert_truncated(summary["nested"]["html"], samples["html_content"])
     _assert_secrets_not_leaked(summary, secrets)
     assert payload == before
+
+
+def _assert_unicode_integrity(samples):
+    unicode_html = samples["unicode_html"]
+    unicode_xml = samples["unicode_xml"]
+    unicode_json = samples["unicode_json"]
+
+    # Verify multi-script content is preserved
+    assert "中文" in unicode_html or "日本語" in unicode_html
+    assert "العربية" in unicode_html or "עברית" in unicode_html
+    assert "हिन्दी" in unicode_html or "ภาษาไทย" in unicode_html
+
+    # Verify emoji content is preserved
+    assert "😀" in unicode_html
+    assert "👍" in unicode_html
+    assert "👨‍👩‍👧‍👦" in unicode_html
+
+    # Verify XML structure
+    assert "<UNICODE_CATALOG" in unicode_xml
+    assert "你好" in unicode_xml
+    assert "😀" in unicode_xml
+
+    # Verify JSON structure
+    parsed = json.loads(unicode_json)
+    assert isinstance(parsed, list)
+    assert len(parsed) >= 7
+    greetings = parsed[0].get("greetings", {})
+    assert "zh" in greetings and "ar" in greetings and "he" in greetings
+    assert "😀" in str(parsed)
+
+
 async def _async_create_user(User):
     user = User(username="async-web-content-user", email="async-web-content@example.com", age=30)
     await user.save()

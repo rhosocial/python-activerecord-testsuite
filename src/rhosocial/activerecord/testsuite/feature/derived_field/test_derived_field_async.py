@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/derived_field/test_derived_field.py
+# src/rhosocial/activerecord/testsuite/feature/derived_field/test_derived_field_async.py
 import pytest
 from typing import ClassVar, Optional
 from typing_extensions import Annotated
@@ -295,7 +295,7 @@ class TestAsyncDerivedFieldWithProxy:
 
     async def test_proxy_derived_not_in_dirty_fields(self, async_product_with_proxy_class):
         await self._insert(async_product_with_proxy_class, "P3", 50.0, 2)
-        instance = await async_product_with_proxy_class.find_all(derived=True)[0]
+        instance = (await async_product_with_proxy_class.find_all(derived=True))[0]
         instance.__dict__["discounted_price"] = 999.0
         assert "discounted_price" not in instance.dirty_fields
 
@@ -303,7 +303,7 @@ class TestAsyncDerivedFieldWithProxy:
 
     async def test_proxy_derived_read_only(self, async_product_with_proxy_class):
         await self._insert(async_product_with_proxy_class, "P4", 80.0, 1)
-        instance = await async_product_with_proxy_class.find_all(derived=True)[0]
+        instance = (await async_product_with_proxy_class.find_all(derived=True))[0]
         with pytest.raises(AttributeError):
             instance.discounted_price = 123.0
 

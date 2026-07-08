@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_relational_validation.py
 """
 Detailed RelationalQueryMixin implementation tests to increase coverage of src/rhosocial/activerecord/query/relational.py
 

@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_query_active_query.py
 """
 CTE Query ActiveQuery tests to verify CTE functionality with ActiveQuery as subqueries.
 
@@ -128,12 +129,9 @@ class TestCTEQueryErrorHandling:
         assert "StorageBackend" in str(exc_info.value)
         assert "Mock" in str(exc_info.value)
 
-    def test_cte_query_with_async_query_raises_error(self, order_fixtures):
+    def test_cte_query_with_mock_query_raises_error(self, order_fixtures):
         """
-        Test that CTEQuery raises TypeError when an invalid query type is provided to with_cte.
-
-        This test verifies that the synchronous CTEQuery properly validates
-        the query types passed to it and raises appropriate errors for incorrect types.
+        Test that CTEQuery raises TypeError when an invalid query type (mock) is provided to with_cte.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -156,6 +154,48 @@ class TestCTEQueryErrorHandling:
         # Verify the error message mentions the unsupported query type
         assert "not supported in CTE" in str(exc_info.value)
         assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+
+    def test_cte_query_with_async_query_raises_error(self, order_fixtures):
+        """
+        Test that CTEQuery raises TypeError when an async query is provided to with_cte.
+
+        This test verifies that the synchronous CTEQuery rejects async query objects
+        to prevent sync/async mixing. Although to_sql() is a sync/async-agnostic pure
+        computation, an async query carries an async backend reference and must not be
+        embedded into a sync CTEQuery. An AsyncActiveQuery is used here because it
+        implements both IAsyncQuery and IQuery (via a relational mixin), exercising the
+        dispatch ordering where the IAsyncQuery check must take precedence over IQuery;
+        before the fix this object was wrongly accepted via the IQuery branch.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        # Get sync backend from model for the CTEQuery under test
+        backend = Order.backend()
+
+        # Create a CTEQuery instance
+        cte_query = CTEQuery(backend)
+
+        # Build a real AsyncActiveQuery. It implements both IAsyncQuery and IQuery,
+        # so it directly exercises the sync/async mixing rejection path. A mock async
+        # model/backend is used only to satisfy construction; the rejection fires
+        # before any backend interaction occurs.
+        from unittest.mock import Mock
+        from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.query.active_query import AsyncActiveQuery
+
+        mock_async_backend = Mock(spec=AsyncStorageBackend)
+        mock_async_backend.dialect = Mock()
+        mock_async_model = Mock()
+        mock_async_model.backend.return_value = mock_async_backend
+        async_query = AsyncActiveQuery(mock_async_model)
+
+        # Try to add the async query to the sync CTEQuery - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', async_query)
+
+        # Verify the error message mentions the sync/async mixing rejection
+        assert "CTEQuery (sync) cannot accept async query" in str(exc_info.value)
+        assert "AsyncActiveQuery" in str(exc_info.value)
 
     def test_cte_query_with_invalid_query_type_raises_error(self, order_fixtures):
         """

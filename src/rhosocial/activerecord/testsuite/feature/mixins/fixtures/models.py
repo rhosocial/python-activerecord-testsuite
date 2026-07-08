@@ -13,7 +13,7 @@ from datetime import datetime
 from pydantic import Field
 
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin
+from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin, AsyncSoftDeleteMixin
 
 
 class TimestampedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
@@ -71,7 +71,7 @@ class AsyncVersionedProduct(IntegerPKMixin, OptimisticLockMixin, AsyncActiveReco
     price: float = Field(default=0.0)
 
 
-class AsyncTask(IntegerPKMixin, SoftDeleteMixin, AsyncActiveRecord):
+class AsyncTask(IntegerPKMixin, AsyncSoftDeleteMixin, AsyncActiveRecord):
     """Task model supporting soft deletion (async version)"""
     __table_name__ = "tasks"
 
@@ -80,7 +80,7 @@ class AsyncTask(IntegerPKMixin, SoftDeleteMixin, AsyncActiveRecord):
     is_completed: bool = Field(default=False)
 
 
-class AsyncCombinedArticle(IntegerPKMixin, TimestampMixin, OptimisticLockMixin, SoftDeleteMixin, AsyncActiveRecord):
+class AsyncCombinedArticle(IntegerPKMixin, TimestampMixin, OptimisticLockMixin, AsyncSoftDeleteMixin, AsyncActiveRecord):
     """Article model combining all mixins (async version)"""
     __table_name__ = "combined_articles"
 

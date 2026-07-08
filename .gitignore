@@ -139,3 +139,7 @@ dmypy.json
 
 # Claude local planning artifacts
 .claude/plan/
+
+# Local backups and scratch tools (not tracked)
+src.bak*/
+tools/

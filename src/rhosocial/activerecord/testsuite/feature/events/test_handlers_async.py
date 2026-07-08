@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/events/test_handlers.py
+# src/rhosocial/activerecord/testsuite/feature/events/test_handlers_async.py
 """
 Event Handler Test Module
 
@@ -128,7 +128,7 @@ async def test_event_data_passing(async_event_model):
     instance.on(ModelEvent.BEFORE_INSERT, handler)
 
     # Trigger event with data
-    instance._trigger_event(ModelEvent.BEFORE_INSERT, custom_data="test", data={})
+    await instance._trigger_event(ModelEvent.BEFORE_INSERT, custom_data="test", data={})
 
     # Verify data passing
     assert received_data["custom_data"] == "test"

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/interface/test_threadsafe_dict.py
+# src/rhosocial/activerecord/testsuite/feature/interface/test_threadsafe_dict_async.py
 """Test cases for ThreadSafeDict implementation."""
 import pytest
 import threading
@@ -36,7 +36,7 @@ async def test_basic_operations():
     assert test_dict['key'] == 'value'
 
     # Test updating with another dict
-    await test_dict.update({'another_key': 'another_value'})
+    test_dict.update({'another_key': 'another_value'})
     assert test_dict['another_key'] == 'another_value'
 
     # Test deleting items

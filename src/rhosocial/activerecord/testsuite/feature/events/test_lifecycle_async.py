@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/events/test_lifecycle.py
+# src/rhosocial/activerecord/testsuite/feature/events/test_lifecycle_async.py
 """
 Event Lifecycle Test Module
 

@@ -1,10 +1,10 @@
-# src/rhosocial/activerecord/testsuite/feature/mixins/test_timestamps.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/test_timestamps_async.py
 """
 Test timestamp functionality
 """
 import pytest
 
-import time
+import asyncio
 from datetime import datetime
 
 
@@ -29,7 +29,7 @@ async def test_timestamps(async_timestamped_post_model):
 
     # Wait a moment then update the record
     post.title = "Updated Title"
-    time.sleep(0.1)
+    await asyncio.sleep(0.1)
     await post.save()
 
     # Verify timestamp updates
@@ -81,7 +81,7 @@ async def test_timestamps_only_updated_at_changes_on_update(async_timestamped_po
     assert original_created_at == original_updated_at
 
     # Wait a moment then update
-    time.sleep(0.1)
+    await asyncio.sleep(0.1)
     post.title = "Updated Title"
     await post.save()
 

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/connection/test_active_record_crud.py
+# src/rhosocial/activerecord/testsuite/feature/basic/connection/test_active_record_crud_async.py
 """
 Test ActiveRecord CRUD operations with connection pool.
 

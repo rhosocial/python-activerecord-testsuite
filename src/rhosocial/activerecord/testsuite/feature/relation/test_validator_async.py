@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_validator.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_validator_async.py
 """
 Tests for RelationshipValidator and AsyncRelationshipValidator.
 

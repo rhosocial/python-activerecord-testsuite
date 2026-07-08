@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/mixins/test_soft_delete.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/test_soft_delete_async.py
 """
 Test soft delete functionality
 """
@@ -90,7 +90,7 @@ async def test_soft_delete_restore(async_task_model):
     assert await async_task_model.find_one(t.id) is None
 
     # Restore record
-    t.restore()
+    await t.restore()
 
     # Verify restore result
     assert t.deleted_at is None
@@ -120,5 +120,5 @@ async def test_soft_delete_identity(async_task_model):
     assert found.id == original_id
 
     # Verify deletion can be restored
-    t.restore()
+    await t.restore()
     assert t.id == original_id  # Primary key remains unchanged

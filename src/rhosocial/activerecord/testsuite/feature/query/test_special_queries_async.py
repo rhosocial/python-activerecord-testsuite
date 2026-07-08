@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_special_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_special_queries_async.py
 """Special query scenarios tests"""
 import pytest
 import json
@@ -25,7 +25,7 @@ async def test_full_text_search(async_annotated_query_fixtures):
     await item.save()
 
     # Basic query should always work
-    basic_results = SearchableItem.query().where(SearchableItem.c.name.like('%Test%')).all()
+    basic_results = await SearchableItem.query().where(SearchableItem.c.name.like('%Test%')).all()
     assert len(basic_results) >= 1
 
     # Advanced full-text search may require specific database support
@@ -52,7 +52,7 @@ async def test_window_function_queries(async_extended_async_order_fixtures):
     # Create different amounts for ranking test
     amounts = [Decimal('500.00'), Decimal('300.00'), Decimal('700.00'), Decimal('100.00'), Decimal('600.00')]
     for i, amount in enumerate(amounts):
-        AsyncExtendedOrder(
+        await AsyncExtendedOrder(
             user_id=user.id,
             order_number=f'WIN-{i+1:03d}',
             total_amount=amount,
@@ -63,7 +63,7 @@ async def test_window_function_queries(async_extended_async_order_fixtures):
     # Window functions are typically used for calculating rankings, cumulative sums, etc.
     # This is concept validation, actual implementation depends on backend support
     # E.g., rank by amount query - using correct syntax
-    results = AsyncExtendedOrder.query() \
+    results = await AsyncExtendedOrder.query() \
         .where(AsyncExtendedOrder.c.user_id == user.id) \
         .order_by((AsyncExtendedOrder.c.total_amount, "DESC")) \
         .all()
@@ -106,10 +106,10 @@ async def test_recursive_query_operations(async_tree_fixtures):
     # Recursive queries are typically used for traversing tree structures
     # This is concept validation
     # Find all descendants of root node
-    children_of_root = AsyncNode.query().where(AsyncNode.c.parent_id == root.id).all()
+    children_of_root = await AsyncNode.query().where(AsyncNode.c.parent_id == root.id).all()
     assert len(children_of_root) == 2  # Child1 and Child2
 
-    grandchildren_of_child1 = AsyncNode.query().where(AsyncNode.c.parent_id == child1.id).all()
+    grandchildren_of_child1 = await AsyncNode.query().where(AsyncNode.c.parent_id == child1.id).all()
     assert len(grandchildren_of_child1) == 2  # Grandchild1 and Grandchild2
 
 
@@ -135,7 +135,7 @@ async def test_subquery_operations(async_order_fixtures):
 
     # Create high amount orders for user1
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user1.id,
             order_number=f'SUBQ-H-{i+1:03d}',
             total_amount=Decimal(f'{(i+1)*200.00}'),  # High amounts: 200, 400, 600
@@ -144,7 +144,7 @@ async def test_subquery_operations(async_order_fixtures):
 
     # Create low amount orders for user2
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user2.id,
             order_number=f'SUBQ-L-{i+1:03d}',
             total_amount=Decimal(f'{(i+1)*50.00}'),  # Low amounts: 50, 100, 150
@@ -166,7 +166,7 @@ async def test_subquery_operations(async_order_fixtures):
             .having(functions.avg(dialect, AsyncOrder.c.total_amount) > Decimal('100.00'))
 
         # Main query: get orders for these users
-        high_avg_orders = AsyncOrder.query().where(AsyncOrder.c.user_id.in_(avg_amount_subquery)).all()
+        high_avg_orders = await AsyncOrder.query().where(AsyncOrder.c.user_id.in_(avg_amount_subquery)).all()
         
         # Verify results include user1's orders (higher average amount)
         user1_orders = [order for order in high_avg_orders if order.user_id == user1.id]
@@ -176,5 +176,5 @@ async def test_subquery_operations(async_order_fixtures):
         # User2's orders may not be included because average amount is below 100
     except Exception:
         # If subquery functionality isn't fully implemented, at least verify basic functionality works
-        basic_results = AsyncOrder.query().all()
+        basic_results = await AsyncOrder.query().all()
         assert len(basic_results) > 0

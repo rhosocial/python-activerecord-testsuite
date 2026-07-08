@@ -22,7 +22,8 @@ from pydantic import BaseModel
 from rhosocial.activerecord.relation.base import RelationManagementMixin
 from rhosocial.activerecord.relation.cache import CacheConfig
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
-from rhosocial.activerecord.relation.interfaces import IRelationLoader
+from rhosocial.activerecord.relation.async_descriptors import AsyncBelongsTo, AsyncHasMany, AsyncHasOne
+from rhosocial.activerecord.relation.interfaces import IRelationLoader, IAsyncRelationLoader
 
 
 class Employee(RelationManagementMixin, BaseModel):
@@ -203,6 +204,144 @@ def chapter():
 def profile():
     """A Profile instance linked to author_id=1 with BelongsTo-author + custom loader."""
     return Profile(id=1, bio="Test Bio", author_id=1)
+
+
+# ── Async memory-based models (mirror of the sync Author/Book/Chapter/Profile) ──
+
+
+class CustomAsyncBookLoaderI(IAsyncRelationLoader):
+    """Async loader returning a synthetic Book list: used by AsyncAuthor.books."""
+
+    async def load(self, instance: Any) -> Optional[List[Any]]:
+        return [AsyncBook(id=1, title="Test Book", author_id=instance.id)]
+
+    async def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAsyncAuthorLoaderI(IAsyncRelationLoader):
+    """Async loader returning a synthetic Author: used by AsyncBook.author."""
+
+    async def load(self, instance: Any) -> Optional[Any]:
+        return AsyncAuthor(id=instance.author_id, name="Test Author")
+
+    async def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAsyncProfileLoaderI(IAsyncRelationLoader):
+    """Async loader returning a synthetic Profile: used by AsyncAuthor.profile."""
+
+    async def load(self, instance: Any) -> Optional[Any]:
+        return AsyncProfile(id=1, bio="Test Bio", author_id=instance.id)
+
+    async def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAsyncChapterLoaderI(IAsyncRelationLoader):
+    """Async loader returning a synthetic Chapter list: used by AsyncBook.chapters."""
+
+    async def load(self, instance: Any) -> Optional[List[Any]]:
+        return [AsyncChapter(id=1, title="Test Chapter", book_id=instance.id)]
+
+    async def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class CustomAsyncAuthorProfileLoaderI(IAsyncRelationLoader):
+    """Async loader returning a synthetic Author: used by AsyncProfile.author."""
+
+    async def load(self, instance: Any) -> Optional[Any]:
+        return AsyncAuthor(id=instance.author_id, name="Test Author")
+
+    async def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
+        pass
+
+
+class AsyncAuthor(RelationManagementMixin, BaseModel):
+    """Memory-based async Author with AsyncHasMany->books and AsyncHasOne->profile, custom loader + cache TTL=1s."""
+
+    id: int
+    name: str
+    books: ClassVar[AsyncHasMany["AsyncBook"]] = AsyncHasMany(
+        foreign_key="author_id",
+        inverse_of="author",
+        loader=CustomAsyncBookLoaderI(),
+        cache_config=CacheConfig(ttl=1)
+    )
+    profile: ClassVar[AsyncHasOne["AsyncProfile"]] = AsyncHasOne(
+        foreign_key="author_id",
+        inverse_of="author",
+        loader=CustomAsyncProfileLoaderI()
+    )
+
+
+class AsyncBook(RelationManagementMixin, BaseModel):
+    """Memory-based async Book with AsyncBelongsTo->author and AsyncHasMany->chapters, custom loaders."""
+
+    id: int
+    title: str
+    author_id: int
+    author: ClassVar[AsyncBelongsTo["AsyncAuthor"]] = AsyncBelongsTo(
+        foreign_key="author_id",
+        inverse_of="books",
+        loader=CustomAsyncAuthorLoaderI()
+    )
+    chapters: ClassVar[AsyncHasMany["AsyncChapter"]] = AsyncHasMany(
+        foreign_key="book_id",
+        inverse_of="book",
+        loader=CustomAsyncChapterLoaderI()  # Add the loader here
+    )
+
+
+class AsyncChapter(RelationManagementMixin, BaseModel):
+    """Memory-based async Chapter with AsyncBelongsTo->book, no custom loader (tests default loader)."""
+
+    id: int
+    title: str
+    book_id: int
+    book: ClassVar[AsyncBelongsTo["AsyncBook"]] = AsyncBelongsTo(
+        foreign_key="book_id",
+        inverse_of="chapters"
+    )
+
+
+class AsyncProfile(RelationManagementMixin, BaseModel):
+    """Memory-based async Profile with AsyncBelongsTo->author, custom loader for the inverse side."""
+
+    id: int
+    bio: str
+    author_id: int
+    author: ClassVar[AsyncBelongsTo["AsyncAuthor"]] = AsyncBelongsTo(
+        foreign_key="author_id",
+        inverse_of="profile",
+        loader=CustomAsyncAuthorProfileLoaderI()  # Add loader
+    )
+
+
+@pytest.fixture
+def async_author():
+    """An AsyncAuthor instance with AsyncHasMany-books and AsyncHasOne-profile, using custom loaders."""
+    return AsyncAuthor(id=1, name="Test Author")
+
+
+@pytest.fixture
+def async_book():
+    """An AsyncBook instance linked to author_id=1 with AsyncBelongsTo-author and AsyncHasMany-chapters."""
+    return AsyncBook(id=1, title="Test Book", author_id=1)
+
+
+@pytest.fixture
+def async_chapter():
+    """An AsyncChapter instance linked to book_id=1 with AsyncBelongsTo-book."""
+    return AsyncChapter(id=1, title="Chapter 1", book_id=1)
+
+
+@pytest.fixture
+def async_profile():
+    """An AsyncProfile instance linked to author_id=1 with AsyncBelongsTo-author + custom loader."""
+    return AsyncProfile(id=1, bio="Test Bio", author_id=1)
 
 
 # ── Provider-based fixtures for query tests ──────────────
