@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_cte_query_set_operation.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_query_set_operation_async.py
 """
 CTE Query Set Operation Tests for the RhoSocial ActiveRecord Test Suite.
 
@@ -454,20 +454,20 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_union_and_extended_conditions(self, async_order_fixtures):
+    async def test_cte_with_union_and_extended_conditions(self, async_order_fixtures):
         """
-        Test Async CTE query with UNION operation and extended query conditions.
+        Test CTE query with UNION operation and extended query conditions.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
         # Create test data
-        user = AsyncUser(username='async_cte_union_extended_user', email='async_cte_union_extended@example.com', age=30)
+        user = AsyncUser(username='cte_union_extended_user', email='cte_union_extended@example.com', age=30)
         await user.save()
 
         # Create orders for the test
-        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-001', total_amount=Decimal('100.00'), status='active')
-        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-002', total_amount=Decimal('200.00'), status='completed')
-        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-UNION-EXT-003', total_amount=Decimal('300.00'), status='pending')
+        order1 = AsyncOrder(user_id=user.id, order_number='CTE-UNION-EXT-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='CTE-UNION-EXT-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='CTE-UNION-EXT-003', total_amount=Decimal('300.00'), status='pending')
         await order1.save()
         await order2.save()
         await order3.save()
@@ -479,17 +479,24 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
         completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
 
-        # Get the SQL and params for the UNION operation
+        # Perform UNION operation between the two ActiveQuery instances
         union_query = active_orders_query.union(completed_orders_query)
-        union_sql, union_params = union_query.to_sql()
 
-        # Create a CTE that uses the UNION SQL and params as its source
-        # Pass the SQL and params as a tuple to preserve the parameters
+        # Create a CTE that uses the UNION operation as its source
         cte_query = AsyncCTEQuery(backend)
-        cte_query.with_cte('union_orders_cte', (union_sql, union_params))
+        cte_query.with_cte('union_orders_cte', union_query)
+
+        # Verify the SQL generation for UNION with extended conditions
+        sql_query = cte_query.from_cte('union_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2)
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains dialect-independent query elements
+        assert 'WITH' in sql.upper()
+        assert 'UNION' in sql.upper()
+        assert 'union_orders_cte' in sql
 
         # Use the new API: specify which CTE to use and apply extended query conditions
-        results = await cte_query.from_cte('union_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).aggregate()
+        results = await sql_query.aggregate()
 
         # Verify results contain both active and completed orders, ordered by amount descending, limited to 2
         assert len(results) == 2

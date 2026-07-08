@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_range.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_range_async.py
 """
 ActiveQuery Range Operations Tests
 

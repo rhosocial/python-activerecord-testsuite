@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/worker/test_parallel_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/worker/test_parallel_queries_async.py
 """
 Test WorkerPool integration with parallel query operations.
 

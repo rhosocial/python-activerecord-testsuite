@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_nested.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_nested_async.py
 """Test nested relation eager loading (e.g. 'posts.comments').
 
 Verifies that with_('relation.nested') recursively preloads data at all levels.

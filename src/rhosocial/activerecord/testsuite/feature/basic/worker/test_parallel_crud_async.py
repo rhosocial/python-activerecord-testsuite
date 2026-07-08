@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_parallel_crud.py
+# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_parallel_crud_async.py
 """
 Test WorkerPool integration with ActiveRecord parallel CRUD operations.
 

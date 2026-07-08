@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_cache_clearing.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_cache_clearing_async.py
 """
 Tests for relation cache clearing via descriptor __delete__.
 
@@ -78,23 +78,13 @@ class TestAsyncCacheClearing:
         assert loaded_user2_b is loaded_user2_a
 
     @pytest.mark.asyncio
-    async def test_del_clears_async_has_one_cache(self, async_user_post_comment_classes):
+    async def test_del_clears_async_has_one_cache(self, async_author):
         """del clears async HasOne cache; next access reloads."""
-        from rhosocial.activerecord.testsuite.feature.relation.fixtures.models import AsyncBoundaryOwner, AsyncBoundaryProfile
+        profile1 = await async_author.profile()
+        assert profile1 is not None
 
-        owner = AsyncBoundaryOwner(name="Owner1")
-        await owner.save()
+        del async_author.profile
 
-        profile = AsyncBoundaryProfile(bio="Bio1", owner_id=owner.id)
-        await profile.save()
-
-        loaded1 = await owner.profile()
-        assert loaded1 is not None
-        assert loaded1.bio == "Bio1"
-
-        del owner.profile
-
-        loaded2 = await owner.profile()
-        assert loaded2 is not None
-        assert loaded2.bio == "Bio1"
-        assert loaded2 is not loaded1
+        profile2 = await async_author.profile()
+        assert profile2 is not None
+        assert profile2 is not profile1

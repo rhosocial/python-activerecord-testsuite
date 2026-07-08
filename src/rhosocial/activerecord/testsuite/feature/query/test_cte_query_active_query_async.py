@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_cte_query_active_query_async.py
 """
 CTE Query ActiveQuery tests to verify CTE functionality with ActiveQuery as subqueries.
 
@@ -151,21 +152,21 @@ class TestAsyncCTEQueryExtendedFunctionality:
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_range_conditions(self, async_order_fixtures):
+    async def test_cte_with_range_conditions(self, async_order_fixtures):
         """
-        Test Async CTE query with range conditions (limit, offset).
+        Test CTE query with range conditions (limit, offset).
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
         # Create test data
-        user = AsyncUser(username='async_cte_range_user', email='async_cte_range@example.com', age=35)
+        user = AsyncUser(username='cte_range_user', email='cte_range@example.com', age=35)
         await user.save()
 
         # Create orders for the test
-        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-001', total_amount=Decimal('100.00'), status='active')
-        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-002', total_amount=Decimal('200.00'), status='completed')
-        order3 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-003', total_amount=Decimal('300.00'), status='pending')
-        order4 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-RANGE-004', total_amount=Decimal('400.00'), status='active')
+        order1 = AsyncOrder(user_id=user.id, order_number='CTE-RANGE-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='CTE-RANGE-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='CTE-RANGE-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='CTE-RANGE-004', total_amount=Decimal('400.00'), status='active')
         await order1.save()
         await order2.save()
         await order3.save()
@@ -178,8 +179,16 @@ class TestAsyncCTEQueryExtendedFunctionality:
         cte_query = AsyncCTEQuery(backend)
         cte_query.with_cte('range_orders_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()} ORDER BY total_amount DESC", ()))
 
+        # Verify the SQL generation for range conditions
+        sql_query = cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1)
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains dialect-independent query elements
+        assert 'WITH' in sql.upper()
+        assert 'range_orders_cte' in sql
+
         # Use the new API: specify which CTE to use and apply range conditions
-        results = await cte_query.from_cte('range_orders_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1).aggregate()
+        results = await sql_query.aggregate()
 
         # Verify results contain limited and offset records
         assert len(results) == 2
@@ -189,19 +198,19 @@ class TestAsyncCTEQueryExtendedFunctionality:
 
     @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_joins(self, async_order_fixtures):
+    async def test_cte_with_joins(self, async_order_fixtures):
         """
-        Test Async CTE query with join conditions.
+        Test CTE query with join conditions.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
         # Create test data
-        user = AsyncUser(username='async_cte_join_user', email='async_cte_join@example.com', age=40)
+        user = AsyncUser(username='cte_join_user', email='cte_join@example.com', age=40)
         await user.save()
 
         # Create orders for the test
-        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-JOIN-001', total_amount=Decimal('150.00'), status='active')
-        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-JOIN-002', total_amount=Decimal('250.00'), status='pending')
+        order1 = AsyncOrder(user_id=user.id, order_number='CTE-JOIN-001', total_amount=Decimal('150.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='CTE-JOIN-002', total_amount=Decimal('250.00'), status='pending')
         await order1.save()
         await order2.save()
 
@@ -212,20 +221,25 @@ class TestAsyncCTEQueryExtendedFunctionality:
         cte_query = AsyncCTEQuery(backend)
         cte_query.with_cte('joined_orders_cte', (f"SELECT o.id, o.status, o.total_amount, u.username FROM {AsyncOrder.table_name()} o JOIN {AsyncUser.table_name()} u ON o.user_id = u.id WHERE o.status IN (?, ?)", ('active', 'pending')))
 
+        # Verify the SQL generation for join conditions
+        sql_query = cte_query.from_cte('joined_orders_cte').select('id', 'status', 'total_amount', 'username').order_by(('total_amount', 'DESC'))
+        sql, params = sql_query.to_sql()
+
+        # Assert the generated SQL contains dialect-independent CTE elements
+        assert 'WITH' in sql.upper()
+        assert 'joined_orders_cte' in sql
+
         # Use the new API: specify which CTE to use and apply additional conditions
-        results = await cte_query.from_cte('joined_orders_cte').select('id', 'status', 'total_amount', 'username').order_by(('total_amount', 'DESC')).aggregate()
+        results = await sql_query.aggregate()
 
         # Verify results contain joined data
         assert len(results) == 2
-        # Check that we have the expected data regardless of order (since order_by might not work as expected in this context)
-        amounts = {row['total_amount'] for row in results}
-        statuses = {row['status'] for row in results}
-        usernames = {row['username'] for row in results}
-        assert Decimal('150.00') in amounts
-        assert Decimal('250.00') in amounts
-        assert 'active' in statuses
-        assert 'pending' in statuses
-        assert 'async_cte_join_user' in usernames
+        # Results should be ordered by amount descending
+        assert results[0]['total_amount'] == Decimal('250.00')
+        assert results[0]['status'] == 'pending'
+        assert results[0]['username'] == 'cte_join_user'
+        assert results[1]['total_amount'] == Decimal('150.00')
+        assert results[1]['status'] == 'active'
 
 class TestCTEQueryAsyncErrorHandling:
     """Test CTE query error handling for edge cases (asynchronous)."""
@@ -300,36 +314,42 @@ class TestCTEQueryAsyncErrorHandling:
         assert "StorageBackend" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_async_cte_query_with_invalid_query_type_raises_error(self, async_order_fixtures):
+    async def test_cte_query_with_invalid_query_type_raises_error(self, async_order_fixtures):
         """
-        Test that AsyncCTEQuery raises TypeError when an unsupported query type is provided to with_cte.
+        Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
+
+        This test verifies that the CTEQuery properly validates the types of query
+        objects passed to it and raises appropriate errors for unsupported types.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
-        # Get async backend from model
+        # Get backend from model
         backend = AsyncOrder.backend()
 
-        # Create an AsyncCTEQuery instance
+        # Create a CTEQuery instance
         cte_query = AsyncCTEQuery(backend)
 
         # Try to pass an unsupported type (e.g., integer) as query parameter
         with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', 12345)
+            cte_query.with_cte('invalid_cte', 12345)  # Passing an integer instead of valid query type
 
+        # Verify the error message mentions the unsupported type
         assert "Query type <class 'int'>" in str(exc_info.value)
         assert "not supported in CTE" in str(exc_info.value)
 
         # Try to pass a list as query parameter
         with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', [1, 2, 3])
+            cte_query.with_cte('invalid_cte', [1, 2, 3])  # Passing a list instead of valid query type
 
+        # Verify the error message mentions the unsupported type
         assert "Query type <class 'list'>" in str(exc_info.value)
         assert "not supported in CTE" in str(exc_info.value)
 
         # Try to pass a dict as query parameter
         with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})
+            cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})  # Passing a dict instead of valid query type
 
+        # Verify the error message mentions the unsupported type
         assert "Query type <class 'dict'>" in str(exc_info.value)
         assert "not supported in CTE" in str(exc_info.value)
 
@@ -357,3 +377,46 @@ class TestCTEQueryAsyncErrorHandling:
         # Verify the error message mentions the unsupported query type
         assert "not supported in CTE" in str(exc_info.value)
         assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_async_cte_query_with_sync_query_raises_error(self, async_order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when a sync query is provided to with_cte.
+
+        This test verifies that the asynchronous AsyncCTEQuery rejects sync query objects
+        to prevent sync/async mixing. Although to_sql() is a sync/async-agnostic pure
+        computation, a sync query carries a sync backend reference and must not be
+        embedded into an async AsyncCTEQuery. An ActiveQuery is used here because it
+        implements IQuery but not IAsyncQuery, exercising the dispatch ordering where the
+        IAsyncQuery check must take precedence before the IQuery rejection; before the
+        fix this object was wrongly accepted via the IQuery branch.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get async backend from model for the AsyncCTEQuery under test
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncCTEQuery instance
+        cte_query = AsyncCTEQuery(backend)
+
+        # Build a real ActiveQuery. It implements IQuery but not IAsyncQuery, so it
+        # directly exercises the sync/async mixing rejection path. A mock sync
+        # model/backend is used only to satisfy construction; the rejection fires
+        # before any backend interaction occurs.
+        from unittest.mock import Mock
+        from rhosocial.activerecord.backend.base import StorageBackend
+        from rhosocial.activerecord.query.active_query import ActiveQuery
+
+        mock_sync_backend = Mock(spec=StorageBackend)
+        mock_sync_backend.dialect = Mock()
+        mock_sync_model = Mock()
+        mock_sync_model.backend.return_value = mock_sync_backend
+        sync_query = ActiveQuery(mock_sync_model)
+
+        # Try to add the sync query to the async AsyncCTEQuery - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', sync_query)
+
+        # Verify the error message mentions the sync/async mixing rejection
+        assert "AsyncCTEQuery (async) cannot accept sync query" in str(exc_info.value)
+        assert "ActiveQuery" in str(exc_info.value)

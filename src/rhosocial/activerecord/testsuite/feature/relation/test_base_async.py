@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_base.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_base_async.py
 """
 Tests for relation base functionality.
 

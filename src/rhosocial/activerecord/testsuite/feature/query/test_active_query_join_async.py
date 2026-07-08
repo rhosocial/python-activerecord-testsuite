@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_join.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_join_async.py
 """ActiveQuery join functionality tests
 
 This module contains tests for the JOIN ActiveQuery operations including:

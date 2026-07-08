@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_one.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_with_one_async.py
 """Test eager loading using one() method.
 
 Verifies that relations configured via with_() are eagerly loaded when using one().

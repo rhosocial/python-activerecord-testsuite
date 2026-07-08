@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_caching.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_caching_async.py
 """Test InstanceCache population after eager loading.
 
 Verifies that relations loaded via with_() are cached on instances,

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/test_cache.py
+# src/rhosocial/activerecord/testsuite/feature/relation/test_cache_async.py
 """
 Tests for relation cache functionality.
 
@@ -7,7 +7,7 @@ RelationCache (set/get/delete/clear, max_size LRU eviction, disabled mode),
 and thread-safe concurrent access.
 """
 import pytest
-import time
+import asyncio
 
 from rhosocial.activerecord.relation.cache import (
     CacheConfig,
@@ -57,7 +57,7 @@ class TestAsyncRelationCache:
         assert not entry.is_expired()
 
         # Test expiration
-        time.sleep(1.1)
+        await asyncio.sleep(1.1)
         assert entry.is_expired()
 
         # Test no TTL
@@ -77,12 +77,12 @@ class TestAsyncRelationCache:
         assert cache.get(instance) == "test_value"
 
         # Test expiration
-        time.sleep(1.1)
+        await asyncio.sleep(1.1)
         assert cache.get(instance) is None
 
         # Test delete
         cache.set(instance, "test_value")
-        await cache.delete(instance)
+        cache.delete(instance)
         assert cache.get(instance) is None
 
         # Test clear

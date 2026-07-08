@@ -1,8 +1,8 @@
-# src/rhosocial/activerecord/testsuite/feature/mixins/test_combined_articles.py
+# src/rhosocial/activerecord/testsuite/feature/mixins/test_combined_articles_async.py
 """
 Test combined functionality
 """
-import time
+import asyncio
 
 import pytest
 
@@ -21,7 +21,7 @@ async def test_combined_update(async_combined_article_model):
 
     article.content = "Updated content"
     article.status = "published"
-    time.sleep(0.1)
+    await asyncio.sleep(0.1)
     await article.save()
 
     # Verify updated state

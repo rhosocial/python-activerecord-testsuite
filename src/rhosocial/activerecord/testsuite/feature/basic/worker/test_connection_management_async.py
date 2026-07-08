@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_connection_management.py
+# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_connection_management_async.py
 """
 Test database connection management in Worker processes.
 
@@ -44,7 +44,7 @@ def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
     asyncio.run(AsyncUser.configure(config, backend_class))
 
     try:
-        return AsyncUser.query().count()
+        return asyncio.run(AsyncUser.query().count())
     finally:
         AsyncUser.backend().disconnect()
 
@@ -80,8 +80,8 @@ def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) 
 
     try:
         user = AsyncUser(**user_data)
-        user.save()
-        count = AsyncUser.query().count()
+        asyncio.run(user.save())
+        count = asyncio.run(AsyncUser.query().count())
         return {'user_id': user.id, 'count': count}
     finally:
         AsyncUser.backend().disconnect()
@@ -117,7 +117,7 @@ def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict)
     for _ in range(iterations):
         asyncio.run(AsyncUser.configure(config, backend_class))
         try:
-            AsyncUser.query().count()
+            asyncio.run(AsyncUser.query().count())
             success_count += 1
         finally:
             AsyncUser.backend().disconnect()
@@ -154,7 +154,7 @@ def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> boo
 
     try:
         time.sleep(duration)
-        AsyncUser.query().count()
+        asyncio.run(AsyncUser.query().count())
         return True
     finally:
         AsyncUser.backend().disconnect()

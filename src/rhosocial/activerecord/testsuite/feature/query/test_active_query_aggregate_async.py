@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_aggregate.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_aggregate_async.py
 """ActiveQuery aggregate functionality tests
 
 This module contains tests for the aggregate ActiveQuery operations including:

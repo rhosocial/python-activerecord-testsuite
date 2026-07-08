@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/connection/test_cte_query_context.py
+# src/rhosocial/activerecord/testsuite/feature/query/connection/test_cte_query_context_async.py
 """
 Test CTEQuery context awareness with connection pool.
 

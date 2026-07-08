@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_worker_pool_lifecycle.py
+# src/rhosocial/activerecord/testsuite/feature/basic/worker/test_worker_pool_lifecycle_async.py
 """
 Test WorkerPool lifecycle with database operations.
 
@@ -17,7 +17,7 @@ from rhosocial.activerecord.worker import WorkerPool, PoolState, TaskContext
 # Task Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
-def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
+async def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
     """
     Simple database task that verifies connection availability.
 
@@ -32,7 +32,6 @@ def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
     if conn_params is None:
         raise ValueError("conn_params is required")
 
-    import asyncio
     import importlib
     backend_module = importlib.import_module(conn_params['backend_module'])
     backend_class = getattr(backend_module, conn_params['backend_class_name'])
@@ -42,17 +41,17 @@ def simple_db_task(ctx: TaskContext, value: int, conn_params: Dict) -> int:
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    asyncio.run(AsyncUser.configure(config, backend_class))
+    await AsyncUser.configure(config, backend_class)
 
     try:
         # Verify connection by counting users
-        AsyncUser.query().count()
+        await AsyncUser.query().count()
         return value * 2
     finally:
-        AsyncUser.backend().disconnect()
+        await AsyncUser.backend().disconnect()
 
 
-def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -> float:
+async def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -> float:
     """
     Long-running database task for testing graceful shutdown.
 
@@ -77,15 +76,15 @@ def long_running_db_task(ctx: TaskContext, duration: float, conn_params: Dict) -
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    asyncio.run(AsyncUser.configure(config, backend_class))
+    await AsyncUser.configure(config, backend_class)
 
     try:
-        time.sleep(duration)
+        await asyncio.sleep(duration)
         # Keep connection alive
-        AsyncUser.query().count()
+        await AsyncUser.query().count()
         return duration
     finally:
-        AsyncUser.backend().disconnect()
+        await AsyncUser.backend().disconnect()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/connection/test_set_operation_context.py
+# src/rhosocial/activerecord/testsuite/feature/query/connection/test_set_operation_context_async.py
 """
 Test SetOperationQuery context awareness with connection pool.
 

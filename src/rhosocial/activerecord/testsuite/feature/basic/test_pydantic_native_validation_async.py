@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_pydantic_native_validation.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_pydantic_native_validation_async.py
 """Tests for Pydantic native validation behavior in ActiveRecord models."""
 import json
 from datetime import datetime, timedelta

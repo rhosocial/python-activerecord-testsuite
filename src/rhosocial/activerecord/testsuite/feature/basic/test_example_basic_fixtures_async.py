@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_example_basic_fixtures.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_example_basic_fixtures_async.py
 """
 Example test file to import and verify the newly introduced mapped models fixtures.
 """

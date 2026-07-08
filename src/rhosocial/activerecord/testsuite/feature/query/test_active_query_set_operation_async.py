@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_set_operation.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_active_query_set_operation_async.py
 """ActiveQuery set operation functionality tests
 
 This module contains tests for the set operation ActiveQuery operations including:

@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_aggregate_queries.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_aggregate_queries_async.py
 """Aggregate query tests"""
 import pytest
 from decimal import Decimal
@@ -22,10 +22,10 @@ async def test_count_simple(async_order_fixtures):
 
     # Create 3 orders for counting
     for i in range(3):
-        AsyncOrder(user_id=user.id, order_number=f'CNT-{i+1:03d}').save()
+        await AsyncOrder(user_id=user.id, order_number=f'CNT-{i+1:03d}').save()
 
     # Count all orders for this user
-    count = AsyncOrder.query().count()
+    count = await AsyncOrder.query().count()
     assert count == 3
 
 
@@ -47,14 +47,14 @@ async def test_count_with_column(async_order_fixtures):
 
     # Create 3 orders with specific column values
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'COL-{i+1:03d}',
             total_amount=Decimal(f'{(i+1)*100.00}')
         ).save()
 
     # Count specific column values
-    count = AsyncOrder.query().count(AsyncOrder.c.order_number)
+    count = await AsyncOrder.query().count(AsyncOrder.c.order_number)
     assert count == 3
 
 
@@ -76,21 +76,21 @@ async def test_count_distinct(async_order_fixtures):
 
     # Create multiple orders with same status to test distinct counting
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'DIST-{i+1:03d}',
             status='pending'
         ).save()
 
     # Add one order with different status
-    AsyncOrder(
+    await AsyncOrder(
         user_id=user.id,
         order_number='DIST-004',
         status='completed'
     ).save()
 
     # Count distinct status values
-    distinct_status_count = AsyncOrder.query().count(AsyncOrder.c.status, is_distinct=True)
+    distinct_status_count = await AsyncOrder.query().count(AsyncOrder.c.status, is_distinct=True)
     assert distinct_status_count == 2  # 'pending' and 'completed'
 
 
@@ -113,14 +113,14 @@ async def test_sum_simple(async_order_fixtures):
     # Define amounts to sum
     amounts = [Decimal('100.00'), Decimal('200.00'), Decimal('300.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'SUM-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Calculate total sum of amounts
-    total = AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
+    total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
     assert total == sum(amounts)
 
 
@@ -143,14 +143,14 @@ async def test_sum_with_column(async_order_fixtures):
     # Define amounts to sum
     amounts = [Decimal('50.00'), Decimal('150.00'), Decimal('250.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'COL-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Calculate sum for specific column
-    total = AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
+    total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
     assert total == sum(amounts)
 
 
@@ -173,14 +173,14 @@ async def test_avg_simple(async_order_fixtures):
     # Define amounts for average calculation
     amounts = [Decimal('100.00'), Decimal('200.00'), Decimal('300.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'AVG-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Calculate average of amounts
-    avg = AsyncOrder.query().avg(AsyncOrder.c.total_amount)
+    avg = await AsyncOrder.query().avg(AsyncOrder.c.total_amount)
     expected_avg = sum(amounts) / len(amounts)
     assert avg == expected_avg
 
@@ -204,15 +204,15 @@ async def test_min_max_simple(async_order_fixtures):
     # Define amounts with known min/max values
     amounts = [Decimal('100.00'), Decimal('200.00'), Decimal('50.00'), Decimal('300.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'MINMAX-{i+1:03d}',
             total_amount=amount
         ).save()
 
     # Find minimum and maximum values
-    min_val = AsyncOrder.query().min_(AsyncOrder.c.total_amount)
-    max_val = AsyncOrder.query().max_(AsyncOrder.c.total_amount)
+    min_val = await AsyncOrder.query().min_(AsyncOrder.c.total_amount)
+    max_val = await AsyncOrder.query().max_(AsyncOrder.c.total_amount)
     
     assert min_val == min(amounts)
     assert max_val == max(amounts)
@@ -237,7 +237,7 @@ async def test_aggregate_complex(async_order_fixtures):
     # Create orders with alternating statuses for complex aggregation
     amounts = [Decimal('100.00'), Decimal('200.00'), Decimal('300.00')]
     for i, amount in enumerate(amounts):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'AGG-{i+1:03d}',
             total_amount=amount,
@@ -252,10 +252,10 @@ async def test_aggregate_complex(async_order_fixtures):
     from rhosocial.activerecord.backend.expression import functions
     
     # Perform complex aggregation with multiple functions
-    results = AsyncOrder.query().select(
+    results = await AsyncOrder.query().select(
         functions.sum_(dialect, AsyncOrder.c.total_amount).as_('total'),
         functions.avg(dialect, AsyncOrder.c.total_amount).as_('average'),
-        await functions.count(dialect, '*').as_('count')
+        functions.count(dialect, '*').as_('count')
     ).aggregate()
 
     assert len(results) == 1
@@ -288,7 +288,7 @@ async def test_aggregate_multiple_fields(async_order_fixtures):
     ]
 
     for data in orders_data:
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=data['number'],
             total_amount=data['amount'],
@@ -303,8 +303,8 @@ async def test_aggregate_multiple_fields(async_order_fixtures):
     from rhosocial.activerecord.backend.expression import functions
     
     # Perform multi-field aggregation
-    results = AsyncOrder.query().select(
-        await functions.count(dialect, '*').as_('total_orders'),
+    results = await AsyncOrder.query().select(
+        functions.count(dialect, '*').as_('total_orders'),
         functions.sum_(dialect, AsyncOrder.c.total_amount).as_('total_amount'),
         functions.avg(dialect, AsyncOrder.c.total_amount).as_('avg_amount')
     ).aggregate()
@@ -339,7 +339,7 @@ async def test_aggregate_with_conditions(async_order_fixtures):
     ]
 
     for data in orders_data:
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=data['number'],
             total_amount=data['amount'],
@@ -354,8 +354,8 @@ async def test_aggregate_with_conditions(async_order_fixtures):
     from rhosocial.activerecord.backend.expression import functions
     
     # Perform aggregation only on active orders
-    results = AsyncOrder.query().where(AsyncOrder.c.status == 'active').select(
-        await functions.count(dialect, '*').as_('active_count'),
+    results = await AsyncOrder.query().where(AsyncOrder.c.status == 'active').select(
+        functions.count(dialect, '*').as_('active_count'),
         functions.sum_(dialect, AsyncOrder.c.total_amount).as_('active_total')
     ).aggregate()
 

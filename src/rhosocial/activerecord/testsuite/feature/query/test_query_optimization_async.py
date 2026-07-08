@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_query_optimization.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_query_optimization_async.py
 """Query optimization tests"""
 import pytest
 from decimal import Decimal
@@ -45,14 +45,14 @@ async def test_n_plus_one_detection(async_combined_fixtures):
 
     # Scenario 1: Without eager loading, will cause N+1 problem
     # This would result in 1 query for orders + N queries for users (N+1 total)
-    orders_without_eager = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    orders_without_eager = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     for order in orders_without_eager:
         # Access associated user info, this will trigger additional query
         user_obj = await AsyncUser.find_one(order.user_id)
 
     # Scenario 2: With eager loading, avoid N+1 problem
     # This results in 1 optimized query with JOIN
-    orders_with_eager = AsyncOrder.query().with_('user').where(AsyncOrder.c.user_id == user.id).all()
+    orders_with_eager = await AsyncOrder.query().with_('user').where(AsyncOrder.c.user_id == user.id).all()
     
     # Access pre-loaded user info (should not trigger additional queries)
     accessed_users_eager = []
@@ -110,7 +110,7 @@ async def test_batch_loading_performance(async_order_fixtures):
             await item.save()
 
     # Test batch loading performance: load all orders and their order items in one go
-    orders_with_items = AsyncOrder.query().with_('items').where(AsyncOrder.c.user_id == user.id).all()
+    orders_with_items = await AsyncOrder.query().with_('items').where(AsyncOrder.c.user_id == user.id).all()
     
     # Verify all orders are loaded
     assert len(orders_with_items) == 10

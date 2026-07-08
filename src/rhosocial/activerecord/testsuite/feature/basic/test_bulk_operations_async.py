@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/test_bulk_operations.py
+# src/rhosocial/activerecord/testsuite/feature/basic/test_bulk_operations_async.py
 """Tests for bulk operations (bulk_create, bulk_update, bulk_delete, update_all, delete_all)."""
 
 import pytest

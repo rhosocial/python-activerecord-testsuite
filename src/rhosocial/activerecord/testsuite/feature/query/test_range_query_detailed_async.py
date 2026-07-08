@@ -1,3 +1,4 @@
+# src/rhosocial/activerecord/testsuite/feature/query/test_range_query_detailed_async.py
 """
 Detailed RangeQueryMixin implementation tests to increase coverage of src/rhosocial/activerecord/query/range.py
 
@@ -76,7 +77,7 @@ async def test_in_list_with_values(async_order_fixtures):
     await user3.save()
 
     # Test in_list with values
-    results = AsyncUser.query().in_list(AsyncUser.c.username, ['user1', 'user2']).all()
+    results = await AsyncUser.query().in_list(AsyncUser.c.username, ['user1', 'user2']).all()
 
     assert len(results) == 2
     usernames = [u.username for u in results]
@@ -100,7 +101,7 @@ async def test_in_list_with_empty_list_default_behavior(async_order_fixtures):
     await user2.save()
 
     # Test in_list with empty list (default: empty_result=True, so should return no results)
-    results = AsyncUser.query().in_list(AsyncUser.c.username, []).all()
+    results = await AsyncUser.query().in_list(AsyncUser.c.username, []).all()
 
     assert len(results) == 0
 
@@ -120,8 +121,8 @@ async def test_in_list_with_empty_list_no_result_false(async_order_fixtures):
     await user2.save()
 
     # Test in_list with empty list and empty_result=False (should return all results)
-    all_users = AsyncUser.query().all()
-    results = AsyncUser.query().in_list(AsyncUser.c.username, [], empty_result=False).all()
+    all_users = await AsyncUser.query().all()
+    results = await AsyncUser.query().in_list(AsyncUser.c.username, [], empty_result=False).all()
 
     assert len(results) == len(all_users)
 
@@ -141,7 +142,7 @@ async def test_in_list_with_string_column_name(async_order_fixtures):
     await user2.save()
 
     # Test in_list with string column name
-    results = AsyncUser.query().in_list('username', ['user1', 'user2']).all()
+    results = await AsyncUser.query().in_list('username', ['user1', 'user2']).all()
 
     assert len(results) == 2
     usernames = [u.username for u in results]
@@ -167,7 +168,7 @@ async def test_not_in_with_values(async_order_fixtures):
     await user3.save()
 
     # Test not_in with values
-    results = AsyncUser.query().not_in(AsyncUser.c.username, ['user3']).all()
+    results = await AsyncUser.query().not_in(AsyncUser.c.username, ['user3']).all()
 
     assert len(results) == 2
     usernames = [u.username for u in results]
@@ -191,8 +192,8 @@ async def test_not_in_with_empty_list_default_behavior(async_order_fixtures):
     await user2.save()
 
     # Test not_in with empty list (default: empty_result=False, so should return all results)
-    all_users = AsyncUser.query().all()
-    results = AsyncUser.query().not_in(AsyncUser.c.username, []).all()
+    all_users = await AsyncUser.query().all()
+    results = await AsyncUser.query().not_in(AsyncUser.c.username, []).all()
 
     assert len(results) == len(all_users)
 
@@ -212,7 +213,7 @@ async def test_not_in_with_empty_list_empty_result_true(async_order_fixtures):
     await user2.save()
 
     # Test not_in with empty list and empty_result=True (should return no results)
-    results = AsyncUser.query().not_in(AsyncUser.c.username, [], empty_result=True).all()
+    results = await AsyncUser.query().not_in(AsyncUser.c.username, [], empty_result=True).all()
 
     assert len(results) == 0
 
@@ -235,7 +236,7 @@ async def test_not_in_with_string_column_name(async_order_fixtures):
     await user3.save()
 
     # Test not_in with string column name
-    results = AsyncUser.query().not_in('username', ['user3']).all()
+    results = await AsyncUser.query().not_in('username', ['user3']).all()
 
     assert len(results) == 2
     usernames = [u.username for u in results]
@@ -265,7 +266,7 @@ async def test_between_method(async_order_fixtures):
     await user4.save()
 
     # Test between method
-    results = AsyncUser.query().between(AsyncUser.c.age, 22, 32).all()
+    results = await AsyncUser.query().between(AsyncUser.c.age, 22, 32).all()
 
     # Should return user2 (25) and user3 (30) - 2 results
     assert len(results) == 2
@@ -294,7 +295,7 @@ async def test_between_with_string_column_name(async_order_fixtures):
     await user3.save()
 
     # Test between with string column name
-    results = AsyncUser.query().between('balance', 150.0, 250.0).all()
+    results = await AsyncUser.query().between('balance', 150.0, 250.0).all()
 
     assert len(results) == 1  # user2 (200.0) should match
     balances = [u.balance for u in results]
@@ -324,7 +325,7 @@ async def test_not_between_method(async_order_fixtures):
     await user4.save()
 
     # Test not_between method
-    results = AsyncUser.query().not_between(AsyncUser.c.age, 22, 32).all()
+    results = await AsyncUser.query().not_between(AsyncUser.c.age, 22, 32).all()
 
     assert len(results) == 2  # user1 (20) and user4 (35) should be outside the range
     ages = [u.age for u in results]
@@ -352,7 +353,7 @@ async def test_not_between_with_string_column_name(async_order_fixtures):
     await user3.save()
 
     # Test not_between with string column name
-    results = AsyncUser.query().not_between('balance', 150.0, 250.0).all()
+    results = await AsyncUser.query().not_between('balance', 150.0, 250.0).all()
 
     assert len(results) == 2  # user1 (100.0) and user3 (300.0) should be outside range
     balances = [u.balance for u in results]
@@ -379,7 +380,7 @@ async def test_like_method(async_order_fixtures):
     await user3.save()
 
     # Test like method with pattern
-    results = AsyncUser.query().like(AsyncUser.c.username, '%smith%').all()
+    results = await AsyncUser.query().like(AsyncUser.c.username, '%smith%').all()
 
     assert len(results) == 1
     assert results[0].username == 'alice_smith'
@@ -400,7 +401,7 @@ async def test_like_with_string_column_name(async_order_fixtures):
     await user2.save()
 
     # Test like with string column name
-    results = AsyncUser.query().like('username', '%jones%').all()
+    results = await AsyncUser.query().like('username', '%jones%').all()
 
     assert len(results) == 1
     assert results[0].username == 'bob_jones'
@@ -424,7 +425,7 @@ async def test_not_like_method(async_order_fixtures):
     await user3.save()
 
     # Test not_like method
-    results = AsyncUser.query().not_like(AsyncUser.c.username, '%smith%').all()
+    results = await AsyncUser.query().not_like(AsyncUser.c.username, '%smith%').all()
 
     assert len(results) == 1
     assert results[0].username == 'bob_jones'
@@ -449,18 +450,18 @@ async def test_like_with_string_column_name(async_order_fixtures):
 
     # Test like with string column name for different patterns
     # Test pattern at beginning
-    results_start = AsyncUser.query().like('username', 'john%').all()
+    results_start = await AsyncUser.query().like('username', 'john%').all()
     assert len(results_start) == 1
     assert results_start[0].username == 'john_doe'
 
     # Test pattern at end
-    results_end = AsyncUser.query().like('username', '%_doe').all()
+    results_end = await AsyncUser.query().like('username', '%_doe').all()
     assert len(results_end) == 2  # john_doe and jane_doe
     usernames = {u.username for u in results_end}
     assert usernames == {'john_doe', 'jane_doe'}
 
     # Test pattern in middle
-    results_middle = AsyncUser.query().like('username', '%_%').all()  # Contains underscore
+    results_middle = await AsyncUser.query().like('username', '%_%').all()  # Contains underscore
     assert len(results_middle) == 3  # All users have underscores
 
 
@@ -483,12 +484,12 @@ async def test_like_with_wildcards(async_order_fixtures):
 
     # Test various wildcard patterns
     # Single character wildcard (_)
-    results_single = AsyncUser.query().like(AsyncUser.c.username, 'a_test_user').all()  # Exact match
+    results_single = await AsyncUser.query().like(AsyncUser.c.username, 'a_test_user').all()  # Exact match
     assert len(results_single) == 1
     assert results_single[0].username == 'a_test_user'
 
     # Multiple character wildcard (%)
-    results_multi = AsyncUser.query().like(AsyncUser.c.username, '%test%').all()  # Contains 'test'
+    results_multi = await AsyncUser.query().like(AsyncUser.c.username, '%test%').all()  # Contains 'test'
     assert len(results_multi) == 2  # a_test_user and c_tester_user
     usernames = {u.username for u in results_multi}
     assert 'a_test_user' in usernames
@@ -513,7 +514,7 @@ async def test_ilike_method(async_order_fixtures):
     await user3.save()
 
     # Test ilike method with case-insensitive pattern
-    results = AsyncUser.query().ilike(AsyncUser.c.username, '%smith%').all()
+    results = await AsyncUser.query().ilike(AsyncUser.c.username, '%smith%').all()
 
     # Should match Alice_Smith despite case difference
     assert len(results) == 1
@@ -537,7 +538,7 @@ async def test_not_ilike_method(async_order_fixtures):
     await user3.save()
 
     # Test not_ilike method
-    results = AsyncUser.query().not_ilike(AsyncUser.c.username, '%smith%').all()
+    results = await AsyncUser.query().not_ilike(AsyncUser.c.username, '%smith%').all()
 
     # Should return bob_jones who doesn't contain smith (case insensitive)
     assert len(results) == 1
@@ -561,10 +562,10 @@ async def test_is_null_method(async_order_fixtures):
     await user2.save()
 
     # Test is_null method
-    results = AsyncUser.query().is_null(AsyncUser.c.age).all()
+    results = await AsyncUser.query().is_null(AsyncUser.c.age).all()
 
     # Find how many users have null age
-    null_age_count = sum(1 for u in AsyncUser.query().all() if u.age is None)
+    null_age_count = sum(1 for u in await AsyncUser.query().all() if u.age is None)
     assert len(results) == null_age_count
 
 
@@ -586,7 +587,7 @@ async def test_is_not_null_method(async_order_fixtures):
     await user3.save()
 
     # Test is_not_null method
-    results = AsyncUser.query().is_not_null(AsyncUser.c.age).all()
+    results = await AsyncUser.query().is_not_null(AsyncUser.c.age).all()
 
     # Should return users with non-null age
     assert len(results) >= 2  # At least user1 and user2
@@ -612,7 +613,7 @@ async def test_greater_than_method(async_order_fixtures):
     await user3.save()
 
     # Test greater_than method
-    results = AsyncUser.query().greater_than(AsyncUser.c.age, 22).all()
+    results = await AsyncUser.query().greater_than(AsyncUser.c.age, 22).all()
 
     assert len(results) == 2  # user2 (25) and user3 (30)
     ages = [u.age for u in results]
@@ -639,7 +640,7 @@ async def test_greater_than_or_equal_method(async_order_fixtures):
     await user3.save()
 
     # Test greater_than_or_equal method
-    results = AsyncUser.query().greater_than_or_equal(AsyncUser.c.age, 25).all()
+    results = await AsyncUser.query().greater_than_or_equal(AsyncUser.c.age, 25).all()
 
     assert len(results) == 2  # user2 (25) and user3 (30)
     ages = [u.age for u in results]
@@ -666,7 +667,7 @@ async def test_less_than_method(async_order_fixtures):
     await user3.save()
 
     # Test less_than method
-    results = AsyncUser.query().less_than(AsyncUser.c.age, 28).all()
+    results = await AsyncUser.query().less_than(AsyncUser.c.age, 28).all()
 
     assert len(results) == 2  # user1 (20) and user2 (25)
     ages = [u.age for u in results]
@@ -693,7 +694,7 @@ async def test_less_than_or_equal_method(async_order_fixtures):
     await user3.save()
 
     # Test less_than_or_equal method
-    results = AsyncUser.query().less_than_or_equal(AsyncUser.c.age, 25).all()
+    results = await AsyncUser.query().less_than_or_equal(AsyncUser.c.age, 25).all()
 
     assert len(results) == 2  # user1 (20) and user2 (25)
     ages = [u.age for u in results]
@@ -723,7 +724,7 @@ async def test_chaining_range_methods(async_order_fixtures):
     await user4.save()
 
     # Test chaining multiple range methods
-    results = (AsyncUser.query()
+    results = (await AsyncUser.query()
                .greater_than(AsyncUser.c.age, 22)
                .less_than(AsyncUser.c.age, 33)
                .greater_than_or_equal(AsyncUser.c.balance, 200.0)

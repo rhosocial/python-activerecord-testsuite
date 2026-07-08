@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_error_handling.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_error_handling_async.py
 """Error handling and edge cases tests"""
 import pytest
 from decimal import Decimal
@@ -29,7 +29,7 @@ async def test_invalid_parameter_handling(async_order_fixtures):
     # Test passing wrong type of parameter to where method
     try:
         # Try passing wrong parameter type (string instead of integer)
-        results = AsyncOrder.query().where(AsyncOrder.c.id == "invalid_id_type").all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.id == "invalid_id_type").all()
         # Some backends may try to convert type, so not always fail
     except Exception as e:
         # Different backends report errors differently:
@@ -39,7 +39,7 @@ async def test_invalid_parameter_handling(async_order_fixtures):
             f"Expected TypeError, ValueError, AttributeError or DatabaseError, got {type(e)}"
 
     # Test correct parameter type
-    results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
     assert len(results) == 1
 
 
@@ -64,14 +64,14 @@ async def test_type_error_handling(async_order_fixtures):
 
     # Test comparing string with number (type mismatch)
     try:
-        results = AsyncOrder.query().where(AsyncOrder.c.total_amount == "not_a_number").all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.total_amount == "not_a_number").all()
         # Some backends may try type conversion
     except Exception as e:
         # Some backends may catch and handle this error
         pass
 
     # Test correct type comparison
-    results = AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal('150.00')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal('150.00')).all()
     assert len(results) == 1
 
 
@@ -104,23 +104,23 @@ async def test_null_value_handling(async_order_fixtures):
     # Different databases may handle NULL comparisons differently
     # Try both approaches: direct comparison and SQL string
     try:
-        null_age_users = AsyncUser.query().where(AsyncUser.c.age == None).all()
+        null_age_users = await AsyncUser.query().where(AsyncUser.c.age == None).all()
         # If direct comparison doesn't work, try SQL string approach
         if len(null_age_users) == 0:
-            null_age_users = AsyncUser.query().where('age IS NULL').all()
+            null_age_users = await AsyncUser.query().where('age IS NULL').all()
     except Exception:
         # If direct comparison fails, use SQL string approach
-        null_age_users = AsyncUser.query().where('age IS NULL').all()
+        null_age_users = await AsyncUser.query().where('age IS NULL').all()
 
     assert len(null_age_users) >= 1
 
     # Test querying non-null values
     try:
-        non_null_email_users = AsyncUser.query().where(AsyncUser.c.email != None).all()
+        non_null_email_users = await AsyncUser.query().where(AsyncUser.c.email != None).all()
         if len(non_null_email_users) == 0:
-            non_null_email_users = AsyncUser.query().where('email IS NOT NULL').all()
+            non_null_email_users = await AsyncUser.query().where('email IS NOT NULL').all()
     except Exception:
-        non_null_email_users = AsyncUser.query().where('email IS NOT NULL').all()
+        non_null_email_users = await AsyncUser.query().where('email IS NOT NULL').all()
     
     assert len(non_null_email_users) >= 1
 
@@ -150,7 +150,7 @@ async def test_sql_injection_protection(async_order_fixtures):
     # Use parameterized query, malicious input should be treated as plain string
     # not SQL code
     try:
-        results = AsyncOrder.query().where('order_number = ?', (malicious_input,)).all()
+        results = await AsyncOrder.query().where('order_number = ?', (malicious_input,)).all()
         # Should find no matching orders as no order number is malicious input
         assert len(results) == 0
     except Exception as e:
@@ -158,7 +158,7 @@ async def test_sql_injection_protection(async_order_fixtures):
         pass
 
     # Verify normal query still works
-    normal_results = AsyncOrder.query().where('order_number = ?', ('INJECT-001',)).all()
+    normal_results = await AsyncOrder.query().where('order_number = ?', ('INJECT-001',)).all()
     assert len(normal_results) == 1
 
 
@@ -179,20 +179,20 @@ async def test_parameterized_query_validation(async_order_fixtures):
 
     # Create multiple orders for parameter validation testing
     for i in range(3):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=f'PARAM-{i+1:03d}',
             total_amount=Decimal(f'{(i+1)*50.00}')
         ).save()
 
     # Test parameterized query correctness with positional parameters
-    results1 = AsyncOrder.query().where('order_number = ?', ('PARAM-001',)).all()
+    results1 = await AsyncOrder.query().where('order_number = ?', ('PARAM-001',)).all()
     assert len(results1) == 1
     assert results1[0].order_number == 'PARAM-001'
 
     # Test parameter count mismatch - provide wrong number of parameters
     try:
-        results = AsyncOrder.query().where('order_number = ? AND total_amount = ?', ('PARAM-001',)).all()
+        results = await AsyncOrder.query().where('order_number = ? AND total_amount = ?', ('PARAM-001',)).all()
         # Some implementations may handle this gracefully
     except Exception as e:
         # Expected to have some error for parameter mismatch
@@ -226,12 +226,12 @@ async def test_dangerous_character_escaping(async_order_fixtures):
     await order.save()
 
     # Test using value with dangerous characters in query
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number == dangerous_order_number).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number == dangerous_order_number).all()
     assert len(results) == 1
     assert results[0].order_number == dangerous_order_number
 
     # Use parameterized query again for validation
-    param_results = AsyncOrder.query().where('order_number = ?', (dangerous_order_number,)).all()
+    param_results = await AsyncOrder.query().where('order_number = ?', (dangerous_order_number,)).all()
     assert len(param_results) == 1
     assert param_results[0].order_number == dangerous_order_number
 
@@ -257,14 +257,14 @@ async def test_column_resolution_errors(async_order_fixtures):
     # Test accessing non-existent column
     try:
         # Try querying a non-existent column
-        results = AsyncOrder.query().where('nonexistent_column = ?', ('some_value',)).all()
+        results = await AsyncOrder.query().where('nonexistent_column = ?', ('some_value',)).all()
         # Some implementations may discover this issue at execution time
     except Exception as e:
         # Expected to throw some error, like database error
         pass
 
     # Verify normal query still works
-    normal_results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'COLRES-001').all()
+    normal_results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'COLRES-001').all()
     assert len(normal_results) == 1
 
 
@@ -295,14 +295,14 @@ async def test_division_by_zero_handling(async_order_fixtures):
     # Test operations that might cause division by zero
     try:
         # This might cause division by zero in some calculations
-        results = AsyncOrder.query().where(AsyncOrder.c.total_amount != Decimal('0.00')).all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.total_amount != Decimal('0.00')).all()
         # Exclude zero amounts to avoid potential division by zero in calculations
     except Exception as e:
         # Some implementations might handle this gracefully
         pass
 
     # Verify normal operations still work
-    normal_results = AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
+    normal_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
     assert len(normal_results) == 1
 
 
@@ -324,14 +324,14 @@ async def test_invalid_sql_syntax_handling(async_order_fixtures):
     # Test invalid SQL syntax
     try:
         # Try invalid SQL syntax
-        results = AsyncOrder.query().where('invalid_sql_syntax').all()
+        results = await AsyncOrder.query().where('invalid_sql_syntax').all()
         # Some implementations might handle this gracefully
     except Exception as e:
         # Expected to throw some error for invalid syntax
         pass
 
     # Verify valid syntax still works
-    valid_results = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    valid_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(valid_results) >= 0  # May be 0 if no orders created for this user
 
 
@@ -362,14 +362,14 @@ async def test_transaction_rollback_on_error(async_order_fixtures):
         await problematic_order.save()
 
         # Simulate an operation that might cause an error
-        results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'TRANS-001').all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'TRANS-001').all()
         assert len(results) == 1
     except Exception as e:
         # If error occurs, verify data integrity is maintained
         pass
 
     # Verify that valid operations still work correctly
-    valid_results = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    valid_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(valid_results) > 0
 
 
@@ -403,22 +403,22 @@ async def test_escape_consistency_single_quote(async_order_fixtures):
     ]
 
     for i, val in enumerate(values):
-        AsyncOrder(user_id=user.id, order_number=f"SQ-{i:03d}", total_amount=Decimal('100')).save()
+        await AsyncOrder(user_id=user.id, order_number=f"SQ-{i:03d}", total_amount=Decimal('100')).save()
 
         # Test via expression-based query
-        where_order = AsyncOrder.query().where(AsyncOrder.c.order_number == f"SQ-{i:03d}").all()
+        where_order = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"SQ-{i:03d}").all()
 
         # Now insert a record with the special value
         order = AsyncOrder(user_id=user.id, order_number=val, total_amount=Decimal(f'{i+1}0.00'), status='pending')
         await order.save()
 
         # Query back via expression
-        results_expr = AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
+        results_expr = await AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
         assert len(results_expr) == 1, f"Expression query failed for '{val}'"
         assert results_expr[0].order_number == val
 
         # Query back via parameterized raw SQL
-        results_raw = AsyncOrder.query().where('order_number = ?', (val,)).all()
+        results_raw = await AsyncOrder.query().where('order_number = ?', (val,)).all()
         assert len(results_raw) == 1, f"Raw parameterized query failed for '{val}'"
         assert results_raw[0].order_number == val
 
@@ -445,11 +445,11 @@ async def test_escape_consistency_double_quote(async_order_fixtures):
         order = AsyncOrder(user_id=user.id, order_number=val, total_amount=Decimal('100'), status='pending')
         await order.save()
 
-        results_expr = AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
+        results_expr = await AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
         assert len(results_expr) == 1, f"Expression query failed for '{val}'"
         assert results_expr[0].order_number == val
 
-        results_raw = AsyncOrder.query().where('order_number = ?', (val,)).all()
+        results_raw = await AsyncOrder.query().where('order_number = ?', (val,)).all()
         assert len(results_raw) == 1, f"Raw parameterized query failed for '{val}'"
         assert results_raw[0].order_number == val
 
@@ -476,11 +476,11 @@ async def test_escape_consistency_backslash(async_order_fixtures):
         order = AsyncOrder(user_id=user.id, order_number=val, total_amount=Decimal('100'), status='pending')
         await order.save()
 
-        results_expr = AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
+        results_expr = await AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
         assert len(results_expr) == 1, f"Expression query failed for '{val}'"
         assert results_expr[0].order_number == val
 
-        results_raw = AsyncOrder.query().where('order_number = ?', (val,)).all()
+        results_raw = await AsyncOrder.query().where('order_number = ?', (val,)).all()
         assert len(results_raw) == 1, f"Raw parameterized query failed for '{val}'"
         assert results_raw[0].order_number == val
 
@@ -511,11 +511,11 @@ async def test_escape_consistency_sql_keywords(async_order_fixtures):
         order = AsyncOrder(user_id=user.id, order_number=val, total_amount=Decimal('100'), status='pending')
         await order.save()
 
-        results_expr = AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
+        results_expr = await AsyncOrder.query().where(AsyncOrder.c.order_number == val).all()
         assert len(results_expr) == 1, f"Expression query failed for keyword '{val}'"
         assert results_expr[0].order_number == val
 
-        results_raw = AsyncOrder.query().where('order_number = ?', (val,)).all()
+        results_raw = await AsyncOrder.query().where('order_number = ?', (val,)).all()
         assert len(results_raw) == 1, f"Raw parameterized query failed for keyword '{val}'"
         assert results_raw[0].order_number == val
 
@@ -564,19 +564,19 @@ async def test_injection_payloads_as_data(async_order_fixtures):
         await order.save()
 
         # Verify the payload is stored and retrieved as data (not executed)
-        result = AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal(f'{i+1}0.00')).one()
+        result = await AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal(f'{i+1}0.00')).one()
         assert result.order_number == payload, \
             f"Payload was not preserved: sent={payload!r}, stored={result.order_number!r}"
 
         # Verify via parameterized query too
-        result_raw = AsyncOrder.query().where(
+        result_raw = await AsyncOrder.query().where(
             'order_number = ?', (payload,)
         ).all()
         assert len(result_raw) >= 1, f"Cannot find payload via raw query: {payload}"
         assert result_raw[0].order_number == payload
 
     # Sanity check: unrelated query still works
-    all_orders = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    all_orders = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(all_orders) >= len(injection_payloads)
 
 
@@ -606,13 +606,13 @@ async def test_sql_comment_injection_immunity(async_order_fixtures):
         )
         await order.save()
 
-        result = AsyncOrder.query().where(
+        result = await AsyncOrder.query().where(
             AsyncOrder.c.order_number == payload
         ).all()
         assert len(result) == 1, f"Failed to find payload '{payload}' by expression"
         assert result[0].order_number == payload
 
-    all_orders = AsyncOrder.query().all()
+    all_orders = await AsyncOrder.query().all()
     assert len(all_orders) > 0
 
 
@@ -658,14 +658,14 @@ async def test_special_character_full_matrix(async_order_fixtures):
             await order.save()
 
             # Retrieve by status (the special value)
-            results = AsyncOrder.query().where(AsyncOrder.c.status == val).all()
+            results = await AsyncOrder.query().where(AsyncOrder.c.status == val).all()
             assert len(results) >= 1, f"Expression query missed '{val!r}'"
             for r in results:
                 if r.total_amount == Decimal(f'{i+1}0.00'):
                     assert r.status == val
 
             # Retrieve by parameterized query
-            results_raw = AsyncOrder.query().where('status = ?', (val,)).all()
+            results_raw = await AsyncOrder.query().where('status = ?', (val,)).all()
             assert len(results_raw) >= 1, f"Raw query missed '{val!r}'"
         except DatabaseError:
             # Backend rejects this value (e.g., NUL bytes on PostgreSQL)
@@ -696,11 +696,11 @@ async def test_value_equivalence_expression_vs_parameterized(async_order_fixture
     ]
 
     for num, status, amount in test_rows:
-        AsyncOrder(user_id=user.id, order_number=num, total_amount=amount, status=status).save()
+        await AsyncOrder(user_id=user.id, order_number=num, total_amount=amount, status=status).save()
 
     # Query by status= pending — both methods should find ORD-EQ01 and ORD-EQ04
-    expr_result = AsyncOrder.query().where(AsyncOrder.c.status == 'pending').all()
-    raw_result = AsyncOrder.query().where('status = ?', ('pending',)).all()
+    expr_result = await AsyncOrder.query().where(AsyncOrder.c.status == 'pending').all()
+    raw_result = await AsyncOrder.query().where('status = ?', ('pending',)).all()
 
     assert len(expr_result) == len(raw_result), \
         f"Result count mismatch: expr={len(expr_result)}, raw={len(raw_result)}"
@@ -733,22 +733,22 @@ async def test_like_wildcard_percent(async_order_fixtures):
     user = AsyncUser(username='like_pct', email='like_pct@example.com', age=30)
     await user.save()
 
-    AsyncOrder(user_id=user.id, order_number='LIKE-A01', total_amount=Decimal('10'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='LIKE-A02', total_amount=Decimal('20'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='LIKE-B01', total_amount=Decimal('30'), status='shipped').save()
+    await AsyncOrder(user_id=user.id, order_number='LIKE-A01', total_amount=Decimal('10'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='LIKE-A02', total_amount=Decimal('20'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='LIKE-B01', total_amount=Decimal('30'), status='shipped').save()
 
     # % matches any sequence of characters
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('LIKE-A%')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('LIKE-A%')).all()
     assert len(results) == 2
     assert all(r.order_number.startswith('LIKE-A') for r in results)
 
     # % at both ends matches any containing substring
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('%B0%')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('%B0%')).all()
     assert len(results) == 1
     assert results[0].order_number == 'LIKE-B01'
 
     # % matching zero characters
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('LIKE-A01%')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('LIKE-A01%')).all()
     assert len(results) == 1
     assert results[0].order_number == 'LIKE-A01'
 
@@ -768,12 +768,12 @@ async def test_like_wildcard_underscore(async_order_fixtures):
     user = AsyncUser(username='like_und', email='like_und@example.com', age=30)
     await user.save()
 
-    AsyncOrder(user_id=user.id, order_number='LK_A', total_amount=Decimal('10'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='LK_AB', total_amount=Decimal('20'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='LK_B', total_amount=Decimal('30'), status='shipped').save()
+    await AsyncOrder(user_id=user.id, order_number='LK_A', total_amount=Decimal('10'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='LK_AB', total_amount=Decimal('20'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='LK_B', total_amount=Decimal('30'), status='shipped').save()
 
     # _ matches exactly one character: LK__ matches 4-char strings starting with LK
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('LK__')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('LK__')).all()
     result_nums = {r.order_number for r in results}
     assert result_nums == {'LK_A', 'LK_B'}, \
         f"Expected {{'LK_A', 'LK_B'}}, got {result_nums}"
@@ -798,28 +798,28 @@ async def test_like_no_auto_escape(async_order_fixtures):
     await user.save()
 
     # Values containing literal % and _
-    AsyncOrder(user_id=user.id, order_number='100%complete', total_amount=Decimal('10'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='100xcomplete', total_amount=Decimal('20'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='file_name', total_amount=Decimal('30'), status='pending').save()
-    AsyncOrder(user_id=user.id, order_number='fileXname', total_amount=Decimal('40'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='100%complete', total_amount=Decimal('10'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='100xcomplete', total_amount=Decimal('20'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='file_name', total_amount=Decimal('30'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='fileXname', total_amount=Decimal('40'), status='pending').save()
 
     # like('100%complete') — % acts as wildcard, matching both values
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('100%complete')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('100%complete')).all()
     assert len(results) == 2, \
         "like('100%complete') should match both '100%complete' and '100xcomplete'"
 
     # like('file_name') — _ acts as wildcard, matching both values
     # (both 9 chars; _ in the pattern matches _ and X at position 5)
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.like('file_name')).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.like('file_name')).all()
     assert len(results) == 2, \
         "like('file_name') should match both 'file_name' and 'fileXname'"
 
     # For exact match, use equality comparison instead of like()
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number == '100%complete').all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number == '100%complete').all()
     assert len(results) == 1
     assert results[0].order_number == '100%complete'
 
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'file_name').all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'file_name').all()
     assert len(results) == 1
     assert results[0].order_number == 'file_name'
 
@@ -853,18 +853,18 @@ async def test_null_comparison_with_is_null(async_order_fixtures):
 
     # == None generates 'age = NULL' which never matches
     # (SQL three-valued logic: NULL = NULL -> UNKNOWN, not TRUE)
-    results_eq_none = AsyncUser.query().where(AsyncUser.c.age == None).all()
+    results_eq_none = await AsyncUser.query().where(AsyncUser.c.age == None).all()
     assert len(results_eq_none) == 0, \
         "== None generates '= NULL' which never matches in SQL"
 
     # is_null() generates 'age IS NULL' which correctly matches null values
-    results_is_null = AsyncUser.query().where(AsyncUser.c.age.is_null()).all()
+    results_is_null = await AsyncUser.query().where(AsyncUser.c.age.is_null()).all()
     assert len(results_is_null) >= 1, \
         "is_null() generates 'IS NULL' which correctly matches null values"
     assert any(r.username == 'is_null_user' for r in results_is_null)
 
     # is_not_null() generates 'age IS NOT NULL'
-    results_is_not_null = AsyncUser.query().where(AsyncUser.c.age.is_not_null()).all()
+    results_is_not_null = await AsyncUser.query().where(AsyncUser.c.age.is_not_null()).all()
     assert len(results_is_not_null) >= 1
     assert any(r.username == 'has_age_user' for r in results_is_not_null)
     assert not any(r.username == 'is_null_user' for r in results_is_not_null)
@@ -900,7 +900,7 @@ async def test_in_clause_injection_immunity(async_order_fixtures):
 
     # Insert orders with injection payloads as order_number
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id,
             order_number=payload,
             total_amount=Decimal(f'{i+1}0.00'),
@@ -908,10 +908,10 @@ async def test_in_clause_injection_immunity(async_order_fixtures):
         ).save()
 
     # Also create a normal order that should NOT be matched
-    AsyncOrder(user_id=user.id, order_number='IN-NORMAL', total_amount=Decimal('999'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='IN-NORMAL', total_amount=Decimal('999'), status='pending').save()
 
     # Query using in_() with injection payloads
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number.in_(payloads)).all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number.in_(payloads)).all()
     assert len(results) == len(payloads), \
         f"Expected {len(payloads)} results, got {len(results)}"
 
@@ -924,7 +924,7 @@ async def test_in_clause_injection_immunity(async_order_fixtures):
     assert 'IN-NORMAL' not in result_numbers
 
     # Verify data integrity — all orders still accessible
-    all_orders = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    all_orders = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(all_orders) == len(payloads) + 1
 
 
@@ -956,23 +956,23 @@ async def test_qmark_placeholder_escaping(async_order_fixtures):
     await user.save()
 
     # Create orders — one with '?' in order_number, one without
-    AsyncOrder(
+    await AsyncOrder(
         user_id=user.id, order_number='ORD?-001',
         total_amount=Decimal('10'), status='pending',
     ).save()
 
-    AsyncOrder(
+    await AsyncOrder(
         user_id=user.id, order_number='ORD-002',
         total_amount=Decimal('20'), status='shipped',
     ).save()
 
     # Verify: normal ? as parameter works correctly across all backends
-    results = AsyncOrder.query().where('order_number = ?', ('ORD-002',)).all()
+    results = await AsyncOrder.query().where('order_number = ?', ('ORD-002',)).all()
     assert len(results) == 1
     assert results[0].order_number == 'ORD-002'
 
     # Verify: multiple ? parameters work correctly
-    results = AsyncOrder.query().where(
+    results = await AsyncOrder.query().where(
         'order_number = ? AND status = ?',
         ('ORD?-001', 'pending'),
     ).all()
@@ -988,7 +988,7 @@ async def test_qmark_placeholder_escaping(async_order_fixtures):
     # %? which psycopg3 rejects. This is a known limitation — \\? is
     # designed for operator contexts (JSONB ?), not LIKE patterns.
     try:
-        results = AsyncOrder.query().where(
+        results = await AsyncOrder.query().where(
             "order_number LIKE '%\\?%' AND status = ?",
             ('pending',),
         ).all()
@@ -997,7 +997,7 @@ async def test_qmark_placeholder_escaping(async_order_fixtures):
     except Exception:
         # PostgreSQL (psycopg3) rejects %? — known limitation.
         # Verify the order can still be found via expression query.
-        results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'ORD?-001').all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'ORD?-001').all()
         assert len(results) == 1
 
 
@@ -1023,7 +1023,7 @@ async def test_tautology_injection_immunity(async_order_fixtures):
     await user.save()
 
     # Create a normal order with a standard status
-    AsyncOrder(user_id=user.id, order_number='TAUT-NORM', total_amount=Decimal('100'), status='pending').save()
+    await AsyncOrder(user_id=user.id, order_number='TAUT-NORM', total_amount=Decimal('100'), status='pending').save()
 
     # Create orders with tautology-looking values as status
     tautology_values = [
@@ -1035,21 +1035,21 @@ async def test_tautology_injection_immunity(async_order_fixtures):
     ]
 
     for i, val in enumerate(tautology_values):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"TAUT-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=val,
         ).save()
 
     # Each tautology value should only match records with that exact status
     for val in tautology_values:
-        results = AsyncOrder.query().where(AsyncOrder.c.status == val).all()
+        results = await AsyncOrder.query().where(AsyncOrder.c.status == val).all()
         assert len(results) >= 1, f"No results for tautology value: {val!r}"
         for r in results:
             assert r.status == val, \
                 f"Matched record has different status: expected {val!r}, got {r.status!r}"
 
     # The normal 'pending' order should NOT be matched by tautology queries
-    pending_results = AsyncOrder.query().where(AsyncOrder.c.status == 'pending').all()
+    pending_results = await AsyncOrder.query().where(AsyncOrder.c.status == 'pending').all()
     assert len(pending_results) == 1
     assert pending_results[0].order_number == 'TAUT-NORM'
 
@@ -1083,17 +1083,17 @@ async def test_query_error_recovery(async_order_fixtures):
 
     # Execute a query that will fail (invalid SQL syntax)
     try:
-        AsyncOrder.query().where('invalid_sql_syntax_that_will_fail').all()
+        await AsyncOrder.query().where('invalid_sql_syntax_that_will_fail').all()
     except Exception:
         pass  # Expected to fail
 
     # Verify subsequent queries still work
-    results = AsyncOrder.query().where(AsyncOrder.c.order_number == 'RECOVERY-001').all()
+    results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'RECOVERY-001').all()
     assert len(results) == 1
     assert results[0].order_number == 'RECOVERY-001'
 
     # Verify data integrity
-    all_orders = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
+    all_orders = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(all_orders) == 1
     assert all_orders[0].total_amount == Decimal('100')
 
@@ -1120,17 +1120,17 @@ async def test_second_order_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"2ND-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
         # First query: retrieve the payload
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"2ND-{i:03d}").one()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"2ND-{i:03d}").one()
         retrieved_status = result.status
 
         # Second query: use retrieved value as a query parameter
-        second_result = AsyncOrder.query().where(AsyncOrder.c.status == retrieved_status).all()
+        second_result = await AsyncOrder.query().where(AsyncOrder.c.status == retrieved_status).all()
         assert len(second_result) >= 1
         for r in second_result:
             assert r.status == retrieved_status
@@ -1139,7 +1139,7 @@ async def test_second_order_injection_immunity(async_order_fixtures):
     normal = AsyncOrder(user_id=user.id, order_number='2ND-NORMAL',
                    total_amount=Decimal('999'), status='normal')
     await normal.save()
-    found = AsyncOrder.query().where(AsyncOrder.c.order_number == '2ND-NORMAL').all()
+    found = await AsyncOrder.query().where(AsyncOrder.c.order_number == '2ND-NORMAL').all()
     assert len(found) == 1
     assert found[0].status == 'normal'
 
@@ -1180,12 +1180,12 @@ async def test_unicode_normalization_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"UNI-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"UNI-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"UNI-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1221,17 +1221,17 @@ async def test_case_variation_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=payload,
             total_amount=Decimal(f'{i+1}0.00'), status='pending',
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
         assert len(result) == 1, f"Case variant payload '{payload}' not found"
         assert result[0].order_number == payload
 
     # All payloads retrievable via in_()
-    all_payloads = AsyncOrder.query().where(AsyncOrder.c.order_number.in_(payloads)).all()
+    all_payloads = await AsyncOrder.query().where(AsyncOrder.c.order_number.in_(payloads)).all()
     assert len(all_payloads) == len(payloads)
 
 
@@ -1274,12 +1274,12 @@ async def test_comment_style_variation_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"CMT-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"CMT-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"CMT-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1310,12 +1310,12 @@ async def test_newline_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=payload,
             total_amount=Decimal(f'{i+1}0.00'), status='pending',
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
         assert len(result) == 1, f"Newline payload '{payload!r}' not found"
         assert result[0].order_number == payload
 
@@ -1351,12 +1351,12 @@ async def test_null_byte_injection_immunity(async_order_fixtures):
 
     for i, payload in enumerate(payloads):
         try:
-            AsyncOrder(
+            await AsyncOrder(
                 user_id=user.id, order_number=f"NB-{i:03d}",
                 total_amount=Decimal(f'{i+1}0.00'), status=payload,
             ).save()
 
-            result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"NB-{i:03d}").all()
+            result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"NB-{i:03d}").all()
             assert len(result) == 1
             assert result[0].status == payload
         except (DatabaseError, Exception) as e:
@@ -1404,12 +1404,12 @@ async def test_boolean_blind_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=payload,
             total_amount=Decimal(f'{i+1}0.00'), status='pending',
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
         assert len(result) == 1, f"Boolean payload '{payload}' not found"
         assert result[0].order_number == payload
 
@@ -1502,12 +1502,12 @@ async def test_dbms_specific_injection_immunity(async_order_fixtures):
     )
 
     for i, payload in enumerate(all_payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"DBMS-{i:04d}",
             total_amount=Decimal('10'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"DBMS-{i:04d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"DBMS-{i:04d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1550,12 +1550,12 @@ async def test_like_wildcard_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=payload,
             total_amount=Decimal(f'{i+1}0.00'), status='pending',
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == payload).all()
         assert len(result) == 1, f"LIKE wildcard payload '{payload}' not found"
         assert result[0].order_number == payload
 
@@ -1587,12 +1587,12 @@ async def test_heavy_query_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"HVY-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"HVY-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"HVY-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1626,12 +1626,12 @@ async def test_nested_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"NEST-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"NEST-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"NEST-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1663,12 +1663,12 @@ async def test_out_of_band_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"OOB-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"OOB-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"OOB-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1705,12 +1705,12 @@ async def test_stacked_query_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"STK-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"STK-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"STK-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1752,12 +1752,12 @@ async def test_encoding_variation_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"ENC-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"ENC-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"ENC-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload
 
@@ -1789,11 +1789,11 @@ async def test_error_based_injection_immunity(async_order_fixtures):
     ]
 
     for i, payload in enumerate(payloads):
-        AsyncOrder(
+        await AsyncOrder(
             user_id=user.id, order_number=f"ERR-{i:03d}",
             total_amount=Decimal(f'{i+1}0.00'), status=payload,
         ).save()
 
-        result = AsyncOrder.query().where(AsyncOrder.c.order_number == f"ERR-{i:03d}").all()
+        result = await AsyncOrder.query().where(AsyncOrder.c.order_number == f"ERR-{i:03d}").all()
         assert len(result) == 1
         assert result[0].status == payload

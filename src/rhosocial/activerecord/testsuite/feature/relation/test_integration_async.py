@@ -83,6 +83,15 @@ class TestAsyncIntegration:
         )
         await user.save()
 
+        post = post_class(
+            title="French Post",
+            body="Content",
+            user_id=user.id,
+            metadata='{"tags": ["french"], "source": "import"}'
+        )
+        await post.save()
+
+        # Query with JSON derived fields
         results = await user_class.find_all(derived=["language", "theme"])
         assert len(results) == 1
         assert results[0].language == "fr"

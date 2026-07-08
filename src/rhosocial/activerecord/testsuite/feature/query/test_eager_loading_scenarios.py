@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_scenarios_sync.py
+# src/rhosocial/activerecord/testsuite/feature/query/test_eager_loading_scenarios.py
 """Sync: extended eager loading scenario tests.
 
 Covers edge cases not covered by the existing 5 test files:

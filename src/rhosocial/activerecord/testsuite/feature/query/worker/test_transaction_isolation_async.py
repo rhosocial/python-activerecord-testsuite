@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/query/worker/test_transaction_isolation.py
+# src/rhosocial/activerecord/testsuite/feature/query/worker/test_transaction_isolation_async.py
 """
 Test WorkerPool transaction isolation in parallel operations.
 

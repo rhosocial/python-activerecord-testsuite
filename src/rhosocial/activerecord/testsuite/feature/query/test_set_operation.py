@@ -435,19 +435,29 @@ class TestSyncSetOperations:
     def test_sync_async_mixed_set_operations_should_fail(self, order_fixtures):
         """Test that mixing sync and async queries raises TypeError."""
         from rhosocial.activerecord.query import SetOperationQuery, AsyncSetOperationQuery
-        from rhosocial.activerecord.model import AsyncActiveRecord
+        from unittest.mock import Mock
+        from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.query.active_query import AsyncActiveQuery
 
         User, Order, OrderItem = order_fixtures
 
         sync_query = Order.query().where(Order.c.user_id == 1)
 
-        class AsyncOrder(AsyncActiveRecord):
-            __table_name__ = Order.table_name()
-            id: Optional[int] = None
-            user_id: Optional[int] = None
-            order_number: Optional[str] = None
-
-        async_query = AsyncOrder.query().where(AsyncOrder.c.user_id == 1)
+        # Build a real AsyncActiveQuery. It carries an async backend reference
+        # and must not be embedded into a sync SetOperationQuery. A mock async
+        # model/backend is used only to satisfy construction; the rejection
+        # fires before any backend interaction occurs.
+        mock_async_backend = Mock(spec=AsyncStorageBackend)
+        mock_async_backend.dialect = Mock()
+        mock_async_model = Mock()
+        mock_async_model.backend.return_value = mock_async_backend
+        async_query = AsyncActiveQuery(mock_async_model)
 
         with pytest.raises(TypeError, match="does not support async backends"):
             SetOperationQuery(sync_query, async_query, "UNION")
+
+        with pytest.raises(TypeError, match="requires async backends"):
+            AsyncSetOperationQuery(sync_query, async_query, "UNION")
+
+        with pytest.raises(TypeError, match="requires async backends"):
+            AsyncSetOperationQuery(async_query, sync_query, "UNION")

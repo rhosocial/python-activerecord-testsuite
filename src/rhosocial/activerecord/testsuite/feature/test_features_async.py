@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/test_features.py
+# src/rhosocial/activerecord/testsuite/feature/test_features_async.py
 """Test the protocol-based requirement system."""
 
 import pytest
