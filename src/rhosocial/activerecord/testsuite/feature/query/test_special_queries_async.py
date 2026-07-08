@@ -1,7 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_special_queries_async.py
 """Special query scenarios tests"""
 import pytest
-import json
 from decimal import Decimal
 
 
@@ -15,7 +14,11 @@ async def test_full_text_search(async_annotated_query_fixtures):
     This test verifies that full-text search operations work correctly
     when the backend supports full-text indexing and search capabilities.
     """
-    SearchableItem = async_annotated_query_fixtures[0] if isinstance(async_annotated_query_fixtures, tuple) else async_annotated_query_fixtures
+    SearchableItem = (
+        async_annotated_query_fixtures[0]
+        if isinstance(async_annotated_query_fixtures, tuple)
+        else async_annotated_query_fixtures
+    )
 
     # Create searchable item for full-text search testing
     item = SearchableItem(
@@ -34,16 +37,16 @@ async def test_full_text_search(async_annotated_query_fixtures):
 @pytest.mark.asyncio
 
 
-async def test_window_function_queries(async_extended_async_order_fixtures):
+async def test_window_function_queries(async_extended_order_fixtures):
     """
     Test window function query operations
-    
+
     This test verifies that window functions work correctly when the
     backend supports them. Window functions allow performing calculations
     across a set of rows related to the current row without collapsing
     the result set.
     """
-    AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem = async_extended_async_order_fixtures
+    AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem = async_extended_order_fixtures
 
     # Create test data
     user = AsyncUser(username='window_user', email='window@example.com', age=35)
@@ -170,7 +173,6 @@ async def test_subquery_operations(async_order_fixtures):
         
         # Verify results include user1's orders (higher average amount)
         user1_orders = [order for order in high_avg_orders if order.user_id == user1.id]
-        user2_orders = [order for order in high_avg_orders if order.user_id == user2.id]
 
         assert len(user1_orders) == 3  # User1's all orders should be included
         # User2's orders may not be included because average amount is below 100
