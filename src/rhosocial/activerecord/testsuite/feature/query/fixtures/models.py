@@ -14,10 +14,10 @@ except ImportError:
 
 from pydantic import Field, EmailStr
 
-from rhosocial.activerecord.model import ActiveRecord
+from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
-from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig
+from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig, AsyncHasMany, AsyncBelongsTo
 from rhosocial.activerecord.base.fields import UseColumn
 
 
@@ -262,6 +262,80 @@ class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
         inverse_of="comments"
     )
     author: ClassVar[BelongsTo["MappedUser"]] = BelongsTo(
+        foreign_key="author",
+        inverse_of="comments"
+    )
+
+
+class AsyncMappedUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async User model with custom column name mappings for testing in query feature.
+
+    Mirrors :class:`MappedUser` using rhosocial ``UseColumn`` annotations (no
+    SQLAlchemy dependency), keeping sync/async on equal footing.
+    """
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    __table_name__ = "users"
+    __primary_key__ = "id"
+
+    user_id: Annotated[Optional[int], UseColumn("id")] = None
+    user_name: Annotated[str, UseColumn("username")]
+    email_address: Annotated[str, UseColumn("email")]
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+
+    posts: ClassVar[AsyncHasMany["AsyncMappedPost"]] = AsyncHasMany(
+        foreign_key="author",
+        inverse_of="author"
+    )
+    comments: ClassVar[AsyncHasMany["AsyncMappedComment"]] = AsyncHasMany(
+        foreign_key="author",
+        inverse_of="author"
+    )
+
+
+class AsyncMappedPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async Post model with custom column name mappings for testing in query feature."""
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    __table_name__ = "posts"
+    __primary_key__ = "id"
+
+    post_id: Annotated[Optional[int], UseColumn("id")] = None
+    author_id: Annotated[int, UseColumn("author")]
+    post_title: Annotated[str, UseColumn("title")]
+    post_content: Annotated[str, UseColumn("content")]
+    published_at: Annotated[Optional[str], UseColumn("published_time")] = None
+    is_published: Annotated[bool, UseColumn("published")]
+
+    author: ClassVar[AsyncBelongsTo["AsyncMappedUser"]] = AsyncBelongsTo(
+        foreign_key="author",
+        inverse_of="posts"
+    )
+    comments: ClassVar[AsyncHasMany["AsyncMappedComment"]] = AsyncHasMany(
+        foreign_key="post_ref",
+        inverse_of="post"
+    )
+
+
+class AsyncMappedComment(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async Comment model with custom column name mappings for testing in query feature."""
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    __table_name__ = "comments"
+    __primary_key__ = "id"
+
+    comment_id: Annotated[Optional[int], UseColumn("id")] = None
+    post_id: Annotated[int, UseColumn("post_ref")]
+    author_id: Annotated[int, UseColumn("author")]
+    comment_text: Annotated[str, UseColumn("text")]
+    created_at: Annotated[Optional[str], UseColumn("created_time")] = None
+    is_approved: Annotated[bool, UseColumn("approved")]
+
+    post: ClassVar[AsyncBelongsTo["AsyncMappedPost"]] = AsyncBelongsTo(
+        foreign_key="post_ref",
+        inverse_of="comments"
+    )
+    author: ClassVar[AsyncBelongsTo["AsyncMappedUser"]] = AsyncBelongsTo(
         foreign_key="author",
         inverse_of="comments"
     )
