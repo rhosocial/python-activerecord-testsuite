@@ -9,9 +9,6 @@ import pytest
 from rhosocial.activerecord.backend.errors import DatabaseError
 
 
-@pytest.mark.asyncio
-
-
 async def test_combined_update(async_combined_article_model):
     """Test combined functionality when updating records"""
     # Create and update article
@@ -28,9 +25,6 @@ async def test_combined_update(async_combined_article_model):
     assert article.version == 2  # Version number increments
     assert article.created_at == original_updated_at  # Creation time remains unchanged
     assert article.updated_at > original_updated_at  # Update time changes
-
-
-@pytest.mark.asyncio
 
 
 async def test_combined_delete(async_combined_article_model):
@@ -52,9 +46,6 @@ async def test_combined_delete(async_combined_article_model):
     assert found_article is not None
     assert found_article.deleted_at is not None
     assert found_article.version == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_combined_concurrent_update(async_combined_article_model):

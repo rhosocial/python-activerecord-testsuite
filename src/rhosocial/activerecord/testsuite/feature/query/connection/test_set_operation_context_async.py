@@ -5,11 +5,9 @@ Test SetOperationQuery context awareness with connection pool.
 These tests verify that SetOperationQuery (UNION, INTERSECT, EXCEPT)
 correctly uses connection pool context for backend resolution.
 """
-import pytest
 class TestAsyncSetOperationQueryContext:
     """Test asynchronous SetOperationQuery context awareness."""
 
-    @pytest.mark.asyncio
     async def test_union_backend_without_context(self, async_pool_and_model):
         """Test AsyncSetOperationQuery.backend() returns left backend without context."""
         pool, model = async_pool_and_model
@@ -20,7 +18,6 @@ class TestAsyncSetOperationQueryContext:
         union_backend = union_query.backend()
         assert union_backend is model.__backend__
 
-    @pytest.mark.asyncio
     async def test_union_backend_in_connection_context(self, async_pool_and_model):
         """Test AsyncSetOperationQuery.backend() returns connection backend in context."""
         pool, model = async_pool_and_model
@@ -32,7 +29,6 @@ class TestAsyncSetOperationQueryContext:
             union_backend = union_query.backend()
             assert union_backend is conn_backend
 
-    @pytest.mark.asyncio
     async def test_union_backend_in_transaction_context(self, async_pool_and_model):
         """Test AsyncSetOperationQuery.backend() returns transaction backend in context."""
         pool, model = async_pool_and_model
@@ -44,7 +40,6 @@ class TestAsyncSetOperationQueryContext:
             union_backend = union_query.backend()
             assert union_backend is tx_backend
 
-    @pytest.mark.asyncio
     async def test_intersect_backend_in_connection_context(self, async_pool_and_model):
         """Test async INTERSECT backend in connection context."""
         pool, model = async_pool_and_model
@@ -56,7 +51,6 @@ class TestAsyncSetOperationQueryContext:
             intersect_backend = intersect_query.backend()
             assert intersect_backend is conn_backend
 
-    @pytest.mark.asyncio
     async def test_except_backend_in_connection_context(self, async_pool_and_model):
         """Test async EXCEPT backend in connection context."""
         pool, model = async_pool_and_model
@@ -68,7 +62,6 @@ class TestAsyncSetOperationQueryContext:
             except_backend = except_query.backend()
             assert except_backend is conn_backend
 
-    @pytest.mark.asyncio
     async def test_nested_connection_contexts_reuse(self, async_pool_and_model):
         """Test nested async connection contexts reuse for set operation."""
         pool, model = async_pool_and_model
@@ -86,7 +79,6 @@ class TestAsyncSetOperationQueryContext:
                 assert inner_union.backend() is outer_conn
                 assert inner_conn is outer_conn
 
-    @pytest.mark.asyncio
     async def test_nested_transaction_contexts_reuse(self, async_pool_and_model):
         """Test nested async transaction contexts reuse for set operation."""
         pool, model = async_pool_and_model
@@ -103,3 +95,4 @@ class TestAsyncSetOperationQueryContext:
                 inner_union = q3.union(q4)
                 assert inner_union.backend() is outer_tx
                 assert inner_tx is outer_tx
+

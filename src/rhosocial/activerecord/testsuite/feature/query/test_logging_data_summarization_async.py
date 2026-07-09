@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-import pytest
 
 from rhosocial.activerecord.logging import LoggingConfig, LogDataMode, SummarizerConfig
 
@@ -84,57 +83,6 @@ def _assert_sample_integrity(samples):
     parsed_json = json.loads(json_content)
     assert isinstance(parsed_json, list)
     assert parsed_json
-
-
-def _create_user(User):
-    user = User(username="web-content-user", email="web-content@example.com", age=30)
-    user.save()
-    return user
-
-
-def _create_posts(Post, user_id: int, samples):
-    posts = []
-    for title, key in (
-        ("HTML sample", "html_content"),
-        ("XML sample", "xml_content"),
-        ("JSON sample", "json_content"),
-    ):
-        post = Post(user_id=user_id, title=title, content=samples[key], status="published")
-        post.save()
-        posts.append(post)
-    return posts
-
-
-def _find_post(Post, title: str):
-    results = Post.query().where(Post.c.title == title).all()
-    assert len(results) == 1
-    return results[0]
-
-
-def _assert_round_trip_and_summary(Post, samples):
-    config = _make_logging_config()
-    payload = {}
-
-    for title, key in (
-        ("HTML sample", "html_content"),
-        ("XML sample", "xml_content"),
-        ("JSON sample", "json_content"),
-    ):
-        found = _find_post(Post, title)
-        original = samples[key]
-        assert found.content == original
-        assert len(found.content) == len(original)
-        payload[key] = found.content
-
-    before = copy.deepcopy(payload)
-    summary = config.summarize_data(payload)
-
-    for key, original in payload.items():
-        _assert_truncated(summary[key], original)
-
-    assert payload == before
-    assert _find_post(Post, "HTML sample").content == samples["html_content"]
-    assert json.loads(_find_post(Post, "JSON sample").content)[0]["userId"] == 1
 
 
 def _assert_sensitive_payload_summary(post, samples):
@@ -342,7 +290,6 @@ async def _async_assert_round_trip_and_summary(Post, samples):
 
 
 class TestAsyncLoggingDataSummarization:
-    @pytest.mark.asyncio
     async def test_long_web_content_is_truncated_in_summary_not_storage(self, async_blog_fixtures):
         User, Post, _ = async_blog_fixtures
         samples = _sample_contents()
@@ -353,7 +300,6 @@ class TestAsyncLoggingDataSummarization:
 
         await _async_assert_round_trip_and_summary(Post, samples)
 
-    @pytest.mark.asyncio
     async def test_sensitive_fields_are_masked_in_query_payload(self, async_blog_fixtures):
         User, Post, _ = async_blog_fixtures
         samples = _sample_contents()
@@ -364,39 +310,6 @@ class TestAsyncLoggingDataSummarization:
         found_html = await _async_find_post(Post, "HTML sample")
         assert found_html.content == samples["html_content"]
 
-    @pytest.mark.asyncio
-    async def test_unicode_multilingual_content_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        samples = _unicode_sample_contents()
-        _assert_unicode_integrity(samples)
-
-        user = await _async_create_user(User)
-        await _async_create_unicode_posts(Post, user.id, samples)
-
-        await _async_assert_unicode_round_trip(Post, samples)
-
-    @pytest.mark.asyncio
-    async def test_unicode_emoji_burst_truncated_in_summary(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        await _async_assert_emoji_round_trip(Post)
-
-    @pytest.mark.asyncio
-    async def test_sql_injection_payloads_as_content_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        content, _ = await _async_create_injection_payload_post(Post, user.id)
-        found = await _async_find_post(Post, "SQL injection payloads")
-        assert found.content == content
-        assert len(found.content) == len(content)
-
-    @pytest.mark.asyncio
-    async def test_multilingual_text_preserved_round_trip(self, async_blog_fixtures):
-        User, Post, _ = async_blog_fixtures
-        user = await _async_create_user(User)
-        await _async_assert_multilingual_text_round_trip(Post)
-
-    @pytest.mark.asyncio
     async def test_json_fixture_preserves_sample_json_round_trip(self, async_json_user_fixture):
         JsonUser = async_json_user_fixture
         json_content = _read_sample("jsonplaceholder_posts.json")
@@ -421,7 +334,34 @@ class TestAsyncLoggingDataSummarization:
         summary = _make_logging_config().summarize_data({"preferences": prefs_str})
         _assert_truncated(summary["preferences"], prefs_str)
 
-    @pytest.mark.asyncio
+    async def test_unicode_multilingual_content_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        samples = _unicode_sample_contents()
+        _assert_unicode_integrity(samples)
+
+        user = await _async_create_user(User)
+        await _async_create_unicode_posts(Post, user.id, samples)
+
+        await _async_assert_unicode_round_trip(Post, samples)
+
+    async def test_unicode_emoji_burst_truncated_in_summary(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        await _async_assert_emoji_round_trip(Post)
+
+    async def test_sql_injection_payloads_as_content_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        content, _ = await _async_create_injection_payload_post(Post, user.id)
+        found = await _async_find_post(Post, "SQL injection payloads")
+        assert found.content == content
+        assert len(found.content) == len(content)
+
+    async def test_multilingual_text_preserved_round_trip(self, async_blog_fixtures):
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        await _async_assert_multilingual_text_round_trip(Post)
+
     async def test_unicode_json_fixture_json_field_round_trip(self, async_json_user_fixture):
         JsonUser = async_json_user_fixture
         json_content = _read_sample("unicode_multilingual.json")

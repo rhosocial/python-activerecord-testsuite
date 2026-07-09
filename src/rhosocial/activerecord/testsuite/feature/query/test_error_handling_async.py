@@ -1,12 +1,8 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_error_handling_async.py
 """Error handling and edge cases tests"""
-import pytest
 from decimal import Decimal
 
 from rhosocial.activerecord.backend.errors import DatabaseError
-
-
-@pytest.mark.asyncio
 
 
 async def test_invalid_parameter_handling(async_order_fixtures):
@@ -43,9 +39,6 @@ async def test_invalid_parameter_handling(async_order_fixtures):
     assert len(results) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_type_error_handling(async_order_fixtures):
     """
     Test type error handling in queries
@@ -73,9 +66,6 @@ async def test_type_error_handling(async_order_fixtures):
     # Test correct type comparison
     results = await AsyncOrder.query().where(AsyncOrder.c.total_amount == Decimal('150.00')).all()
     assert len(results) == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_null_value_handling(async_order_fixtures):
@@ -121,11 +111,8 @@ async def test_null_value_handling(async_order_fixtures):
             non_null_email_users = await AsyncUser.query().where('email IS NOT NULL').all()
     except Exception:
         non_null_email_users = await AsyncUser.query().where('email IS NOT NULL').all()
-    
+
     assert len(non_null_email_users) >= 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_sql_injection_protection(async_order_fixtures):
@@ -162,9 +149,6 @@ async def test_sql_injection_protection(async_order_fixtures):
     assert len(normal_results) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_parameterized_query_validation(async_order_fixtures):
     """
     Test parameterized query validation
@@ -197,9 +181,6 @@ async def test_parameterized_query_validation(async_order_fixtures):
     except Exception as e:
         # Expected to have some error for parameter mismatch
         pass
-
-
-@pytest.mark.asyncio
 
 
 async def test_dangerous_character_escaping(async_order_fixtures):
@@ -236,9 +217,6 @@ async def test_dangerous_character_escaping(async_order_fixtures):
     assert param_results[0].order_number == dangerous_order_number
 
 
-@pytest.mark.asyncio
-
-
 async def test_column_resolution_errors(async_order_fixtures):
     """
     Test column resolution error handling
@@ -266,9 +244,6 @@ async def test_column_resolution_errors(async_order_fixtures):
     # Verify normal query still works
     normal_results = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'COLRES-001').all()
     assert len(normal_results) == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_division_by_zero_handling(async_order_fixtures):
@@ -306,9 +281,6 @@ async def test_division_by_zero_handling(async_order_fixtures):
     assert len(normal_results) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_invalid_sql_syntax_handling(async_order_fixtures):
     """
     Test invalid SQL syntax error handling
@@ -333,9 +305,6 @@ async def test_invalid_sql_syntax_handling(async_order_fixtures):
     # Verify valid syntax still works
     valid_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
     assert len(valid_results) >= 0  # May be 0 if no orders created for this user
-
-
-@pytest.mark.asyncio
 
 
 async def test_transaction_rollback_on_error(async_order_fixtures):
@@ -380,8 +349,6 @@ async def test_transaction_rollback_on_error(async_order_fixtures):
 # parameterized SQL queries.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_escape_consistency_single_quote(async_order_fixtures):
     """
     Test that values with single quotes roundtrip identically
@@ -423,9 +390,6 @@ async def test_escape_consistency_single_quote(async_order_fixtures):
         assert results_raw[0].order_number == val
 
 
-@pytest.mark.asyncio
-
-
 async def test_escape_consistency_double_quote(async_order_fixtures):
     """
     Test values with double quotes work identically via both query methods.
@@ -454,9 +418,6 @@ async def test_escape_consistency_double_quote(async_order_fixtures):
         assert results_raw[0].order_number == val
 
 
-@pytest.mark.asyncio
-
-
 async def test_escape_consistency_backslash(async_order_fixtures):
     """
     Test values with backslash characters roundtrip correctly via both query methods.
@@ -483,9 +444,6 @@ async def test_escape_consistency_backslash(async_order_fixtures):
         results_raw = await AsyncOrder.query().where('order_number = ?', (val,)).all()
         assert len(results_raw) == 1, f"Raw parameterized query failed for '{val}'"
         assert results_raw[0].order_number == val
-
-
-@pytest.mark.asyncio
 
 
 async def test_escape_consistency_sql_keywords(async_order_fixtures):
@@ -525,8 +483,6 @@ async def test_escape_consistency_sql_keywords(async_order_fixtures):
 # Verify that SQL injection payload patterns never escape as SQL,
 # always treated as data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_injection_payloads_as_data(async_order_fixtures):
     """
@@ -580,9 +536,6 @@ async def test_injection_payloads_as_data(async_order_fixtures):
     assert len(all_orders) >= len(injection_payloads)
 
 
-@pytest.mark.asyncio
-
-
 async def test_sql_comment_injection_immunity(async_order_fixtures):
     """
     AsyncComment-based injection payloads (--, /*) are treated as data, not SQL.
@@ -614,9 +567,6 @@ async def test_sql_comment_injection_immunity(async_order_fixtures):
 
     all_orders = await AsyncOrder.query().all()
     assert len(all_orders) > 0
-
-
-@pytest.mark.asyncio
 
 
 async def test_special_character_full_matrix(async_order_fixtures):
@@ -672,9 +622,6 @@ async def test_special_character_full_matrix(async_order_fixtures):
             pass
 
 
-@pytest.mark.asyncio
-
-
 async def test_value_equivalence_expression_vs_parameterized(async_order_fixtures):
     """
     For a given value, expression-based and raw parameterized queries
@@ -718,8 +665,6 @@ async def test_value_equivalence_expression_vs_parameterized(async_order_fixture
 # literal % and _ characters in patterns.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_like_wildcard_percent(async_order_fixtures):
     """
     Test that % in like() patterns is treated as a SQL wildcard.
@@ -753,9 +698,6 @@ async def test_like_wildcard_percent(async_order_fixtures):
     assert results[0].order_number == 'LIKE-A01'
 
 
-@pytest.mark.asyncio
-
-
 async def test_like_wildcard_underscore(async_order_fixtures):
     """
     Test that _ in like() patterns is treated as a SQL wildcard.
@@ -777,9 +719,6 @@ async def test_like_wildcard_underscore(async_order_fixtures):
     result_nums = {r.order_number for r in results}
     assert result_nums == {'LK_A', 'LK_B'}, \
         f"Expected {{'LK_A', 'LK_B'}}, got {result_nums}"
-
-
-@pytest.mark.asyncio
 
 
 async def test_like_no_auto_escape(async_order_fixtures):
@@ -831,8 +770,6 @@ async def test_like_no_auto_escape(async_order_fixtures):
 # the correct API for null comparison.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_null_comparison_with_is_null(async_order_fixtures):
     """
     Test that == None generates '= NULL' (never matches) while
@@ -875,8 +812,6 @@ async def test_null_comparison_with_is_null(async_order_fixtures):
 # Verify that injection payloads in IN clause value lists
 # are safely parameterized and never escape as SQL code.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_in_clause_injection_immunity(async_order_fixtures):
     """
@@ -933,8 +868,6 @@ async def test_in_clause_injection_immunity(async_order_fixtures):
 # Verify that escaped placeholders (\\?) in raw SQL are treated
 # as literal question marks, not parameter slots.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_qmark_placeholder_escaping(async_order_fixtures):
     """
@@ -1007,8 +940,6 @@ async def test_qmark_placeholder_escaping(async_order_fixtures):
 # 'OR 1=1--') in WHERE conditions are treated as data, not SQL.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_tautology_injection_immunity(async_order_fixtures):
     """
     Test that values resembling SQL tautologies are treated as
@@ -1060,8 +991,6 @@ async def test_tautology_injection_immunity(async_order_fixtures):
 # work correctly and data integrity is maintained.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_query_error_recovery(async_order_fixtures):
     """
     Test that after a failed query, subsequent queries still work
@@ -1103,8 +1032,6 @@ async def test_query_error_recovery(async_order_fixtures):
 # Verify that values retrieved from DB can be safely re-used
 # in subsequent queries without causing injection.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_second_order_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -1150,8 +1077,6 @@ async def test_second_order_injection_immunity(async_order_fixtures):
 # are treated as data, not SQL.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_unicode_normalization_injection_immunity(async_order_fixtures):
     """
     Verify that Unicode variants that normalize to SQL keywords
@@ -1195,8 +1120,6 @@ async def test_unicode_normalization_injection_immunity(async_order_fixtures):
 # Verify that case variations of SQL keywords are treated as data.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_case_variation_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1239,8 +1162,6 @@ async def test_case_variation_injection_immunity(async_order_fixtures):
 # AsyncComment style variation injection (注释变体注入安全性)
 # Test all known SQL comment styles as data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_comment_style_variation_immunity(async_order_fixtures):
     """
@@ -1289,8 +1210,6 @@ async def test_comment_style_variation_immunity(async_order_fixtures):
 # Test various newline characters embedded in data.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_newline_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1324,8 +1243,6 @@ async def test_newline_injection_immunity(async_order_fixtures):
 # NULL byte injection immunity (NULL 字节注入安全性)
 # Test embedded null bytes in data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_null_byte_injection_immunity(async_order_fixtures):
     """
@@ -1372,8 +1289,6 @@ async def test_null_byte_injection_immunity(async_order_fixtures):
 # Test boolean logic injection patterns as data.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_boolean_blind_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1418,8 +1333,6 @@ async def test_boolean_blind_injection_immunity(async_order_fixtures):
 # DBMS-specific injection payloads (数据库特定注入)
 # Test vendor-specific injection syntax as data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_dbms_specific_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -1517,8 +1430,6 @@ async def test_dbms_specific_injection_immunity(async_order_fixtures):
 # Test that LIKE wildcards in data don't cause injection.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_like_wildcard_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1565,8 +1476,6 @@ async def test_like_wildcard_injection_immunity(async_order_fixtures):
 # Test heavy/complex injection patterns as data.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_heavy_query_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1601,8 +1510,6 @@ async def test_heavy_query_injection_immunity(async_order_fixtures):
 # Nested/in-band injection immunity (嵌套/带内注入安全性)
 # Test deeply nested SQL patterns in data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_nested_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -1641,8 +1548,6 @@ async def test_nested_injection_immunity(async_order_fixtures):
 # Test OOB channel payloads as data values.
 # ============================================================
 
-@pytest.mark.asyncio
-
 async def test_out_of_band_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -1677,8 +1582,6 @@ async def test_out_of_band_injection_immunity(async_order_fixtures):
 # Stacked query injection immunity (堆叠查询注入安全性)
 # Test multi-statement injection patterns as data.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_stacked_query_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -1719,8 +1622,6 @@ async def test_stacked_query_injection_immunity(async_order_fixtures):
 # Encoding variation injection immunity (编码变体注入安全性)
 # Test various encoding tricks as data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_encoding_variation_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -1766,8 +1667,6 @@ async def test_encoding_variation_injection_immunity(async_order_fixtures):
 # Error-based injection immunity (报错注入安全性)
 # Test error-based injection payloads as data values.
 # ============================================================
-
-@pytest.mark.asyncio
 
 async def test_error_based_injection_immunity(async_order_fixtures):
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures

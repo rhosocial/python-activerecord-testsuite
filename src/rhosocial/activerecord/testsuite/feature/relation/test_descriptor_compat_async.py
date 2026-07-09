@@ -14,7 +14,6 @@ from typing import ClassVar, Optional
 class TestSyncDescriptorOnAsyncModel:
     """Sync descriptors on async models raise TypeError at class creation."""
 
-    @pytest.mark.asyncio
     async def test_sync_belongs_to_on_async_model_raises(self):
         """Sync BelongsTo on AsyncActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import AsyncActiveRecord
@@ -29,7 +28,6 @@ class TestSyncDescriptorOnAsyncModel:
                     foreign_key="ref_id", inverse_of=None
                 )
 
-    @pytest.mark.asyncio
     async def test_sync_has_many_on_async_model_raises(self):
         """Sync HasMany on AsyncActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import AsyncActiveRecord
@@ -43,7 +41,6 @@ class TestSyncDescriptorOnAsyncModel:
                     foreign_key="parent_id", inverse_of=None
                 )
 
-    @pytest.mark.asyncio
     async def test_sync_has_one_on_async_model_raises(self):
         """Sync HasOne on AsyncActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import AsyncActiveRecord
@@ -61,7 +58,6 @@ class TestSyncDescriptorOnAsyncModel:
 class TestAsyncDescriptorOnSyncModel:
     """Async descriptors on sync models raise TypeError at class creation."""
 
-    @pytest.mark.asyncio
     async def test_async_belongs_to_on_sync_model_raises(self):
         """Async BelongsTo on ActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import ActiveRecord
@@ -76,7 +72,6 @@ class TestAsyncDescriptorOnSyncModel:
                     foreign_key="ref_id", inverse_of=None
                 )
 
-    @pytest.mark.asyncio
     async def test_async_has_many_on_sync_model_raises(self):
         """Async HasMany on ActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import ActiveRecord
@@ -90,7 +85,6 @@ class TestAsyncDescriptorOnSyncModel:
                     foreign_key="parent_id", inverse_of=None
                 )
 
-    @pytest.mark.asyncio
     async def test_async_has_one_on_sync_model_raises(self):
         """Async HasOne on ActiveRecord raises TypeError."""
         from rhosocial.activerecord.model import ActiveRecord
@@ -108,7 +102,6 @@ class TestAsyncDescriptorOnSyncModel:
 class TestCorrectUsageNoError:
     """Correct descriptor usage should not raise."""
 
-    @pytest.mark.asyncio
     async def test_sync_descriptor_on_sync_model_ok(self):
         """Sync BelongsTo on ActiveRecord works without error."""
         from rhosocial.activerecord.model import ActiveRecord
@@ -122,7 +115,6 @@ class TestCorrectUsageNoError:
                 foreign_key="ref_id", inverse_of=None
             )
 
-    @pytest.mark.asyncio
     async def test_async_descriptor_on_async_model_ok(self):
         """Async BelongsTo on AsyncActiveRecord works without error."""
         from rhosocial.activerecord.model import AsyncActiveRecord

@@ -60,16 +60,12 @@ def create_mock_model_with_relations(relations):
 class TestAsyncRelationalValidation:
     """Synchronous tests for relational validation functionality."""
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_path_empty_string(self):
         """Test _validate_relation_path with empty string."""
         query = MockQuery()
 
         with pytest.raises(InvalidRelationPathError, match="Relation path cannot be empty"):
             query._validate_relation_path("")
-
-    @pytest.mark.asyncio
 
     async def test_validate_relation_path_leading_dot(self):
         """Test _validate_relation_path with leading dot."""
@@ -78,8 +74,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(InvalidRelationPathError, match="cannot start with a dot"):
             query._validate_relation_path(".posts")
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_path_trailing_dot(self):
         """Test _validate_relation_path with trailing dot."""
         query = MockQuery()
@@ -87,16 +81,12 @@ class TestAsyncRelationalValidation:
         with pytest.raises(InvalidRelationPathError, match="cannot end with a dot"):
             query._validate_relation_path("posts.")
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_path_consecutive_dots(self):
         """Test _validate_relation_path with consecutive dots."""
         query = MockQuery()
 
         with pytest.raises(InvalidRelationPathError, match="cannot contain consecutive dots"):
             query._validate_relation_path("posts..comments")
-
-    @pytest.mark.asyncio
 
     async def test_validate_relation_path_valid_cases(self):
         """Test _validate_relation_path with valid cases."""
@@ -109,8 +99,6 @@ class TestAsyncRelationalValidation:
         query._validate_relation_path("a")
         query._validate_relation_path("valid.path.with.multiple.parts")
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_exists_relation_not_found(self):
         """Test _validate_relation_exists when relation does not exist."""
         mock_model = create_mock_model_with_relations(['existing_relation'])
@@ -118,8 +106,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'nonexistent_relation' not found on MockModel"):
             query._validate_relation_exists('nonexistent_relation')
-
-    @pytest.mark.asyncio
 
     async def test_validate_relation_exists_relation_found(self):
         """Test _validate_relation_exists when relation exists."""
@@ -129,8 +115,6 @@ class TestAsyncRelationalValidation:
         # This should not raise any exception
         query._validate_relation_exists('existing_relation')
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_exists_with_custom_model_class(self):
         """Test _validate_relation_exists with custom model class."""
         custom_model = create_mock_model_with_relations(['custom_relation'])
@@ -139,8 +123,6 @@ class TestAsyncRelationalValidation:
         # This should not raise any exception
         query._validate_relation_exists('custom_relation', custom_model)
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_exists_with_custom_model_class_not_found(self):
         """Test _validate_relation_exists with custom model class when relation not found."""
         custom_model = create_mock_model_with_relations(['some_relation'])
@@ -148,8 +130,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'missing_relation' not found on MockModel"):
             query._validate_relation_exists('missing_relation', custom_model)
-
-    @pytest.mark.asyncio
 
     async def test_validate_complete_relation_path_empty_path(self):
         """Test _validate_complete_relation_path with empty path."""
@@ -160,8 +140,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(RelationNotFoundError):
             query._validate_complete_relation_path("")
 
-    @pytest.mark.asyncio
-
     async def test_validate_complete_relation_path_single_invalid(self):
         """Test _validate_complete_relation_path with single invalid relation."""
         mock_model = create_mock_model_with_relations([])
@@ -169,8 +147,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'invalid' not found on MockModel"):
             query._validate_complete_relation_path("invalid")
-
-    @pytest.mark.asyncio
 
     async def test_validate_complete_relation_path_single_valid(self):
         """Test _validate_complete_relation_path with single valid relation."""
@@ -185,8 +161,6 @@ class TestAsyncRelationalValidation:
         # This should not raise any exception for a valid relation
         query._validate_complete_relation_path("valid_relation")
 
-    @pytest.mark.asyncio
-
     async def test_validate_complete_relation_path_nested_invalid_first(self):
         """Test _validate_complete_relation_path with invalid first relation in nested path."""
         mock_model = create_mock_model_with_relations([])  # No relations available
@@ -194,8 +168,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'invalid' not found on MockModel"):
             query._validate_complete_relation_path("invalid.valid2")
-
-    @pytest.mark.asyncio
 
     async def test_validate_complete_relation_path_nested_invalid_second(self):
         """Test _validate_complete_relation_path with invalid second relation in nested path."""
@@ -222,8 +194,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(RelationNotFoundError, match="Relation 'second_relation' not found on MockModel"):
             query._validate_complete_relation_path("first_relation.second_relation")
 
-    @pytest.mark.asyncio
-
     async def test_with_method_invalid_paths(self):
         """Test with_ method with various invalid paths that should trigger _validate_relation_path errors."""
         mock_model = create_mock_model_with_relations(['valid_relation'])
@@ -233,8 +203,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(InvalidRelationPathError, match="Relation path cannot be empty"):
             query.with_("")
 
-    @pytest.mark.asyncio
-
     async def test_with_method_invalid_paths_leading_dot(self):
         """Test with_ method with leading dot path."""
         mock_model = create_mock_model_with_relations(['valid_relation'])
@@ -242,8 +210,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(InvalidRelationPathError, match="cannot start with a dot"):
             query.with_(".invalid")
-
-    @pytest.mark.asyncio
 
     async def test_with_method_invalid_paths_trailing_dot(self):
         """Test with_ method with trailing dot path."""
@@ -253,8 +219,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(InvalidRelationPathError, match="cannot end with a dot"):
             query.with_("invalid.")
 
-    @pytest.mark.asyncio
-
     async def test_with_method_invalid_paths_consecutive_dots(self):
         """Test with_ method with consecutive dots path."""
         mock_model = create_mock_model_with_relations(['valid_relation'])
@@ -263,8 +227,6 @@ class TestAsyncRelationalValidation:
         with pytest.raises(InvalidRelationPathError, match="cannot contain consecutive dots"):
             query.with_("invalid..path")
 
-    @pytest.mark.asyncio
-
     async def test_with_method_relation_not_found(self):
         """Test with_ method with non-existent relation."""
         mock_model = create_mock_model_with_relations([])  # No relations
@@ -272,8 +234,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'nonexistent' not found on MockModel"):
             query.with_("nonexistent")
-
-    @pytest.mark.asyncio
 
     async def test_process_relation_path_validation(self):
         """Test _process_relation_path calls validation methods."""
@@ -290,8 +250,6 @@ class TestAsyncRelationalValidation:
         # Check that the relation was added to eager loads
         assert "valid_relation" in query._eager_loads
 
-    @pytest.mark.asyncio
-
     async def test_process_relation_path_invalid_format(self):
         """Test _process_relation_path with invalid format."""
         mock_model = create_mock_model_with_relations(['valid_relation'])
@@ -299,8 +257,6 @@ class TestAsyncRelationalValidation:
 
         with pytest.raises(InvalidRelationPathError, match="cannot start with a dot"):
             query._process_relation_path(".invalid")
-
-    @pytest.mark.asyncio
 
     async def test_update_existing_relation_config(self):
         """Test _update_existing_relation_config method."""
@@ -318,8 +274,6 @@ class TestAsyncRelationalValidation:
         config = query._eager_loads['test_relation']
         assert 'more_nested' in config.nested
         assert config.query_modifier is not None
-
-    @pytest.mark.asyncio
 
     async def test_update_existing_relation_config_with_lambda(self):
         """Test _update_existing_relation_config with lambda modifier overwrite warning."""
@@ -339,8 +293,6 @@ class TestAsyncRelationalValidation:
         config = query._eager_loads['test_relation']
         assert 'more_nested' in config.nested
 
-    @pytest.mark.asyncio
-
     async def test_add_relation_config(self):
         """Test _add_relation_config method."""
         mock_model = create_mock_model_with_relations(['valid_relation'])
@@ -354,8 +306,6 @@ class TestAsyncRelationalValidation:
         assert 'nested' in config.nested
         assert config.query_modifier is not None
 
-    @pytest.mark.asyncio
-
     async def test_validate_complete_relation_path_get_related_model_returns_none(self):
         """Test _validate_complete_relation_path when get_related_model returns None."""
         mock_model = create_mock_model_with_relations(['first'])
@@ -368,12 +318,10 @@ class TestAsyncRelationalValidation:
         with pytest.raises(RelationNotFoundError, match="Could not determine related model for relation 'first'"):
             query._validate_complete_relation_path("first.second")
 
-    @pytest.mark.asyncio
-
     async def test_validate_complete_relation_path_get_relation_returns_none_middle_of_path(self):
         """Test _validate_complete_relation_path when get_relation returns falsy after initial check."""
         mock_model = create_mock_model_with_relations(['first'])
-        
+
         # First check returns truthy (passes initial validation)
         # Second call returns None (triggers the else branch at line 288-291)
         mock_model.get_relation = Mock(side_effect=[
@@ -386,8 +334,6 @@ class TestAsyncRelationalValidation:
         # Since there's no second relation 'second', it should fail on the model tracking
         with pytest.raises(RelationNotFoundError, match="Relation 'first' not found"):
             query._validate_complete_relation_path("first.second")
-
-    @pytest.mark.asyncio
 
     async def test_validate_complete_relation_path_exception_during_tracking(self):
         """Test _validate_complete_relation_path when exception is raised during model tracking."""
@@ -406,16 +352,12 @@ class TestAsyncRelationalValidation:
 class TestAsyncRefactoredHelperMethods:
     """Tests for refactored helper methods that reduce cognitive complexity."""
 
-    @pytest.mark.asyncio
-
     async def test_parse_relation_arg_string(self):
         """Test _parse_relation_arg with string input."""
         query = MockQuery()
         path, modifier = query._parse_relation_arg("posts")
         assert path == "posts"
         assert modifier is None
-
-    @pytest.mark.asyncio
 
     async def test_parse_relation_arg_tuple(self):
         """Test _parse_relation_arg with tuple input."""
@@ -424,8 +366,6 @@ class TestAsyncRefactoredHelperMethods:
         path, modifier = query._parse_relation_arg(("posts", test_modifier))
         assert path == "posts"
         assert modifier == test_modifier
-
-    @pytest.mark.asyncio
 
     async def test_validate_relation_calls_both_validations(self):
         """Test _validate_relation calls both path and existence validation."""
@@ -438,16 +378,12 @@ class TestAsyncRefactoredHelperMethods:
         # Should not raise any exception for valid relation
         query._validate_relation("valid_relation")
 
-    @pytest.mark.asyncio
-
     async def test_validate_relation_propagates_path_error(self):
         """Test _validate_relation propagates InvalidRelationPathError."""
         query = MockQuery()
 
         with pytest.raises(InvalidRelationPathError, match="cannot start with a dot"):
             query._validate_relation(".invalid")
-
-    @pytest.mark.asyncio
 
     async def test_validate_relation_propagates_not_found_error(self):
         """Test _validate_relation propagates RelationNotFoundError."""
@@ -456,8 +392,6 @@ class TestAsyncRefactoredHelperMethods:
 
         with pytest.raises(RelationNotFoundError, match="Relation 'nonexistent' not found"):
             query._validate_relation("nonexistent")
-
-    @pytest.mark.asyncio
 
     async def test_get_next_level_parts_with_remaining(self):
         """Test _get_next_level_parts when there are remaining parts."""
@@ -472,8 +406,6 @@ class TestAsyncRefactoredHelperMethods:
         result = query._get_next_level_parts(parts, 1)
         assert result == ["comments"]
 
-    @pytest.mark.asyncio
-
     async def test_get_next_level_parts_at_end(self):
         """Test _get_next_level_parts when at the last element."""
         query = MockQuery()
@@ -483,8 +415,6 @@ class TestAsyncRefactoredHelperMethods:
         result = query._get_next_level_parts(parts, 1)
         assert result == []
 
-    @pytest.mark.asyncio
-
     async def test_get_next_level_parts_single_element(self):
         """Test _get_next_level_parts with single element path."""
         query = MockQuery()
@@ -492,8 +422,6 @@ class TestAsyncRefactoredHelperMethods:
 
         result = query._get_next_level_parts(parts, 0)
         assert result == []
-
-    @pytest.mark.asyncio
 
     async def test_should_update_nested_relation_with_new_nested(self):
         """Test _should_update_nested_relation returns True when adding new nested."""
@@ -507,8 +435,6 @@ class TestAsyncRefactoredHelperMethods:
         result = query._should_update_nested_relation('user', ['posts'])
         assert result is True
 
-    @pytest.mark.asyncio
-
     async def test_should_update_nested_relation_already_exists(self):
         """Test _should_update_nested_relation returns False when nested already exists."""
         mock_model = create_mock_model_with_relations(['user'])
@@ -521,8 +447,6 @@ class TestAsyncRefactoredHelperMethods:
         result = query._should_update_nested_relation('user', ['posts'])
         assert result is False
 
-    @pytest.mark.asyncio
-
     async def test_should_update_nested_relation_empty_next_level(self):
         """Test _should_update_nested_relation returns False when next_level is empty."""
         mock_model = create_mock_model_with_relations(['user'])
@@ -533,8 +457,6 @@ class TestAsyncRefactoredHelperMethods:
         # Should return False because next_level is empty
         result = query._should_update_nested_relation('user', [])
         assert result is False
-
-    @pytest.mark.asyncio
 
     async def test_determine_modifier_target_relation(self):
         """Test _determine_modifier returns modifier for target relation."""
@@ -548,8 +470,6 @@ class TestAsyncRefactoredHelperMethods:
         )
         assert result == test_modifier
 
-    @pytest.mark.asyncio
-
     async def test_determine_modifier_adding_new_nested(self):
         """Test _determine_modifier returns modifier when adding new nested."""
         query = MockQuery()
@@ -561,8 +481,6 @@ class TestAsyncRefactoredHelperMethods:
             query_modifier=test_modifier
         )
         assert result == test_modifier
-
-    @pytest.mark.asyncio
 
     async def test_determine_modifier_neither_condition(self):
         """Test _determine_modifier returns None when neither condition is met."""
@@ -576,8 +494,6 @@ class TestAsyncRefactoredHelperMethods:
         )
         assert result is None
 
-    @pytest.mark.asyncio
-
     async def test_determine_modifier_target_takes_precedence(self):
         """Test _determine_modifier with both conditions True (target takes precedence logically)."""
         query = MockQuery()
@@ -590,8 +506,6 @@ class TestAsyncRefactoredHelperMethods:
             query_modifier=test_modifier
         )
         assert result == test_modifier
-
-    @pytest.mark.asyncio
 
     async def test_with_method_uses_parse_relation_arg(self):
         """Test with_ method uses _parse_relation_arg helper."""
@@ -608,8 +522,6 @@ class TestAsyncRefactoredHelperMethods:
         assert 'posts' in query._eager_loads
         config = query._eager_loads['posts']
         assert config.query_modifier == test_modifier
-
-    @pytest.mark.asyncio
 
     async def test_with_method_multiple_relations(self):
         """Test with_ method with multiple relations."""

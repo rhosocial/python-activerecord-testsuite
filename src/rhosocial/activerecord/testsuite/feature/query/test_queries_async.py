@@ -9,14 +9,12 @@ This module contains tests for asynchronous query operations including:
 - Async basic operations (all, one, first, exists)
 - Async JOIN operations
 """
-import pytest
 from decimal import Decimal
 
 # Import the async_order_fixtures directly from conftest
 from rhosocial.activerecord.testsuite.feature.query.conftest import async_order_fixtures
 
 
-@pytest.mark.asyncio
 async def test_async_active_query_init(async_order_fixtures):
     """
     Test async ActiveQuery initialization
@@ -37,7 +35,6 @@ async def test_async_active_query_init(async_order_fixtures):
     assert results[0].order_number == 'ASYNC-INIT-001'
 
 
-@pytest.mark.asyncio
 async def test_async_aggregate_operations(async_order_fixtures):
     """
     Test async aggregation operations
@@ -67,7 +64,6 @@ async def test_async_aggregate_operations(async_order_fixtures):
     assert count == len(amounts)
 
 
-@pytest.mark.asyncio
 async def test_async_relation_loading(async_order_fixtures):
     """
     Test async relation loading
@@ -93,7 +89,6 @@ async def test_async_relation_loading(async_order_fixtures):
     assert related_user.id == user.id
 
 
-@pytest.mark.asyncio
 async def test_async_basic_operations(async_order_fixtures):
     """
     Test async basic operations
@@ -133,7 +128,6 @@ async def test_async_basic_operations(async_order_fixtures):
     assert exists_not is False
 
 
-@pytest.mark.asyncio
 async def test_async_join_operations(async_order_fixtures):
     """
     Test async JOIN operations

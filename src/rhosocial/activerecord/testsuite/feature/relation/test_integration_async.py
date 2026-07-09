@@ -2,7 +2,6 @@
 """
 Async integration tests: relations + derived fields + field proxy + JSON.
 """
-import pytest
 
 from rhosocial.activerecord.backend.dialect.protocols import JSONSupport
 from rhosocial.activerecord.testsuite.utils import requires_functions, requires_protocol
@@ -11,7 +10,6 @@ from rhosocial.activerecord.testsuite.utils import requires_functions, requires_
 class TestAsyncIntegration:
     """Async integration tests for multiple features."""
 
-    @pytest.mark.asyncio
     async def test_relation_with_derived_fields(self, async_user_post_comment_classes):
         """Relations should work with derived fields."""
         user_class, post_class, comment_class = async_user_post_comment_classes
@@ -26,7 +24,6 @@ class TestAsyncIntegration:
         assert results[0].title_length == 11
         assert results[0].hotness == 11
 
-    @pytest.mark.asyncio
     async def test_relation_with_field_proxy(self, async_user_post_comment_classes):
         """Relations should work with FieldProxy."""
         user_class, post_class, comment_class = async_user_post_comment_classes
@@ -40,7 +37,6 @@ class TestAsyncIntegration:
         assert len(results) == 1
         assert results[0].title == "Proxy Test"
 
-    @pytest.mark.asyncio
     async def test_derived_field_with_field_proxy(self, async_user_post_comment_classes):
         """Derived fields using FieldProxy should work."""
         user_class, post_class, comment_class = async_user_post_comment_classes
@@ -54,7 +50,6 @@ class TestAsyncIntegration:
         assert len(results) == 1
         assert results[0].title_length == 13
 
-    @pytest.mark.asyncio
     async def test_eager_load_with_derived(self, async_user_post_comment_classes):
         """Eager loading should work with derived fields."""
         user_class, post_class, comment_class = async_user_post_comment_classes
@@ -72,7 +67,6 @@ class TestAsyncIntegration:
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
-    @pytest.mark.asyncio
     async def test_eager_load_with_json_derived(self, async_user_post_comment_classes):
         """Eager loading should work with JSON derived fields."""
         user_class, post_class, comment_class = async_user_post_comment_classes
@@ -99,7 +93,6 @@ class TestAsyncIntegration:
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
-    @pytest.mark.asyncio
     async def test_full_integration(self, async_user_post_comment_classes):
         """Full async integration: relations + derived + proxy + JSON.
 
@@ -151,3 +144,5 @@ class TestAsyncIntegration:
         assert len(comments) == 1
         assert comments[0].body_length == 27  # len("Excellent integration test!")
         assert comments[0].platform == "github"
+
+

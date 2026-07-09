@@ -1,12 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/composite_pk/test_active_query_async.py
 from decimal import Decimal
-import pytest
 
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression import ComparisonPredicate, Literal
 class TestAsyncActiveQueryCompositePK:
-    @pytest.mark.asyncio
-    async def test_async_where_pk_predicate(self, async_order_item_class):
+    async def test_where_pk_predicate(self, async_order_item_class):
         item = async_order_item_class(order_id=1, product_id=101, quantity=3)
         await item.save()
         predicate = async_order_item_class._build_pk_where_predicate(
@@ -17,18 +15,7 @@ class TestAsyncActiveQueryCompositePK:
         assert result.order_id == 1
         assert result.product_id == 101
 
-    @pytest.mark.asyncio
-    async def test_async_count(self, async_order_item_class):
-        items = [
-            async_order_item_class(order_id=1, product_id=101, quantity=2),
-            async_order_item_class(order_id=1, product_id=102, quantity=1),
-        ]
-        await async_order_item_class.bulk_create(items)
-        count = await async_order_item_class.query().count()
-        assert count == 2
-
-    @pytest.mark.asyncio
-    async def test_async_where_single_column(self, async_order_item_class):
+    async def test_where_single_column(self, async_order_item_class):
         items = [
             async_order_item_class(order_id=1, product_id=101, quantity=2, unit_price=Decimal("10.00")),
             async_order_item_class(order_id=1, product_id=102, quantity=1, unit_price=Decimal("20.00")),
@@ -41,8 +28,7 @@ class TestAsyncActiveQueryCompositePK:
         ).all()
         assert len(results) == 2
 
-    @pytest.mark.asyncio
-    async def test_async_where_and_condition(self, async_order_item_class):
+    async def test_where_and_condition(self, async_order_item_class):
         items = [
             async_order_item_class(order_id=1, product_id=101, quantity=2, unit_price=Decimal("10.00")),
             async_order_item_class(order_id=1, product_id=102, quantity=1, unit_price=Decimal("20.00")),
@@ -58,8 +44,7 @@ class TestAsyncActiveQueryCompositePK:
         assert len(results) == 1
         assert results[0].product_id == 101
 
-    @pytest.mark.asyncio
-    async def test_async_order_limit(self, async_order_item_class):
+    async def test_order_limit(self, async_order_item_class):
         items = [
             async_order_item_class(order_id=1, product_id=102, quantity=1, unit_price=Decimal("10.00")),
             async_order_item_class(order_id=1, product_id=101, quantity=2, unit_price=Decimal("20.00")),
@@ -69,8 +54,16 @@ class TestAsyncActiveQueryCompositePK:
         results = await async_order_item_class.query().order_by("product_id").limit(2).all()
         assert len(results) == 2
 
-    @pytest.mark.asyncio
-    async def test_async_explain(self, async_order_item_class):
+    async def test_count(self, async_order_item_class):
+        items = [
+            async_order_item_class(order_id=1, product_id=101, quantity=2),
+            async_order_item_class(order_id=1, product_id=102, quantity=1),
+        ]
+        await async_order_item_class.bulk_create(items)
+        count = await async_order_item_class.query().count()
+        assert count == 2
+
+    async def test_explain(self, async_order_item_class):
         items = [
             async_order_item_class(order_id=1, product_id=101, quantity=2, unit_price=Decimal("10.00")),
         ]

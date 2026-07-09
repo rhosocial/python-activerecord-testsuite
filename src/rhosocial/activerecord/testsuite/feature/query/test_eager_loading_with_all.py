@@ -6,14 +6,9 @@ after all() returns, without requiring additional database queries.
 """
 from decimal import Decimal
 class TestSyncEagerLoadingWithAll:
-    """Sync: verify with_('relation').all() preloads related data.
+    """Sync: verify with_('relation').all() preloads — same behaviour as async.
 
-    Scenarios:
-    - BelongsTo (Order -> User)
-    - HasMany (User -> Orders)
-    - Empty result set
-    - Data correctness across different models (Post -> User)
-    - Multiple method chaining with with_() and where()
+    Must mirror every scenario in TestAsyncEagerLoadingWithAll.
     """
 
     def test_belongs_to(self, combined_fixtures):

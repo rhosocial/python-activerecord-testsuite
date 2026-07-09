@@ -85,3 +85,9 @@ class TestAsyncEagerLoadingCaching:
 
         assert (await results[0].user()).id == user1.id
         assert (await results[1].user()).id == user2.id
+
+
+
+
+
+

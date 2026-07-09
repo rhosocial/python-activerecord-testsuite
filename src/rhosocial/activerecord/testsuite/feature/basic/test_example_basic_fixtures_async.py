@@ -3,10 +3,8 @@
 Example test file to import and verify the newly introduced mapped models fixtures.
 """
 
-import pytest
 from rhosocial.activerecord.model import AsyncActiveRecord
 
-@pytest.mark.asyncio
 
 async def test_mapped_models_fixtures_load(
     async_mapped_models_fixtures # Only import this specific fixture

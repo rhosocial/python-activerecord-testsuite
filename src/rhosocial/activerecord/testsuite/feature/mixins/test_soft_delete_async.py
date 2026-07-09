@@ -2,12 +2,8 @@
 """
 Test soft delete functionality
 """
-import pytest
 
 from datetime import datetime, timezone
-
-
-@pytest.mark.asyncio
 
 
 async def test_soft_delete_basic(async_task_model):
@@ -42,11 +38,6 @@ async def test_soft_delete_basic(async_task_model):
     assert db_task.deleted_at == t.deleted_at
 
 
-
-@pytest.mark.asyncio
-
-
-
 async def test_soft_delete_query(async_task_model):
     """Test soft delete query functionality"""
     # Create test data
@@ -75,9 +66,6 @@ async def test_soft_delete_query(async_task_model):
     assert deleted_tasks[0].id == t2.id
 
 
-@pytest.mark.asyncio
-
-
 async def test_soft_delete_restore(async_task_model):
     """Test restoring deleted records"""
     # Create and delete record
@@ -97,9 +85,6 @@ async def test_soft_delete_restore(async_task_model):
     restored_task = await async_task_model.find_one(t.id)
     assert restored_task is not None
     assert restored_task.deleted_at is None
-
-
-@pytest.mark.asyncio
 
 
 async def test_soft_delete_identity(async_task_model):

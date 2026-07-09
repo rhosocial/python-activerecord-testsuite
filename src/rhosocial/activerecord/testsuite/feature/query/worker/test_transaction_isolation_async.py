@@ -346,7 +346,6 @@ async def async_update_order_status_task(
 class TestAsyncTransactionIsolation:
     """Test transaction isolation in Worker processes with async models."""
 
-    @pytest.mark.asyncio
     async def test_transaction_in_worker(self, async_order_fixtures_for_worker):
         """Test async transaction executes correctly in Worker process."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -389,7 +388,6 @@ class TestAsyncTransactionIsolation:
             await user1.delete()
             await user2.delete()
 
-    @pytest.mark.asyncio
     async def test_transaction_rollback_on_error(self, async_order_fixtures_for_worker):
         """Test async transaction rollback on error."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -431,7 +429,6 @@ class TestAsyncTransactionIsolation:
             await user1.delete()
             await user2.delete()
 
-    @pytest.mark.asyncio
     async def test_concurrent_transactions_isolation(self, async_order_fixtures_for_worker):
         """Test async concurrent transactions maintain isolation."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -485,7 +482,6 @@ class TestAsyncTransactionIsolation:
             for t in targets:
                 await t.delete()
 
-    @pytest.mark.asyncio
     async def test_order_status_update_transaction(self, async_order_fixtures_for_worker):
         """Test async order status update in transaction."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']

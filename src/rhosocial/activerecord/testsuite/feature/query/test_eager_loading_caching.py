@@ -6,13 +6,9 @@ so repeated access does not trigger additional database queries.
 """
 from decimal import Decimal
 class TestSyncEagerLoadingCaching:
-    """Sync: verify eager loading correctly populates InstanceCache.
+    """Sync: verify eager loading populates InstanceCache — same behaviour as async.
 
-    Scenarios:
-    - Cache hit after all() with .with_()
-    - Cache hit after one() with .with_()
-    - Each instance has its own independent cache
-    - Cache entries do not leak between different instances
+    Must mirror every scenario in TestAsyncEagerLoadingCaching.
     """
 
     def test_cache_after_all(self, combined_fixtures):

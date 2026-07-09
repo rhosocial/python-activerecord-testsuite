@@ -6,14 +6,12 @@ This module contains tests for range operations specifically using ActiveQuery
 and verifying the integration between ActiveQuery and RangeQueryMixin.
 """
 
-import pytest
 from decimal import Decimal
 class TestAsyncActiveQueryRange:
     """
     Asynchronous ActiveQuery range operations tests
     """
 
-    @pytest.mark.asyncio
     async def test_active_query_in_list_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with in_list method from RangeQueryMixin (async version).
@@ -51,7 +49,6 @@ class TestAsyncActiveQueryRange:
         assert 'processing' not in result_statuses
         assert 'cancelled' not in result_statuses
 
-    @pytest.mark.asyncio
     async def test_active_query_not_in_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with not_in method from RangeQueryMixin (async version).
@@ -89,7 +86,6 @@ class TestAsyncActiveQueryRange:
         assert 'shipped' in result_statuses
         assert 'delivered' in result_statuses
 
-    @pytest.mark.asyncio
     async def test_active_query_between_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with between method from RangeQueryMixin (async version).
@@ -123,7 +119,6 @@ class TestAsyncActiveQueryRange:
         assert Decimal('150.00') in result_amounts
         assert Decimal('200.00') in result_amounts
 
-    @pytest.mark.asyncio
     async def test_active_query_not_between_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with not_between method from RangeQueryMixin (async version).
@@ -156,7 +151,6 @@ class TestAsyncActiveQueryRange:
         assert Decimal('50.00') in result_amounts
         assert Decimal('250.00') in result_amounts
 
-    @pytest.mark.asyncio
     async def test_active_query_comparison_operators_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with comparison operator methods from RangeQueryMixin (async version).
@@ -204,7 +198,6 @@ class TestAsyncActiveQueryRange:
         chained_results = await chained_query.all()
         assert isinstance(chained_results, list)
 
-    @pytest.mark.asyncio
     async def test_active_query_pattern_matching_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with pattern matching methods from RangeQueryMixin (async version).
@@ -240,7 +233,6 @@ class TestAsyncActiveQueryRange:
         chained_results = await chained_query.all()
         assert isinstance(chained_results, list)
 
-    @pytest.mark.asyncio
     async def test_active_query_null_check_integration(self, async_order_fixtures):
         """
         Test ActiveQuery integration with null checking methods from RangeQueryMixin (async version).
@@ -276,7 +268,6 @@ class TestAsyncActiveQueryRange:
         chained_results = await chained_query.all()
         assert isinstance(chained_results, list)
 
-    @pytest.mark.asyncio
     async def test_active_query_range_method_chaining(self, async_order_fixtures):
         """
         Test ActiveQuery integration with chaining multiple range methods from RangeQueryMixin (async version).

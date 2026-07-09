@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-import pytest
 
 # Fixtures are now injected by the conftest.py in this package
 
@@ -16,7 +15,6 @@ from rhosocial.activerecord.testsuite.utils import requires_json_operations
 class TestAsyncFields:
     """Asynchronous tests for field processing functionality."""
 
-    @pytest.mark.asyncio
     async def test_string_field(self, async_type_test_model):
         """Test string field processing"""
         # Basic string test
@@ -42,7 +40,6 @@ class TestAsyncFields:
         await saved_model.refresh()
         assert saved_model.string_field == unicode_string
 
-    @pytest.mark.asyncio
     async def test_numeric_fields(self, async_type_test_model):
         """Test numeric type fields"""
         model = async_type_test_model(
@@ -77,7 +74,6 @@ class TestAsyncFields:
         assert abs(saved_model.float_field - 1.23456789) < 1e-5
         assert saved_model.decimal_field == Decimal("9999999.99")
 
-    @pytest.mark.asyncio
     async def test_boolean_field(self, async_type_test_model):
         """Test boolean field processing"""
         model = async_type_test_model(bool_field=True)
@@ -94,7 +90,6 @@ class TestAsyncFields:
         await saved_model.refresh()
         assert saved_model.bool_field is False
 
-    @pytest.mark.asyncio
     async def test_datetime_field(self, async_type_test_model):
         """Test datetime field processing"""
         from datetime import timedelta
@@ -108,7 +103,6 @@ class TestAsyncFields:
         utc_plus_8 = timezone(timedelta(hours=8))
         assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == '2024-01-01T20:30:45.123456+08:00'
 
-    @pytest.mark.asyncio
     @requires_json_operations()
     async def test_json_field(self, async_type_test_model):
         """Test JSON field processing"""
@@ -131,7 +125,6 @@ class TestAsyncFields:
         parsed_json = json.loads(json_str)
         assert parsed_json == test_json
 
-    @pytest.mark.asyncio
     async def test_nullable_field(self, async_type_test_model):
         """Test nullable field processing"""
         model = async_type_test_model()  # Use default value None
@@ -154,7 +147,6 @@ class TestAsyncFields:
         await saved_model.refresh()
         assert saved_model.nullable_field is None
 
-    @pytest.mark.asyncio
     async def test_uuid_primary_key(self, async_type_test_model):
         """Test UUID primary key processing"""
         model = async_type_test_model()

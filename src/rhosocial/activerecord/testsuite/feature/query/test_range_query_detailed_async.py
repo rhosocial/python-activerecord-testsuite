@@ -12,9 +12,6 @@ from rhosocial.activerecord.query.range import RangeQueryMixin
 from rhosocial.activerecord.backend.dialect.protocols import ILIKESupport
 
 
-@pytest.mark.asyncio
-
-
 async def test_get_col_expr_with_string_column(async_order_fixtures):
     """Test _get_col_expr method with string column."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -27,9 +24,6 @@ async def test_get_col_expr_with_string_column(async_order_fixtures):
     col_expr = query._get_col_expr('status')
     assert col_expr is not None
     assert hasattr(col_expr, 'to_sql')  # Should be a Column expression
-
-
-@pytest.mark.asyncio
 
 
 async def test_get_col_expr_with_base_expression(async_order_fixtures):
@@ -45,9 +39,6 @@ async def test_get_col_expr_with_base_expression(async_order_fixtures):
     assert col_expr is base_expr  # Should return the same object
 
 
-@pytest.mark.asyncio
-
-
 async def test_get_col_expr_with_invalid_type(async_order_fixtures):
     """Test _get_col_expr method with invalid type raises TypeError."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -57,9 +48,6 @@ async def test_get_col_expr_with_invalid_type(async_order_fixtures):
     # Test with invalid type
     with pytest.raises(TypeError, match="column must be a string or a BaseExpression"):
         query._get_col_expr(123)  # Integer is not valid
-
-
-@pytest.mark.asyncio
 
 
 async def test_in_list_with_values(async_order_fixtures):
@@ -86,9 +74,6 @@ async def test_in_list_with_values(async_order_fixtures):
     assert 'user3' not in usernames
 
 
-@pytest.mark.asyncio
-
-
 async def test_in_list_with_empty_list_default_behavior(async_order_fixtures):
     """Test in_list method with empty list (default behavior)."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -104,9 +89,6 @@ async def test_in_list_with_empty_list_default_behavior(async_order_fixtures):
     results = await AsyncUser.query().in_list(AsyncUser.c.username, []).all()
 
     assert len(results) == 0
-
-
-@pytest.mark.asyncio
 
 
 async def test_in_list_with_empty_list_no_result_false(async_order_fixtures):
@@ -127,9 +109,6 @@ async def test_in_list_with_empty_list_no_result_false(async_order_fixtures):
     assert len(results) == len(all_users)
 
 
-@pytest.mark.asyncio
-
-
 async def test_in_list_with_string_column_name(async_order_fixtures):
     """Test in_list method with string column name."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -148,9 +127,6 @@ async def test_in_list_with_string_column_name(async_order_fixtures):
     usernames = [u.username for u in results]
     assert 'user1' in usernames
     assert 'user2' in usernames
-
-
-@pytest.mark.asyncio
 
 
 async def test_not_in_with_values(async_order_fixtures):
@@ -177,9 +153,6 @@ async def test_not_in_with_values(async_order_fixtures):
     assert 'user3' not in usernames
 
 
-@pytest.mark.asyncio
-
-
 async def test_not_in_with_empty_list_default_behavior(async_order_fixtures):
     """Test not_in method with empty list (default behavior)."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -198,9 +171,6 @@ async def test_not_in_with_empty_list_default_behavior(async_order_fixtures):
     assert len(results) == len(all_users)
 
 
-@pytest.mark.asyncio
-
-
 async def test_not_in_with_empty_list_empty_result_true(async_order_fixtures):
     """Test not_in method with empty list and empty_result=True."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -216,9 +186,6 @@ async def test_not_in_with_empty_list_empty_result_true(async_order_fixtures):
     results = await AsyncUser.query().not_in(AsyncUser.c.username, [], empty_result=True).all()
 
     assert len(results) == 0
-
-
-@pytest.mark.asyncio
 
 
 async def test_not_in_with_string_column_name(async_order_fixtures):
@@ -243,9 +210,6 @@ async def test_not_in_with_string_column_name(async_order_fixtures):
     assert 'user1' in usernames
     assert 'user2' in usernames
     assert 'user3' not in usernames
-
-
-@pytest.mark.asyncio
 
 
 async def test_between_method(async_order_fixtures):
@@ -277,9 +241,6 @@ async def test_between_method(async_order_fixtures):
     assert 35 not in ages  # user4 is too old
 
 
-@pytest.mark.asyncio
-
-
 async def test_between_with_string_column_name(async_order_fixtures):
     """Test between method with string column name."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -302,9 +263,6 @@ async def test_between_with_string_column_name(async_order_fixtures):
     assert 200.0 in balances  # user2
     assert 100.0 not in balances  # user1 is too low
     assert 300.0 not in balances  # user3 is too high
-
-
-@pytest.mark.asyncio
 
 
 async def test_not_between_method(async_order_fixtures):
@@ -335,9 +293,6 @@ async def test_not_between_method(async_order_fixtures):
     assert 30 not in ages  # user3 is in range
 
 
-@pytest.mark.asyncio
-
-
 async def test_not_between_with_string_column_name(async_order_fixtures):
     """Test not_between method with string column name."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -362,9 +317,6 @@ async def test_not_between_with_string_column_name(async_order_fixtures):
     assert 200.0 not in balances  # user2 is in range
 
 
-@pytest.mark.asyncio
-
-
 async def test_like_method(async_order_fixtures):
     """Test like method."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -386,9 +338,6 @@ async def test_like_method(async_order_fixtures):
     assert results[0].username == 'alice_smith'
 
 
-@pytest.mark.asyncio
-
-
 async def test_like_with_string_column_name(async_order_fixtures):
     """Test like method with string column name."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -405,9 +354,6 @@ async def test_like_with_string_column_name(async_order_fixtures):
 
     assert len(results) == 1
     assert results[0].username == 'bob_jones'
-
-
-@pytest.mark.asyncio
 
 
 async def test_not_like_method(async_order_fixtures):
@@ -429,9 +375,6 @@ async def test_not_like_method(async_order_fixtures):
 
     assert len(results) == 1
     assert results[0].username == 'bob_jones'
-
-
-@pytest.mark.asyncio
 
 
 async def test_like_with_string_column_name(async_order_fixtures):
@@ -465,9 +408,6 @@ async def test_like_with_string_column_name(async_order_fixtures):
     assert len(results_middle) == 3  # All users have underscores
 
 
-@pytest.mark.asyncio
-
-
 async def test_like_with_wildcards(async_order_fixtures):
     """Test like method with various wildcard patterns."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -498,7 +438,6 @@ async def test_like_with_wildcards(async_order_fixtures):
 
 
 @pytest.mark.requires_protocol((ILIKESupport, "supports_ilike"))
-@pytest.mark.asyncio
 async def test_ilike_method(async_order_fixtures):
     """Test ilike method (case-insensitive like)."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -522,7 +461,6 @@ async def test_ilike_method(async_order_fixtures):
 
 
 @pytest.mark.requires_protocol((ILIKESupport, "supports_ilike"))
-@pytest.mark.asyncio
 async def test_not_ilike_method(async_order_fixtures):
     """Test not_ilike method (case-insensitive not like)."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -543,9 +481,6 @@ async def test_not_ilike_method(async_order_fixtures):
     # Should return bob_jones who doesn't contain smith (case insensitive)
     assert len(results) == 1
     assert results[0].username == 'BOB_JONES'
-
-
-@pytest.mark.asyncio
 
 
 async def test_is_null_method(async_order_fixtures):
@@ -569,9 +504,6 @@ async def test_is_null_method(async_order_fixtures):
     assert len(results) == null_age_count
 
 
-@pytest.mark.asyncio
-
-
 async def test_is_not_null_method(async_order_fixtures):
     """Test is_not_null method."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -593,9 +525,6 @@ async def test_is_not_null_method(async_order_fixtures):
     assert len(results) >= 2  # At least user1 and user2
     for user in results:
         assert user.age is not None
-
-
-@pytest.mark.asyncio
 
 
 async def test_greater_than_method(async_order_fixtures):
@@ -622,9 +551,6 @@ async def test_greater_than_method(async_order_fixtures):
     assert 20 not in ages
 
 
-@pytest.mark.asyncio
-
-
 async def test_greater_than_or_equal_method(async_order_fixtures):
     """Test greater_than_or_equal method."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -647,9 +573,6 @@ async def test_greater_than_or_equal_method(async_order_fixtures):
     assert 25 in ages
     assert 30 in ages
     assert 20 not in ages
-
-
-@pytest.mark.asyncio
 
 
 async def test_less_than_method(async_order_fixtures):
@@ -676,9 +599,6 @@ async def test_less_than_method(async_order_fixtures):
     assert 30 not in ages
 
 
-@pytest.mark.asyncio
-
-
 async def test_less_than_or_equal_method(async_order_fixtures):
     """Test less_than_or_equal method."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -701,9 +621,6 @@ async def test_less_than_or_equal_method(async_order_fixtures):
     assert 20 in ages
     assert 25 in ages
     assert 30 not in ages
-
-
-@pytest.mark.asyncio
 
 
 async def test_chaining_range_methods(async_order_fixtures):

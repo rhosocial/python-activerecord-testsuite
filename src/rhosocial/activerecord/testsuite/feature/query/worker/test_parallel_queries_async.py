@@ -298,7 +298,6 @@ async def async_query_order_items_task(ctx: TaskContext, order_id: int, conn_par
 class TestAsyncParallelQueries:
     """Test parallel query operations with asynchronous models."""
 
-    @pytest.mark.asyncio
     async def test_parallel_count_queries(self, async_order_fixtures_for_worker):
         """Test parallel async count queries."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -316,7 +315,6 @@ class TestAsyncParallelQueries:
 
         assert len(set(results)) == 1
 
-    @pytest.mark.asyncio
     async def test_parallel_order_queries_by_user(self, async_order_fixtures_for_worker):
         """Test parallel async queries for orders by user."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -339,7 +337,6 @@ class TestAsyncParallelQueries:
         assert len(results) == len(user_ids)
         assert all(isinstance(r, list) for r in results)
 
-    @pytest.mark.asyncio
     async def test_parallel_aggregate_queries(self, async_order_fixtures_for_worker):
         """Test parallel async aggregate queries."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']
@@ -360,7 +357,6 @@ class TestAsyncParallelQueries:
         assert len(totals) == 1
         assert len(counts) == 1
 
-    @pytest.mark.asyncio
     async def test_parallel_order_item_queries(self, async_order_fixtures_for_worker):
         """Test parallel async queries for order items."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures_for_worker['models']

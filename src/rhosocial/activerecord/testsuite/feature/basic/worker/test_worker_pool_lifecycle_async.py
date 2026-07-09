@@ -94,7 +94,6 @@ async def long_running_db_task(ctx: TaskContext, duration: float, conn_params: D
 class TestAsyncWorkerPoolLifecycle:
     """Test WorkerPool lifecycle with database operations."""
 
-    @pytest.mark.asyncio
 
     async def test_pool_startup_and_shutdown(self, async_user_class_for_worker):
         """Test WorkerPool startup and shutdown with database tasks."""
@@ -121,7 +120,6 @@ class TestAsyncWorkerPoolLifecycle:
         assert pool.active_workers == 0
         assert report.final_phase == "graceful"
 
-    @pytest.mark.asyncio
 
     async def test_context_manager_usage(self, async_user_class_for_worker):
         """Test WorkerPool as context manager."""
@@ -143,7 +141,6 @@ class TestAsyncWorkerPoolLifecycle:
         # Pool should be stopped after exiting context
         assert pool.state == PoolState.STOPPED
 
-    @pytest.mark.asyncio
 
     async def test_graceful_shutdown_with_pending_tasks(self, async_user_class_for_worker):
         """Test graceful shutdown waits for pending tasks to complete."""
@@ -172,7 +169,6 @@ class TestAsyncWorkerPoolLifecycle:
         assert all(f.done for f in futures)
         assert all(f.succeeded for f in futures)
 
-    @pytest.mark.asyncio
 
     async def test_forced_shutdown_with_timeout(self, async_user_class_for_worker):
         """Test forced shutdown when graceful timeout expires."""
@@ -196,7 +192,6 @@ class TestAsyncWorkerPoolLifecycle:
         assert report.final_phase in ("terminate", "kill")
         assert pool.state == PoolState.STOPPED
 
-    @pytest.mark.asyncio
 
     async def test_multiple_pools_sequential(self, async_user_class_for_worker):
         """Test creating and destroying multiple pools sequentially."""
@@ -214,7 +209,6 @@ class TestAsyncWorkerPoolLifecycle:
                 results = [f.result(timeout=30) for f in futures]
                 assert results == [0, 2, 4, 6]
 
-    @pytest.mark.asyncio
 
     async def test_pool_reuse_after_shutdown(self, async_user_class_for_worker):
         """Test that pool cannot be reused after shutdown."""

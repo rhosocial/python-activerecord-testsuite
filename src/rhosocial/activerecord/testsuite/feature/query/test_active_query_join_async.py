@@ -15,7 +15,6 @@ class TestAsyncActiveQueryJoin:
     Asynchronous ActiveQuery join functionality tests
     """
 
-    @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
     async def test_inner_join_basic(self, async_order_fixtures):
         """
@@ -37,7 +36,6 @@ class TestAsyncActiveQueryJoin:
         assert len(results) == 1
         assert results[0].id == user.id
 
-    @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
     async def test_join_with_where_condition(self, async_order_fixtures):
         """
@@ -61,7 +59,6 @@ class TestAsyncActiveQueryJoin:
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).where(AsyncOrder.c.status == 'active').all()
         assert len(results) > 0  # Should return users with active orders
 
-    @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
     async def test_multiple_joins(self, async_blog_fixtures):
         """
@@ -85,7 +82,6 @@ class TestAsyncActiveQueryJoin:
         results = await AsyncUser.query().join(AsyncPost, AsyncUser.c.id == AsyncPost.c.user_id).join(AsyncComment, AsyncPost.c.id == AsyncComment.c.post_id).all()
         assert len(results) > 0  # Should return users who have posts with comments
 
-    @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
     async def test_join_with_order_by(self, async_order_fixtures):
         """
@@ -109,7 +105,6 @@ class TestAsyncActiveQueryJoin:
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).order_by(AsyncOrder.c.total_amount).all()
         assert len(results) > 0  # Should return ordered results
 
-    @pytest.mark.asyncio
     @pytest.mark.requires_inner_join
     async def test_join_with_limit_offset(self, async_order_fixtures):
         """

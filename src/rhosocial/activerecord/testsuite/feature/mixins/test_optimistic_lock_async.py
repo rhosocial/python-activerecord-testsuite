@@ -7,9 +7,6 @@ import pytest
 from rhosocial.activerecord.backend.errors import DatabaseError
 
 
-@pytest.mark.asyncio
-
-
 async def test_optimistic_lock(async_versioned_product_model):
     """Test optimistic locking functionality"""
     # Create new record
@@ -42,9 +39,6 @@ async def test_optimistic_lock(async_versioned_product_model):
     assert latest_product.price == pytest.approx(20.0)
 
 
-@pytest.mark.asyncio
-
-
 async def test_version_increment(async_versioned_product_model):
     """Test version number increments correctly"""
     # Create new record
@@ -69,9 +63,6 @@ async def test_version_increment(async_versioned_product_model):
     assert db_product.version == 3
 
 
-@pytest.mark.asyncio
-
-
 async def test_version_initializes_to_one_on_insert(async_versioned_product_model):
     """Test that AFTER_INSERT ensures version is initialized to 1.
 
@@ -93,9 +84,6 @@ async def test_version_initializes_to_one_on_insert(async_versioned_product_mode
     assert db_product.version == 1, (
         "Version in database should be 1 after INSERT"
     )
-
-
-@pytest.mark.asyncio
 
 
 async def test_version_events_separation(async_versioned_product_model):

@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_basic_async.py
 """Test basic query functionality."""
-import pytest
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_find_by_id(async_order_fixtures):
@@ -32,9 +28,6 @@ async def test_find_by_id(async_order_fixtures):
     assert found.order_number == 'ORD-001'
 
 
-@pytest.mark.asyncio
-
-
 async def test_find_by_condition(async_order_fixtures):
     """Test finding record by conditions"""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -56,9 +49,6 @@ async def test_find_by_condition(async_order_fixtures):
     found = await AsyncOrder.find_one({'status': 'processing'})
     assert found is not None
     assert found.order_number == 'ORD-TEST'
-
-
-@pytest.mark.asyncio
 
 
 async def test_find_all(async_order_fixtures):
@@ -84,9 +74,6 @@ async def test_find_all(async_order_fixtures):
     assert len(all_orders) == 3
 
 
-@pytest.mark.asyncio
-
-
 async def test_count(async_order_fixtures):
     """Test record counting"""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -107,9 +94,6 @@ async def test_count(async_order_fixtures):
 
     count = await AsyncOrder.query().count()
     assert count == 3
-
-
-@pytest.mark.asyncio
 
 
 async def test_exists_method(async_order_fixtures):
@@ -169,9 +153,6 @@ async def test_exists_method(async_order_fixtures):
 # Removed tests that use or_where, start_or_group, end_or_group methods as these are no longer supported
 
 
-@pytest.mark.asyncio
-
-
 async def test_exists_with_limit_and_offset(async_order_fixtures):
     """Test exists() method with LIMIT and OFFSET clauses"""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -204,9 +185,6 @@ async def test_exists_with_limit_and_offset(async_order_fixtures):
     # Test exists with limit and offset that exceeds available records
     exists_result = await AsyncOrder.query().where('status = ?', ('active',)).limit(1).offset(10).exists()
     assert exists_result is False
-
-
-@pytest.mark.asyncio
 
 
 async def test_exists_with_joins(async_order_fixtures):

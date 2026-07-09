@@ -16,7 +16,6 @@ from rhosocial.activerecord.testsuite.utils import requires_cte, requires_recurs
 class TestAsyncCTEQueryActiveQuery:
     """Test CTE queries with ActiveQuery subqueries (asynchronous)."""
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_single_active_query_cte(self, async_tree_fixtures):
         """Test basic CTE with a single ActiveQuery as subquery (async version)."""
@@ -59,7 +58,6 @@ class TestAsyncCTEQueryActiveQuery:
         names = sorted([r['name'] for r in result])
         assert names == ["Child1", "Child2", "Root"]
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_multiple_active_query_cte(self, async_tree_fixtures):
         """Test CTE with multiple ActiveQuery instances as subqueries (async version)."""
@@ -101,12 +99,110 @@ class TestAsyncCTEQueryActiveQuery:
 
         assert len(result) >= 2  # Should have results from the high_values CTE
 
+class TestAsyncCTEQueryErrorHandling:
+    """Test CTE query error handling and validation for async."""
+
+    async def test_cte_query_with_wrong_paradigm_backend_raises_error(self, async_order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when a sync backend is provided.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get sync backend from model (sync backend for sync model)
+        from rhosocial.activerecord.backend.base import StorageBackend
+        from unittest.mock import Mock
+
+        mock_sync_backend = Mock(spec=StorageBackend)
+        mock_sync_backend.dialect = Mock()
+
+        # Try to create an AsyncCTEQuery with a sync backend - should raise TypeError
+        with pytest.raises(TypeError) as exc_info:
+            AsyncCTEQuery(mock_sync_backend)
+
+        # Verify the error message mentions the incorrect backend type
+        assert "AsyncCTEQuery requires an AsyncStorageBackend" in str(exc_info.value)
+        assert "StorageBackend" in str(exc_info.value)
+
+    async def test_cte_query_with_mock_query_raises_error(self, async_order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when an invalid query type (mock) is provided to with_cte.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        backend = AsyncOrder.backend()
+
+        cte_query = AsyncCTEQuery(backend)
+
+        from unittest.mock import Mock
+        invalid_query = Mock()
+
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', invalid_query)
+
+        assert "not supported in CTE" in str(exc_info.value)
+        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+
+    async def test_cte_query_with_wrong_paradigm_query_raises_error(self, async_order_fixtures):
+        """
+        Test that AsyncCTEQuery raises TypeError when a sync query is provided to with_cte.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        from rhosocial.activerecord.backend.base import StorageBackend
+        from rhosocial.activerecord.query.active_query import ActiveQuery
+        from unittest.mock import Mock
+
+        mock_sync_backend = Mock(spec=StorageBackend)
+        mock_sync_backend.dialect = Mock()
+        mock_sync_model = Mock()
+        mock_sync_model.backend.return_value = mock_sync_backend
+        sync_query = ActiveQuery(mock_sync_model)
+
+        backend = AsyncOrder.backend()
+        cte_query = AsyncCTEQuery(backend)
+
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('test_cte', sync_query)
+
+        assert "AsyncCTEQuery (async) cannot accept sync query" in str(exc_info.value)
+        assert "ActiveQuery" in str(exc_info.value)
+
+    async def test_cte_query_with_invalid_query_type_raises_error(self, async_order_fixtures):
+        """
+        Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create a CTEQuery instance
+        cte_query = AsyncCTEQuery(backend)
+
+        # Try to pass an unsupported type (e.g., integer) as query parameter
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', 12345)
+
+        assert "Query type <class 'int'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', [1, 2, 3])
+
+        assert "Query type <class 'list'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
+        with pytest.raises(TypeError) as exc_info:
+            cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})
+
+        assert "Query type <class 'dict'>" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value)
+
 class TestAsyncCTEQueryExtendedFunctionality:
     """Test Async CTE queries with extended functionality from BaseQueryMixin, JoinQueryMixin, and RangeQueryMixin."""
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_basic_query_conditions(self, async_order_fixtures):
+    async def test_cte_with_basic_query_conditions(self, async_order_fixtures):
         """
         Test Async CTE query with basic query conditions (select, where, order_by).
         """
@@ -150,7 +246,6 @@ class TestAsyncCTEQueryExtendedFunctionality:
         assert results[1]['status'] == 'active'
         assert results[1]['total_amount'] == Decimal('100.00')
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_cte_with_range_conditions(self, async_order_fixtures):
         """
@@ -196,7 +291,6 @@ class TestAsyncCTEQueryExtendedFunctionality:
         assert results[0]['total_amount'] == Decimal('300.00')
         assert results[1]['total_amount'] == Decimal('200.00')
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_cte_with_joins(self, async_order_fixtures):
         """
@@ -241,182 +335,41 @@ class TestAsyncCTEQueryExtendedFunctionality:
         assert results[1]['total_amount'] == Decimal('150.00')
         assert results[1]['status'] == 'active'
 
-class TestCTEQueryAsyncErrorHandling:
+class TestAsyncCTEQuerySyncErrorHandling:
     """Test CTE query error handling for edge cases (asynchronous)."""
 
-    @pytest.mark.asyncio
-    async def test_async_cte_query_to_sql_with_empty_ctes_raises_error(self, async_order_fixtures):
+    async def test_cte_query_to_sql_with_empty_ctes_raises_error(self, async_order_fixtures):
         """
         Test that calling to_sql() on an AsyncCTEQuery with no CTEs defined raises ValueError.
-        This tests the async version of the condition: if not self._ctes: raise ValueError("CTEQuery must have at least one CTE defined")
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
-        # Get backend from model
         backend = AsyncOrder.backend()
 
-        # Create an AsyncCTEQuery instance without adding any CTEs
         cte_query = AsyncCTEQuery(backend)
 
-        # Attempt to call to_sql() without defining any CTEs - should raise ValueError
         with pytest.raises(ValueError) as exc_info:
             cte_query.to_sql()
 
-        # Verify the error message mentions the missing CTE requirement
         assert "CTEQuery must have at least one CTE defined" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_async_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, async_order_fixtures):
+    async def test_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, async_order_fixtures):
         """
-        Test that calling to_sql() with a _main_cte_name that doesn't exist in defined CTEs raises ValueError.
-        This tests the async version of the condition: if main_cte_name not in cte_names: raise ValueError(...)
+        Test that calling to_sql() with a _main_cte_name that doesn't exist raises ValueError.
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
-        # Get backend from model
         backend = AsyncOrder.backend()
 
-        # Create an AsyncCTEQuery instance and add one CTE
         cte_query = AsyncCTEQuery(backend)
         cte_query.with_cte('existing_cte', (f"SELECT id, status FROM {AsyncOrder.table_name()}", ()))
 
-        # Explicitly set _main_cte_name to a name that doesn't exist
         cte_query._main_cte_name = 'nonexistent_cte'
 
-        # Attempt to call to_sql() with nonexistent CTE name - should raise ValueError
         with pytest.raises(ValueError) as exc_info:
             cte_query.to_sql()
 
-        # Verify the error message mentions the missing CTE
         assert "CTE 'nonexistent_cte' not found in defined CTEs:" in str(exc_info.value)
-        assert 'existing_cte' in str(exc_info.value)  # Should show the available CTE names
+        assert 'existing_cte' in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_async_cte_query_with_sync_backend_raises_error(self, async_order_fixtures):
-        """
-        Test that AsyncCTEQuery raises TypeError when a sync backend is provided.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
-        # Get sync backend from model (sync backend for sync model)
-        from rhosocial.activerecord.backend.base import StorageBackend
-        from unittest.mock import Mock
-
-        mock_sync_backend = Mock(spec=StorageBackend)
-        mock_sync_backend.dialect = Mock()
-
-        # Try to create an AsyncCTEQuery with a sync backend - should raise TypeError
-        with pytest.raises(TypeError) as exc_info:
-            AsyncCTEQuery(mock_sync_backend)
-
-        # Verify the error message mentions the incorrect backend type
-        assert "AsyncCTEQuery requires an AsyncStorageBackend" in str(exc_info.value)
-        assert "StorageBackend" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_cte_query_with_invalid_query_type_raises_error(self, async_order_fixtures):
-        """
-        Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
-
-        This test verifies that the CTEQuery properly validates the types of query
-        objects passed to it and raises appropriate errors for unsupported types.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Get backend from model
-        backend = AsyncOrder.backend()
-
-        # Create a CTEQuery instance
-        cte_query = AsyncCTEQuery(backend)
-
-        # Try to pass an unsupported type (e.g., integer) as query parameter
-        with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', 12345)  # Passing an integer instead of valid query type
-
-        # Verify the error message mentions the unsupported type
-        assert "Query type <class 'int'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
-
-        # Try to pass a list as query parameter
-        with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', [1, 2, 3])  # Passing a list instead of valid query type
-
-        # Verify the error message mentions the unsupported type
-        assert "Query type <class 'list'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
-
-        # Try to pass a dict as query parameter
-        with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})  # Passing a dict instead of valid query type
-
-        # Verify the error message mentions the unsupported type
-        assert "Query type <class 'dict'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_async_cte_query_with_mock_query_raises_error(self, async_order_fixtures):
-        """
-        Test that AsyncCTEQuery raises TypeError when an invalid query type (mock) is provided to with_cte.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Get async backend from model
-        backend = AsyncOrder.backend()
-
-        # Create an AsyncCTEQuery instance
-        cte_query = AsyncCTEQuery(backend)
-
-        # Create a mock that behaves like an invalid query
-        from unittest.mock import Mock
-        invalid_query = Mock()
-
-        # Try to add the invalid query to the AsyncCTEQuery - should raise TypeError
-        with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('test_cte', invalid_query)
-
-        # Verify the error message mentions the unsupported query type
-        assert "not supported in CTE" in str(exc_info.value)
-        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_async_cte_query_with_sync_query_raises_error(self, async_order_fixtures):
-        """
-        Test that AsyncCTEQuery raises TypeError when a sync query is provided to with_cte.
-
-        This test verifies that the asynchronous AsyncCTEQuery rejects sync query objects
-        to prevent sync/async mixing. Although to_sql() is a sync/async-agnostic pure
-        computation, a sync query carries a sync backend reference and must not be
-        embedded into an async AsyncCTEQuery. An ActiveQuery is used here because it
-        implements IQuery but not IAsyncQuery, exercising the dispatch ordering where the
-        IAsyncQuery check must take precedence before the IQuery rejection; before the
-        fix this object was wrongly accepted via the IQuery branch.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Get async backend from model for the AsyncCTEQuery under test
-        backend = AsyncOrder.backend()
-
-        # Create an AsyncCTEQuery instance
-        cte_query = AsyncCTEQuery(backend)
-
-        # Build a real ActiveQuery. It implements IQuery but not IAsyncQuery, so it
-        # directly exercises the sync/async mixing rejection path. A mock sync
-        # model/backend is used only to satisfy construction; the rejection fires
-        # before any backend interaction occurs.
-        from unittest.mock import Mock
-        from rhosocial.activerecord.backend.base import StorageBackend
-        from rhosocial.activerecord.query.active_query import ActiveQuery
-
-        mock_sync_backend = Mock(spec=StorageBackend)
-        mock_sync_backend.dialect = Mock()
-        mock_sync_model = Mock()
-        mock_sync_model.backend.return_value = mock_sync_backend
-        sync_query = ActiveQuery(mock_sync_model)
-
-        # Try to add the sync query to the async AsyncCTEQuery - should raise TypeError
-        with pytest.raises(TypeError) as exc_info:
-            cte_query.with_cte('test_cte', sync_query)
-
-        # Verify the error message mentions the sync/async mixing rejection
-        assert "AsyncCTEQuery (async) cannot accept sync query" in str(exc_info.value)
-        assert "ActiveQuery" in str(exc_info.value)

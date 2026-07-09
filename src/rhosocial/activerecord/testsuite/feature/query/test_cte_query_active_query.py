@@ -102,12 +102,9 @@ class TestCTEQueryActiveQuery:
 class TestCTEQueryErrorHandling:
     """Test CTE query error handling and validation."""
 
-    def test_cte_query_with_async_backend_raises_error(self, order_fixtures):
+    def test_cte_query_with_wrong_paradigm_backend_raises_error(self, order_fixtures):
         """
         Test that CTEQuery raises TypeError when an async backend is provided.
-
-        This test verifies that the synchronous CTEQuery properly validates
-        the backend type and raises appropriate errors for incorrect types.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -155,17 +152,9 @@ class TestCTEQueryErrorHandling:
         assert "not supported in CTE" in str(exc_info.value)
         assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
 
-    def test_cte_query_with_async_query_raises_error(self, order_fixtures):
+    def test_cte_query_with_wrong_paradigm_query_raises_error(self, order_fixtures):
         """
         Test that CTEQuery raises TypeError when an async query is provided to with_cte.
-
-        This test verifies that the synchronous CTEQuery rejects async query objects
-        to prevent sync/async mixing. Although to_sql() is a sync/async-agnostic pure
-        computation, an async query carries an async backend reference and must not be
-        embedded into a sync CTEQuery. An AsyncActiveQuery is used here because it
-        implements both IAsyncQuery and IQuery (via a relational mixin), exercising the
-        dispatch ordering where the IAsyncQuery check must take precedence over IQuery;
-        before the fix this object was wrongly accepted via the IQuery branch.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -200,9 +189,6 @@ class TestCTEQueryErrorHandling:
     def test_cte_query_with_invalid_query_type_raises_error(self, order_fixtures):
         """
         Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
-
-        This test verifies that the CTEQuery properly validates the types of query
-        objects passed to it and raises appropriate errors for unsupported types.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -379,7 +365,6 @@ class TestCTEQuerySyncErrorHandling:
     def test_cte_query_to_sql_with_empty_ctes_raises_error(self, order_fixtures):
         """
         Test that calling to_sql() on a CTEQuery with no CTEs defined raises ValueError.
-        This tests the condition: if not self._ctes: raise ValueError("CTEQuery must have at least one CTE defined")
         """
         User, Order, OrderItem = order_fixtures
 
@@ -398,8 +383,7 @@ class TestCTEQuerySyncErrorHandling:
 
     def test_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, order_fixtures):
         """
-        Test that calling to_sql() with a _main_cte_name that doesn't exist in defined CTEs raises ValueError.
-        This tests the condition: if main_cte_name not in cte_names: raise ValueError(...)
+        Test that calling to_sql() with a _main_cte_name that doesn't exist raises ValueError.
         """
         User, Order, OrderItem = order_fixtures
 

@@ -7,12 +7,9 @@ from decimal import Decimal
 
 import pytest
 class TestSyncEagerLoadingWithOne:
-    """Sync: verify with_('relation').one() preloads related data.
+    """Sync: verify with_('relation').one() — same behaviour as async.
 
-    Scenarios:
-    - BelongsTo (Order -> User)
-    - BelongsTo on a different model (Post -> User)
-    - No match returns None (not an error)
+    Must mirror every scenario in TestAsyncEagerLoadingWithOne.
     """
 
     def test_belongs_to(self, combined_fixtures):
@@ -32,7 +29,12 @@ class TestSyncEagerLoadingWithOne:
         assert related.username == 'ela_one'
 
     def test_with_post_belongs_to(self, combined_fixtures):
-        """Same eager-loading behaviour on a different model pair (Post -> User)."""
+        """Same eager-loading on a different model pair (Post -> User).
+
+        Post uses 'user' relation. The combined_fixtures configures
+        all models (including Post) with the same shared backend, so eager
+        loading via with_('user') + one() should work identically to async.
+        """
         User, _, _, Post, _ = combined_fixtures
         user = User(username='ela_one_post', email='ela_one_post@example.com', age=30)
         user.save()

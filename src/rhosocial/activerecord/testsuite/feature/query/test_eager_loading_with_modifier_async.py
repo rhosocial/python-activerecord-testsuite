@@ -160,3 +160,14 @@ class TestAsyncForUpdate:
         related = await result.user()
         assert related is not None
         assert related.id == user.id
+
+
+
+
+
+
+
+
+
+
+

@@ -6,7 +6,6 @@ Covers CacheConfig, GlobalCacheConfig (singleton), CacheEntry (expiration/ttl),
 RelationCache (set/get/delete/clear, max_size LRU eviction, disabled mode),
 and thread-safe concurrent access.
 """
-import pytest
 import asyncio
 
 from rhosocial.activerecord.relation.cache import (
@@ -20,7 +19,6 @@ from rhosocial.activerecord.relation.cache import (
 class TestAsyncRelationCache:
     """Tests for cache configuration, entry expiration, basic operations, max-size eviction, disabled mode, and concurrency."""
 
-    @pytest.mark.asyncio
 
     async def test_cache_config(self):
         """Test CacheConfig initialization and defaults."""
@@ -34,7 +32,6 @@ class TestAsyncRelationCache:
         assert custom_config.ttl == 60
         assert custom_config.max_size == 100
 
-    @pytest.mark.asyncio
 
     async def test_global_cache_config(self):
         """Test GlobalCacheConfig singleton and configuration."""
@@ -48,7 +45,6 @@ class TestAsyncRelationCache:
         assert config2.config.enabled is False
         assert config2.config.ttl == 60
 
-    @pytest.mark.asyncio
 
     async def test_cache_entry(self):
         """Test CacheEntry creation and expiration."""
@@ -64,7 +60,6 @@ class TestAsyncRelationCache:
         entry = CacheEntry("test", ttl=None)
         assert not entry.is_expired()
 
-    @pytest.mark.asyncio
 
     async def test_relation_cache_basic(self):
         """Test RelationCache operations."""
@@ -90,7 +85,6 @@ class TestAsyncRelationCache:
         cache.clear()
         assert cache.get(instance) is None
 
-    @pytest.mark.asyncio
 
     async def test_relation_cache_max_size(self):
         """Test RelationCache max size handling."""
@@ -113,7 +107,6 @@ class TestAsyncRelationCache:
         assert cache.get(instance2) == "value2"
         assert cache.get(instance3) == "value3"
 
-    @pytest.mark.asyncio
 
     async def test_relation_cache_disabled(self):
         """Test RelationCache when disabled."""
@@ -124,7 +117,6 @@ class TestAsyncRelationCache:
         cache.set(instance, "test_value")
         assert cache.get(instance) is None
 
-    @pytest.mark.asyncio
 
     async def test_concurrent_cache_access(self):
         """Test thread-safe cache operations."""
@@ -149,7 +141,6 @@ class TestAsyncRelationCache:
         for t in threads:
             t.join()
 
-    @pytest.mark.asyncio
 
     async def test_cache_memory_management(self):
         """Test cache memory management under load."""

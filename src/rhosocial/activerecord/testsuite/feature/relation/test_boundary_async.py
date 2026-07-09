@@ -2,13 +2,11 @@
 """
 Async backend-agnostic relation boundary tests.
 """
-import pytest
 
 
 class TestAsyncRelationBoundary:
     """Async relation behavior for null, orphaned, and missing related data."""
 
-    @pytest.mark.asyncio
     async def test_belongs_to_returns_none_when_foreign_key_is_null(
         self,
         async_relation_boundary_context,
@@ -22,7 +20,6 @@ class TestAsyncRelationBoundary:
         assert profile.owner_id is None
         assert await profile.owner() is None
 
-    @pytest.mark.asyncio
     async def test_belongs_to_returns_none_for_missing_target(
         self,
         async_relation_boundary_context,
@@ -37,7 +34,6 @@ class TestAsyncRelationBoundary:
         assert await post.owner() is None
         assert await post.owner() is None
 
-    @pytest.mark.asyncio
     async def test_has_one_returns_none_when_no_match_exists(
         self,
         async_relation_boundary_context,
@@ -50,7 +46,6 @@ class TestAsyncRelationBoundary:
         assert owner is not None
         assert await owner.profile() is None
 
-    @pytest.mark.asyncio
     async def test_has_many_returns_empty_list_when_no_match_exists(
         self,
         async_relation_boundary_context,
@@ -63,7 +58,6 @@ class TestAsyncRelationBoundary:
         assert owner is not None
         assert await owner.posts() == []
 
-    @pytest.mark.asyncio
     async def test_has_one_with_multiple_matches_returns_related_record(
         self,
         async_relation_boundary_context,

@@ -27,7 +27,6 @@ from rhosocial.activerecord.relation.async_descriptors import (
 class TestAsyncRelationshipValidator:
     """Tests for RelationshipValidator with valid pairs."""
 
-    @pytest.mark.asyncio
 
     async def test_belongs_to_has_many_valid(self):
         """BelongsTo <-> HasMany is a valid pair."""
@@ -49,7 +48,6 @@ class TestAsyncRelationshipValidator:
         model = rel.get_related_model(Owner)
         assert model is not None
 
-    @pytest.mark.asyncio
 
     async def test_belongs_to_has_one_valid(self):
         """BelongsTo <-> HasOne is a valid pair."""
@@ -70,7 +68,6 @@ class TestAsyncRelationshipValidator:
         model = rel.get_related_model(AsyncUser)
         assert model is not None
 
-    @pytest.mark.asyncio
 
     async def test_invalid_pair_raises(self):
         """BelongsTo <-> BelongsTo should raise ValueError."""
@@ -92,7 +89,6 @@ class TestAsyncRelationshipValidator:
         with pytest.raises(ValueError, match="Invalid relationship pair"):
             rel.get_related_model(Item)
 
-    @pytest.mark.asyncio
 
     async def test_missing_inverse_raises(self):
         """Missing inverse relationship should raise ValueError."""
@@ -110,7 +106,6 @@ class TestAsyncRelationshipValidator:
         with pytest.raises(ValueError, match="not found"):
             rel.get_related_model(Owner)
 
-    @pytest.mark.asyncio
 
     async def test_auto_set_inverse_of(self):
         """Validator should auto-set inverse_of when missing."""
@@ -138,7 +133,6 @@ class TestAsyncRelationshipValidator:
 class TestAsyncRelationshipValidator:
     """Tests for AsyncRelationshipValidator."""
 
-    @pytest.mark.asyncio
 
     async def test_async_belongs_to_has_many_valid(self):
         """AsyncBelongsTo <-> AsyncHasMany is a valid pair."""
@@ -163,7 +157,6 @@ class TestAsyncRelationshipValidator:
         model = rel.get_related_model(AsyncOwner)
         assert model is not None
 
-    @pytest.mark.asyncio
 
     async def test_async_belongs_to_has_one_valid(self):
         """AsyncBelongsTo <-> AsyncHasOne is a valid pair."""
@@ -188,7 +181,6 @@ class TestAsyncRelationshipValidator:
         model = rel.get_related_model(AsyncUser)
         assert model is not None
 
-    @pytest.mark.asyncio
 
     async def test_async_invalid_pair_raises(self):
         """AsyncBelongsTo <-> AsyncBelongsTo should raise ValueError."""
@@ -214,7 +206,6 @@ class TestAsyncRelationshipValidator:
         with pytest.raises(ValueError, match="Invalid relationship pair"):
             rel.get_related_model(AsyncItem)
 
-    @pytest.mark.asyncio
 
     async def test_async_missing_inverse_raises(self):
         """Missing inverse should raise ValueError."""
@@ -236,7 +227,6 @@ class TestAsyncRelationshipValidator:
         with pytest.raises(ValueError, match="not found"):
             rel.get_related_model(AsyncOwner)
 
-    @pytest.mark.asyncio
 
     async def test_async_auto_set_inverse_of(self):
         """Validator should auto-set inverse_of when missing."""

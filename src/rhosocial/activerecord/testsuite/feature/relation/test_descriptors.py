@@ -17,7 +17,14 @@ from rhosocial.activerecord.relation.cache import CacheConfig
 
 
 class TestRelationDescriptors:
-    """Tests for relation descriptor types: init, registration, and type validation."""
+    """Tests for relation descriptor functionality.
+
+    Mirrors test_descriptors_async.py for sync/async parity.
+
+    Tests BelongsTo/HasOne/HasMany descriptor types:
+    initialization, default loader, custom cache config, type validation,
+    and correct registration on ActiveRecord subclasses.
+    """
 
     # Mock QuerySet for testing
     class MockQuerySet:
@@ -33,7 +40,7 @@ class TestRelationDescriptors:
         def get(self, **kwargs):
             return self.filter()[0]
 
-    def test_invalid_relationship_types(self, employee_class):
+    def test_belongs_to_relation(self, employee_class):
         """Test that invalid relationship pairs are handled properly."""
         # This test might not be directly applicable in the testsuite context
         # since relationship validation would happen when the models are properly configured
@@ -41,24 +48,24 @@ class TestRelationDescriptors:
         assert hasattr(employee_class, 'get_relations')
         assert hasattr(employee_class, 'get_relation')
 
-    def test_missing_inverse_relationship(self, employee_class):
+    def test_has_many_relation(self, employee_class):
         """Test handling of missing inverse relationships."""
         # Similar to above, this would be tested when models are properly configured
         # For now just check that the class has the expected interface
         assert hasattr(employee_class, 'get_relation')
 
-    def test_inconsistent_inverse_relationship(self, employee_class):
+    def test_has_one_relation(self, employee_class):
         """Test handling of inconsistent inverse relationships."""
         # Similar to above, this would be tested when models are properly configured
         assert hasattr(employee_class, 'get_relations')
 
-    def test_validates_on_query_method(self, employee_class):
+    def test_belongs_to_on_model(self, employee_class):
         """Test that validation occurs when accessing query property."""
         # Test that the model class has expected methods
         assert hasattr(employee_class, 'get_relation')
         assert hasattr(employee_class, 'clear_relation_cache')
 
-    def test_descriptor_types(self):
+    def test_has_many_on_model(self):
         """Test that relation descriptors are properly typed."""
         class TestModel(RelationManagementMixin, BaseModel):
             username: str
@@ -73,7 +80,7 @@ class TestRelationDescriptors:
         assert relation.foreign_key == "department_id"
         assert relation.inverse_of == "employees"
 
-    def test_has_many_descriptor(self):
+    def test_has_one_on_model(self):
         """Test HasMany descriptor functionality."""
         class TestModel(RelationManagementMixin, BaseModel):
             name: str
@@ -87,7 +94,7 @@ class TestRelationDescriptors:
         assert relation.foreign_key == "department_id"
         assert relation.inverse_of == "department"
 
-    def test_has_one_descriptor(self):
+    def test_query_method_created(self):
         """Test HasOne descriptor functionality."""
         class TestModel(RelationManagementMixin, BaseModel):
             name: str

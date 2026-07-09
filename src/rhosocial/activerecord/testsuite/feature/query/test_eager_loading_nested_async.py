@@ -27,7 +27,7 @@ class TestAsyncEagerLoadingNested:
         related_items = await results[0].items()
         assert len(related_items) == 2
 
-    async def test_belongs_to_nested(self, async_combined_fixtures):
+    async def test_two_level_with_belongs_to(self, async_combined_fixtures):
         """Async version of Order.with_('user') nested preloading."""
         AsyncUser, AsyncOrder, _, _, _ = async_combined_fixtures
         user = AsyncUser(username='aela_nest2', email='aela_nest2@example.com', age=30)
@@ -71,3 +71,7 @@ class TestAsyncEagerLoadingNested:
             u = await r.user()
             assert u is not None
             assert u.id == user.id
+
+
+
+

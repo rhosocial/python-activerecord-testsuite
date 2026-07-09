@@ -4,13 +4,11 @@ Async tests for modifier overwrite warnings.
 """
 import logging
 
-import pytest
 
 
 class TestAsyncModifierWarnings:
     """Async tests for modifier overwrite warnings."""
 
-    @pytest.mark.asyncio
     async def test_warning_when_modifier_overwritten(self, async_user_class):
         """Warning should be issued when modifier is overwritten."""
         def first_modifier(q):
@@ -26,7 +24,6 @@ class TestAsyncModifierWarnings:
         configs = query.get_relation_configs()
         assert configs["posts"].query_modifier is second_modifier
 
-    @pytest.mark.asyncio
     async def test_no_warning_when_same_modifier(self, async_user_class):
         """No warning when same modifier is applied twice."""
         def my_modifier(q):
@@ -39,7 +36,6 @@ class TestAsyncModifierWarnings:
         configs = query.get_relation_configs()
         assert configs["posts"].query_modifier is my_modifier
 
-    @pytest.mark.asyncio
     async def test_no_warning_when_overwriting_with_none(self, async_user_class):
         """Modifier is not overwritten when None is passed."""
         def my_modifier(q):
@@ -53,7 +49,6 @@ class TestAsyncModifierWarnings:
         # Existing modifier is preserved when None is passed
         assert configs["posts"].query_modifier is my_modifier
 
-    @pytest.mark.asyncio
     async def test_no_warning_for_different_paths(self, async_user_class):
         """No warning for different paths."""
         def posts_modifier(q):
@@ -68,3 +63,5 @@ class TestAsyncModifierWarnings:
         configs = query.get_relation_configs()
         assert configs["posts"].query_modifier is posts_modifier
         assert configs["posts.comments"].query_modifier is comments_modifier
+
+

@@ -51,13 +51,7 @@ class QueryCounter:
 # 1. SQL query count verification
 # ---------------------------------------------------------------------------
 class TestSyncQueryCount:
-    """Verify N+1 prevention via query counters.
-
-    Expected SQL queries:
-    - 1 master query (SELECT)
-    - 1 batch query per eager-loaded relation (WHERE pk IN …)
-    → Total = 1 + number_of_relations (NOT 1 + N)
-    """
+    """Sync: verify N+1 prevention via query counters."""
 
     def _install_counter(self, model_class) -> QueryCounter:
         return QueryCounter(model_class.backend()).install()
@@ -113,11 +107,7 @@ class TestSyncQueryCount:
         assert counter.select_count == 3, f"Expected 3 queries, got {counter.select_count}"
 
     def test_without_eager_is_nplus1(self, combined_fixtures):
-        """Baseline: without with_() causes N+1 (1 + N queries).
-
-        This test proves the counter works by demonstrating the N+1 pattern
-        when with_() is NOT used.
-        """
+        """Baseline: without with_() causes N+1 (1 + N queries)."""
         User, Order, _, _, _ = combined_fixtures
         user = User(username='qc_n1', email='qc_n1@example.com', age=25)
         user.save()
@@ -203,11 +193,7 @@ class TestSyncEmptyResultNoQuery:
         return QueryCounter(model_class.backend()).install()
 
     def test_all_empty_no_batch(self, combined_fixtures):
-        """No matching parent → all() returns [] and no batch queries fire.
-
-        The master query executes (1 SELECT) but returns 0 rows, so eager
-        loading skips all batch queries.
-        """
+        """No matching parent → all() returns [] and 1 query total."""
         _, Order, _, _, _ = combined_fixtures
         counter = self._install_counter(Order)
         results = Order.query().with_('user').where(Order.c.id == -1).all()

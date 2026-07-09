@@ -18,3 +18,4 @@ def test_bulk_insert_transaction_async(benchmark, transaction_async_context):
         lambda: run_async(bulk_insert_transaction_async(context.model_class, payloads))
     )
     assert len(inserted) == 10
+
