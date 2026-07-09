@@ -18,21 +18,13 @@ try:
     from typing import Annotated
 except ImportError:
     from typing_extensions import Annotated
+class MutableDefaultModel(ActiveRecord):
+    """Model for Pydantic mutable default isolation tests."""
 
+    __table_name__ = "mutable_default_models"
 
-def valid_pydantic_data():
-    start_at = datetime(2024, 1, 1, 10, 0, 0)
-    return {
-        "code": "ABC-123",
-        "quantity": 5,
-        "step_count": 10,
-        "price": Decimal("12.50"),
-        "start_at": start_at,
-        "end_at": start_at + timedelta(hours=1),
-        "status": "draft",
-        "normalized_name": "  Alice  ",
-    }
-
+    tags: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class AsyncMutableDefaultModel(AsyncActiveRecord):
     """Async model for Pydantic mutable default isolation tests."""
@@ -42,6 +34,28 @@ class AsyncMutableDefaultModel(AsyncActiveRecord):
     tags: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
+class LifecycleModel(ActiveRecord):
+    """Model for Pydantic lifecycle and unset/None tests."""
+
+    __table_name__ = "lifecycle_models"
+
+    required_name: str
+    optional_note: Optional[str] = None
+    derived_name: Optional[str] = None
+    _post_init_seen: bool = PrivateAttr(default=False)
+
+    @model_validator(mode="after")
+    def derive_name(self):
+        self.derived_name = self.required_name.upper()
+        return self
+
+    @property
+    def post_init_seen(self) -> bool:
+        return self._post_init_seen
+
+    def model_post_init(self, __context: object) -> None:
+        _ = __context
+        self._post_init_seen = True
 
 class AsyncLifecycleModel(AsyncActiveRecord):
     """Async model for Pydantic lifecycle and unset/None tests."""
@@ -66,6 +80,24 @@ class AsyncLifecycleModel(AsyncActiveRecord):
         _ = __context
         self._post_init_seen = True
 
+class PydanticV2BoundaryModel(ActiveRecord):
+    """Model for Pydantic v2 serialization and Annotated metadata boundary tests."""
+
+    __table_name__ = "pydantic_v2_boundary_models"
+
+    first_name: str
+    last_name: str
+    score: Decimal
+    annotated_code: Annotated[str, Field(min_length=2), UseColumn("annotated_code_col")]
+
+    @computed_field
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @field_serializer("score")
+    def serialize_score(self, value: Decimal) -> str:
+        return f"score:{value}"
 
 class AsyncPydanticV2BoundaryModel(AsyncActiveRecord):
     """Async model for Pydantic v2 serialization and Annotated metadata boundary tests."""
@@ -86,7 +118,6 @@ class AsyncPydanticV2BoundaryModel(AsyncActiveRecord):
     def serialize_score(self, value: Decimal) -> str:
         return f"score:{value}"
 
-
 class AliasBoundaryFieldsMixin:
     model_config = ConfigDict(populate_by_name=True)
 
@@ -94,12 +125,23 @@ class AliasBoundaryFieldsMixin:
     display_name: str = Field(validation_alias="inputName")
     public_name: str = Field(serialization_alias="outputName")
 
+class AliasBoundaryModel(AliasBoundaryFieldsMixin, ActiveRecord):
+    """Model for alias and UseColumn boundary tests."""
+
+    __table_name__ = "alias_boundary_models"
 
 class AsyncAliasBoundaryModel(AliasBoundaryFieldsMixin, AsyncActiveRecord):
     """Async model for alias and UseColumn boundary tests."""
 
     __table_name__ = "alias_boundary_models"
 
+class ExtraForbidModel(ActiveRecord):
+    """Model that rejects unknown Pydantic input fields."""
+
+    __table_name__ = "extra_forbid_models"
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
 
 class AsyncExtraForbidModel(AsyncActiveRecord):
     """Async model that rejects unknown Pydantic input fields."""
@@ -109,6 +151,13 @@ class AsyncExtraForbidModel(AsyncActiveRecord):
 
     name: str
 
+class ExtraIgnoreModel(ActiveRecord):
+    """Model that ignores unknown Pydantic input fields."""
+
+    __table_name__ = "extra_ignore_models"
+    model_config = ConfigDict(extra="ignore")
+
+    name: str
 
 class AsyncExtraIgnoreModel(AsyncActiveRecord):
     """Async model that ignores unknown Pydantic input fields."""
@@ -118,6 +167,13 @@ class AsyncExtraIgnoreModel(AsyncActiveRecord):
 
     name: str
 
+class ExtraAllowModel(ActiveRecord):
+    """Model that keeps unknown Pydantic input fields as model extras."""
+
+    __table_name__ = "extra_allow_models"
+    model_config = ConfigDict(extra="allow")
+
+    name: str
 
 class AsyncExtraAllowModel(AsyncActiveRecord):
     """Async model that keeps unknown Pydantic input fields as model extras."""
@@ -127,27 +183,32 @@ class AsyncExtraAllowModel(AsyncActiveRecord):
 
     name: str
 
-
 class StrictFieldsMixin:
     count: int = Field(strict=True)
     enabled: bool = Field(strict=True)
 
+class StrictModel(StrictFieldsMixin, ActiveRecord):
+    """Model for strict Pydantic validation tests."""
+
+    __table_name__ = "strict_models"
 
 class AsyncStrictModel(StrictFieldsMixin, AsyncActiveRecord):
     """Async model for strict Pydantic validation tests."""
 
     __table_name__ = "strict_models"
 
-
 class ValidateDefaultFieldsMixin:
     positive_count: int = Field(default=0, gt=0, validate_default=True)
 
+class ValidateDefaultModel(ValidateDefaultFieldsMixin, ActiveRecord):
+    """Model for validate_default pipeline tests."""
+
+    __table_name__ = "validate_default_models"
 
 class AsyncValidateDefaultModel(ValidateDefaultFieldsMixin, AsyncActiveRecord):
     """Async model for validate_default pipeline tests."""
 
     __table_name__ = "validate_default_models"
-
 
 class ValidatorModesFieldsMixin:
     raw_code: str
@@ -174,22 +235,23 @@ class ValidatorModesFieldsMixin:
         handled = handler(value)
         return f"wrapped:{handled.strip().lower()}"
 
+class ValidatorModesModel(ValidatorModesFieldsMixin, ActiveRecord):
+    """Model for Pydantic validator pipeline mode tests."""
+
+    __table_name__ = "validator_modes_models"
 
 class AsyncValidatorModesModel(ValidatorModesFieldsMixin, AsyncActiveRecord):
     """Async model for Pydantic validator pipeline mode tests."""
 
     __table_name__ = "validator_modes_models"
 
-
 class RecordStatus(str, Enum):
     draft = "draft"
     active = "active"
 
-
 class AddressPayload(BaseModel):
     city: str = Field(min_length=2)
     zip_code: str = Field(pattern=r"^\d{5}$")
-
 
 class JsonContainerNestedFieldsMixin:
     status: RecordStatus
@@ -198,12 +260,15 @@ class JsonContainerNestedFieldsMixin:
     labels: List[Annotated[str, Field(min_length=2)]]
     scores: Dict[str, Annotated[int, Field(ge=0, le=100)]]
 
+class JsonContainerNestedModel(JsonContainerNestedFieldsMixin, ActiveRecord):
+    """Model for JSON dump, enum, container, and nested model tests."""
+
+    __table_name__ = "json_container_nested_models"
 
 class AsyncJsonContainerNestedModel(JsonContainerNestedFieldsMixin, AsyncActiveRecord):
     """Async model for JSON dump, enum, container, and nested model tests."""
 
     __table_name__ = "json_container_nested_models"
-
 
 class FromAttributesFieldsMixin:
     model_config = ConfigDict(from_attributes=True)
@@ -211,23 +276,29 @@ class FromAttributesFieldsMixin:
     name: str
     quantity: int
 
+class FromAttributesModel(FromAttributesFieldsMixin, ActiveRecord):
+    """Model for from_attributes construction tests."""
+
+    __table_name__ = "from_attributes_models"
 
 class AsyncFromAttributesModel(FromAttributesFieldsMixin, AsyncActiveRecord):
     """Async model for from_attributes construction tests."""
 
     __table_name__ = "from_attributes_models"
 
-
 class AnnotatedMetadataOrderFieldsMixin:
     field_first: Annotated[str, Field(min_length=2), UseColumn("field_first_col")]
     column_first: Annotated[str, UseColumn("column_first_col"), Field(min_length=2)]
 
+class AnnotatedMetadataOrderModel(AnnotatedMetadataOrderFieldsMixin, ActiveRecord):
+    """Model for Annotated metadata ordering tests."""
+
+    __table_name__ = "annotated_metadata_order_models"
 
 class AsyncAnnotatedMetadataOrderModel(AnnotatedMetadataOrderFieldsMixin, AsyncActiveRecord):
     """Async model for Annotated metadata ordering tests."""
 
     __table_name__ = "annotated_metadata_order_models"
-
 
 class AliasUseColumnConflictFieldsMixin:
     model_config = ConfigDict(populate_by_name=True)
@@ -236,12 +307,15 @@ class AliasUseColumnConflictFieldsMixin:
     same_name: Annotated[str, UseColumn("externalName")] = Field(alias="externalName")
     different_name: Annotated[str, UseColumn("db_different_name")] = Field(alias="apiDifferentName")
 
+class AliasUseColumnConflictModel(AliasUseColumnConflictFieldsMixin, ActiveRecord):
+    """Model for alias and UseColumn conflict boundary tests."""
+
+    __table_name__ = "alias_use_column_conflict_models"
 
 class AsyncAliasUseColumnConflictModel(AliasUseColumnConflictFieldsMixin, AsyncActiveRecord):
     """Async model for alias and UseColumn conflict boundary tests."""
 
     __table_name__ = "alias_use_column_conflict_models"
-
 
 class AssignmentValidationFieldsMixin:
     model_config = ConfigDict(validate_assignment=True)
@@ -249,17 +323,33 @@ class AssignmentValidationFieldsMixin:
     name: str = Field(min_length=2)
     quantity: int = Field(ge=1)
 
+class AssignmentValidationModel(AssignmentValidationFieldsMixin, ActiveRecord):
+    """Model for assignment validation and dirty tracking tests."""
+
+    __table_name__ = "assignment_validation_models"
 
 class AsyncAssignmentValidationModel(AssignmentValidationFieldsMixin, AsyncActiveRecord):
     """Async model for assignment validation and dirty tracking tests."""
 
     __table_name__ = "assignment_validation_models"
 
+def valid_pydantic_data():
+    start_at = datetime(2024, 1, 1, 10, 0, 0)
+    return {
+        "code": "ABC-123",
+        "quantity": 5,
+        "step_count": 10,
+        "price": Decimal("12.50"),
+        "start_at": start_at,
+        "end_at": start_at + timedelta(hours=1),
+        "status": "draft",
+        "normalized_name": "  Alice  ",
+    }
+
 
 class TestAsyncPydanticNativeValidation:
     """Asynchronous Pydantic native validation tests."""
 
-    @pytest.mark.asyncio
     async def test_field_constraints_fail_on_init(self, async_pydantic_validated_model):
         data = valid_pydantic_data()
 
@@ -295,7 +385,6 @@ class TestAsyncPydanticNativeValidation:
             async_pydantic_validated_model(**{**data, "normalized_name": "a" * 51})
         assert "normalized_name" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_field_validator_transforms_value(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
 
@@ -305,7 +394,6 @@ class TestAsyncPydanticNativeValidation:
         saved_model = await async_pydantic_validated_model.find_one(model.id)
         assert saved_model.normalized_name == "alice"
 
-    @pytest.mark.asyncio
     async def test_model_validator_rejects_invalid_cross_field_state(self, async_pydantic_validated_model):
         data = valid_pydantic_data()
 
@@ -313,7 +401,6 @@ class TestAsyncPydanticNativeValidation:
             async_pydantic_validated_model(**{**data, "end_at": data["start_at"]})
         assert "end_at must be after start_at" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_validation_runs_again_on_save_after_assignment(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
@@ -326,7 +413,6 @@ class TestAsyncPydanticNativeValidation:
         saved_model = await async_pydantic_validated_model.find_one(model.id)
         assert saved_model.quantity == 5
 
-    @pytest.mark.asyncio
     async def test_model_validator_runs_again_on_save_after_assignment(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
@@ -339,7 +425,6 @@ class TestAsyncPydanticNativeValidation:
         saved_model = await async_pydantic_validated_model.find_one(model.id)
         assert saved_model.end_at > saved_model.start_at
 
-    @pytest.mark.asyncio
     async def test_pydantic_coercion_persists_and_loads(self, async_pydantic_validated_model):
         data = valid_pydantic_data()
         model = async_pydantic_validated_model(
@@ -362,7 +447,6 @@ class TestAsyncPydanticNativeValidation:
         assert isinstance(saved_model.end_at, datetime)
         assert saved_model.created_token == "generated-token"
 
-    @pytest.mark.asyncio
     async def test_literal_validation(self, async_pydantic_validated_model):
         data = valid_pydantic_data()
 
@@ -376,7 +460,6 @@ class TestAsyncPydanticNativeValidation:
         saved_model = await async_pydantic_validated_model.find_one(model.id)
         assert saved_model.status == "active"
 
-    @pytest.mark.asyncio
     async def test_model_dump_preserves_pydantic_state(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
         dumped = model.model_dump()
@@ -387,7 +470,6 @@ class TestAsyncPydanticNativeValidation:
         assert dumped["step_count"] == 10
         assert "c" not in dumped
 
-    @pytest.mark.asyncio
     async def test_model_validate_applies_pydantic_rules(self, async_pydantic_validated_model):
         data = valid_pydantic_data()
         model = async_pydantic_validated_model.model_validate(
@@ -408,7 +490,6 @@ class TestAsyncPydanticNativeValidation:
         assert isinstance(model.start_at, datetime)
         assert isinstance(model.end_at, datetime)
 
-    @pytest.mark.asyncio
     async def test_field_metadata_is_preserved(self, async_pydantic_validated_model):
         code_field = async_pydantic_validated_model.model_fields["code"]
         schema = async_pydantic_validated_model.model_json_schema()
@@ -419,7 +500,6 @@ class TestAsyncPydanticNativeValidation:
         assert schema["properties"]["code"]["title"] == "Validation code"
         assert schema["properties"]["code"]["active_record_test"] == "pydantic-native"
 
-    @pytest.mark.asyncio
     async def test_field_proxy_queries_pydantic_fields(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
@@ -439,7 +519,6 @@ class TestAsyncPydanticNativeValidation:
         ).all()
         assert [record.id for record in name_matches] == [model.id]
 
-    @pytest.mark.asyncio
     async def test_save_succeeds_after_fixing_invalid_assignment(self, async_pydantic_validated_model):
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
@@ -454,7 +533,6 @@ class TestAsyncPydanticNativeValidation:
         saved_model = await async_pydantic_validated_model.find_one(model.id)
         assert saved_model.quantity == 8
 
-    @pytest.mark.asyncio
     async def test_mutable_default_factory_values_are_instance_isolated(self):
         # This verifies model-layer default isolation only; JSON/list persistence is covered by backend tests.
         first = AsyncMutableDefaultModel()
@@ -470,7 +548,6 @@ class TestAsyncPydanticNativeValidation:
         assert first.tags is not second.tags
         assert first.metadata is not second.metadata
 
-    @pytest.mark.asyncio
     async def test_lifecycle_hooks_and_unset_none_are_preserved(self):
         omitted = AsyncLifecycleModel(required_name="alice")
         explicit_none = AsyncLifecycleModel(required_name="alice", optional_note=None)
@@ -488,7 +565,6 @@ class TestAsyncPydanticNativeValidation:
             "derived_name": "ALICE",
         }
 
-    @pytest.mark.asyncio
     async def test_computed_field_and_serializer_are_dump_only_boundaries(self):
         model = AsyncPydanticV2BoundaryModel(
             first_name="Ada",
@@ -503,7 +579,6 @@ class TestAsyncPydanticNativeValidation:
         assert "full_name" not in AsyncPydanticV2BoundaryModel.model_fields
         assert "score" in AsyncPydanticV2BoundaryModel.model_fields
 
-    @pytest.mark.asyncio
     async def test_annotated_field_and_use_column_metadata_coexist(self):
         model = AsyncPydanticV2BoundaryModel(
             first_name="Ada",
@@ -525,7 +600,6 @@ class TestAsyncPydanticNativeValidation:
             )
         assert "annotated_code" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_aliases_are_independent_from_column_mapping(self):
         from_alias = AsyncAliasBoundaryModel(externalId=7, inputName="Ada", public_name="Lovelace")
         from_name = AsyncAliasBoundaryModel(external_id=8, inputName="Grace", public_name="Hopper")
@@ -542,7 +616,6 @@ class TestAsyncPydanticNativeValidation:
         assert set(AsyncAliasBoundaryModel.model_fields) == {"external_id", "display_name", "public_name"}
         assert AsyncAliasBoundaryModel._get_column_name("external_id") == "external_id_col"
 
-    @pytest.mark.asyncio
     async def test_extra_config_modes_preserve_pydantic_behavior(self):
         with pytest.raises(ValidationError) as exc_info:
             AsyncExtraForbidModel(name="Ada", unknown="rejected")
@@ -556,7 +629,6 @@ class TestAsyncPydanticNativeValidation:
         assert allowed.model_dump() == {"name": "Ada", "unknown": "kept"}
         assert allowed.unknown == "kept"
 
-    @pytest.mark.asyncio
     async def test_strict_fields_reject_coercion(self):
         model = AsyncStrictModel(count=3, enabled=True)
         assert model.count == 3
@@ -570,7 +642,6 @@ class TestAsyncPydanticNativeValidation:
             AsyncStrictModel(count=3, enabled="true")
         assert "enabled" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_validate_default_runs_on_model_construction(self):
         with pytest.raises(ValidationError) as exc_info:
             AsyncValidateDefaultModel()
@@ -579,7 +650,6 @@ class TestAsyncPydanticNativeValidation:
         model = AsyncValidateDefaultModel(positive_count=1)
         assert model.positive_count == 1
 
-    @pytest.mark.asyncio
     async def test_validator_pipeline_modes_are_preserved(self):
         model = AsyncValidatorModesModel(raw_code="  RAW  ", normalized_code="MiXeD", wrapped_code="  WRAPPED  ")
 
@@ -594,7 +664,6 @@ class TestAsyncPydanticNativeValidation:
             "combined": "  RAW  :MiXeD",
         }
 
-    @pytest.mark.asyncio
     async def test_json_enum_container_and_nested_model_contracts(self):
         model = AsyncJsonContainerNestedModel(
             status="active",
@@ -625,7 +694,6 @@ class TestAsyncPydanticNativeValidation:
         assert "labels" in error_text
         assert "scores" in error_text
 
-    @pytest.mark.asyncio
     async def test_from_attributes_constructs_from_plain_objects(self):
         class SourceObject:
             name = "Ada"
@@ -642,7 +710,6 @@ class TestAsyncPydanticNativeValidation:
             AsyncFromAttributesModel.model_validate(IncompleteSourceObject())
         assert "quantity" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_annotated_metadata_order_is_not_significant(self):
         model = AsyncAnnotatedMetadataOrderModel(field_first="AB", column_first="CD")
 
@@ -656,7 +723,6 @@ class TestAsyncPydanticNativeValidation:
         assert "field_first" in str(exc_info.value)
         assert "column_first" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_alias_use_column_conflicts_keep_separate_meanings(self):
         model = AsyncAliasUseColumnConflictModel(externalName="same", apiDifferentName="different")
         alias_dump = model.model_dump(by_alias=True)
@@ -673,7 +739,6 @@ class TestAsyncPydanticNativeValidation:
         with pytest.raises(AttributeError):
             _ = AsyncAliasUseColumnConflictModel.c.apiDifferentName
 
-    @pytest.mark.asyncio
     async def test_validate_assignment_updates_dirty_tracking_only_after_success(self):
         model = AsyncAssignmentValidationModel(name="Ada", quantity=1)
         model.reset_tracking()

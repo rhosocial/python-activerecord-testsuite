@@ -15,9 +15,6 @@ import pytest
 from decimal import Decimal
 
 
-@pytest.mark.asyncio
-
-
 async def test_common_sql_standard_features(async_order_fixtures):
     """
     Test common SQL standard features across databases
@@ -93,7 +90,6 @@ async def test_common_sql_standard_features(async_order_fixtures):
 @pytest.mark.requires_protocol(
     ('rhosocial.activerecord.backend.dialect.protocols.IndexSupport',
      'supports_fulltext_search'))
-@pytest.mark.asyncio
 async def test_fulltext_search_compatibility(async_annotated_query_fixtures):
     """
     Test full-text search compatibility across databases (requires protocol support)
@@ -133,9 +129,6 @@ async def test_fulltext_search_compatibility(async_annotated_query_fixtures):
     # Advanced full-text search may require specific database support
 
 
-@pytest.mark.asyncio
-
-
 async def test_aggregation_compatibility(async_order_fixtures):
     """
     Test aggregation function compatibility across databases
@@ -173,9 +166,6 @@ async def test_aggregation_compatibility(async_order_fixtures):
 
     max_val = await AsyncOrder.query().max_(AsyncOrder.c.total_amount)
     assert max_val == max(amounts)
-
-
-@pytest.mark.asyncio
 
 
 async def test_join_compatibility(async_blog_fixtures):

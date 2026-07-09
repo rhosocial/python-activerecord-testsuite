@@ -466,3 +466,18 @@ class TestAsyncCRUD:
         # Test aggregate queries
         count = await async_validated_user_class.query().count()
         assert count == 3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

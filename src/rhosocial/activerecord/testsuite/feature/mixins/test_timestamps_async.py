@@ -2,13 +2,9 @@
 """
 Test timestamp functionality
 """
-import pytest
 
 import asyncio
 from datetime import datetime
-
-
-@pytest.mark.asyncio
 
 
 async def test_timestamps(async_timestamped_post_model):
@@ -37,9 +33,6 @@ async def test_timestamps(async_timestamped_post_model):
     assert post.updated_at > original_updated_at  # Update time changed
 
 
-@pytest.mark.asyncio
-
-
 async def test_timestamps_set_both_on_insert(async_timestamped_post_model):
     """Test that BEFORE_INSERT sets both created_at and updated_at to the same value.
 
@@ -58,9 +51,6 @@ async def test_timestamps_set_both_on_insert(async_timestamped_post_model):
     assert post.created_at == post.updated_at, (
         "created_at and updated_at should be equal on INSERT"
     )
-
-
-@pytest.mark.asyncio
 
 
 async def test_timestamps_only_updated_at_changes_on_update(async_timestamped_post_model):

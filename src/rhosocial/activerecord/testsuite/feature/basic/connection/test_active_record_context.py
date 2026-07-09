@@ -94,7 +94,12 @@ class TestSyncActiveRecordContext:
                 assert conn_backend is tx_backend
 
     def test_transaction_nested_in_connection(self, sync_pool_and_model):
-        """Test transaction nested in connection."""
+        """Transaction nested in a connection reuses the connection backend.
+
+        Mirrors the async test_transaction_nested_in_connection: opening a transaction
+        inside an active connection context must reuse the same connection backend
+        rather than acquiring a new one.
+        """
         pool, model = sync_pool_and_model
 
         with pool.connection() as conn_backend:
@@ -108,7 +113,12 @@ class TestSyncActiveRecordContext:
                 assert tx_backend is conn_backend
 
     def test_deeply_nested_contexts(self, sync_pool_and_model):
-        """Test deeply nested contexts."""
+        """Deeply nested contexts all resolve to the outermost backend.
+
+        Mirrors the async test_deeply_nested_contexts: a chain of
+        connection -> connection -> transaction -> connection must keep resolving
+        to the outermost backend at every level.
+        """
         pool, model = sync_pool_and_model
 
         with pool.connection() as level1:
@@ -125,3 +135,11 @@ class TestSyncActiveRecordContext:
                     with pool.connection() as level4:
                         assert model.backend() is level1
                         assert level4 is level1
+
+    def test_sync_backend_without_context_is_none(self):
+        """Test that get_current_backend() returns None without context."""
+        assert get_current_backend() is None
+
+    def test_async_backend_without_context_is_none(self):
+        """Test that get_current_async_backend() returns None without context."""
+        assert get_current_async_backend() is None

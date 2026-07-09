@@ -18,7 +18,6 @@ class TestAsyncActiveQueryBasic:
     Asynchronous ActiveQuery basic functionality tests
     """
 
-    @pytest.mark.asyncio
     async def test_init_with_model_class(self, async_order_fixtures):
         """
         Test ActiveQuery initialization with model class (async version)
@@ -41,7 +40,6 @@ class TestAsyncActiveQueryBasic:
         query = AsyncOrder.query()
         assert query.model_class == AsyncOrder
 
-    @pytest.mark.asyncio
     async def test_where_with_predicate(self, async_order_fixtures):
         """
         Test where method with predicate expressions (async version)
@@ -64,7 +62,6 @@ class TestAsyncActiveQueryBasic:
         assert len(found) == 1
         assert found[0].order_number == 'ORD-TEST'
 
-    @pytest.mark.asyncio
     async def test_where_with_string_params(self, async_order_fixtures):
         """
         Test where method with string parameters (async version)
@@ -87,7 +84,6 @@ class TestAsyncActiveQueryBasic:
         assert len(found) == 1
         assert found[0].order_number == 'ORD-STRING'
 
-    @pytest.mark.asyncio
     async def test_select_columns(self, async_order_fixtures):
         """
         Test selecting specific columns functionality (async version)
@@ -114,7 +110,6 @@ class TestAsyncActiveQueryBasic:
         assert isinstance(results[0], AsyncOrder)
         assert results[0].id == order.id
 
-    @pytest.mark.asyncio
     async def test_order_by(self, async_order_fixtures):
         """
         Test ordering functionality (async version)
@@ -148,7 +143,6 @@ class TestAsyncActiveQueryBasic:
         assert len(results_desc) == 3
         assert results_desc[0].total_amount >= results_desc[-1].total_amount
 
-    @pytest.mark.asyncio
     async def test_limit_offset(self, async_order_fixtures):
         """
         Test pagination functionality with limit and offset (async version)
@@ -177,7 +171,6 @@ class TestAsyncActiveQueryBasic:
         assert results[0].order_number == 'PAG-002'
         assert results[1].order_number == 'PAG-003'
 
-    @pytest.mark.asyncio
     async def test_all_method_returns_model_instances(self, async_order_fixtures):
         """
         Test that all method returns model instances (async version)
@@ -202,7 +195,6 @@ class TestAsyncActiveQueryBasic:
         assert isinstance(results[0], AsyncOrder)
         assert results[0].id == order.id
 
-    @pytest.mark.asyncio
     async def test_one_method_returns_single_instance(self, async_order_fixtures):
         """
         Test that one method returns a single model instance (async version)
@@ -225,7 +217,6 @@ class TestAsyncActiveQueryBasic:
         assert isinstance(result, AsyncOrder)
         assert result.id == order.id
 
-    @pytest.mark.asyncio
     async def test_one_method_returns_none_when_no_records_match(self, async_order_fixtures):
         """
         Test that async one method returns None when no records match the query.
@@ -246,7 +237,6 @@ class TestAsyncActiveQueryBasic:
         # Verify that None is returned when no records match
         assert non_existent_order is None
 
-    @pytest.mark.asyncio
     async def test_where_invalid_condition_type(self, async_order_fixtures):
         """Test that where method raises TypeError for invalid condition type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -256,7 +246,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Condition must be str or SQLPredicate"):
             query.where(123)
 
-    @pytest.mark.asyncio
     async def test_select_invalid_column_type(self, async_order_fixtures):
         """Test that select method raises TypeError for invalid column type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -266,7 +255,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Column must be str or BaseExpression"):
             query.select(123)
 
-    @pytest.mark.asyncio
     async def test_order_by_invalid_expression_type(self, async_order_fixtures):
         """Test that order_by method raises TypeError for invalid expression type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -276,7 +264,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Expression must be str or BaseExpression"):
             query.order_by((123, "ASC"))
 
-    @pytest.mark.asyncio
     async def test_order_by_invalid_direction(self, async_order_fixtures):
         """Test that order_by method raises ValueError for invalid direction."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -286,7 +273,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(ValueError, match="Order direction must be 'ASC' or 'DESC'"):
             query.order_by(("name", "INVALID"))
 
-    @pytest.mark.asyncio
     async def test_order_by_invalid_clause_type(self, async_order_fixtures):
         """Test that order_by method raises TypeError for invalid clause type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -296,7 +282,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Order clause must be str, BaseExpression, or \\(expression, direction\\) tuple"):
             query.order_by(123)
 
-    @pytest.mark.asyncio
     async def test_limit_then_offset(self, async_order_fixtures):
         """Test calling limit then offset."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -311,7 +296,6 @@ class TestAsyncActiveQueryBasic:
         results = await AsyncOrder.query().limit(3).offset(1).all()
         assert len(results) == 3
 
-    @pytest.mark.asyncio
     async def test_group_by_invalid_column_type(self, async_order_fixtures):
         """Test that group_by method raises TypeError for invalid column type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -321,7 +305,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Column must be str or BaseExpression"):
             query.group_by(123)
 
-    @pytest.mark.asyncio
     async def test_group_by_extend_existing(self, async_order_fixtures):
         """Test calling group_by multiple times extends existing clause."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -336,7 +319,6 @@ class TestAsyncActiveQueryBasic:
         results = await AsyncOrder.query().select(AsyncOrder.c.user_id, AsyncOrder.c.order_number).group_by(AsyncOrder.c.user_id).group_by(AsyncOrder.c.order_number).all()
         assert len(results) == 3
 
-    @pytest.mark.asyncio
     async def test_having_invalid_condition_type(self, async_order_fixtures):
         """Test that having method raises TypeError for invalid condition type."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -346,7 +328,6 @@ class TestAsyncActiveQueryBasic:
         with pytest.raises(TypeError, match="Condition must be str or SQLPredicate"):
             query.having(123)
 
-    @pytest.mark.asyncio
     async def test_select_append_true(self, async_order_fixtures):
         """Test select with append=True extends existing selection."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -363,7 +344,6 @@ class TestAsyncActiveQueryBasic:
         sql, params = query.to_sql()
         assert 'order_number' in sql
 
-    @pytest.mark.asyncio
     async def test_order_by_extend_existing(self, async_order_fixtures):
         """Test calling order_by multiple times extends existing clause."""
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures

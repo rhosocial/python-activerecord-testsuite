@@ -15,7 +15,6 @@ from rhosocial.activerecord.backend.expression import core
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_row_number_window_function(async_order_fixtures):
     """Test ROW_NUMBER() window function."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -67,7 +66,6 @@ async def test_row_number_window_function(async_order_fixtures):
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_partition_by_window_function(async_order_fixtures):
     """Test window functions with PARTITION BY."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -116,7 +114,6 @@ async def test_partition_by_window_function(async_order_fixtures):
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_aggregate_window_functions(async_order_fixtures):
     """Test aggregate functions with window specification."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -158,7 +155,6 @@ async def test_aggregate_window_functions(async_order_fixtures):
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_named_window_definitions(async_order_fixtures):
     """Test named window definitions."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -202,7 +198,6 @@ async def test_named_window_definitions(async_order_fixtures):
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_window_frame_specifications(async_order_fixtures):
     """Test window frame specifications."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
@@ -249,7 +244,6 @@ async def test_window_frame_specifications(async_order_fixtures):
 
 
 @requires_window_functions()
-@pytest.mark.asyncio
 async def test_unbounded_window_frames(async_order_fixtures):
     """Test unbounded window frames."""
     AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures

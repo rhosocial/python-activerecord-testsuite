@@ -26,9 +26,6 @@ class TestCTEQuerySetOperation:
     def test_cte_with_union_of_active_queries(self, order_fixtures):
         """
         Test CTE query that uses a UNION operation between two ActiveQuery instances.
-
-        This test verifies that a CTE can be created with a UNION operation
-        between two ActiveQuery instances as its underlying query.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -72,9 +69,6 @@ class TestCTEQuerySetOperation:
     def test_cte_with_intersect_of_active_queries(self, order_fixtures):
         """
         Test CTE query that uses an INTERSECT operation between two ActiveQuery instances.
-
-        This test verifies that a CTE can be created with an INTERSECT operation
-        between two ActiveQuery instances as its underlying query.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -122,9 +116,6 @@ class TestCTEQuerySetOperation:
     def test_cte_with_except_of_active_queries(self, order_fixtures):
         """
         Test CTE query that uses an EXCEPT operation between two ActiveQuery instances.
-
-        This test verifies that a CTE can be created with an EXCEPT operation
-        between two ActiveQuery instances as its underlying query.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -172,9 +163,6 @@ class TestCTEQueryWithQueryExpression:
     def test_cte_with_query_expression_as_subquery(self, order_fixtures):
         """
         Test CTE query that uses a QueryExpression as the underlying query.
-
-        This test verifies that a CTE can be created with a QueryExpression
-        instance as its source, which implements the ToSQLProtocol.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -216,8 +204,6 @@ class TestCTEQueryWithQueryExpression:
     def test_cte_with_query_expression_as_main_query(self, order_fixtures):
         """
         Test CTE query where the main query is a QueryExpression.
-
-        This test verifies that a CTE can be created with a main query that is a QueryExpression.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -455,7 +441,6 @@ class TestCTEQueryExtendedFunctionalitySetOperations:
         assert results[1]['status'] in ['active', 'completed']
 
     @requires_cte()
-    @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_cte_with_intersect_and_range_conditions(self, order_fixtures):
         """
@@ -502,7 +487,6 @@ class TestCTEQueryExtendedFunctionalitySetOperations:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
-    @requires_cte()
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_cte_with_except_and_join_conditions(self, order_fixtures):
@@ -683,7 +667,6 @@ class TestCTEQuerySetOperationWithOtherQueries:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
-    @requires_cte()
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_cte_query_except_with_active_query(self, order_fixtures):

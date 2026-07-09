@@ -73,3 +73,9 @@ class TestAsyncEagerLoadingWithAll:
         related_user = await results[0].user()
         assert related_user is not None
         assert related_user.id == user.id
+
+
+
+
+
+

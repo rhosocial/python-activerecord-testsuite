@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_special_queries_async.py
 """Special query scenarios tests"""
-import pytest
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_full_text_search(async_annotated_query_fixtures):
@@ -32,9 +28,6 @@ async def test_full_text_search(async_annotated_query_fixtures):
     assert len(basic_results) >= 1
 
     # Advanced full-text search may require specific database support
-
-
-@pytest.mark.asyncio
 
 
 async def test_window_function_queries(async_extended_order_fixtures):
@@ -77,9 +70,6 @@ async def test_window_function_queries(async_extended_order_fixtures):
         assert results[i].total_amount >= results[i + 1].total_amount
 
 
-@pytest.mark.asyncio
-
-
 async def test_recursive_query_operations(async_tree_fixtures):
     """
     Test recursive query operations functionality
@@ -114,9 +104,6 @@ async def test_recursive_query_operations(async_tree_fixtures):
 
     grandchildren_of_child1 = await AsyncNode.query().where(AsyncNode.c.parent_id == child1.id).all()
     assert len(grandchildren_of_child1) == 2  # Grandchild1 and Grandchild2
-
-
-@pytest.mark.asyncio
 
 
 async def test_subquery_operations(async_order_fixtures):

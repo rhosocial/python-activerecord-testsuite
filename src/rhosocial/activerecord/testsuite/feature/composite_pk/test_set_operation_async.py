@@ -17,7 +17,6 @@ class TestAsyncSetOperationCompositePK:
         await async_order_item_class.bulk_create(items)
         return items
 
-    @pytest.mark.asyncio
 
     async def test_union(self, seeded, async_order_item_class):
         backend = async_order_item_class.backend()
@@ -34,7 +33,6 @@ class TestAsyncSetOperationCompositePK:
         result = await q1.union(q2).aggregate()
         assert len(result) == 2
 
-    @pytest.mark.asyncio
 
     async def test_intersect(self, seeded, async_order_item_class):
         backend = async_order_item_class.backend()
@@ -51,7 +49,6 @@ class TestAsyncSetOperationCompositePK:
         result = await q1.intersect(q2).aggregate()
         assert len(result) == 0  # No overlap
 
-    @pytest.mark.asyncio
 
     async def test_except_(self, seeded, async_order_item_class):
         backend = async_order_item_class.backend()

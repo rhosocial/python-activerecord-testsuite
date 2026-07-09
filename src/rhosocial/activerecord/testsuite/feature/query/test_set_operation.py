@@ -19,7 +19,7 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestSyncSetOperations:
     """Synchronous set operation tests using real backend models."""
 
-    def test_sync_union_operation(self, order_fixtures):
+    def test_union_operation(self, order_fixtures):
         """
         Test UNION operation functionality with real models
         """
@@ -57,7 +57,7 @@ class TestSyncSetOperations:
             assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    def test_sync_intersect_operation(self, order_fixtures):
+    def test_intersect_operation(self, order_fixtures):
         """
         Test INTERSECT operation functionality with real models
         """
@@ -103,7 +103,7 @@ class TestSyncSetOperations:
             assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_except')
-    def test_sync_except_operation(self, order_fixtures):
+    def test_except_operation(self, order_fixtures):
         """
         Test EXCEPT operation functionality with real models
         """
@@ -148,7 +148,7 @@ class TestSyncSetOperations:
             assert len(basic_results) > 0
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    def test_sync_multiple_set_operations(self, order_fixtures):
+    def test_multiple_set_operations(self, order_fixtures):
         """
         Test chaining multiple set operations with real models
         """
@@ -194,7 +194,7 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) > 0
 
-    def test_sync_set_operations_backend_consistency(self, order_fixtures):
+    def test_set_operations_backend_consistency(self, order_fixtures):
         """
         Test backend consistency in set operations with real models
         """
@@ -227,7 +227,7 @@ class TestSyncSetOperations:
             basic_results = Order.query().all()
             assert len(basic_results) > 0
 
-    def test_sync_set_operation_union_method(self, order_fixtures):
+    def test_set_operation_union_method(self, order_fixtures):
         """
         Test SetOperationQuery union method with real models.
         """
@@ -253,7 +253,7 @@ class TestSyncSetOperations:
         assert union_result.operation == "UNION"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    def test_sync_set_operation_intersect_method(self, order_fixtures):
+    def test_set_operation_intersect_method(self, order_fixtures):
         """
         Test SetOperationQuery intersect method with real models.
         """
@@ -279,7 +279,7 @@ class TestSyncSetOperations:
         assert intersect_result.operation == "INTERSECT"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
-    def test_sync_set_operation_except_method(self, order_fixtures):
+    def test_set_operation_except_method(self, order_fixtures):
         """
         Test SetOperationQuery except_ method with real models.
         """
@@ -306,7 +306,7 @@ class TestSyncSetOperations:
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     @requires_protocol(SetOperationSupport, 'supports_except')
-    def test_sync_set_operation_operator_overloading(self, order_fixtures):
+    def test_set_operation_operator_overloading(self, order_fixtures):
         """
         Test SetOperationQuery operator overloading with real models.
         """
@@ -341,7 +341,7 @@ class TestSyncSetOperations:
         assert isinstance(except_result, SetOperationQuery)
         assert except_result.operation == "EXCEPT"
 
-    def test_sync_set_operation_with_invalid_operation_type(self, order_fixtures):
+    def test_set_operation_with_invalid_operation_type(self, order_fixtures):
         """
         Test SetOperationQuery handles invalid operation types
         """
@@ -361,7 +361,7 @@ class TestSyncSetOperations:
         assert set_op_query is not None
         assert set_op_query.operation == "INVALID_OP"
 
-    def test_sync_active_query_union_method(self, order_fixtures):
+    def test_active_query_union_method(self, order_fixtures):
         """
         Test ActiveQuery union method creates SetOperationQuery.
         """
@@ -385,7 +385,7 @@ class TestSyncSetOperations:
         assert union_query.right == query2
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    def test_sync_active_query_intersect_method(self, order_fixtures):
+    def test_active_query_intersect_method(self, order_fixtures):
         """
         Test ActiveQuery intersect method creates SetOperationQuery.
         """
@@ -409,7 +409,7 @@ class TestSyncSetOperations:
         assert intersect_query.right == query2
 
     @requires_protocol(SetOperationSupport, 'supports_except')
-    def test_sync_active_query_except_method(self, order_fixtures):
+    def test_active_query_except_method(self, order_fixtures):
         """
         Test ActiveQuery except_ method creates SetOperationQuery.
         """
@@ -432,7 +432,7 @@ class TestSyncSetOperations:
         assert except_query.left == query1
         assert except_query.right == query2
 
-    def test_sync_async_mixed_set_operations_should_fail(self, order_fixtures):
+    def test_mixed_sync_async_set_operations_should_fail(self, order_fixtures):
         """Test that mixing sync and async queries raises TypeError."""
         from rhosocial.activerecord.query import SetOperationQuery, AsyncSetOperationQuery
         from unittest.mock import Mock

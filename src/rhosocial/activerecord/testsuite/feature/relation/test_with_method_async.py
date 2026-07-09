@@ -2,7 +2,6 @@
 """
 Async tests for with_() method and RelationConfig.
 """
-import pytest
 
 from rhosocial.activerecord.query.relational import RelationConfig
 
@@ -10,14 +9,12 @@ from rhosocial.activerecord.query.relational import RelationConfig
 class TestAsyncWithMethod:
     """Async tests for with_() method behavior."""
 
-    @pytest.mark.asyncio
     async def test_with_no_relations(self, async_user_class):
         """with_() with no arguments should not add any relations."""
         query = async_user_class.query()
         configs = query.get_relation_configs()
         assert len(configs) == 0
 
-    @pytest.mark.asyncio
     async def test_with_single_string_relation(self, async_user_class):
         """with_() with single string should add the relation."""
         query = async_user_class.query()
@@ -27,7 +24,6 @@ class TestAsyncWithMethod:
         assert "posts" in configs
         assert configs["posts"].query_modifier is None
 
-    @pytest.mark.asyncio
     async def test_with_single_tuple_relation(self, async_user_class):
         """with_() with tuple (path, modifier) should add the relation with modifier."""
         def my_modifier(q):
@@ -40,7 +36,6 @@ class TestAsyncWithMethod:
         assert "posts" in configs
         assert configs["posts"].query_modifier is my_modifier
 
-    @pytest.mark.asyncio
     async def test_with_none_modifier(self, async_user_class):
         """with_() with None modifier should add the relation without modifier."""
         query = async_user_class.query()
@@ -50,7 +45,6 @@ class TestAsyncWithMethod:
         assert "posts" in configs
         assert configs["posts"].query_modifier is None
 
-    @pytest.mark.asyncio
     async def test_multiple_relations_with_validation(self, async_user_class):
         """with_() with multiple relations should validate all."""
         query = async_user_class.query()
@@ -64,14 +58,27 @@ class TestAsyncWithMethod:
 class TestAsyncRelationConfig:
     """Async tests for RelationConfig dataclass."""
 
-    @pytest.mark.asyncio
+    async def test_relation_config_defaults(self, async_user_class):
+        """RelationConfig should have correct defaults."""
+        config = RelationConfig(name="test", nested=False, query_modifier=None)
+        assert config.name == "test"
+        assert config.nested is False
+        assert config.query_modifier is None
+
+    async def test_relation_config_with_modifier(self, async_user_class):
+        """RelationConfig should store modifier."""
+        def my_modifier(q):
+            return q
+
+        config = RelationConfig(name="test", nested=False, query_modifier=my_modifier)
+        assert config.query_modifier is my_modifier
+
     async def test_get_relation_configs_empty(self, async_user_class):
         """get_relation_configs should return empty dict initially."""
         query = async_user_class.query()
         configs = query.get_relation_configs()
         assert len(configs) == 0
 
-    @pytest.mark.asyncio
     async def test_get_relation_configs_returns_copy(self, async_user_class):
         """get_relation_configs should return a copy."""
         query = async_user_class.query()
@@ -81,20 +88,3 @@ class TestAsyncRelationConfig:
         configs2 = query.get_relation_configs()
         assert configs1 == configs2
         assert configs1 is not configs2
-
-    @pytest.mark.asyncio
-    async def test_relation_config_defaults(self, async_user_class):
-        """RelationConfig should have correct defaults."""
-        config = RelationConfig(name="test", nested=False, query_modifier=None)
-        assert config.name == "test"
-        assert config.nested is False
-        assert config.query_modifier is None
-
-    @pytest.mark.asyncio
-    async def test_relation_config_with_modifier(self, async_user_class):
-        """RelationConfig should store modifier."""
-        def my_modifier(q):
-            return q
-
-        config = RelationConfig(name="test", nested=False, query_modifier=my_modifier)
-        assert config.query_modifier is my_modifier

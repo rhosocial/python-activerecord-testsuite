@@ -13,9 +13,6 @@ from rhosocial.activerecord.relation import BelongsTo, CacheConfig, HasMany, Has
 # Tests will receive async_order_fixtures via pytest fixture injection
 
 
-@pytest.mark.asyncio
-
-
 async def test_relation_required_params(async_order_fixtures):
     """Test relation definition with missing required parameters."""
     AsyncUser, _, _ = async_order_fixtures
@@ -30,9 +27,6 @@ async def test_relation_required_params(async_order_fixtures):
     with pytest.raises(TypeError, match="missing 1 required positional argument: 'foreign_key'"):
         class InvalidOrder(ActiveRecord):
             user: ClassVar[BelongsTo['AsyncUser']] = BelongsTo()
-
-
-@pytest.mark.asyncio
 
 
 async def test_relation_param_types(async_order_fixtures):
@@ -51,9 +45,6 @@ async def test_relation_param_types(async_order_fixtures):
                 foreign_key='user_id',
                 cache_config={'ttl': 300}  # Should be CacheConfig instance
             )
-
-
-@pytest.mark.asyncio
 
 
 async def test_relation_inheritance(async_order_fixtures):
@@ -93,7 +84,6 @@ async def test_relation_inheritance(async_order_fixtures):
 
 
 # New test cases for RelationManagementMixin
-@pytest.mark.asyncio
 async def test_relation_registration():
     """Test basic relation registration functionality."""
 
@@ -115,9 +105,6 @@ async def test_relation_registration():
     assert 'user' in AsyncPost._ensure_relations()
     assert isinstance(AsyncPost.get_relation('user'), BelongsTo)
     assert 'user' in AsyncPost.get_relations()
-
-
-@pytest.mark.asyncio
 
 
 async def test_relation_cache_management():
@@ -152,7 +139,6 @@ async def test_relation_cache_management():
 
 
 # Test cases for RelationDescriptor
-@pytest.mark.asyncio
 async def test_relation_descriptor_initialization():
     """Test RelationDescriptor initialization and configuration."""
 
@@ -181,9 +167,6 @@ async def test_relation_descriptor_initialization():
     assert AsyncPost.get_relation('cached_user').foreign_key == 'user_id'
 
 
-@pytest.mark.asyncio
-
-
 async def test_belongs_to_relation():
     """Test BelongsTo relation functionality."""
 
@@ -204,9 +187,6 @@ async def test_belongs_to_relation():
     relation = AsyncPost.get_relation('author')
     assert isinstance(relation, BelongsTo)
     assert relation.foreign_key == 'user_id'
-
-
-@pytest.mark.asyncio
 
 
 async def test_has_many_relation():
@@ -230,9 +210,6 @@ async def test_has_many_relation():
     assert relation.foreign_key == 'post_id'
 
 
-@pytest.mark.asyncio
-
-
 async def test_has_one_relation():
     """Test HasOne relation functionality."""
 
@@ -252,9 +229,6 @@ async def test_has_one_relation():
     relation = AsyncUser.get_relation('profile')
     assert isinstance(relation, HasOne)
     assert relation.foreign_key == 'user_id'
-
-
-@pytest.mark.asyncio
 
 
 async def test_multiple_relations_on_model():
@@ -288,9 +262,6 @@ async def test_multiple_relations_on_model():
     assert isinstance(AsyncPost.get_relation('comments'), HasMany)
 
 
-@pytest.mark.asyncio
-
-
 async def test_relation_inverse_of():
     """Test inverse_of relation configuration."""
 
@@ -320,9 +291,6 @@ async def test_relation_inverse_of():
 
     assert user_relation.inverse_of == 'posts'
     assert post_relation.inverse_of == 'author'
-
-
-@pytest.mark.asyncio
 
 
 async def test_relation_query_method():

@@ -12,12 +12,8 @@ This module contains tests for SQL JOIN operations including:
 - JOIN with model classes and table expressions
 """
 
-import pytest
 
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_inner_join(async_order_fixtures):
@@ -63,9 +59,6 @@ async def test_inner_join(async_order_fixtures):
         # If JOIN with model mapping doesn't work, test basic functionality
         basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_left_join(async_order_fixtures):
@@ -119,9 +112,6 @@ async def test_left_join(async_order_fixtures):
         assert len(basic_results) == 2
 
 
-@pytest.mark.asyncio
-
-
 async def test_right_join(async_order_fixtures):
     """
     Test right join functionality
@@ -170,9 +160,6 @@ async def test_right_join(async_order_fixtures):
         assert len(basic_results) == 2
 
 
-@pytest.mark.asyncio
-
-
 async def test_join_with_aliases(async_order_fixtures):
     """
     Test JOIN with table aliases
@@ -215,9 +202,6 @@ async def test_join_with_aliases(async_order_fixtures):
         # If alias join doesn't work, test basic functionality
         basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_multiple_joins_chain(async_order_fixtures):
@@ -263,9 +247,6 @@ async def test_multiple_joins_chain(async_order_fixtures):
         # If multi-join doesn't work, test basic functionality
         basic_results = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).all()
         assert len(basic_results) == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_join_with_conditions(async_order_fixtures):
@@ -315,9 +296,6 @@ async def test_join_with_conditions(async_order_fixtures):
         assert len(basic_results) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_natural_join(async_blog_fixtures):
     """
     Test natural JOIN functionality
@@ -365,9 +343,6 @@ async def test_natural_join(async_blog_fixtures):
         assert len(basic_results) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_join_with_model_classes(async_order_fixtures):
     """
     Test JOIN with model class references
@@ -410,9 +385,6 @@ async def test_join_with_model_classes(async_order_fixtures):
         # If model class join doesn't work, test basic functionality
         basic_results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
         assert len(basic_results) >= 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_join_with_table_expressions(async_order_fixtures):

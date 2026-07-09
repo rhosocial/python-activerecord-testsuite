@@ -6,7 +6,6 @@ Covers RelationDescriptor initialization, loading, caching, forward-reference
 resolution, relation registration validation, and inheritance — all using
 memory-based fixtures that don't require a database backend.
 """
-import pytest
 from typing import ClassVar, Any, Dict, List
 
 from pydantic import BaseModel
@@ -29,7 +28,6 @@ class TestAsyncRelationDescriptor:
         def batch_load(self, instances: List[Any], base_query: Any) -> Dict[int, Any]:
             pass
 
-    @pytest.mark.asyncio
 
     async def test_relation_descriptor_init(self):
         """RelationDescriptor stores foreign_key, inverse_of, loader, and cache_config.
@@ -48,7 +46,6 @@ class TestAsyncRelationDescriptor:
         assert descriptor.inverse_of == "test"
         assert descriptor._loader is not None
 
-    @pytest.mark.asyncio
 
     async def test_relation_descriptor_get_related_model(self, employee_class, department_class):
         """Test getting related model class."""
@@ -65,7 +62,6 @@ class TestAsyncRelationDescriptor:
         inverse_model = inverse_relation.get_related_model(department_class)
         assert inverse_model == employee_class
 
-    @pytest.mark.asyncio
 
     async def test_relation_descriptor_load(self, employee):
         """First access triggers loader; second access returns cached result.
@@ -98,7 +94,6 @@ class TestAsyncRelationDescriptor:
     #     result = employee_class.department_query(filter="test")
     #     assert result == [{"id": 1, "name": "Test"}]
 
-    @pytest.mark.asyncio
 
     async def test_relation_descriptor_cache_clear(self, employee):
         """__delete__ clears cached relation data; next access triggers loader again.
@@ -123,7 +118,6 @@ class TestAsyncRelationDescriptor:
         data = relation._load_relation(employee)
         assert data == {"id": 1, "name": "Test"}
 
-    @pytest.mark.asyncio
 
     async def test_relation_registration_validation(self):
         """Duplicate relation names are allowed at class creation time.
@@ -145,7 +139,6 @@ class TestAsyncRelationDescriptor:
                 inverse_of="inverse"
             )
 
-    @pytest.mark.asyncio
 
     async def test_relation_inheritance(self):
         """Child classes can override parent relations (e.g., HasOne -> HasMany).
@@ -183,7 +176,6 @@ class TestAsyncRelationDescriptor:
         # Verify relations are different objects
         assert parent_relation is not child_relation
 
-    @pytest.mark.asyncio
 
     async def test_forward_reference_resolution(self, author, book):
         """Forward references (e.g. BelongsTo['Author'] quoted as string) resolve correctly.

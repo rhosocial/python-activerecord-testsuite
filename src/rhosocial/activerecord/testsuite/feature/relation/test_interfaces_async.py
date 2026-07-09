@@ -3,7 +3,6 @@
 Tests for relation interfaces.
 """
 
-import pytest
 
 from rhosocial.activerecord.relation.interfaces import IRelationManagement
 
@@ -11,7 +10,6 @@ from rhosocial.activerecord.relation.interfaces import IRelationManagement
 class TestAsyncRelationInterfaces:
     """Tests for the relation management interfaces."""
 
-    @pytest.mark.asyncio
 
     async def test_relation_management_interface(self, employee_class, department_class):
         """Test RelationManagementInterface implementation."""
@@ -31,7 +29,6 @@ class TestAsyncRelationInterfaces:
         # Test query method creation
         assert hasattr(employee_class, "department_query")
 
-    @pytest.mark.asyncio
 
     async def test_relation_cache_operations(self, employee):
         """Test relation cache management."""
@@ -41,7 +38,6 @@ class TestAsyncRelationInterfaces:
         # Clear all relation caches
         employee.clear_relation_cache()
 
-    @pytest.mark.asyncio
 
     async def test_invalid_relation_access(self, employee):
         """Test accessing invalid relations."""

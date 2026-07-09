@@ -9,9 +9,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from rhosocial.activerecord.interface.query import ThreadSafeDict
 
 
-@pytest.mark.asyncio
-
-
 async def test_basic_operations():
     """Test basic dictionary operations."""
     # Initialize with different methods
@@ -56,9 +53,6 @@ async def test_basic_operations():
     assert len(test_dict) == 0
 
 
-@pytest.mark.asyncio
-
-
 async def test_copy_and_equality():
     """Test copy operation and equality comparison."""
     original = ThreadSafeDict({'a': 1, 'b': 2})
@@ -87,9 +81,6 @@ async def test_copy_and_equality():
     assert copy.to_dict() == {'a': 1, 'b': 2, 'c': 3}
 
 
-@pytest.mark.asyncio
-
-
 async def test_items_keys_values():
     """Test items(), keys(), and values() view methods."""
     test_dict = ThreadSafeDict({'a': 1, 'b': 2, 'c': 3})
@@ -111,9 +102,6 @@ async def test_items_keys_values():
     for key in test_dict:
         keys_from_iter.append(key)
     assert sorted(keys_from_iter) == ['a', 'b', 'c']
-
-
-@pytest.mark.asyncio
 
 
 async def test_pop_and_popitem():
@@ -146,9 +134,6 @@ async def test_pop_and_popitem():
         test_dict.popitem()
 
 
-@pytest.mark.asyncio
-
-
 async def test_setdefault():
     """Test setdefault() method."""
     test_dict = ThreadSafeDict()
@@ -162,9 +147,6 @@ async def test_setdefault():
     value = test_dict.setdefault('key', 'new_default')
     assert value == 'default'  # Returns existing value, not new default
     assert test_dict['key'] == 'default'  # Value remains unchanged
-
-
-@pytest.mark.asyncio
 
 
 async def test_additional_methods():
@@ -184,9 +166,6 @@ async def test_additional_methods():
     # Test get_many
     values = test_dict.get_many(['a', 'nonexistent', 'c'], 'default')
     assert values == [1, 'default', 3]
-
-
-@pytest.mark.asyncio
 
 
 async def test_thread_isolation():
@@ -219,9 +198,6 @@ async def test_thread_isolation():
     assert 'key' not in test_dict
 
 
-@pytest.mark.asyncio
-
-
 async def test_concurrent_operations():
     """Test concurrent operations on ThreadSafeDict."""
     test_dict = ThreadSafeDict()
@@ -250,9 +226,6 @@ async def test_concurrent_operations():
 
     # Main thread should still have empty dict
     assert len(test_dict) == 0
-
-
-@pytest.mark.asyncio
 
 
 async def test_stress_isolation():

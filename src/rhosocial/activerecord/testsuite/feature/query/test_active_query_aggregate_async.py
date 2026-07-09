@@ -14,7 +14,6 @@ class TestAsyncActiveQueryAggregate:
     Asynchronous ActiveQuery aggregate functionality tests
     """
 
-    @pytest.mark.asyncio
     async def test_count_simple(self, async_order_fixtures):
         """
         Test simple count aggregation with async
@@ -37,7 +36,6 @@ class TestAsyncActiveQueryAggregate:
         count = await AsyncOrder.query().count()
         assert count == 3
 
-    @pytest.mark.asyncio
     async def test_count_with_column(self, async_order_fixtures):
         """
         Test count with specific column with async
@@ -64,7 +62,6 @@ class TestAsyncActiveQueryAggregate:
         count = await AsyncOrder.query().count(AsyncOrder.c.order_number)
         assert count == 3
 
-    @pytest.mark.asyncio
     async def test_count_distinct(self, async_order_fixtures):
         """
         Test distinct count aggregation with async
@@ -99,7 +96,6 @@ class TestAsyncActiveQueryAggregate:
         distinct_status_count = await AsyncOrder.query().count(AsyncOrder.c.status, is_distinct=True)
         assert distinct_status_count == 2  # 'pending' and 'completed'
 
-    @pytest.mark.asyncio
     async def test_sum_simple(self, async_order_fixtures):
         """
         Test simple sum aggregation with async
@@ -127,7 +123,6 @@ class TestAsyncActiveQueryAggregate:
         total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
         assert total == sum(amounts)
 
-    @pytest.mark.asyncio
     async def test_sum_with_column(self, async_order_fixtures):
         """
         Test sum with specific column with async
@@ -155,7 +150,6 @@ class TestAsyncActiveQueryAggregate:
         total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
         assert total == sum(amounts)
 
-    @pytest.mark.asyncio
     async def test_avg_simple(self, async_order_fixtures):
         """
         Test simple average calculation with async
@@ -184,7 +178,6 @@ class TestAsyncActiveQueryAggregate:
         expected_avg = sum(amounts) / len(amounts)
         assert avg == expected_avg
 
-    @pytest.mark.asyncio
     async def test_min_max_simple(self, async_order_fixtures):
         """
         Test minimum and maximum value functions with async
@@ -215,7 +208,6 @@ class TestAsyncActiveQueryAggregate:
         assert min_val == min(amounts)
         assert max_val == max(amounts)
 
-    @pytest.mark.asyncio
     async def test_exists_method(self, async_order_fixtures):
         """
         Test async exists method for checking record existence
@@ -241,7 +233,6 @@ class TestAsyncActiveQueryAggregate:
         exists = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'NON-EXISTENT').exists()
         assert exists is False
 
-    @pytest.mark.asyncio
     async def test_aggregate_with_where_condition(self, async_order_fixtures):
         """
         Test aggregation with WHERE conditions with async
@@ -279,7 +270,6 @@ class TestAsyncActiveQueryAggregate:
         assert active_count == len(active_orders)
         assert active_total == sum(d['amount'] for d in active_orders)
 
-    @pytest.mark.asyncio
     async def test_count_wildcard_string(self, async_order_fixtures):
         """
         Test async count with wildcard string '*' as column argument.
@@ -296,7 +286,6 @@ class TestAsyncActiveQueryAggregate:
         count = await AsyncOrder.query().count("*")
         assert count == 3
 
-    @pytest.mark.asyncio
     async def test_sum_wildcard_raises_error(self, async_order_fixtures):
         """
         Test async sum_ with wildcard string '*' raises ValueError.
@@ -313,7 +302,6 @@ class TestAsyncActiveQueryAggregate:
         with pytest.raises(ValueError, match="SUM\\(\\*\\)"):
             await AsyncOrder.query().sum_("*")
 
-    @pytest.mark.asyncio
     async def test_avg_wildcard_raises_error(self, async_order_fixtures):
         """
         Test async avg with wildcard string '*' raises ValueError.
@@ -330,7 +318,6 @@ class TestAsyncActiveQueryAggregate:
         with pytest.raises(ValueError, match="AVG\\(\\*\\)"):
             await AsyncOrder.query().avg("*")
 
-    @pytest.mark.asyncio
     async def test_min_wildcard_raises_error(self, async_order_fixtures):
         """
         Test async min_ with wildcard string '*' raises ValueError.
@@ -347,7 +334,6 @@ class TestAsyncActiveQueryAggregate:
         with pytest.raises(ValueError, match="MIN\\(\\*\\)"):
             await AsyncOrder.query().min_("*")
 
-    @pytest.mark.asyncio
     async def test_max_wildcard_raises_error(self, async_order_fixtures):
         """
         Test async max_ with wildcard string '*' raises ValueError.

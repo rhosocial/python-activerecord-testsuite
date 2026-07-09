@@ -6,14 +6,12 @@ Tests deeply nested relation chains (Author -> Book -> Chapter),
 bidirectional consistency, HasOne/BelongsTo pairs, and
 custom-loader caching behavior with TTL expiration.
 """
-import pytest
 import asyncio
 
 
 class TestAsyncNestedRelationshipAccess:
     """Tests for nested relationship access: chain access, bidirectional consistency, loader caching."""
 
-    @pytest.mark.asyncio
 
     async def test_nested_relationship_access(self, async_author, async_book, async_chapter):
         """Author -> books -> chapters (deeply nested chain access)."""
@@ -27,7 +25,6 @@ class TestAsyncNestedRelationshipAccess:
         except AttributeError:
             pass
 
-    @pytest.mark.asyncio
 
     async def test_bidirectional_relationship_consistency(self, async_author, async_book):
         """Forward (author -> books) and backward (book -> author) relations are consistent.
@@ -44,7 +41,6 @@ class TestAsyncNestedRelationshipAccess:
         book_author = await first_book.author()
         assert book_author.id == async_author.id
 
-    @pytest.mark.asyncio
 
     async def test_custom_loader_caching(self, async_author):
         """Custom loader: first access uses loader, second hits cache, TTL expiry reloads.
@@ -65,7 +61,6 @@ class TestAsyncNestedRelationshipAccess:
         new_books = await async_author.books()
         assert new_books is not None  # loader fires again after TTL
 
-    @pytest.mark.asyncio
 
     async def test_one_to_one_relationship(self, async_author, async_profile):
         """HasOne <-> BelongsTo bidirectional pair returns consistent data.

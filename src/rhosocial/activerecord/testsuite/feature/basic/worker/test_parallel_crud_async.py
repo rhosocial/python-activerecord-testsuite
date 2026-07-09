@@ -303,7 +303,6 @@ async def async_delete_user_task(ctx: TaskContext, user_id: int, conn_params: Di
 class TestAsyncParallelCRUD:
     """Test parallel CRUD operations with asynchronous models."""
 
-    @pytest.mark.asyncio
     async def test_parallel_create(self, async_user_class_for_worker):
         """Test parallel async user creation."""
         AsyncUser = async_user_class_for_worker['model']
@@ -327,7 +326,6 @@ class TestAsyncParallelCRUD:
         assert all(r is not None for r in results)
         assert len(set(results)) == 10
 
-    @pytest.mark.asyncio
     async def test_parallel_read(self, async_user_class_for_worker):
         """Test parallel async user reading."""
         AsyncUser = async_user_class_for_worker['model']
@@ -362,7 +360,6 @@ class TestAsyncParallelCRUD:
             for user in test_users:
                 await user.delete()
 
-    @pytest.mark.asyncio
     async def test_parallel_update(self, async_user_class_for_worker):
         """Test parallel async user updating."""
         AsyncUser = async_user_class_for_worker['model']
@@ -404,7 +401,6 @@ class TestAsyncParallelCRUD:
             for user in test_users:
                 await user.delete()
 
-    @pytest.mark.asyncio
     async def test_parallel_delete(self, async_user_class_for_worker):
         """Test parallel async user deletion."""
         AsyncUser = async_user_class_for_worker['model']
@@ -435,3 +431,5 @@ class TestAsyncParallelCRUD:
         for uid in test_ids:
             user = await AsyncUser.find_one({'id': uid})
             assert user is None
+
+

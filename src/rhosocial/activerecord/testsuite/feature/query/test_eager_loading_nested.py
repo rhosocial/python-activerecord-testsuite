@@ -5,12 +5,9 @@ Verifies that with_('relation.nested') recursively preloads data at all levels.
 """
 from decimal import Decimal
 class TestSyncEagerLoadingNested:
-    """Sync: verify nested relation eager loading.
+    """Sync: nested eager loading — same behaviour as async.
 
-    Scenarios:
-    - HasMany nesting (Order -> items)
-    - BelongsTo nesting (Order -> user)
-    - All matched records get nested data loaded
+    Must mirror every scenario in TestAsyncEagerLoadingNested.
     """
 
     def test_deep_nesting(self, combined_fixtures):

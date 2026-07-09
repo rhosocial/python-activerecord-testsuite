@@ -4,8 +4,7 @@ import pytest
 
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 class TestAsyncCTEQueryCompositePK:
-    @pytest.mark.asyncio
-    async def test_async_cte_aggregate(self, async_order_item_class):
+    async def test_cte_aggregate(self, async_order_item_class):
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_basic_cte():
@@ -28,8 +27,7 @@ class TestAsyncCTEQueryCompositePK:
         ).where(Column(dialect, "order_id") == 1).aggregate()
         assert len(result) == 2
 
-    @pytest.mark.asyncio
-    async def test_async_cte_pk_filter(self, async_order_item_class):
+    async def test_cte_pk_filter(self, async_order_item_class):
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_basic_cte():
@@ -52,8 +50,7 @@ class TestAsyncCTEQueryCompositePK:
         result = await cte.from_cte("single_item").aggregate()
         assert len(result) == 1
 
-    @pytest.mark.asyncio
-    async def test_async_cte_unsupported_backend(self, async_order_item_class):
+    async def test_cte_unsupported_backend(self, async_order_item_class):
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if dialect.supports_basic_cte():

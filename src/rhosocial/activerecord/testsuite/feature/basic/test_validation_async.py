@@ -21,7 +21,6 @@ def validated_user_data():
 class TestAsyncValidation:
     """Asynchronous validation test class that wraps all the async test functions."""
     
-    @pytest.mark.asyncio
     async def test_field_validation(self, async_validated_user):
         """Test Pydantic field validation"""
         # Test username validation
@@ -47,7 +46,6 @@ class TestAsyncValidation:
             async_validated_user(username="validuser", email="valid@example.com", age=151)
         assert "age" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_business_rule_validation(self, async_validated_user):
         """Test custom business rule validation"""
         # Test age restriction rule
@@ -65,7 +63,6 @@ class TestAsyncValidation:
         user.age = 13
         assert await user.save() == 1
 
-    @pytest.mark.asyncio
     async def test_validation_on_update(self, async_validated_user, validated_user_data):
         """Test validation during record updates"""
         # Create valid user
@@ -85,7 +82,6 @@ class TestAsyncValidation:
         user.email = "new-valid@example.com"
         assert await user.save() == 1
 
-    @pytest.mark.asyncio
     async def test_null_field_validation(self, async_validated_user):
         """Test validation of nullable fields"""
         # Test with null age (should be valid as age is optional)
@@ -99,7 +95,6 @@ class TestAsyncValidation:
         saved_user = await async_validated_user.find_one(user.id)
         assert saved_user.age is None
 
-    @pytest.mark.asyncio
     async def test_multiple_validation_errors(self, async_validated_user):
         """Test handling of multiple validation errors"""
         with pytest.raises(ValidationError) as exc_info:

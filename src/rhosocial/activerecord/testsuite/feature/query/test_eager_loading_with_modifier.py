@@ -16,14 +16,9 @@ import pytest
 
 from rhosocial.activerecord.backend.dialect.protocols import LockingSupport
 class TestSyncEagerLoadingWithModifier:
-    """Sync: verify query_modifier is applied during eager loading.
+    """Sync: verify query_modifier applied during eager loading — same as async.
 
-    Scenarios:
-    - Filter modifier
-    - Order modifier
-    - No modifier (all records)
-    - Noop modifier
-    - Backward compatibility: eager result == lazy result
+    Must mirror every scenario in TestAsyncEagerLoadingWithModifier.
     """
 
     def test_filter_modifier(self, combined_fixtures):
@@ -92,11 +87,7 @@ class TestSyncEagerLoadingWithModifier:
         assert len(results) == 1
 
     def test_eager_equivalent_to_lazy(self, combined_fixtures):
-        """Backward-compatibility: with_ (without modifier) must produce same data as lazy loading.
-
-        Previously with_ was a no-op and relation_name() triggered lazy loading.
-        After the fix, eager loading must return identical results for the same query.
-        """
+        """Backward-compatibility: eager (no modifier) == lazy loading."""
         User, Order, _, _, _ = combined_fixtures
         user = User(username='ela_bc', email='ela_bc@example.com', age=30)
         user.save()
@@ -141,19 +132,11 @@ class TestSyncEagerLoadingWithModifier:
         assert eager_user.email == lazy_user.email
 
 class TestSyncForUpdate:
-    """Verify for_update() compatibility with with_().
-
-    NOTE: for_update requires LockingSupport protocol.
-    SQLite does not support FOR UPDATE, so these tests are skipped there.
-    The combined fixtures (combined_fixtures) include Order model with user relation.
-    """
+    """Sync version of for_update + with_ compatibility."""
 
     @pytest.mark.requires_protocol((LockingSupport, "supports_for_update"))
     def test_for_update_with_with_(self, combined_fixtures):
-        """for_update() can be chained before with_() and all().
-
-        Only runs on backends that support FOR UPDATE (MySQL, Postgres, etc.).
-        """
+        """for_update() can be chained before with_() and all()."""
         User, Order, _, _, _ = combined_fixtures
         user = User(username='for_up_user', email='for_up@example.com', age=30)
         user.save()

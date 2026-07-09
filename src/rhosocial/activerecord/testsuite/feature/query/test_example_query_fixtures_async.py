@@ -4,10 +4,8 @@ Example test file to import and verify the newly introduced mapped models fixtur
 for the query feature.
 """
 
-import pytest
 from rhosocial.activerecord.model import AsyncActiveRecord
 
-@pytest.mark.asyncio
 async def test_mapped_models_fixtures_load_query_feature(
     async_mapped_models_fixtures # Only import this specific fixture
 ):

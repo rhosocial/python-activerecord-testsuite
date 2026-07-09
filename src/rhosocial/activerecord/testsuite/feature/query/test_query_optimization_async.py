@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_query_optimization_async.py
 """Query optimization tests"""
-import pytest
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_n_plus_one_detection(async_combined_fixtures):
@@ -70,9 +66,6 @@ async def test_n_plus_one_detection(async_combined_fixtures):
     assert len(orders_with_eager) == 5
 
 
-@pytest.mark.asyncio
-
-
 async def test_batch_loading_performance(async_order_fixtures):
     """
     Test batch loading performance improvements
@@ -121,9 +114,6 @@ async def test_batch_loading_performance(async_order_fixtures):
         if hasattr(order, 'items'):
             # If relation attribute exists, verify it exists
             assert order.items is not None
-
-
-@pytest.mark.asyncio
 
 
 async def test_query_caching_mechanism(async_order_fixtures):

@@ -167,7 +167,6 @@ def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> boo
 class TestAsyncConnectionManagement:
     """Test connection management in Worker processes."""
 
-    @pytest.mark.asyncio
 
     async def test_connection_cleanup_after_task(self, async_user_class_for_worker):
         """Test that connections are properly cleaned up after task completion."""
@@ -186,7 +185,6 @@ class TestAsyncConnectionManagement:
                 results = [f.result(timeout=30) for f in futures]
                 assert all(isinstance(r, int) for r in results)
 
-    @pytest.mark.asyncio
 
     async def test_connection_isolation_between_workers(self, async_user_class_for_worker):
         """Test that each worker has isolated connection."""
@@ -222,7 +220,6 @@ class TestAsyncConnectionManagement:
             for user in test_users:
                 await user.delete()
 
-    @pytest.mark.asyncio
 
     async def test_connection_stress(self, async_user_class_for_worker):
         """Test repeated connection/disconnection cycles."""
@@ -241,7 +238,6 @@ class TestAsyncConnectionManagement:
             # All iterations should succeed
             assert all(r == 5 for r in results)
 
-    @pytest.mark.asyncio
 
     async def test_task_timeout(self, async_user_class_for_worker):
         """Test task timeout handling."""
@@ -258,7 +254,6 @@ class TestAsyncConnectionManagement:
             with pytest.raises(TimeoutError):
                 fut.result(timeout=0.5)
 
-    @pytest.mark.asyncio
 
     async def test_parallel_connection_stress(self, async_user_class_for_worker):
         """Test many parallel connections."""
@@ -278,7 +273,6 @@ class TestAsyncConnectionManagement:
             assert len(results) == 20
             assert all(isinstance(r, int) for r in results)
 
-    @pytest.mark.asyncio
 
     async def test_connection_with_create_operations(self, async_user_class_for_worker):
         """Test connection works correctly with write operations."""

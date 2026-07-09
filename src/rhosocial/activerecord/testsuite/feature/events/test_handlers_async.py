@@ -4,11 +4,7 @@ Event Handler Test Module
 
 This module tests the event handler functionality of the ActiveRecord class.
 """
-import pytest
 from rhosocial.activerecord.interface import ModelEvent
-
-
-@pytest.mark.asyncio
 
 
 async def test_event_handler_registration(async_event_model):
@@ -32,9 +28,6 @@ async def test_event_handler_registration(async_event_model):
     assert handler2 in instance._event_handlers[ModelEvent.BEFORE_INSERT]
 
 
-@pytest.mark.asyncio
-
-
 async def test_event_handler_removal(async_event_model):
     """Test event handler removal"""
     instance = async_event_model(name="test")
@@ -48,9 +41,6 @@ async def test_event_handler_removal(async_event_model):
 
     instance.off(ModelEvent.BEFORE_INSERT, handler)
     assert handler not in instance._event_handlers[ModelEvent.BEFORE_INSERT]
-
-
-@pytest.mark.asyncio
 
 
 async def test_event_handler_execution(async_event_model):
@@ -83,9 +73,6 @@ async def test_event_handler_execution(async_event_model):
     assert before_insert_logs[1][1]["handler"] == "handler2"
 
 
-@pytest.mark.asyncio
-
-
 async def test_multiple_event_types(async_event_model):
     """Test multiple event types"""
     instance = async_event_model(name="test")
@@ -113,9 +100,6 @@ async def test_multiple_event_types(async_event_model):
     assert len(insert_events) == 1
 
 
-@pytest.mark.asyncio
-
-
 async def test_event_data_passing(async_event_model):
     """Test event data passing"""
     instance = async_event_model(name="test")
@@ -137,9 +121,6 @@ async def test_event_data_passing(async_event_model):
     logs = instance.get_event_logs()
     before_insert_logs = [log for log in logs if log[0] == ModelEvent.BEFORE_INSERT]
     assert before_insert_logs[0][1]["custom_data"] == "test"
-
-
-@pytest.mark.asyncio
 
 
 async def test_insert_update_handlers_separate(async_event_model):

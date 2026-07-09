@@ -13,7 +13,6 @@ from rhosocial.activerecord.query.relational import (
 class TestAsyncInvalidRelationPath:
     """Async tests for invalid relation path validation."""
 
-    @pytest.mark.asyncio
     async def test_empty_relation_path(self, async_user_class):
         """Empty path should raise InvalidRelationPathError."""
         query = async_user_class.query()
@@ -21,7 +20,6 @@ class TestAsyncInvalidRelationPath:
             query.with_("")
         assert "cannot be empty" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_leading_dot(self, async_user_class):
         """Path with leading dot should raise InvalidRelationPathError."""
         query = async_user_class.query()
@@ -29,7 +27,6 @@ class TestAsyncInvalidRelationPath:
             query.with_(".posts")
         assert "cannot start with a dot" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_trailing_dot(self, async_user_class):
         """Path with trailing dot should raise InvalidRelationPathError."""
         query = async_user_class.query()
@@ -37,7 +34,6 @@ class TestAsyncInvalidRelationPath:
             query.with_("posts.")
         assert "cannot end with a dot" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_consecutive_dots(self, async_user_class):
         """Path with consecutive dots should raise InvalidRelationPathError."""
         query = async_user_class.query()
@@ -45,7 +41,6 @@ class TestAsyncInvalidRelationPath:
             query.with_("posts..comments")
         assert "cannot contain consecutive dots" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     async def test_multiple_invalid_paths(self, async_user_class):
         """Multiple invalid paths should raise on the first one."""
         query = async_user_class.query()
@@ -56,7 +51,6 @@ class TestAsyncInvalidRelationPath:
 class TestAsyncRelationPathAnalysis:
     """Async tests for relation path analysis."""
 
-    @pytest.mark.asyncio
     async def test_analyze_relation_path_valid(self, async_user_class):
         """Valid path should return correct parts and configs."""
         query = async_user_class.query()
@@ -64,7 +58,6 @@ class TestAsyncRelationPathAnalysis:
         assert parts == ["posts", "comments"]
         assert configs == ["posts", "posts.comments"]
 
-    @pytest.mark.asyncio
     async def test_analyze_relation_path_single(self, async_user_class):
         """Single-level path should return single part."""
         query = async_user_class.query()
@@ -76,21 +69,18 @@ class TestAsyncRelationPathAnalysis:
 class TestAsyncRelationNotFound:
     """Async tests for relation not found errors."""
 
-    @pytest.mark.asyncio
     async def test_relation_not_found_on_model(self, async_user_class):
         """Non-existent relation should raise RelationNotFoundError."""
         query = async_user_class.query()
         with pytest.raises(RelationNotFoundError):
             query.with_("nonexistent")
 
-    @pytest.mark.asyncio
     async def test_nested_relation_not_found(self, async_user_class):
         """Non-existent nested relation should raise RelationNotFoundError."""
         query = async_user_class.query()
         with pytest.raises(RelationNotFoundError):
             query.with_("posts.nonexistent")
 
-    @pytest.mark.asyncio
     async def test_partial_path_valid_full_invalid(self, async_user_class):
         """Partially valid path should raise for invalid part."""
         query = async_user_class.query()

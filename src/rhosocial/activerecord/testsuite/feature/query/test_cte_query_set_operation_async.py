@@ -22,7 +22,6 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestAsyncCTEQuerySetOperation:
     """Test CTE queries wrapping set operations of ActiveQuery instances (asynchronous)."""
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_cte_with_union_of_active_queries(self, async_order_fixtures):
         """
@@ -67,7 +66,6 @@ class TestAsyncCTEQuerySetOperation:
         assert 'active' in statuses
         assert 'completed' in statuses
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_cte_with_intersect_of_active_queries(self, async_order_fixtures):
@@ -115,7 +113,6 @@ class TestAsyncCTEQuerySetOperation:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_cte_with_except_of_active_queries(self, async_order_fixtures):
@@ -165,9 +162,8 @@ class TestAsyncCTEQuerySetOperation:
 class TestAsyncCTEQueryWithQueryExpression:
     """Test Async CTE queries with QueryExpression as parameters."""
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_query_expression_as_subquery(self, async_order_fixtures):
+    async def test_cte_with_query_expression_as_subquery(self, async_order_fixtures):
         """
         Async version of test_cte_with_query_expression_as_subquery.
         """
@@ -207,9 +203,8 @@ class TestAsyncCTEQueryWithQueryExpression:
         for row in results:
             assert row.get('status') == 'active'
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_query_expression_as_main_query(self, async_order_fixtures):
+    async def test_cte_with_query_expression_as_main_query(self, async_order_fixtures):
         """
         Async version of test_cte_with_query_expression_as_main_query.
         """
@@ -244,9 +239,8 @@ class TestAsyncCTEQueryWithQueryExpression:
 class TestAsyncCTEQueryWithActiveQuery:
     """Test Async CTE queries with AsyncActiveQuery as parameters."""
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_async_active_query_using_custom_join_clause(self, async_order_fixtures):
+    async def test_cte_with_active_query_using_custom_join_clause(self, async_order_fixtures):
         """
         Test Async CTE query that uses an AsyncActiveQuery with a custom join_clause as the underlying query.
 
@@ -288,9 +282,8 @@ class TestAsyncCTEQueryWithActiveQuery:
         for row in results:
             assert row.get('status') == 'active'
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_async_active_query_as_main_query(self, async_order_fixtures):
+    async def test_cte_with_active_query_as_main_query(self, async_order_fixtures):
         """
         Test Async CTE query where the main query is an AsyncActiveQuery.
 
@@ -326,9 +319,8 @@ class TestAsyncCTEQueryWithActiveQuery:
 class TestAsyncCTEQueryInvalidTypes:
     """Test Async CTE queries with invalid query parameter types to ensure proper error handling."""
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_invalid_query_type_raises_error(self, async_order_fixtures):
+    async def test_cte_with_invalid_query_type_raises_error(self, async_order_fixtures):
         '''
         Test that Async CTE query raises TypeError when an unsupported query type is provided.
 
@@ -368,9 +360,8 @@ class TestAsyncCTEQueryInvalidTypes:
         assert "Query type <class 'dict'>" in str(exc_info.value)
         assert "not supported in CTE" in str(exc_info.value)
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_with_invalid_main_query_type_raises_error(self, async_order_fixtures):
+    async def test_cte_with_invalid_main_query_type_raises_error(self, async_order_fixtures):
         '''
         Test that Async CTE query raises TypeError when an unsupported main query type is provided.
 
@@ -402,57 +393,9 @@ class TestAsyncCTEQueryInvalidTypes:
             # If there's an error, make sure it's not related to the removed query() method
             assert "query" not in str(e).lower()
 
-class TestAsyncCTEQueryErrorHandlingSetOperations:
-    """Test error handling for Async CTE queries with set operations."""
-
-    @pytest.mark.asyncio
-    @requires_cte()
-    async def test_async_cte_with_invalid_query_types_in_set_operations(self, async_order_fixtures):
-        """
-        Test Async CTE query with invalid query types in set operations.
-        """
-        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
-
-        # Create test data
-        user = AsyncUser(username='async_cte_invalid_query_types_user', email='async_cte_invalid_query_types@example.com', age=30)
-        await user.save()
-
-        # Create orders for the test
-        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-001', total_amount=Decimal('100.00'), status='active')
-        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-002', total_amount=Decimal('200.00'), status='completed')
-        await order1.save()
-        await order2.save()
-
-        # Get backend from model
-        backend = AsyncOrder.backend()
-
-        # Create an AsyncActiveQuery instance
-        active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
-
-        # Test that we can perform set operations with valid async queries
-        completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
-        union_query = active_orders_query.union(completed_orders_query)
-
-        # Get the SQL and params for the union query
-        union_sql, union_params = union_query.to_sql()
-
-        # Create an AsyncCTE that uses the valid UNION SQL and params as its source
-        cte_query = AsyncCTEQuery(backend)
-        cte_query.with_cte('valid_union_cte', (union_sql, union_params))
-
-        # Use the new API: specify which CTE to use and apply query conditions
-        results = await cte_query.from_cte('valid_union_cte').select('id', 'status', 'total_amount').aggregate()
-
-        # Verify results contain both active and completed orders
-        assert len(results) == 2
-        statuses = {row.get('status') for row in results}
-        assert 'active' in statuses
-        assert 'completed' in statuses
-
 class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
     """Test Async CTE queries with extended functionality applied to set operations."""
 
-    @pytest.mark.asyncio
     @requires_cte()
     async def test_cte_with_union_and_extended_conditions(self, async_order_fixtures):
         """
@@ -503,10 +446,9 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         assert results[0]['status'] in ['active', 'completed']
         assert results[1]['status'] in ['active', 'completed']
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    async def test_async_cte_with_intersect_and_range_conditions(self, async_order_fixtures):
+    async def test_cte_with_intersect_and_range_conditions(self, async_order_fixtures):
         """
         Test Async CTE query with INTERSECT operation and range conditions.
         """
@@ -552,10 +494,9 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
-    async def test_async_cte_with_except_and_join_conditions(self, async_order_fixtures):
+    async def test_cte_with_except_and_join_conditions(self, async_order_fixtures):
         """
         Test Async CTE query with EXCEPT operation and join conditions.
         """
@@ -601,12 +542,57 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
             assert row.get('status') != 'completed'
             assert row.get('total_amount') > Decimal('50.00')
 
+class TestAsyncCTEQueryErrorHandlingSetOperations:
+    """Test error handling for Async CTE queries with set operations."""
+
+    @requires_cte()
+    async def test_cte_with_invalid_query_types_in_set_operations(self, async_order_fixtures):
+        """
+        Test Async CTE query with invalid query types in set operations.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        # Create test data
+        user = AsyncUser(username='async_cte_invalid_query_types_user', email='async_cte_invalid_query_types@example.com', age=30)
+        await user.save()
+
+        # Create orders for the test
+        order1 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='ASYNC-CTE-INVALID-QUERY-TYPES-002', total_amount=Decimal('200.00'), status='completed')
+        await order1.save()
+        await order2.save()
+
+        # Get backend from model
+        backend = AsyncOrder.backend()
+
+        # Create an AsyncActiveQuery instance
+        active_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+
+        # Test that we can perform set operations with valid async queries
+        completed_orders_query = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+        union_query = active_orders_query.union(completed_orders_query)
+
+        # Get the SQL and params for the union query
+        union_sql, union_params = union_query.to_sql()
+
+        # Create an AsyncCTE that uses the valid UNION SQL and params as its source
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('valid_union_cte', (union_sql, union_params))
+
+        # Use the new API: specify which CTE to use and apply query conditions
+        results = await cte_query.from_cte('valid_union_cte').select('id', 'status', 'total_amount').aggregate()
+
+        # Verify results contain both active and completed orders
+        assert len(results) == 2
+        statuses = {row.get('status') for row in results}
+        assert 'active' in statuses
+        assert 'completed' in statuses
+
 class TestAsyncCTEQuerySetOperationWithOtherQueries:
     """Test Async CTE queries with set operations against other Async query types (AsyncActiveQuery, etc.)."""
 
-    @pytest.mark.asyncio
     @requires_cte()
-    async def test_async_cte_query_union_with_async_active_query(self, async_order_fixtures):
+    async def test_cte_query_union_with_active_query(self, async_order_fixtures):
         '''
         Test AsyncCTE query UNION operation with AsyncActiveQuery.
         '''
@@ -648,10 +634,9 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
         assert 'active' in statuses
         assert 'completed' in statuses
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
-    async def test_async_cte_query_intersect_with_async_active_query(self, async_order_fixtures):
+    async def test_cte_query_intersect_with_active_query(self, async_order_fixtures):
         '''
         Test AsyncCTE query INTERSECT operation with AsyncActiveQuery.
         '''
@@ -692,10 +677,9 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
             assert row.get('total_amount') > Decimal('100.00')
             assert row.get('status') == 'active'
 
-    @pytest.mark.asyncio
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
-    async def test_async_cte_query_except_with_async_active_query(self, async_order_fixtures):
+    async def test_cte_query_except_with_active_query(self, async_order_fixtures):
         '''
         Test AsyncCTE query EXCEPT operation with AsyncActiveQuery.
         '''

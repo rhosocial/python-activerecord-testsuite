@@ -10,12 +10,8 @@ This module contains tests for SQL range operations including:
 - Handling of empty lists and edge cases
 """
 
-import pytest
 
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_in_list_with_values(async_order_fixtures):
@@ -53,9 +49,6 @@ async def test_in_list_with_values(async_order_fixtures):
     assert 'cancelled' not in result_statuses
 
 
-@pytest.mark.asyncio
-
-
 async def test_in_list_empty_result_true(async_order_fixtures):
     """
     Test IN list with empty list and empty_result=True
@@ -83,9 +76,6 @@ async def test_in_list_empty_result_true(async_order_fixtures):
     assert len(results) == 0
 
 
-@pytest.mark.asyncio
-
-
 async def test_in_list_empty_result_false(async_order_fixtures):
     """
     Test IN list with empty list and empty_result=False
@@ -111,9 +101,6 @@ async def test_in_list_empty_result_false(async_order_fixtures):
     # Empty list query with empty_result=False, should return all results
     results = await AsyncOrder.query().in_list(AsyncOrder.c.status, [], empty_result=False).all()
     assert len(results) == 3
-
-
-@pytest.mark.asyncio
 
 
 async def test_not_in_with_values(async_order_fixtures):
@@ -151,9 +138,6 @@ async def test_not_in_with_values(async_order_fixtures):
     assert 'delivered' in result_statuses
 
 
-@pytest.mark.asyncio
-
-
 async def test_not_in_empty_behavior(async_order_fixtures):
     """
     Test NOT IN operation with empty list
@@ -182,9 +166,6 @@ async def test_not_in_empty_behavior(async_order_fixtures):
     # Empty list NOT IN query with empty_result=True, should return empty results
     results = await AsyncOrder.query().not_in(AsyncOrder.c.status, [], empty_result=True).all()
     assert len(results) == 0
-
-
-@pytest.mark.asyncio
 
 
 async def test_between_operation(async_order_fixtures):
@@ -221,9 +202,6 @@ async def test_between_operation(async_order_fixtures):
     assert Decimal('200.00') in result_amounts
 
 
-@pytest.mark.asyncio
-
-
 async def test_not_between_operation(async_order_fixtures):
     """
     Test NOT BETWEEN operation for range exclusion
@@ -255,9 +233,6 @@ async def test_not_between_operation(async_order_fixtures):
     result_amounts = [r.total_amount for r in results]
     assert Decimal('50.00') in result_amounts
     assert Decimal('250.00') in result_amounts
-
-
-@pytest.mark.asyncio
 
 
 async def test_comparison_operators(async_order_fixtures):

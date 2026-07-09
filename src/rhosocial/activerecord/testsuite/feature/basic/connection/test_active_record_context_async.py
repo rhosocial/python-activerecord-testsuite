@@ -5,7 +5,6 @@ Test ActiveRecord context awareness with connection pool.
 These tests verify that ActiveRecord models correctly use connection pool
 context for backend resolution.
 """
-import pytest
 
 from rhosocial.activerecord.connection.pool import (
     get_current_backend,
@@ -18,7 +17,6 @@ from rhosocial.activerecord.connection.pool import (
 class TestAsyncActiveRecordContext:
     """Test asynchronous ActiveRecord context awareness."""
 
-    @pytest.mark.asyncio
     async def test_backend_without_context_returns_class_backend(self, async_pool_and_model):
         """Test that backend() returns class backend without context."""
         pool, model = async_pool_and_model
@@ -26,7 +24,6 @@ class TestAsyncActiveRecordContext:
         backend = model.backend()
         assert backend is model.__backend__
 
-    @pytest.mark.asyncio
     async def test_backend_in_connection_context(self, async_pool_and_model):
         """Test that backend() returns connection backend in async connection context."""
         pool, model = async_pool_and_model
@@ -39,7 +36,6 @@ class TestAsyncActiveRecordContext:
             assert get_current_async_backend() is conn_backend
             assert get_current_async_connection_backend() is conn_backend
 
-    @pytest.mark.asyncio
     async def test_backend_in_transaction_context(self, async_pool_and_model):
         """Test that backend() returns transaction backend in async transaction context."""
         pool, model = async_pool_and_model
@@ -52,7 +48,6 @@ class TestAsyncActiveRecordContext:
             assert get_current_async_backend() is tx_backend
             assert get_current_async_transaction_backend() is tx_backend
 
-    @pytest.mark.asyncio
     async def test_nested_connection_contexts(self, async_pool_and_model):
         """Test nested async connection contexts reuse same backend."""
         pool, model = async_pool_and_model
@@ -66,7 +61,6 @@ class TestAsyncActiveRecordContext:
                 assert inner_backend is outer_backend
                 assert inner_conn is outer_conn
 
-    @pytest.mark.asyncio
     async def test_nested_transaction_contexts(self, async_pool_and_model):
         """Test nested async transaction contexts reuse same backend."""
         pool, model = async_pool_and_model
@@ -80,7 +74,6 @@ class TestAsyncActiveRecordContext:
                 assert inner_backend is outer_backend
                 assert inner_tx is outer_tx
 
-    @pytest.mark.asyncio
     async def test_connection_nested_in_transaction(self, async_pool_and_model):
         """Test async connection nested in transaction reuses transaction backend."""
         pool, model = async_pool_and_model
@@ -94,7 +87,6 @@ class TestAsyncActiveRecordContext:
                 assert conn_model_backend is tx_backend
                 assert conn_backend is tx_backend
 
-    @pytest.mark.asyncio
     async def test_transaction_nested_in_connection(self, async_pool_and_model):
         """Async transaction nested in a connection reuses the connection backend.
 
@@ -114,7 +106,6 @@ class TestAsyncActiveRecordContext:
                 assert tx_model_backend is conn_backend
                 assert tx_backend is conn_backend
 
-    @pytest.mark.asyncio
     async def test_deeply_nested_contexts(self, async_pool_and_model):
         """Async deeply nested contexts all resolve to the outermost backend.
 
@@ -139,14 +130,12 @@ class TestAsyncActiveRecordContext:
                         assert model.backend() is level1
                         assert level4 is level1
 
-class TestSyncAsyncIsolation:
-    """Test that sync and async contexts are properly isolated."""
-
-    def test_sync_backend_without_context_is_none(self):
+    async def test_sync_backend_without_context_is_none(self):
         """Test that get_current_backend() returns None without context."""
         assert get_current_backend() is None
 
-    @pytest.mark.asyncio
     async def test_async_backend_without_context_is_none(self):
         """Test that get_current_async_backend() returns None without context."""
         assert get_current_async_backend() is None
+
+

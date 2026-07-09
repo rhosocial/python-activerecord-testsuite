@@ -5,7 +5,6 @@ Verifies that relations configured via with_() are eagerly loaded when using one
 """
 from decimal import Decimal
 
-import pytest
 class TestAsyncEagerLoadingWithOne:
     """Async: verify with_('relation').one() — same behaviour as sync.
 
@@ -51,3 +50,7 @@ class TestAsyncEagerLoadingWithOne:
         AsyncUser, AsyncOrder, _, _, _ = async_combined_fixtures
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == -1).one()
         assert result is None
+
+
+
+

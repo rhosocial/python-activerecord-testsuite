@@ -261,6 +261,37 @@ async def async_aggregate_query_task(ctx: TaskContext, conn_params: Dict) -> Dic
         await AsyncOrder.backend().disconnect()
 
 
+async def async_query_order_items_task(ctx: TaskContext, order_id: int, conn_params: Dict) -> List[Dict[str, Any]]:
+    """Query items for a specific order (async)."""
+    if conn_params is None:
+        raise ValueError("conn_params is required")
+
+    import importlib
+    backend_module = importlib.import_module(conn_params['backend_module'])
+    backend_class = getattr(backend_module, conn_params['backend_class_name'])
+    config_module = importlib.import_module(conn_params['config_class_module'])
+    config_class = getattr(config_module, conn_params['config_class_name'])
+    config = config_class(**conn_params['config_kwargs'])
+
+    from rhosocial.activerecord.testsuite.feature.query.fixtures.async_models import AsyncOrderItem
+
+    await AsyncOrderItem.configure(config, backend_class)
+
+    try:
+        items = await AsyncOrderItem.where(order_id=order_id).all()
+        return [
+            {
+                'id': i.id,
+                'product_name': i.product_name,
+                'quantity': i.quantity,
+                'unit_price': float(i.unit_price)
+            }
+            for i in items
+        ]
+    finally:
+        await AsyncOrderItem.backend().disconnect()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Test Classes - Synchronous
 # ─────────────────────────────────────────────────────────────────────────────

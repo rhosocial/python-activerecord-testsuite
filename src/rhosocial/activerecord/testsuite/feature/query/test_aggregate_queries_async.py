@@ -1,10 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/test_aggregate_queries_async.py
 """Aggregate query tests"""
-import pytest
 from decimal import Decimal
-
-
-@pytest.mark.asyncio
 
 
 async def test_count_simple(async_order_fixtures):
@@ -27,9 +23,6 @@ async def test_count_simple(async_order_fixtures):
     # Count all orders for this user
     count = await AsyncOrder.query().count()
     assert count == 3
-
-
-@pytest.mark.asyncio
 
 
 async def test_count_with_column(async_order_fixtures):
@@ -56,9 +49,6 @@ async def test_count_with_column(async_order_fixtures):
     # Count specific column values
     count = await AsyncOrder.query().count(AsyncOrder.c.order_number)
     assert count == 3
-
-
-@pytest.mark.asyncio
 
 
 async def test_count_distinct(async_order_fixtures):
@@ -94,9 +84,6 @@ async def test_count_distinct(async_order_fixtures):
     assert distinct_status_count == 2  # 'pending' and 'completed'
 
 
-@pytest.mark.asyncio
-
-
 async def test_sum_simple(async_order_fixtures):
     """
     Test simple sum aggregation
@@ -124,9 +111,6 @@ async def test_sum_simple(async_order_fixtures):
     assert total == sum(amounts)
 
 
-@pytest.mark.asyncio
-
-
 async def test_sum_with_column(async_order_fixtures):
     """
     Test sum with specific column
@@ -152,9 +136,6 @@ async def test_sum_with_column(async_order_fixtures):
     # Calculate sum for specific column
     total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
     assert total == sum(amounts)
-
-
-@pytest.mark.asyncio
 
 
 async def test_avg_simple(async_order_fixtures):
@@ -185,9 +166,6 @@ async def test_avg_simple(async_order_fixtures):
     assert avg == expected_avg
 
 
-@pytest.mark.asyncio
-
-
 async def test_min_max_simple(async_order_fixtures):
     """
     Test minimum and maximum value functions
@@ -216,9 +194,6 @@ async def test_min_max_simple(async_order_fixtures):
     
     assert min_val == min(amounts)
     assert max_val == max(amounts)
-
-
-@pytest.mark.asyncio
 
 
 async def test_aggregate_complex(async_order_fixtures):
@@ -262,9 +237,6 @@ async def test_aggregate_complex(async_order_fixtures):
     assert results[0]['total'] == sum(amounts)
     assert results[0]['average'] == sum(amounts) / len(amounts)
     assert results[0]['count'] == len(amounts)
-
-
-@pytest.mark.asyncio
 
 
 async def test_aggregate_multiple_fields(async_order_fixtures):
@@ -313,9 +285,6 @@ async def test_aggregate_multiple_fields(async_order_fixtures):
     assert results[0]['total_orders'] == len(orders_data)
     assert results[0]['total_amount'] == sum(d['amount'] for d in orders_data)
     assert results[0]['avg_amount'] == sum(d['amount'] for d in orders_data) / len(orders_data)
-
-
-@pytest.mark.asyncio
 
 
 async def test_aggregate_with_conditions(async_order_fixtures):

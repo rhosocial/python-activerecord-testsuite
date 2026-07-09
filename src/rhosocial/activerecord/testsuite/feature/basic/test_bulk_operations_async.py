@@ -21,7 +21,6 @@ class UpdateValues:
 
 class TestAsyncBulkCreate:
 
-    @pytest.mark.asyncio
     async def test_basic_bulk_create(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25, email="alice@test.com"),
@@ -36,12 +35,10 @@ class TestAsyncBulkCreate:
         db_users = await async_bulk_user_class.find_all()
         assert len(db_users) == 3
 
-    @pytest.mark.asyncio
     async def test_bulk_create_empty_list(self, async_bulk_user_class):
         result = await async_bulk_user_class.bulk_create([])
         assert result == []
 
-    @pytest.mark.asyncio
     async def test_bulk_create_non_new_record_raises(self, async_bulk_user_class):
         user = async_bulk_user_class(name="Alice", age=25)
         await user.save()
@@ -49,7 +46,6 @@ class TestAsyncBulkCreate:
         with pytest.raises(BulkStateError):
             await async_bulk_user_class.bulk_create([user])
 
-    @pytest.mark.asyncio
     async def test_bulk_create_with_batch_size(self, async_bulk_user_class):
         users = [async_bulk_user_class(name=f"User{i}", age=i) for i in range(10)]
         result = await async_bulk_user_class.bulk_create(users, batch_size=3)
@@ -58,13 +54,11 @@ class TestAsyncBulkCreate:
         db_users = await async_bulk_user_class.find_all()
         assert len(db_users) == 10
 
-    @pytest.mark.asyncio
     async def test_bulk_create_updates_is_new_record(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         result = await async_bulk_user_class.bulk_create(users)
         assert not result[0].is_new_record
 
-    @pytest.mark.asyncio
     async def test_bulk_create_validation_error_raises(self, async_bulk_user_class):
         user = async_bulk_user_class(name="Alice", age=25)
         object.__setattr__(user, "name", None)
@@ -74,7 +68,6 @@ class TestAsyncBulkCreate:
 
 class TestAsyncBulkUpdate:
 
-    @pytest.mark.asyncio
     async def test_basic_bulk_update(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25, email="alice@test.com"),
@@ -91,31 +84,26 @@ class TestAsyncBulkUpdate:
         ages = sorted(u.age for u in reloaded)
         assert ages == [26, 31]
 
-    @pytest.mark.asyncio
     async def test_bulk_update_empty_list(self, async_bulk_user_class):
         assert await async_bulk_user_class.bulk_update([], ["name"]) == 0
 
-    @pytest.mark.asyncio
     async def test_bulk_update_empty_fields_raises(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         await async_bulk_user_class.bulk_create(users)
         with pytest.raises(ValueError, match="must not be empty"):
             await async_bulk_user_class.bulk_update(users, [])
 
-    @pytest.mark.asyncio
     async def test_bulk_update_invalid_fields_raises(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         await async_bulk_user_class.bulk_create(users)
         with pytest.raises(ValueError, match="Invalid field names"):
             await async_bulk_user_class.bulk_update(users, ["nonexistent_field"])
 
-    @pytest.mark.asyncio
     async def test_bulk_update_new_record_raises(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         with pytest.raises(BulkStateError):
             await async_bulk_user_class.bulk_update(users, ["age"])
 
-    @pytest.mark.asyncio
     async def test_bulk_update_multiple_fields(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25, email="old@test.com"),
@@ -134,7 +122,6 @@ class TestAsyncBulkUpdate:
         names = sorted(u.name for u in reloaded)
         assert names == ["Alice Updated", "Bob Updated"]
 
-    @pytest.mark.asyncio
     async def test_bulk_update_with_batch_size(self, async_bulk_user_class):
         users = [async_bulk_user_class(name=f"User{i}", age=i) for i in range(10)]
         await async_bulk_user_class.bulk_create(users)
@@ -145,7 +132,6 @@ class TestAsyncBulkUpdate:
 
         assert affected == 10
 
-    @pytest.mark.asyncio
     async def test_bulk_update_validation_error_raises(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         await async_bulk_user_class.bulk_create(users)
@@ -156,7 +142,6 @@ class TestAsyncBulkUpdate:
 
 class TestAsyncBulkDelete:
 
-    @pytest.mark.asyncio
     async def test_basic_bulk_delete(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25),
@@ -171,17 +156,14 @@ class TestAsyncBulkDelete:
         assert len(remaining) == 1
         assert remaining[0].name == "Charlie"
 
-    @pytest.mark.asyncio
     async def test_bulk_delete_empty_list(self, async_bulk_user_class):
         assert await async_bulk_user_class.bulk_delete([]) == 0
 
-    @pytest.mark.asyncio
     async def test_bulk_delete_new_record_raises(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         with pytest.raises(BulkStateError):
             await async_bulk_user_class.bulk_delete(users)
 
-    @pytest.mark.asyncio
     async def test_bulk_delete_clears_pk(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         await async_bulk_user_class.bulk_create(users)
@@ -190,7 +172,6 @@ class TestAsyncBulkDelete:
 
 class TestAsyncQueryUpdateAll:
 
-    @pytest.mark.asyncio
     async def test_basic_update_all(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25, email="a@test.com"),
@@ -209,12 +190,10 @@ class TestAsyncQueryUpdateAll:
         ).all()
         assert len(updated) == 2
 
-    @pytest.mark.asyncio
     async def test_update_all_no_where_raises(self, async_bulk_user_class):
         with pytest.raises(ValueError, match="requires a WHERE clause"):
             await async_bulk_user_class.query().update_all({"age": 0})
 
-    @pytest.mark.asyncio
     async def test_update_all_accepts_column_key(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25, email="a@test.com")]
         await async_bulk_user_class.bulk_create(users)
@@ -229,7 +208,6 @@ class TestAsyncQueryUpdateAll:
         reloaded = await async_bulk_user_class.find_one(users[0].id)
         assert reloaded.email == "column@test.com"
 
-    @pytest.mark.asyncio
     async def test_update_all_accepts_stringifiable_key(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25, email="a@test.com")]
         await async_bulk_user_class.bulk_create(users)
@@ -246,7 +224,6 @@ class TestAsyncQueryUpdateAll:
 
 class TestAsyncQueryDeleteAll:
 
-    @pytest.mark.asyncio
     async def test_basic_delete_all(self, async_bulk_user_class):
         users = [
             async_bulk_user_class(name="Alice", age=25),
@@ -264,12 +241,10 @@ class TestAsyncQueryDeleteAll:
         assert len(remaining) == 1
         assert remaining[0].name == "Alice"
 
-    @pytest.mark.asyncio
     async def test_delete_all_no_where_raises(self, async_bulk_user_class):
         with pytest.raises(ValueError, match="requires a WHERE clause"):
             await async_bulk_user_class.query().delete_all()
 
-    @pytest.mark.asyncio
     async def test_delete_all_no_matches(self, async_bulk_user_class):
         users = [async_bulk_user_class(name="Alice", age=25)]
         await async_bulk_user_class.bulk_create(users)

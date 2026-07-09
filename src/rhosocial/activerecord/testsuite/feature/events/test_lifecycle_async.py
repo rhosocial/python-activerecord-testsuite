@@ -9,9 +9,6 @@ from rhosocial.activerecord.interface import ModelEvent
 from rhosocial.activerecord.model import ActiveRecord
 
 
-@pytest.mark.asyncio
-
-
 async def test_insert_lifecycle_events(async_event_model):
     """Test INSERT lifecycle events for new records"""
     instance = async_event_model(name="test")
@@ -51,9 +48,6 @@ async def test_insert_lifecycle_events(async_event_model):
     assert event_sequence == expected_sequence
 
 
-@pytest.mark.asyncio
-
-
 async def test_update_lifecycle_events(async_event_model):
     """Test UPDATE lifecycle events for existing records"""
     instance = async_event_model(name="test")
@@ -91,9 +85,6 @@ async def test_update_lifecycle_events(async_event_model):
     assert ("AFTER_UPDATE", ["name"]) in event_sequence
 
 
-@pytest.mark.asyncio
-
-
 async def test_delete_lifecycle_events(async_event_model):
     """Test delete lifecycle events"""
     instance = async_event_model(name="test")
@@ -118,9 +109,6 @@ async def test_delete_lifecycle_events(async_event_model):
     # Verify event sequence and status change
     assert event_sequence == ["BEFORE_DELETE", "AFTER_DELETE"]
     assert instance.status == "deleting"
-
-
-@pytest.mark.asyncio
 
 
 async def test_validation_lifecycle_events(async_event_model):
@@ -150,9 +138,6 @@ async def test_validation_lifecycle_events(async_event_model):
     assert instance.name == "test_name"
 
 
-@pytest.mark.asyncio
-
-
 async def test_nested_event_handling(async_event_model):
     """Test nested event handling"""
     parent = async_event_model(name="parent")
@@ -179,9 +164,6 @@ async def test_nested_event_handling(async_event_model):
     assert event_sequence == ["parent_before_insert", "child_before_insert"]
 
 
-@pytest.mark.asyncio
-
-
 async def test_event_error_handling(async_event_model):
     """Test event error handling"""
     instance = async_event_model(name="test")
@@ -197,9 +179,6 @@ async def test_event_error_handling(async_event_model):
     with pytest.raises(DatabaseError) as exc_info:
         await instance.save()
     assert "Test error in event handler" in str(exc_info.value)
-
-
-@pytest.mark.asyncio
 
 
 async def test_conditional_event_handling(async_event_model):
@@ -236,9 +215,6 @@ async def test_conditional_event_handling(async_event_model):
     ]
 
 
-@pytest.mark.asyncio
-
-
 async def test_before_insert_can_modify_data(async_event_model):
     """Test BEFORE_INSERT event can modify save data"""
     instance = async_event_model(name="test")
@@ -255,9 +231,6 @@ async def test_before_insert_can_modify_data(async_event_model):
     saved = await async_event_model.find_one(instance.id)
     assert saved.name == 'modified_name'
     assert saved.status == 'auto_status'
-
-
-@pytest.mark.asyncio
 
 
 async def test_before_update_can_modify_data(async_event_model):
@@ -282,9 +255,6 @@ async def test_before_update_can_modify_data(async_event_model):
     assert saved.status == "name_changed"
 
 
-@pytest.mark.asyncio
-
-
 async def test_after_insert_receives_result(async_event_model):
     """Test AFTER_INSERT event receives QueryResult"""
     instance = async_event_model(name="test")
@@ -299,9 +269,6 @@ async def test_after_insert_receives_result(async_event_model):
     await instance.save()
 
     assert result_data['affected_rows'] == 1
-
-
-@pytest.mark.asyncio
 
 
 async def test_after_update_receives_result(async_event_model):
@@ -324,9 +291,6 @@ async def test_after_update_receives_result(async_event_model):
     assert result_data['dirty_fields'] == ["name"]
 
 
-@pytest.mark.asyncio
-
-
 async def test_sync_callback_receives_active_record_instance(async_event_model):
     """Test that callback receives ActiveRecord instance for async model"""
     instance = async_event_model(name="test")
@@ -345,9 +309,6 @@ async def test_sync_callback_receives_active_record_instance(async_event_model):
     # Verify it's an AsyncActiveRecord subclass
     from rhosocial.activerecord.model import AsyncActiveRecord
     assert isinstance(instance, AsyncActiveRecord)
-
-
-@pytest.mark.asyncio
 
 
 async def test_callback_instance_is_same_object(async_event_model):

@@ -5,7 +5,6 @@ from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 class TestAsyncTypeAdapter:
 
-    @pytest.mark.asyncio
     async def test_optional_string_conversion(self, async_type_adapter_fixtures):
         """Tests that Optional[str] is handled correctly asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -22,7 +21,6 @@ class TestAsyncTypeAdapter:
         found_rec2 = await AsyncTypeAdapterTest.find_one(rec2.id)
         assert found_rec2.optional_name is None
 
-    @pytest.mark.asyncio
     async def test_optional_int_conversion(self, async_type_adapter_fixtures):
         """Tests that Optional[int] is handled correctly asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -39,7 +37,6 @@ class TestAsyncTypeAdapter:
         found_rec2 = await AsyncTypeAdapterTest.find_one(rec2.id)
         assert found_rec2.optional_age is None
 
-    @pytest.mark.asyncio
     async def test_optional_datetime_conversion(self, async_type_adapter_fixtures):
         """Tests that Optional[datetime] is handled correctly by its adapter asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -58,7 +55,6 @@ class TestAsyncTypeAdapter:
         found_rec2 = await AsyncTypeAdapterTest.find_one(rec2.id)
         assert found_rec2.last_login is None
 
-    @pytest.mark.asyncio
     async def test_optional_bool_conversion(self, async_type_adapter_fixtures):
         """Tests that Optional[bool] is handled correctly by its adapter asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -79,7 +75,6 @@ class TestAsyncTypeAdapter:
         found_rec3 = await AsyncTypeAdapterTest.find_one(rec3.id)
         assert found_rec3.is_premium is None
 
-    @pytest.mark.asyncio
     async def test_non_optional_field_no_regression(self, async_type_adapter_fixtures):
         """Tests that a simple non-optional field is not affected asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -89,7 +84,6 @@ class TestAsyncTypeAdapter:
         assert isinstance(found_rec.name, str)
         assert found_rec.name == "simple_string"
 
-    @pytest.mark.asyncio
     async def test_unsupported_union_is_handled_gracefully(self, async_type_adapter_fixtures):
         """
         Tests that a Union of multiple non-None types is handled gracefully asynchronously.
@@ -113,7 +107,6 @@ class TestAsyncTypeAdapter:
         assert found_rec.unsupported_union == "some_string"
         assert isinstance(found_rec.unsupported_union, str)
 
-    @pytest.mark.asyncio
     async def test_db_null_with_non_optional_field_raises_error(self, async_type_adapter_fixtures):
         """
         Tests that inserting a NULL into a NOT NULL column raises an IntegrityError asynchronously.
@@ -132,7 +125,6 @@ class TestAsyncTypeAdapter:
         # Check for SQLite's message OR MySQL's message
         assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message or "violates not-null constraint" in error_message)
 
-    @pytest.mark.asyncio
     async def test_annotated_custom_adapter(self, async_type_adapter_fixtures):
         """Tests that a field-specific adapter assigned via Annotation works correctly asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures
@@ -167,7 +159,6 @@ class TestAsyncTypeAdapter:
         # accept various possible representations
         assert found_false.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
 
-    @pytest.mark.asyncio
     async def test_optional_annotated_custom_adapter(self, async_type_adapter_fixtures):
         """Tests an Optional field that also has a custom annotated adapter asynchronously."""
         AsyncTypeAdapterTest = async_type_adapter_fixtures

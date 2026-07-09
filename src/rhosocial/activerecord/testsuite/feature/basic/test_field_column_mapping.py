@@ -35,8 +35,7 @@ from rhosocial.activerecord.testsuite.feature.basic.conftest import (
 )
 class TestMappedModels:
     """
-    Tests for models that use `UseColumn` to map attribute names to different
-    database column names.
+    Tests for models that use UseColumn mapping for attribute-to-column name mapping.
     """
 
     def test_mapped_user_create_and_find(self, mapped_models_fixtures: Tuple[Type[ActiveRecord], ...]):
