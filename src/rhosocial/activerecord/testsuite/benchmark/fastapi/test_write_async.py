@@ -11,6 +11,8 @@ from rhosocial.activerecord.testsuite.benchmark.fastapi.workloads import create_
 @pytest.mark.benchmark_async
 @pytest.mark.benchmark_write
 def test_fastapi_create_user_async(benchmark, fastapi_async_context):
+    """Benchmark creating a user via FastAPI POST."""
+
     context, run_async = fastapi_async_context
     counter = {"value": 0}
 

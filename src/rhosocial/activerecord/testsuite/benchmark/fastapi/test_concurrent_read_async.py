@@ -46,6 +46,8 @@ def assert_pool_stats(context, before, after):
 @pytest.mark.benchmark_async
 @pytest.mark.benchmark_read
 def test_fastapi_concurrent_read_async(benchmark, fastapi_async_context, fastapi_concurrent_rounds):
+    """Benchmark concurrent user lookups by email via FastAPI."""
+
     context, run_async = fastapi_async_context
     warmup = 0 if context.connection_strategy == FASTAPI_CONTEXT_STRATEGY else 1
     before = context.pool_stats().to_dict() if context.pool_stats else None

@@ -18,6 +18,8 @@ from rhosocial.activerecord.testsuite.benchmark.fastapi.workloads import (
 @pytest.mark.benchmark_async
 @pytest.mark.benchmark_write
 def test_fastapi_concurrent_transaction_async(benchmark, fastapi_async_context, fastapi_concurrent_rounds):
+    """Benchmark concurrent transactional updates via FastAPI."""
+
     context, run_async = fastapi_async_context
     warmup = 0 if context.connection_strategy == FASTAPI_CONTEXT_STRATEGY else 1
     before = context.pool_stats().to_dict() if context.pool_stats else None
