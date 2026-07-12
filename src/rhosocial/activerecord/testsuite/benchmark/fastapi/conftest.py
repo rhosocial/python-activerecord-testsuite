@@ -1,5 +1,7 @@
 """Pytest fixtures for FastAPI benchmark scenarios."""
 
+__parity__ = "async_only"
+
 import asyncio
 
 import pytest

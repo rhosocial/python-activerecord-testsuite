@@ -27,6 +27,8 @@ other side **in the same order**, with the same wording where possible.
   - `conftest.py`, `interfaces.py`, helper modules, fixture modules.
   - Files that intentionally test only sync or only async (rare; if added,
     document the reason in the file header).
+  - Directories whose `conftest.py` declares a non-default `__parity__` mode
+    (see [Per-directory parity mode](#per-directory-parity-mode-__parity__) below).
 
 ## Backend Provider (interfaces.py) Sync/Async Rules
 
@@ -163,6 +165,9 @@ For every sync/async pair of test files (`foo.py` and `foo_async.py`):
 1. **File-level pairing**
    - If `foo.py` exists, `foo_async.py` MUST exist in the **same directory**
      and **vice versa**.
+   - **Exception**: Directories with `__parity__ = "async_only"` or
+     `__parity__ = "sync_only"` in their `conftest.py` are exempt — unpaired
+     files are expected.
    - The first-line path comment on the sync file
      (`# src/rhosocial/activerecord/testsuite/<dir>/<file>.py`)
      MUST be mirrored on the async file with the actual async path
@@ -235,18 +240,42 @@ For every sync/async pair of test files (`foo.py` and `foo_async.py`):
       account for blank-line normalization and fixture-model class differences.
       A violation means the file pair has a genuine structural disparity.
 
+## Per-directory parity mode (`__parity__`)
+
+Directories can declare their sync/async parity intent via a module-level
+`__parity__` variable in the directory's `conftest.py`. The parity checker
+(`tools/check_sync_async_parity.py`) reads this variable to decide whether to
+enforce strict pairing.
+
+```python
+# conftest.py
+__parity__ = "async_only"
+```
+
+| Value | Effect |
+|---|---|
+| `"sync_async"` (default) | Full enforcement — every file MUST have a counterpart (Rule 1). |
+| `"async_only"` | Unpaired sync or async files do not trigger P1 orphans. If both variants exist for the same stem, P2–P6 are still checked. Use for directories where only async tests are meaningful (e.g. FastAPI benchmarks). |
+| `"sync_only"` | Symmetric to `"async_only"`. Use for directories where only sync tests are meaningful. |
+
+This mechanism avoids the need for ad‑hoc exclusion lists in the checker
+script — every directory is self‑describing.
+
 ## Workflow
 
 ### Adding a new test
 
-1. Create the sync test first in the appropriate directory under
+1. Decide whether the directory should be `"sync_async"`, `"async_only"`, or
+   `"sync_only"`. If the directory's `conftest.py` does not yet have a
+   `__parity__` declaration, add one.
+2. Create the sync test first in the appropriate directory under
    `src/rhosocial/activerecord/testsuite/`.
-2. Immediately create `test_<name>_async.py` next to it. Copy the file,
+3. Immediately create `test_<name>_async.py` next to it. Copy the file,
    then run a search/replace pass:
    - Add `_async` to mapping where the project convention dictates
      (filename basename, model class, fixture name, method names).
    - Add `async` keyword + `await` tokens where required.
-3. Run the parity check before committing.
+4. Run the parity check before committing.
 
 ### Modifying an existing test
 
@@ -282,7 +311,8 @@ grep -E '^    def test_|^    async def test_' src/.../feature/basic/test_crud.py
 
 ## Known Exceptions (kept as a tracked list)
 
-- (empty) — every tracked pair must satisfy the six rules.
+- `benchmark/fastapi` — async-only (`__parity__ = "async_only"`).
+  FastAPI is an async-native framework; sync benchmarks are not meaningful.
 
 ## Triage / Fixing a Violation
 
