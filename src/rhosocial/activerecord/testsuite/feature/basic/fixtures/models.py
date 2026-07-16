@@ -10,7 +10,7 @@ configuring them with a live database connection at test time.
 import re
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Optional, Type, Literal, Union, Any, Dict, List
+from typing import Optional, Type, Literal, Union, Any, Dict, List, Set
 import json # Added import for json
 
 from pydantic import EmailStr, Field, field_validator, model_validator
@@ -22,7 +22,7 @@ from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.backend.errors import ValidationError
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
 # package to handle common field behaviors like auto-incrementing IDs or timestamps.
-from rhosocial.activerecord.field import TimestampMixin, UUIDMixin, IntegerPKMixin
+from rhosocial.activerecord.field import TimestampMixin, UUIDMixin, IntegerPKMixin, CompositePKMixin
 
 try:
     from typing import Annotated, ClassVar
@@ -138,6 +138,7 @@ class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
     validation handling.
     """
     __table_name__ = "validated_field_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
     username: str
@@ -679,4 +680,262 @@ class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
     name: str
     age: int = 0
     email: str = ""
+
+
+# =============================================================================
+# Composite Primary Key Models
+# =============================================================================
+
+class OrderItem(CompositePKMixin, ActiveRecord):
+    """Composite PK (order_id, product_id), PK provided by application."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_id: int
+    product_id: int
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class AsyncOrderItem(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of OrderItem."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_id: int
+    product_id: int
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class StoreInventory(CompositePKMixin, ActiveRecord):
+    """Triple-column composite PK."""
+    __table_name__ = "store_inventory"
+    __primary_key__ = ("store_id", "product_id", "batch_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    store_id: int
+    product_id: int
+    batch_id: str
+    stock: int = 0
+
+
+class AsyncStoreInventory(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of StoreInventory."""
+    __table_name__ = "store_inventory"
+    __primary_key__ = ("store_id", "product_id", "batch_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    store_id: int
+    product_id: int
+    batch_id: str
+    stock: int = 0
+
+
+class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Single-column auto-increment PK — backward compatibility control group."""
+    __table_name__ = "orders"
+    __primary_key__ = "id"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    total: Decimal = Decimal("0.00")
+
+
+class AsyncOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async variant of Order."""
+    __table_name__ = "orders"
+    __primary_key__ = "id"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    total: Decimal = Decimal("0.00")
+
+
+class MappedOrderItem(CompositePKMixin, ActiveRecord):
+    """Composite PK with UseColumn mapping — Python field names differ from DB column names."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class AsyncMappedOrderItem(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of MappedOrderItem."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+# =============================================================================
+# Derived Field Models
+# =============================================================================
+
+from rhosocial.activerecord.base import DerivedField
+from rhosocial.activerecord.backend.expression import Column, Literal
+
+
+class Product(ActiveRecord):
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    )]]
+
+    total_value: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    )]]
+
+
+class AsyncProduct(AsyncActiveRecord):
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    )]]
+
+    total_value: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    )]]
+
+
+class ProductFormA(ActiveRecord):
+    """Form A declaration: ClassVar[DerivedField] = DerivedField(...)."""
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    )
+
+    total_value: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    )
+
+
+class AsyncProductFormA(AsyncActiveRecord):
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    )
+
+    total_value: ClassVar[DerivedField] = DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    )
+
+
+class PriceToIntAdapter:
+    """Adapter that rounds float price to int for from_database."""
+
+    def to_database(self, value: Any, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Any:
+        return float(value)
+
+    def from_database(self, value: Any, target_type: Type, options: Optional[Dict[str, Any]] = None) -> Any:
+        return int(round(value))
+
+    @property
+    def supported_types(self) -> Dict[Type, Set[Type]]:
+        return {int: {float}}
+
+
+class ProductWithProxy(ActiveRecord):
+    """Product model using FieldProxy in DerivedField expressions."""
+    __table_name__ = "product"
+
+    c: ClassVar[FieldProxy] = FieldProxy()
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: ProductWithProxy.c.price * Literal(d, 0.9),
+    )]]
+
+    total_value: ClassVar[Annotated[float, DerivedField(
+        lambda d: ProductWithProxy.c.price * ProductWithProxy.c.quantity,
+    )]]
+
+
+class AsyncProductWithProxy(AsyncActiveRecord):
+    __table_name__ = "product"
+
+    c: ClassVar[FieldProxy] = FieldProxy()
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: AsyncProductWithProxy.c.price * Literal(d, 0.9),
+    )]]
+
+    total_value: ClassVar[Annotated[float, DerivedField(
+        lambda d: AsyncProductWithProxy.c.price * AsyncProductWithProxy.c.quantity,
+    )]]
+
+
+class ProductWithColumnAndAdapter(ActiveRecord):
+    """Product model with UseColumn and UseAdapter on derived fields."""
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    ), UseColumn("disc")]]
+
+    total_int: ClassVar[Annotated[int, DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    ), UseAdapter(PriceToIntAdapter(), int)]]
+
+
+class AsyncProductWithColumnAndAdapter(AsyncActiveRecord):
+    __table_name__ = "product"
+
+    id: Optional[int] = None
+    name: str
+    price: float
+    quantity: int
+
+    discounted_price: ClassVar[Annotated[float, DerivedField(
+        lambda d: Column(d, "price") * Literal(d, 0.9),
+    ), UseColumn("disc")]]
+
+    total_int: ClassVar[Annotated[int, DerivedField(
+        lambda d: Column(d, "price") * Column(d, "quantity"),
+    ), UseAdapter(PriceToIntAdapter(), int)]]
 

@@ -1,6 +1,10 @@
 # Basic Feature Test Fixtures
 
-This directory contains fixture model classes for testing basic ActiveRecord functionality across different Python versions.
+This directory contains fixture model classes for testing basic ActiveRecord functionality across Python 3.8–3.12.
+
+## Sync/Async Parity
+
+Every model class has both a synchronous (`ActiveRecord`) and an asynchronous (`AsyncActiveRecord`) variant. The two variants define identical fields, validators, and annotations, ensuring test coverage mirrors across sync/async backends.
 
 ## Files Overview
 
@@ -147,7 +151,6 @@ All versions define the same set of model classes:
 - **MappedComment** - Comment model with column mappings
 - **MixedAnnotationModel** - Model combining various annotations
 
-Each model has both synchronous (`ActiveRecord`) and asynchronous (`AsyncActiveRecord`) variants.
 
 ## IDE Type Checking
 
