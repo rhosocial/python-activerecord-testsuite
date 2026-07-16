@@ -346,21 +346,36 @@ def async_profile():
 
 # ── Provider-based fixtures for query tests ──────────────
 
-PROVIDER_KEY = "feature.relation.IRelationProvider"
+PROVIDER_KEY_SYNC = "feature.relation.IRelationSyncProvider"
+PROVIDER_KEY_ASYNC = "feature.relation.IRelationAsyncProvider"
 
 
-def get_scenarios():
+def get_scenarios_sync():
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     if not provider_class:
         return []
     return provider_class().get_test_scenarios()
 
 
-_scenarios = get_scenarios()
-SCENARIO_PARAMS = _scenarios if _scenarios else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No relation testsuite scenarios found"))
+def get_scenarios_async():
+    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
+    if not provider_class:
+        return []
+    return provider_class().get_test_scenarios()
+
+
+_scenarios_sync = get_scenarios_sync()
+_scenarios_async = get_scenarios_async()
+
+SCENARIO_PARAMS_SYNC = _scenarios_sync if _scenarios_sync else [
+    pytest.param("default", marks=pytest.mark.skip(reason="No sync relation testsuite scenarios found"))
+]
+SCENARIO_PARAMS_ASYNC = _scenarios_async if _scenarios_async else [
+    pytest.param("default", marks=pytest.mark.skip(reason="No async relation testsuite scenarios found"))
 ]
 
 
@@ -415,7 +430,7 @@ def check_relation_capability_requirements(request):
         skip_test_if_functions_unsupported(model_to_check, functions_marker.args[0])
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def user_class(request):
     """Provider-backed User model class (ActiveRecord) for sync relation tests.
 
@@ -426,46 +441,46 @@ def user_class(request):
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
     model = provider.setup_user_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def post_class(request):
     """Provider-backed Post model class (ActiveRecord) for sync relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
     model = provider.setup_post_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def comment_class(request):
     """Provider-backed Comment model class (ActiveRecord) for sync relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
     model = provider.setup_comment_model(scenario)
     yield model
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def user_post_comment_classes(request):
     """Combined fixture that provides User, Post, Comment classes sharing the same backend."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
     user = provider.setup_user_model(scenario)
     post = provider.setup_post_model(scenario)
@@ -474,81 +489,81 @@ def user_post_comment_classes(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def async_user_class(request):
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_user_class(request):
     """Provider-backed async User model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
-    model = provider.setup_async_user_model(scenario)
+    model = await provider.setup_user_model(scenario)
     yield model
-    provider.cleanup_after_test(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def async_post_class(request):
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_post_class(request):
     """Provider-backed async Post model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
-    model = provider.setup_async_post_model(scenario)
+    model = await provider.setup_post_model(scenario)
     yield model
-    provider.cleanup_after_test(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def async_comment_class(request):
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_comment_class(request):
     """Provider-backed async Comment model class (AsyncActiveRecord) for async relation tests."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
-    model = provider.setup_async_comment_model(scenario)
+    model = await provider.setup_comment_model(scenario)
     yield model
-    provider.cleanup_after_test(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def async_user_post_comment_classes(request):
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_user_post_comment_classes(request):
     """Combined fixture that provides async User, Post, Comment classes sharing the same backend."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
-    user = provider.setup_async_user_model(scenario)
-    post = provider.setup_async_post_model(scenario)
-    comment = provider.setup_async_comment_model(scenario)
+    user = await provider.setup_user_model(scenario)
+    post = await provider.setup_post_model(scenario)
+    comment = await provider.setup_comment_model(scenario)
     yield user, post, comment
-    provider.cleanup_after_test(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def relation_boundary_context(request):
     """Provides relation boundary models, provider, and scenario."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
     owner, profile, post = provider.setup_relation_boundary_fixtures(scenario)
     yield provider, scenario, owner, profile, post
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def async_relation_boundary_context(request):
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_relation_boundary_context(request):
     """Provides async relation boundary models, provider, and scenario."""
     from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
-    owner, profile, post = provider.setup_async_relation_boundary_fixtures(scenario)
+    owner, profile, post = await provider.setup_relation_boundary_fixtures(scenario)
     yield provider, scenario, owner, profile, post
-    provider.cleanup_after_test(scenario)
+    await provider.cleanup_after_test(scenario)

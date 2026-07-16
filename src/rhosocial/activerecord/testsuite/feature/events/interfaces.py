@@ -13,9 +13,10 @@ from typing import Type, List
 from rhosocial.activerecord.model import ActiveRecord
 
 
-class IEventsProvider(ABC):
+class EventsProviderBase(ABC):
     """
-    The interface for the provider of the 'events' feature tests.
+    The shared base for providers of the 'events' feature tests, containing
+    common non-I/O helper methods used by both sync and async providers.
     """
 
     @abstractmethod
@@ -23,14 +24,26 @@ class IEventsProvider(ABC):
         """
         Should return a list of scenario names (e.g., ['memory', 'file'])
         that this backend supports for this test group.
+
+        Returns:
+            List[str]: A list of supported scenario names.
         """
         pass
+
+
+class IEventsSyncProvider(EventsProviderBase):
+    """
+    The sync interface for the provider of the 'events' feature tests.
+    """
 
     @abstractmethod
     def setup_event_model(self, scenario_name: str) -> Type[ActiveRecord]:
         """
         Should prepare the testing environment for the event model under a
         given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured Event model class.
         """
         pass
 
@@ -39,36 +52,51 @@ class IEventsProvider(ABC):
         """
         Should prepare the testing environment for the event tracking model under a
         given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured EventTracking model class.
         """
         pass
-
-    async def setup_async_event_model(self, scenario_name: str) -> Type[ActiveRecord]:
-        """
-        Should prepare the testing environment for the async event model under a
-        given scenario and return the configured model class.
-
-        Default implementation raises NotImplementedError. Backends should override
-        this method to support async event model tests.
-        """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not support setup_async_event_model"
-        )
-
-    async def cleanup_after_test_async(self, scenario_name: str):
-        """
-        Should perform any necessary cleanup after an async test has run.
-
-        Default implementation raises NotImplementedError. Backends should override
-        this method to support async event model tests.
-        """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not support cleanup_after_test_async"
-        )
 
     @abstractmethod
     def cleanup_after_test(self, scenario_name: str):
         """
         Should perform any necessary cleanup after a test has run, such as
         deleting temporary database files.
+        """
+        pass
+
+
+class IEventsAsyncProvider(EventsProviderBase):
+    """
+    The async interface for the provider of the 'events' feature tests.
+    """
+
+    @abstractmethod
+    async def setup_event_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async event model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured async Event model class.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_event_tracking_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Should prepare the testing environment for the async event tracking model under a
+        given scenario and return the configured model class.
+
+        Returns:
+            Type[ActiveRecord]: The configured async EventTracking model class.
+        """
+        pass
+
+    @abstractmethod
+    async def cleanup_after_test(self, scenario_name: str):
+        """
+        Should perform any necessary async cleanup after a test has run.
         """
         pass

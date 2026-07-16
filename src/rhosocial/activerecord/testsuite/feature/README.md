@@ -2,7 +2,30 @@
 
 ## Overview
 
-This directory contains the feature testing framework for the python-activerecord library. The framework uses a capability-based approach to coordinate feature support between tests and database backends.
+This directory contains the feature testing framework for the python-activerecord library. The
+framework uses a capability-based approach to coordinate feature support between tests and database
+backends.
+
+## Feature Categories
+
+Tests are organized into two-level categories for discoverability and maintainability:
+
+| Category | Description |
+|----------|-------------|
+| `basic/` | Core CRUD, field types, type adapters, validation, column mapping, connection/worker lifecycle, **composite PK CRUD**, **derived field** — [details](basic/README.md) |
+| `query/` | ActiveQuery — building, execution, aggregation, joins, CTEs, window functions, eager loading, cross-database, **composite PK queries/CTE/set operations** — [details](query/README.md) |
+| `relation/` | Relationship descriptors (`BelongsTo`/`HasOne`/`HasMany`), caching, eager loading, validation, modifiers, derived fields, edge cases — [details](relation/README.md) |
+| `events/` | Lifecycle hooks and event handler registration — [details](events/README.md) |
+| `mixins/` | Built-in mixins — timestamps, soft delete, optimistic locking — [details](mixins/README.md) |
+| `interface/` | Core interface utilities — `ThreadSafeDict` — [details](interface/README.md) |
+| `examples/` | Documentation examples for the capability-based framework — [details](examples/README.md) |
+| `backend/` | Backend feature declaration utilities (not tests) — [details](backend/README.md) |
+
+> **Note:** `composite_pk/` and `derived_field/` have been merged into `basic/` and `query/`.
+> Their `interfaces.py`, `conftest.py`, and `fixtures/` remain as shared providers.
+
+Each subdirectory under a category represents a focused topic area. Tests within a subdirectory
+are paired as sync/async variants following the testsuite's parity conventions.
 
 ## Capability-Based Approach
 

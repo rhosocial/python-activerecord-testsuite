@@ -8,13 +8,13 @@ on these methods for model setup, cleanup, and data loading.
 """
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Type
+from rhosocial.activerecord.model import ActiveRecord
 
-from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
-
-class IRelationProvider(ABC):
+class RelationProviderBase(ABC):
     """
-    The interface for the provider of the 'relation' feature tests.
+    The shared base for providers of the 'relation' feature tests, containing
+    common non-I/O helper methods used by both sync and async providers.
     """
 
     @abstractmethod
@@ -22,8 +22,17 @@ class IRelationProvider(ABC):
         """
         Should return a list of scenario names (e.g., ['memory', 'file'])
         that this backend supports for this test group.
+
+        Returns:
+            List[str]: A list of supported scenario names.
         """
         pass
+
+
+class IRelationSyncProvider(RelationProviderBase):
+    """
+    The sync interface for the provider of the 'relation' feature tests.
+    """
 
     @abstractmethod
     def setup_employee_department_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord]]:
@@ -69,27 +78,6 @@ class IRelationProvider(ABC):
         pass
 
     @abstractmethod
-    def setup_async_user_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
-        """
-        Setup async User model.
-        """
-        pass
-
-    @abstractmethod
-    def setup_async_post_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
-        """
-        Setup async Post model.
-        """
-        pass
-
-    @abstractmethod
-    def setup_async_comment_model(self, scenario_name: str) -> Type[AsyncActiveRecord]:
-        """
-        Setup async Comment model.
-        """
-        pass
-
-    @abstractmethod
     def setup_relation_boundary_fixtures(
         self,
         scenario_name: str,
@@ -99,19 +87,6 @@ class IRelationProvider(ABC):
 
         Returns:
             Tuple of (Owner, Profile, Post) model classes.
-        """
-        pass
-
-    @abstractmethod
-    def setup_async_relation_boundary_fixtures(
-        self,
-        scenario_name: str,
-    ) -> Tuple[Type[AsyncActiveRecord], Type[AsyncActiveRecord], Type[AsyncActiveRecord]]:
-        """
-        Setup async models for backend-agnostic relation boundary tests.
-
-        Returns:
-            Tuple of (AsyncOwner, AsyncProfile, AsyncPost) model classes.
         """
         pass
 
@@ -130,7 +105,77 @@ class IRelationProvider(ABC):
         pass
 
     @abstractmethod
-    async def load_async_relation_boundary_dataset(
+    def cleanup_after_test(self, scenario_name: str):
+        """
+        Should perform any necessary cleanup after a test has run, such as
+        deleting temporary database files.
+        """
+        pass
+
+
+class IRelationAsyncProvider(RelationProviderBase):
+    """
+    The async interface for the provider of the 'relation' feature tests.
+    """
+
+    @abstractmethod
+    async def setup_employee_department_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for the async employee-department models (AsyncEmployee, AsyncDepartment)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncEmployee, AsyncDepartment) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_author_book_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Should prepare the testing environment for the async author-book models (AsyncAuthor, AsyncBook, AsyncChapter, AsyncProfile)
+        under a given scenario and return a tuple of the configured model classes.
+
+        Returns:
+            Tuple of (AsyncAuthor, AsyncBook, AsyncChapter, AsyncProfile) model classes
+        """
+        pass
+
+    @abstractmethod
+    async def setup_user_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup async User model.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_post_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup async Post model.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_comment_model(self, scenario_name: str) -> Type[ActiveRecord]:
+        """
+        Setup async Comment model.
+        """
+        pass
+
+    @abstractmethod
+    async def setup_relation_boundary_fixtures(
+        self,
+        scenario_name: str,
+    ) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+        """
+        Setup async models for backend-agnostic relation boundary tests.
+
+        Returns:
+            Tuple of (AsyncOwner, AsyncProfile, AsyncPost) model classes.
+        """
+        pass
+
+    @abstractmethod
+    async def load_relation_boundary_dataset(
         self,
         scenario_name: str,
         dataset_name: str,
@@ -141,15 +186,8 @@ class IRelationProvider(ABC):
         pass
 
     @abstractmethod
-    def cleanup_after_test(self, scenario_name: str):
+    async def cleanup_after_test(self, scenario_name: str):
         """
-        Should perform any necessary cleanup after a test has run, such as
-        deleting temporary database files.
+        Should perform any necessary async cleanup after a test has run.
         """
         pass
-
-    async def cleanup_after_test_async(self, scenario_name: str):
-        """
-        Async cleanup hook for providers that manage async resources.
-        """
-        self.cleanup_after_test(scenario_name)

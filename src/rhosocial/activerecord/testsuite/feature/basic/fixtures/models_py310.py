@@ -11,7 +11,7 @@ Note: This file should only be imported and used in Python 3.10+ environments.
 import re
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Type, Literal, Any, Dict, List
+from typing import Optional, Type, Literal, Union, Any, Dict, List, Set
 import json
 
 from pydantic import EmailStr, Field, field_validator, model_validator
@@ -21,7 +21,7 @@ from rhosocial.activerecord.base.fields import UseAdapter, UseColumn
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.backend.errors import ValidationError
-from rhosocial.activerecord.field import TimestampMixin, UUIDMixin, IntegerPKMixin
+from rhosocial.activerecord.field import CompositePKMixin, TimestampMixin, UUIDMixin, IntegerPKMixin
 from typing import Annotated, ClassVar
 
 
@@ -162,6 +162,7 @@ class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     __table_name__ = "validated_field_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
 
     id: int | None = None
     username: str
@@ -693,3 +694,117 @@ class AsyncMixedAnnotationModel(AsyncActiveRecord):
 
     # 6. Field with a default value
     status: str = "active"
+
+# =============================================================================
+# Composite Primary Key Models
+# =============================================================================
+
+class OrderItem(CompositePKMixin, ActiveRecord):
+    """Composite PK (order_id, product_id), PK provided by application."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_id: int
+    product_id: int
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class AsyncOrderItem(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of OrderItem."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_id: int
+    product_id: int
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class StoreInventory(CompositePKMixin, ActiveRecord):
+    """Triple-column composite PK."""
+    __table_name__ = "store_inventory"
+    __primary_key__ = ("store_id", "product_id", "batch_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    store_id: int
+    product_id: int
+    batch_id: str
+    stock: int = 0
+
+
+class AsyncStoreInventory(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of StoreInventory."""
+    __table_name__ = "store_inventory"
+    __primary_key__ = ("store_id", "product_id", "batch_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    store_id: int
+    product_id: int
+    batch_id: str
+    stock: int = 0
+
+
+class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
+    """Single-column auto-increment PK -- backward compatibility control group."""
+    __table_name__ = "orders"
+    __primary_key__ = "id"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    total: Decimal = Decimal("0.00")
+
+
+class AsyncOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+    """Async variant of Order."""
+    __table_name__ = "orders"
+    __primary_key__ = "id"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Optional[int] = None
+    total: Decimal = Decimal("0.00")
+
+
+class MappedOrderItem(CompositePKMixin, ActiveRecord):
+    """Composite PK with UseColumn mapping -- Python field names differ from DB column names."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class AsyncMappedOrderItem(CompositePKMixin, AsyncActiveRecord):
+    """Async variant of MappedOrderItem."""
+    __table_name__ = "order_items"
+    __primary_key__ = ("order_id", "product_id")
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    order_ref: Annotated[int, UseColumn("order_id")]
+    product_ref: Annotated[int, UseColumn("product_id")]
+    quantity: int = 1
+    unit_price: Decimal = Decimal("0.00")
+
+
+class BulkUser(IntegerPKMixin, ActiveRecord):
+    __table_name__ = "bulk_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: int | None = None
+    name: str
+    age: int = 0
+    email: str = ""
+
+
+class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
+    __table_name__ = "bulk_users"
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: int | None = None
+    name: str
+    age: int = 0
+    email: str = ""

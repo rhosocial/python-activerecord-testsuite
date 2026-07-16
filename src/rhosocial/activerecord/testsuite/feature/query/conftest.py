@@ -25,14 +25,32 @@ import pytest
 from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
 
 
-def get_scenarios():
+PROVIDER_KEY_SYNC = "feature.query.IQuerySyncProvider"
+PROVIDER_KEY_ASYNC = "feature.query.IQueryAsyncProvider"
+
+
+def get_scenarios_sync():
     """
     A helper function that runs during pytest's collection phase to discover
     all available test scenarios from the backend's registered provider.
     """
     # Dynamically get the registry and the provider for this test group.
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
+    if not provider_class:
+        return []
+    # Instantiate the provider and get the list of scenario names.
+    return provider_class().get_test_scenarios()
+
+
+def get_scenarios_async():
+    """
+    A helper function that runs during pytest's collection phase to discover
+    all available test scenarios from the backend's registered provider.
+    """
+    # Dynamically get the registry and the provider for this test group.
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     if not provider_class:
         return []
     # Instantiate the provider and get the list of scenario names.
@@ -40,14 +58,16 @@ def get_scenarios():
 
 
 # Discover the scenarios at module import time.
-scenarios = get_scenarios()
+scenarios_sync = get_scenarios_sync()
+scenarios_async = get_scenarios_async()
 
 # If no scenarios are found, create a single dummy parameter that will cause
 # the tests to be skipped with a helpful message.
-SCENARIO_PARAMS = scenarios if scenarios else [pytest.param("default", marks=pytest.mark.skip(reason="No testsuite scenarios found"))]
+SCENARIO_PARAMS_SYNC = scenarios_sync if scenarios_sync else [pytest.param("default", marks=pytest.mark.skip(reason="No testsuite scenarios found"))]
+SCENARIO_PARAMS_ASYNC = scenarios_async if scenarios_async else [pytest.param("default", marks=pytest.mark.skip(reason="No testsuite scenarios found"))]
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def order_fixtures(request):
     """
     A pytest fixture that provides configured (User, Order, OrderItem) model classes
@@ -56,7 +76,7 @@ def order_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
@@ -68,7 +88,7 @@ def order_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def blog_fixtures(request):
     """
     A pytest fixture that provides configured (User, Post, Comment) model classes
@@ -77,7 +97,7 @@ def blog_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
@@ -89,7 +109,7 @@ def blog_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def json_user_fixture(request):
     """
     A pytest fixture that provides configured JsonUser model class
@@ -98,7 +118,7 @@ def json_user_fixture(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get JsonUser model for the test via fixture group
@@ -110,7 +130,7 @@ def json_user_fixture(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def tree_fixtures(request):
     """
     A pytest fixture that provides configured Node model class
@@ -119,7 +139,7 @@ def tree_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get Node model for the test via fixture group
@@ -136,7 +156,7 @@ def tree_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def combined_fixtures(request):
     """
     A pytest fixture that provides configured (User, Order, OrderItem, Post, Comment) model classes
@@ -145,7 +165,7 @@ def combined_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
@@ -157,7 +177,7 @@ def combined_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def extended_order_fixtures(request):
     """
     A pytest fixture that provides configured extended (User, ExtendedOrder, ExtendedOrderItem) model classes
@@ -166,7 +186,7 @@ def extended_order_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
@@ -178,14 +198,14 @@ def extended_order_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def annotated_query_fixtures(request):
     """
     A pytest fixture that provides the configured SearchableItem model class.
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Get the SearchableItem model for the test via fixture group
@@ -197,7 +217,7 @@ def annotated_query_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def mapped_models_fixtures(request):
     """
     A pytest fixture that provides configured `MappedUser`, `MappedPost`,
@@ -205,7 +225,7 @@ def mapped_models_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     # Ask the provider to set up the database and configure the Mapped models for this scenario.
@@ -328,7 +348,7 @@ from rhosocial.activerecord.testsuite.feature.query.fixtures.async_cte_models im
 from rhosocial.activerecord.testsuite.feature.query.fixtures.async_extended_models import AsyncUser as AsyncExtendedUser, AsyncExtendedOrder, AsyncExtendedOrderItem
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_order_fixtures(request):
     """
     A pytest fixture that provides async-configured (AsyncUser, AsyncOrder, AsyncOrderItem) model classes
@@ -337,11 +357,11 @@ async def async_order_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
-    AsyncUser, AsyncOrder, AsyncOrderItem = await provider.setup_async_order_fixtures(scenario)
+    AsyncUser, AsyncOrder, AsyncOrderItem = await provider.setup_order_fixtures(scenario)
 
     yield AsyncUser, AsyncOrder, AsyncOrderItem
 
@@ -351,10 +371,10 @@ async def async_order_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_blog_fixtures(request):
     """
     A pytest fixture that provides async-configured (AsyncUser, AsyncPost, AsyncComment) model classes
@@ -363,11 +383,11 @@ async def async_blog_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
-    AsyncUser, AsyncPost, AsyncComment = await provider.setup_async_blog_fixtures(scenario)
+    AsyncUser, AsyncPost, AsyncComment = await provider.setup_blog_fixtures(scenario)
 
     yield AsyncUser, AsyncPost, AsyncComment
 
@@ -377,10 +397,10 @@ async def async_blog_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_json_user_fixture(request):
     """
     A pytest fixture that provides async-configured AsyncJsonUser model class
@@ -389,11 +409,11 @@ async def async_json_user_fixture(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get AsyncJsonUser model for the test via fixture group
-    (AsyncJsonUser,) = await provider.setup_async_json_user_fixtures(scenario)
+    (AsyncJsonUser,) = await provider.setup_json_user_fixtures(scenario)
 
     yield AsyncJsonUser
 
@@ -402,10 +422,10 @@ async def async_json_user_fixture(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_tree_fixtures(request):
     """
     A pytest fixture that provides async-configured AsyncNode model class
@@ -414,11 +434,11 @@ async def async_tree_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get AsyncNode model for the test via fixture group
-    result = await provider.setup_async_tree_fixtures(scenario)
+    result = await provider.setup_tree_fixtures(scenario)
 
     # Ensure we return a tuple for consistency with other fixtures
     if isinstance(result, tuple):
@@ -432,10 +452,10 @@ async def async_tree_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_combined_fixtures(request):
     """
     A pytest fixture that provides async-configured (AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment) model classes
@@ -444,11 +464,11 @@ async def async_combined_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
-    AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment = await provider.setup_async_combined_fixtures(scenario)
+    AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment = await provider.setup_combined_fixtures(scenario)
 
     yield AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment
 
@@ -458,10 +478,10 @@ async def async_combined_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_extended_order_fixtures(request):
     """
     A pytest fixture that provides async-configured extended (AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem) model classes
@@ -470,11 +490,11 @@ async def async_extended_order_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get all required models for the test via fixture group
-    AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem = await provider.setup_async_extended_order_fixtures(scenario)
+    AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem = await provider.setup_extended_order_fixtures(scenario)
 
     yield AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem
 
@@ -484,21 +504,21 @@ async def async_extended_order_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_annotated_query_fixtures(request):
     """
     A pytest fixture that provides the async-configured AsyncSearchableItem model class.
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Get the AsyncSearchableItem model for the test via fixture group
-    result = await provider.setup_async_annotated_query_fixtures(scenario)
+    result = await provider.setup_annotated_query_fixtures(scenario)
 
     yield result
 
@@ -507,10 +527,10 @@ async def async_annotated_query_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_mapped_models_fixtures(request):
     """
     A pytest fixture that provides async-configured `AsyncMappedUser`, `AsyncMappedPost`,
@@ -518,11 +538,11 @@ async def async_mapped_models_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
     # Ask the provider to set up the database and configure the AsyncMapped models for this scenario.
-    user_model, post_model, comment_model = await provider.setup_async_mapped_models(scenario)
+    user_model, post_model, comment_model = await provider.setup_mapped_models(scenario)
 
     # Yield the configured model classes as a tuple.
     yield user_model, post_model, comment_model
@@ -533,10 +553,10 @@ async def async_mapped_models_fixtures(request):
     await backend_to_close.disconnect()
 
     # Cleanup after test
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
 
 # --- Profile fixtures ---
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
 def profile_fixtures(request):
     """
     A pytest fixture that provides configured (User, Profile) model classes
@@ -544,7 +564,7 @@ def profile_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
     provider = provider_class()
 
     User, Profile = provider.setup_profile_fixtures(scenario)
@@ -554,7 +574,7 @@ def profile_fixtures(request):
     provider.cleanup_after_test(scenario)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
 async def async_profile_fixtures(request):
     """
     A pytest fixture that provides async-configured (AsyncUser, AsyncProfile) model classes
@@ -562,14 +582,51 @@ async def async_profile_fixtures(request):
     """
     scenario = request.param
     provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider("feature.query.IQueryProvider")
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
     provider = provider_class()
 
-    AsyncUser, AsyncProfile = await provider.setup_async_profile_fixtures(scenario)
+    AsyncUser, AsyncProfile = await provider.setup_profile_fixtures(scenario)
 
     yield AsyncUser, AsyncProfile
 
     backend_to_close = AsyncUser.__backend__
     await backend_to_close.disconnect()
 
-    await provider.cleanup_after_test_async(scenario)
+    await provider.cleanup_after_test(scenario)
+
+
+# --- Composite PK Fixtures ---
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
+def order_item_class(request):
+    """Provides a configured composite-PK OrderItem model class for each scenario."""
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
+    if not provider_class:
+        pytest.skip("No sync provider registered")
+    provider = provider_class()
+    try:
+        model = provider.setup_order_item_model(scenario)
+    except NotImplementedError:
+        pytest.skip("Provider does not support composite PK query operations")
+        return
+    yield model
+    provider.cleanup_after_test(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_order_item_class(request):
+    scenario = request.param
+    provider_registry = get_provider_registry()
+    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
+    if not provider_class:
+        pytest.skip("No async provider registered")
+    provider = provider_class()
+    try:
+        model = await provider.setup_order_item_model(scenario)
+    except NotImplementedError:
+        pytest.skip("Provider does not support composite PK query operations")
+        return
+    yield model
+    await provider.cleanup_after_test(scenario)
