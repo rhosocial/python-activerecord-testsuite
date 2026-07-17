@@ -365,12 +365,7 @@ async def async_order_fixtures(request):
 
     yield AsyncUser, AsyncOrder, AsyncOrderItem
 
-    # Disconnect the backend to allow the event loop to close.
-    # The backend instance is shared across all models in this fixture group.
-    backend_to_close = AsyncUser.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -391,12 +386,7 @@ async def async_blog_fixtures(request):
 
     yield AsyncUser, AsyncPost, AsyncComment
 
-    # Disconnect the backend to allow the event loop to close.
-    # The backend instance is shared across all models in this fixture group.
-    backend_to_close = AsyncUser.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -417,11 +407,7 @@ async def async_json_user_fixture(request):
 
     yield AsyncJsonUser
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = AsyncJsonUser.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -447,11 +433,7 @@ async def async_tree_fixtures(request):
         # If only a single model is returned, wrap it in a tuple
         yield (result,)
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = result.__backend__ if hasattr(result, '__backend__') else result[0].__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -472,12 +454,7 @@ async def async_combined_fixtures(request):
 
     yield AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, AsyncComment
 
-    # Disconnect the backend to allow the event loop to close.
-    # The backend instance is shared across all models in this fixture group.
-    backend_to_close = AsyncUser.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -498,12 +475,7 @@ async def async_extended_order_fixtures(request):
 
     yield AsyncUser, AsyncExtendedOrder, AsyncExtendedOrderItem
 
-    # Disconnect the backend to allow the event loop to close.
-    # The backend instance is shared across all models in this fixture group.
-    backend_to_close = AsyncUser.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -522,11 +494,7 @@ async def async_annotated_query_fixtures(request):
 
     yield result
 
-    # Disconnect the backend to allow the event loop to close.
-    backend_to_close = result.__backend__ if hasattr(result, '__backend__') else result[0].__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 
@@ -547,12 +515,7 @@ async def async_mapped_models_fixtures(request):
     # Yield the configured model classes as a tuple.
     yield user_model, post_model, comment_model
 
-    # After the test function finishes, perform async cleanup.
-    # Determine which model has the backend to disconnect
-    backend_to_close = user_model.__backend__
-    await backend_to_close.disconnect()
-
-    # Cleanup after test
+    # Cleanup after test (provider handles both DROP and disconnect)
     await provider.cleanup_after_test(scenario)
 
 # --- Profile fixtures ---
@@ -588,9 +551,6 @@ async def async_profile_fixtures(request):
     AsyncUser, AsyncProfile = await provider.setup_profile_fixtures(scenario)
 
     yield AsyncUser, AsyncProfile
-
-    backend_to_close = AsyncUser.__backend__
-    await backend_to_close.disconnect()
 
     await provider.cleanup_after_test(scenario)
 
