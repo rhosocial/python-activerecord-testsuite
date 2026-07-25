@@ -42,6 +42,10 @@ from .common import (
     requires_array_operations,
     requires_returning_clause,
     requires_set_operations,
+
+    # Datetime comparison helpers
+    assert_datetime_equal,
+    assert_datetime_close,
 )
 
 from .fixture_selector import select_fixture
@@ -79,6 +83,10 @@ __all__ = [
     'requires_array_operations',
     'requires_returning_clause',
     'requires_set_operations',
+
+    # Datetime comparison helpers
+    'assert_datetime_equal',
+    'assert_datetime_close',
 
     # Fixture selection
     'select_fixture',

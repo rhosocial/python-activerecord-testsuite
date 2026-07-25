@@ -13,6 +13,7 @@ import pydantic
 import pytest
 
 from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
+from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
 class TestAsyncCRUD:
     """Asynchronous CRUD test class that wraps all the test functions."""
 
@@ -97,7 +98,7 @@ class TestAsyncCRUD:
         assert user.username == 'robert_smith'
         assert user.age == 41
         assert user.email == 'bob@smith.com'  # field not modified should remain unchanged
-        assert user.created_at == original_created_at
+        assert_datetime_equal(user.created_at, original_created_at)
 
     async def test_update_with_invalid_data(self, async_user_class):
         """Test updating a user record with invalid data"""

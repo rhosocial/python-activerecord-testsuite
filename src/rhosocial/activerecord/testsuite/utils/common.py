@@ -6,9 +6,13 @@ This module provides:
 1. Protocol checking decorators for marking test requirements
 2. Runtime protocol validation functions
 3. Convenience decorators for common protocol requirements
+4. Datetime comparison helpers tolerant of database-side precision truncation
 
 All tests across the entire testsuite should import protocol utilities from this module.
 """
+from datetime import datetime, timedelta
+from typing import Optional
+
 import pytest
 
 
@@ -369,4 +373,87 @@ __all__ = [
     'requires_array_operations',
     'requires_returning_clause',
     'requires_set_operations',
+    # Datetime comparison helpers
+    'assert_datetime_equal',
+    'assert_datetime_close',
 ]
+
+
+# ============================================================================
+# Datetime comparison helpers
+# ============================================================================
+#
+# Some database backends store timestamps with less microsecond precision than
+# Python's `datetime` (which always carries 6-digit microseconds). For example
+# Firebird's `TIMESTAMP` defaults to 4-digit precision (10ths of milliseconds),
+# Oracle's `DATE` carries no fractional seconds, and SQL Server's `datetime`
+# rounds to increments of 1/300 second. This causes round-trip equality
+# checks (insert a datetime, reload it, compare) to fail on those backends.
+#
+# The helpers below treat two datetimes as "equal for testing purposes" when
+# either they match exactly OR they differ only by a small amount attributable
+# to database-side truncation/rounding. Use them in tests wherever an original
+# Python-side datetime is later compared against the same value after a
+# database round-trip.
+
+#: Default tolerance in microseconds for treating two datetimes as equal
+#: after a round-trip through a database. The chosen value (10ms = 10000us)
+#: is generous: it accommodates Firebird's 4-digit precision (~100us
+#: granularity) and SQL Server's 1/300s rounding (~3.3ms granularity), while
+#: being small enough to surface genuine off-by-large-interval bugs.
+DEFAULT_DATETIME_TOLERANCE = timedelta(microseconds=10_000)
+
+
+def _normalize_for_compare(value: datetime) -> datetime:
+    """Strip tzinfo so timezone-aware and tz-naive datetimes can be compared."""
+    if value.tzinfo is not None:
+        return value.replace(tzinfo=None)
+    return value
+
+
+def assert_datetime_equal(
+    actual: Optional[datetime],
+    expected: Optional[datetime],
+    *,
+    tolerance: timedelta = DEFAULT_DATETIME_TOLERANCE,
+) -> None:
+    """Assert two datetimes are equal within a tolerance.
+
+    This is the timezone- and precision-tolerant replacement for
+    ``assert actual == expected`` when comparing datetimes that have passed
+    through a database (which may truncate fractional seconds).
+
+    Args:
+        actual: The datetime read back from the database (or reloaded model).
+        expected: The original Python-side datetime to compare against.
+        tolerance: Maximum acceptable absolute difference. Defaults to
+            ``DEFAULT_DATETIME_TOLERANCE`` (10 ms). Use ``timedelta(0)``
+            for strict equality when precision must match exactly.
+
+    Raises:
+        AssertionError: If either value is None, or if the absolute
+            difference exceeds ``tolerance``.
+    """
+    assert actual is not None, "actual datetime is None"
+    assert expected is not None, "expected datetime is None"
+
+    a = _normalize_for_compare(actual)
+    e = _normalize_for_compare(expected)
+    diff = a - e
+    if diff < timedelta(0):
+        diff = -diff
+    assert diff <= tolerance, (
+        f"datetimes differ by {diff.total_seconds() * 1000:.3f} ms "
+        f"(tolerance {tolerance.total_seconds() * 1000:.3f} ms): "
+        f"actual={actual!r}, expected={expected!r}"
+    )
+
+
+def assert_datetime_close(
+    actual: Optional[datetime],
+    reference: Optional[datetime],
+    *,
+    tolerance: timedelta = DEFAULT_DATETIME_TOLERANCE,
+) -> None:
+    """Alias for :func:`assert_datetime_equal`."""
+    assert_datetime_equal(actual, reference, tolerance=tolerance)
