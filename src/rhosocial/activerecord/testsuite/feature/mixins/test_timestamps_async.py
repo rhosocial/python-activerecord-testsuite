@@ -4,7 +4,9 @@ Test timestamp functionality
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
 
 
 async def test_timestamps(async_timestamped_post_model):
@@ -29,7 +31,7 @@ async def test_timestamps(async_timestamped_post_model):
     await post.save()
 
     # Verify timestamp updates
-    assert post.created_at == original_created_at  # Creation time unchanged
+    assert_datetime_equal(post.created_at, original_created_at)  # Creation time unchanged
     assert post.updated_at > original_updated_at  # Update time changed
 
 
@@ -47,9 +49,12 @@ async def test_timestamps_set_both_on_insert(async_timestamped_post_model):
     # Verify both timestamps are set and equal for new records
     assert post.created_at is not None
     assert post.updated_at is not None
-    # Both timestamps should be exactly the same on INSERT
-    assert post.created_at == post.updated_at, (
-        "created_at and updated_at should be equal on INSERT"
+    # Both timestamps should be exactly the same on INSERT (strict tolerance:
+    # these values come from the same Python datetime assignment, so no
+    # database round-trip truncation can occur here).
+    assert_datetime_equal(
+        post.created_at, post.updated_at,
+        tolerance=timedelta(seconds=0),
     )
 
 
@@ -67,17 +72,22 @@ async def test_timestamps_only_updated_at_changes_on_update(async_timestamped_po
     original_created_at = post.created_at
     original_updated_at = post.updated_at
 
-    # Verify initial state
-    assert original_created_at == original_updated_at
+    # Verify initial state (strict equality: both come from the same INSERT
+    # assignment, no database round-trip).
+    assert_datetime_equal(
+        original_created_at, original_updated_at,
+        tolerance=timedelta(seconds=0),
+    )
 
     # Wait a moment then update
     await asyncio.sleep(0.1)
     post.title = "Updated Title"
     await post.save()
 
-    # created_at should remain unchanged
-    assert post.created_at == original_created_at, (
-        "created_at should not change on UPDATE"
+    # created_at should remain unchanged (strict equality for in-memory value).
+    assert_datetime_equal(
+        post.created_at, original_created_at,
+        tolerance=timedelta(seconds=0),
     )
 
     # updated_at should be different

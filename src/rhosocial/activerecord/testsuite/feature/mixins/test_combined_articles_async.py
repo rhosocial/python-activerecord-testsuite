@@ -7,6 +7,7 @@ import asyncio
 import pytest
 
 from rhosocial.activerecord.backend.errors import DatabaseError
+from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
 
 
 async def test_combined_update(async_combined_article_model):
@@ -23,7 +24,7 @@ async def test_combined_update(async_combined_article_model):
 
     # Verify updated state
     assert article.version == 2  # Version number increments
-    assert article.created_at == original_updated_at  # Creation time remains unchanged
+    assert_datetime_equal(article.created_at, original_updated_at)  # Creation time remains unchanged
     assert article.updated_at > original_updated_at  # Update time changes
 
 

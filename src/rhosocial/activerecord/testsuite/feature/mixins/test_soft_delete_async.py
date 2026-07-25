@@ -5,6 +5,8 @@ Test soft delete functionality
 
 from datetime import datetime, timezone
 
+from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
+
 
 async def test_soft_delete_basic(async_task_model):
     """Test basic soft delete functionality"""
@@ -35,7 +37,7 @@ async def test_soft_delete_basic(async_task_model):
     # Verify database record consistency
     db_task = await async_task_model.query_with_deleted().where(f"{async_task_model.primary_key()} = ?", (t.id,)).one()
     assert db_task is not None
-    assert db_task.deleted_at == t.deleted_at
+    assert_datetime_equal(db_task.deleted_at, t.deleted_at)
 
 
 async def test_soft_delete_query(async_task_model):
