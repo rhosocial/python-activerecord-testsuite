@@ -121,5 +121,5 @@ def check_ddl_protocol_requirements(request):
         method = getattr(dialect, method_name, None)
         if callable(method) and method() is not True:
             pytest.skip(
-                f"Skipping test - backend dialect does not support {method_name.removeprefix('supports_')}"
+                f"Skipping test - backend dialect does not support {method_name.replace('supports_', '')}"
             )
