@@ -11,7 +11,7 @@ from rhosocial.activerecord.backend.errors import TransactionError
 
 
 @pytest.fixture
-async def txn_backend(async_pool_and_model):
+async def async_txn_backend(async_pool_and_model):
     """Async fixture: open a transaction and yield the backend."""
     pool, _model = async_pool_and_model
     cm = pool.transaction()
@@ -26,21 +26,21 @@ async def txn_backend(async_pool_and_model):
 
 
 class TestAsyncSavepointCreate:
-    async def test_savepoint_autoname_is_returned_and_prefixed(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_savepoint_autoname_is_returned_and_prefixed(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         name = await mgr.savepoint()
         assert isinstance(name, str)
         assert name
         assert name in mgr._active_savepoints
 
-    async def test_savepoint_explicit_name_is_honored(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_savepoint_explicit_name_is_honored(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         name = await mgr.savepoint(name="cust_sp_a")
         assert name == "cust_sp_a"
         assert "cust_sp_a" in mgr._active_savepoints
 
-    async def test_savepoint_increments_active_savepoints(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_savepoint_increments_active_savepoints(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         before = len(mgr._active_savepoints)
         await mgr.savepoint(name="sp_first")
         await mgr.savepoint(name="sp_second")
@@ -48,22 +48,22 @@ class TestAsyncSavepointCreate:
         assert mgr._active_savepoints[-1] == "sp_second"
         assert mgr._active_savepoints[-2] == "sp_first"
 
-    async def test_savepoint_seq_autoname_do_not_collide(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_savepoint_seq_autoname_do_not_collide(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         names = {await mgr.savepoint() for _ in range(3)}
         assert len(names) == 3
 
 
 class TestAsyncRelease:
-    async def test_release_removes_named_savepoint(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_release_removes_named_savepoint(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         n = await mgr.savepoint(name="rel_target")
         assert n in mgr._active_savepoints
         await mgr.release(n)
         assert n not in mgr._active_savepoints
 
-    async def test_release_does_not_touch_other_savepoints(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_release_does_not_touch_other_savepoints(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         a = await mgr.savepoint(name="keep_a")
         b = await mgr.savepoint(name="rel_b")
         c = await mgr.savepoint(name="keep_c")
@@ -72,8 +72,8 @@ class TestAsyncRelease:
         assert c in mgr._active_savepoints
         assert b not in mgr._active_savepoints
 
-    async def test_release_unknown_name_raises(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_release_unknown_name_raises(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         await mgr.savepoint(name="real_one")
         with pytest.raises(TransactionError):
             await mgr.release("never_created")
@@ -88,8 +88,8 @@ class TestAsyncRelease:
 
 
 class TestAsyncRollbackTo:
-    async def test_rollback_to_truncates_newer_savepoints(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_rollback_to_truncates_newer_savepoints(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         await mgr.savepoint(name="lvl1")
         await mgr.savepoint(name="lvl2")
         await mgr.savepoint(name="lvl3")
@@ -101,22 +101,22 @@ class TestAsyncRollbackTo:
         assert "lvl4" not in mgr._active_savepoints
         assert mgr._active_savepoints == ["lvl1", "lvl2"]
 
-    async def test_rollback_to_oldest_keeps_all_older(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_rollback_to_oldest_keeps_all_older(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         await mgr.savepoint(name="a")
         await mgr.savepoint(name="b")
         await mgr.savepoint(name="c")
         await mgr.rollback_to("a")
         assert mgr._active_savepoints == ["a"]
 
-    async def test_rollback_to_same_savepoint_keeps_it(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_rollback_to_same_savepoint_keeps_it(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         top = await mgr.savepoint(name="top")
         await mgr.rollback_to(top)
         assert top in mgr._active_savepoints
 
-    async def test_rollback_to_unknown_raises(self, txn_backend):
-        mgr = txn_backend.transaction_manager
+    async def test_rollback_to_unknown_raises(self, async_txn_backend):
+        mgr = async_txn_backend.transaction_manager
         await mgr.savepoint(name="actual")
         with pytest.raises(TransactionError):
             await mgr.rollback_to("phantom")
