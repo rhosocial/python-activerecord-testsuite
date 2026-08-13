@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_derived_field.py
+# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_relation_derived_field.py
 """
 Tests for derived fields in relation models.
 """

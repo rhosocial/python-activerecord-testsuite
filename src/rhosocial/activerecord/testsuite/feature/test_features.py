@@ -27,13 +27,13 @@ class TestRequiresFunctionsDecorator:
     """Test the requires_functions decorator functionality."""
 
     @requires_functions('json_array_insert', 'jsonb_array_insert')
-    def test_requires_functions_single(self, fixtures):
+    def test_requires_functions_single(self):
         """Test requires_functions with single function."""
         # This test will be skipped if json_array_insert is not supported
         assert True
 
     @requires_functions('json_array_insert')
-    def test_requires_functions_multiple(self, fixtures):
+    def test_requires_functions_multiple(self):
         """Test requires_functions with multiple functions."""
         # This test will be skipped if any required function is not supported
         assert True
@@ -43,7 +43,7 @@ class TestConvenienceDecorators:
     """Test convenience decorators."""
 
     @requires_window_functions()
-    def test_requires_window_functions(self, fixtures):
+    def test_requires_window_functions(self):
         """Test requires_window_functions convenience decorator."""
         assert True
 

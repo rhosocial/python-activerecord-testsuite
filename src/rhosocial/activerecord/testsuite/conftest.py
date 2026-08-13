@@ -42,6 +42,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark_mixin: Mark mixin benchmark tests")
     config.addinivalue_line("markers", "benchmark_fastapi: Mark FastAPI benchmark tests")
 
+@pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
     """
     Hook to automatically skip tests that require unsupported protocols or functions.
@@ -50,6 +51,10 @@ def pytest_collection_modifyitems(config, items):
     through the provider interface since providers set up backends per test scenario.
     Protocol and function checking happens during test execution when provider-configured
     models are available.
+
+    ``trylast=True`` guarantees this no-op hook never shadows backend-owned
+    ``pytest_collection_modifyitems`` hooks (e.g. Firebird's xfail registration),
+    which are registered later and must take precedence.
     """
     # For now, we just ensure tests with requires_protocol/requires_functions markers exist properly
     # Actual capability checking occurs at test runtime via fixtures and decorators

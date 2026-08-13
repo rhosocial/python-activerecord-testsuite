@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_derived_field_json.py
+# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_relation_derived_field_json.py
 """
 Tests for JSON derived fields in relation models.
 

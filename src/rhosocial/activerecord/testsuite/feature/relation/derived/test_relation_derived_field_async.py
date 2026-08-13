@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_derived_field_async.py
+# src/rhosocial/activerecord/testsuite/feature/relation/derived/test_relation_derived_field_async.py
 """
 Async tests for derived fields in relation models.
 """
