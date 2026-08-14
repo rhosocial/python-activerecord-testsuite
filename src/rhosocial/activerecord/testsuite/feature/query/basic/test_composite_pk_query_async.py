@@ -1,6 +1,8 @@
 # src/rhosocial/activerecord/testsuite/feature/query/basic/test_composite_pk_query_async.py
 from decimal import Decimal
 
+import pytest
+
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression import ComparisonPredicate, Literal
 class TestAsyncActiveQueryCompositePK:
@@ -64,6 +66,8 @@ class TestAsyncActiveQueryCompositePK:
         assert count == 2
 
     async def test_explain(self, async_order_item_class):
+        if not async_order_item_class.backend().dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
         items = [
             async_order_item_class(order_id=1, product_id=101, quantity=2, unit_price=Decimal("10.00")),
         ]

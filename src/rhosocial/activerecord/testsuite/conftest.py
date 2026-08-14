@@ -5,6 +5,7 @@ Its purpose is to define global configurations and hooks for pytest, such as
 registering custom markers that can be used to categorize and filter tests.
 """
 import os
+import sys
 import pytest
 import warnings
 
@@ -20,12 +21,41 @@ os.environ.setdefault(
     'providers.registry:provider_registry'
 )
 
+# Early-parse --scenarios from sys.argv and set TESTSUITE_ACTIVE_SCENARIOS env
+# var. This must happen before provider scenario modules are imported (they
+# filter their SCENARIO_MAP at import time).
+_argv_scenarios = None
+for _i, _arg in enumerate(sys.argv):
+    if _arg.startswith("--scenarios="):
+        _argv_scenarios = _arg.split("=", 1)[1]
+    elif _arg == "--scenarios" and _i + 1 < len(sys.argv):
+        _argv_scenarios = sys.argv[_i + 1]
+
+if _argv_scenarios:
+    os.environ["TESTSUITE_ACTIVE_SCENARIOS"] = _argv_scenarios
+
+
+def pytest_addoption(parser):
+    """Register the generic --scenarios option used by all backends."""
+    parser.addoption(
+        "--scenarios",
+        action="store",
+        default=None,
+        help="Comma-separated list of scenario names to run "
+             "(e.g., --scenarios=firebird_5,mysql_80). Backend scenario "
+             "modules filter their registered scenarios accordingly.",
+    )
+
 
 def pytest_configure(config):
     """
     A pytest hook that runs at the beginning of a test session to configure
     the test environment.
     """
+    scenarios_opt = config.getoption("--scenarios", default=None)
+    if scenarios_opt:
+        os.environ["TESTSUITE_ACTIVE_SCENARIOS"] = scenarios_opt
+
     # Register custom markers to allow for selective test runs.
     # For example, `pytest -m feature` will run only the core feature tests.
     config.addinivalue_line("markers", "requires_protocol: Mark tests that require specific database protocol support")

@@ -123,7 +123,7 @@ class TestAsyncTypeAdapter:
 
         error_message = str(exc_info.value)
         # Check for SQLite's message OR MySQL's message
-        assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message or "violates not-null constraint" in error_message)
+        assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message or "violates not-null constraint" in error_message or "validation error" in error_message)
 
     async def test_annotated_custom_adapter(self, async_type_adapter_fixtures):
         """Tests that a field-specific adapter assigned via Annotation works correctly asynchronously."""

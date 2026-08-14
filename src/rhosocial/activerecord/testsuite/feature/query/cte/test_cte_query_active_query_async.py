@@ -233,7 +233,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent CTE elements
         assert 'WITH' in sql.upper()
-        assert 'basic_orders_cte' in sql
+        assert 'basic_orders_cte' in sql.lower()
         assert 'SELECT' in sql.upper()
 
         # Use the new API: specify which CTE to use and apply basic query conditions
@@ -280,7 +280,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent query elements
         assert 'WITH' in sql.upper()
-        assert 'range_orders_cte' in sql
+        assert 'range_orders_cte' in sql.lower()
 
         # Use the new API: specify which CTE to use and apply range conditions
         results = await sql_query.aggregate()
@@ -321,7 +321,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent CTE elements
         assert 'WITH' in sql.upper()
-        assert 'joined_orders_cte' in sql
+        assert 'joined_orders_cte' in sql.lower()
 
         # Use the new API: specify which CTE to use and apply additional conditions
         results = await sql_query.aggregate()
