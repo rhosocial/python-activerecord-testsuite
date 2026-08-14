@@ -342,7 +342,7 @@ class TestAsyncActiveQueryBasic:
         query.select(AsyncOrder.c.id)
         query.select(AsyncOrder.c.order_number, append=True)
         sql, params = query.to_sql()
-        assert 'order_number' in sql
+        assert 'order_number' in sql.lower()
 
     async def test_order_by_extend_existing(self, async_order_fixtures):
         """Test calling order_by multiple times extends existing clause."""

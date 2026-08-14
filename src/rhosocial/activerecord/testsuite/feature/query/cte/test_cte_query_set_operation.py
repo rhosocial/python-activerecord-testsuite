@@ -430,7 +430,7 @@ class TestCTEQueryExtendedFunctionalitySetOperations:
         # Assert the generated SQL contains dialect-independent query elements
         assert 'WITH' in sql.upper()
         assert 'UNION' in sql.upper()
-        assert 'union_orders_cte' in sql
+        assert 'union_orders_cte' in sql.lower()
 
         # Use the new API: specify which CTE to use and apply extended query conditions
         results = sql_query.aggregate()

@@ -257,7 +257,7 @@ class TestCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent CTE elements
         assert 'WITH' in sql.upper()
-        assert 'basic_orders_cte' in sql
+        assert 'basic_orders_cte' in sql.lower()
         assert 'SELECT' in sql.upper()
 
         # Execute the query and verify results
@@ -304,7 +304,7 @@ class TestCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent query elements
         assert 'WITH' in sql.upper()
-        assert 'range_orders_cte' in sql
+        assert 'range_orders_cte' in sql.lower()
 
         # Use the new API: specify which CTE to use and apply range conditions
         results = sql_query.aggregate()
@@ -345,7 +345,7 @@ class TestCTEQueryExtendedFunctionality:
 
         # Assert the generated SQL contains dialect-independent CTE elements
         assert 'WITH' in sql.upper()
-        assert 'joined_orders_cte' in sql
+        assert 'joined_orders_cte' in sql.lower()
 
         # Use the new API: specify which CTE to use and apply additional conditions
         results = sql_query.aggregate()

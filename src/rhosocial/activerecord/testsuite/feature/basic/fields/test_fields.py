@@ -95,6 +95,10 @@ class TestSyncFields:
         """Test datetime field processing"""
         from datetime import timedelta
         test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
+        if not type_test_model.backend().dialect.supports_microsecond_timestamp():
+            # Backends such as Firebird store TIMESTAMP with 1/10000 s
+            # precision; the value round-trips with truncated microseconds.
+            test_datetime = test_datetime.replace(microsecond=(test_datetime.microsecond // 10000) * 10000)
         model = type_test_model(datetime_field=test_datetime)
         model.save()
 
@@ -102,7 +106,7 @@ class TestSyncFields:
         assert saved_model.datetime_field == test_datetime
         assert isinstance(saved_model.datetime_field, datetime)
         utc_plus_8 = timezone(timedelta(hours=8))
-        assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == '2024-01-01T20:30:45.123456+08:00'
+        assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == test_datetime.astimezone(utc_plus_8).isoformat()
 
     @requires_json_operations()
     def test_json_field(self, type_test_model):

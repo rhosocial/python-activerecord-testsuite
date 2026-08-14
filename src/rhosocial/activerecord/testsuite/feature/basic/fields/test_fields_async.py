@@ -94,6 +94,8 @@ class TestAsyncFields:
         """Test datetime field processing"""
         from datetime import timedelta
         test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
+        if not async_type_test_model.backend().dialect.supports_microsecond_timestamp():
+            test_datetime = test_datetime.replace(microsecond=(test_datetime.microsecond // 10000) * 10000)
         model = async_type_test_model(datetime_field=test_datetime)
         await model.save()
 
@@ -101,7 +103,7 @@ class TestAsyncFields:
         assert saved_model.datetime_field == test_datetime
         assert isinstance(saved_model.datetime_field, datetime)
         utc_plus_8 = timezone(timedelta(hours=8))
-        assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == '2024-01-01T20:30:45.123456+08:00'
+        assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == test_datetime.astimezone(utc_plus_8).isoformat()
 
     @requires_json_operations()
     async def test_json_field(self, async_type_test_model):

@@ -49,6 +49,8 @@ class TestActiveQueryCompositePK:
         assert count == 4
 
     def test_explain(self, seeded, order_item_class):
+        if not order_item_class.backend().dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
         result = order_item_class.query().explain().aggregate()
         assert isinstance(result, list)
         assert len(result) > 0

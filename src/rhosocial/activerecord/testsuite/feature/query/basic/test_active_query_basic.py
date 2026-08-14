@@ -338,7 +338,7 @@ class TestSyncActiveQueryBasic:
         query.select(Order.c.id)
         query.select(Order.c.order_number, append=True)
         sql, params = query.to_sql()
-        assert 'order_number' in sql
+        assert 'order_number' in sql.lower()
 
     def test_order_by_extend_existing(self, order_fixtures):
         """Test calling order_by multiple times extends existing clause."""
