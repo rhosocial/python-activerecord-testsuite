@@ -65,46 +65,61 @@ def transfer_balance_task(
         backend.begin_transaction()
 
         try:
-            # CRITICAL: Use fixed lock order to prevent lost updates and deadlocks
-            # Always lock users in ascending ID order
-            first_id, second_id = (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
-
             if supports_for_update:
+                # CRITICAL: Use fixed lock order to prevent lost updates and deadlocks
+                # Always lock users in ascending ID order
+                first_id, second_id = (
+                    (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
+                )
+
                 # Lock rows without single-row wrappers that some backends cannot lock.
                 first_matches = User.query().where(User.c.id == first_id).for_update().all()
                 second_matches = User.query().where(User.c.id == second_id).for_update().all()
                 first_user = first_matches[0] if first_matches else None
                 second_user = second_matches[0] if second_matches else None
+
+                if not first_user or not second_user:
+                    raise ValueError("User not found")
+
+                # Determine which is source and which is target
+                if from_user_id < to_user_id:
+                    from_user, to_user = first_user, second_user
+                else:
+                    from_user, to_user = second_user, first_user
+
+                if from_user.balance < amount:
+                    raise ValueError("Insufficient balance")
+
+                from_user.balance -= amount
+                to_user.balance += amount
+
+                from_user.save()
+                to_user.save()
             else:
-                # SQLite doesn't support FOR UPDATE - use regular queries
-                # SQLite's database-level locking provides serialization
-                first_user = User.find_one({'id': first_id})
-                second_user = User.find_one({'id': second_id})
+                # Backends without FOR UPDATE (e.g. SQLite, Oracle) cannot rely on row
+                # locks. Use atomic conditional UPDATEs instead: each statement serializes
+                # on the row and recomputes the balance from the current committed value,
+                # so concurrent transfers never overwrite a stale balance (lost update).
+                from_affected = User.query().where(
+                    (User.c.id == from_user_id) & (User.c.balance >= amount)
+                ).update_all({"balance": User.c.balance - amount})
+                if from_affected == 0:
+                    raise ValueError("Insufficient balance")
 
-            if not first_user or not second_user:
-                raise ValueError("User not found")
-
-            # Determine which is source and which is target
-            if from_user_id < to_user_id:
-                from_user, to_user = first_user, second_user
-            else:
-                from_user, to_user = second_user, first_user
-
-            if from_user.balance < amount:
-                raise ValueError("Insufficient balance")
-
-            from_user.balance -= amount
-            to_user.balance += amount
-
-            from_user.save()
-            to_user.save()
+                to_affected = User.query().where(
+                    User.c.id == to_user_id
+                ).update_all({"balance": User.c.balance + amount})
+                if to_affected == 0:
+                    raise ValueError("User not found")
 
             backend.commit_transaction()
 
+            from_user = User.find_one({'id': from_user_id})
+            to_user = User.find_one({'id': to_user_id})
             return {
                 'success': True,
-                'from_balance': from_user.balance,
-                'to_balance': to_user.balance
+                'from_balance': from_user.balance if from_user else None,
+                'to_balance': to_user.balance if to_user else None
             }
         except Exception as e:
             backend.rollback_transaction()
@@ -226,46 +241,61 @@ async def async_transfer_balance_task(
         await backend.begin_transaction()
 
         try:
-            # CRITICAL: Use fixed lock order to prevent lost updates and deadlocks
-            # Always lock users in ascending ID order
-            first_id, second_id = (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
-
             if supports_for_update:
+                # CRITICAL: Use fixed lock order to prevent lost updates and deadlocks
+                # Always lock users in ascending ID order
+                first_id, second_id = (
+                    (from_user_id, to_user_id) if from_user_id < to_user_id else (to_user_id, from_user_id)
+                )
+
                 # Lock rows without single-row wrappers that some backends cannot lock.
                 first_matches = await AsyncUser.query().where(AsyncUser.c.id == first_id).for_update().all()
                 second_matches = await AsyncUser.query().where(AsyncUser.c.id == second_id).for_update().all()
                 first_user = first_matches[0] if first_matches else None
                 second_user = second_matches[0] if second_matches else None
+
+                if not first_user or not second_user:
+                    raise ValueError("User not found")
+
+                # Determine which is source and which is target
+                if from_user_id < to_user_id:
+                    from_user, to_user = first_user, second_user
+                else:
+                    from_user, to_user = second_user, first_user
+
+                if from_user.balance < amount:
+                    raise ValueError("Insufficient balance")
+
+                from_user.balance -= amount
+                to_user.balance += amount
+
+                await from_user.save()
+                await to_user.save()
             else:
-                # SQLite doesn't support FOR UPDATE - use regular queries
-                # SQLite's database-level locking provides serialization
-                first_user = await AsyncUser.find_one({'id': first_id})
-                second_user = await AsyncUser.find_one({'id': second_id})
+                # Backends without FOR UPDATE (e.g. SQLite, Oracle) cannot rely on row
+                # locks. Use atomic conditional UPDATEs instead: each statement serializes
+                # on the row and recomputes the balance from the current committed value,
+                # so concurrent transfers never overwrite a stale balance (lost update).
+                from_affected = await AsyncUser.query().where(
+                    (AsyncUser.c.id == from_user_id) & (AsyncUser.c.balance >= amount)
+                ).update_all({"balance": AsyncUser.c.balance - amount})
+                if from_affected == 0:
+                    raise ValueError("Insufficient balance")
 
-            if not first_user or not second_user:
-                raise ValueError("User not found")
-
-            # Determine which is source and which is target
-            if from_user_id < to_user_id:
-                from_user, to_user = first_user, second_user
-            else:
-                from_user, to_user = second_user, first_user
-
-            if from_user.balance < amount:
-                raise ValueError("Insufficient balance")
-
-            from_user.balance -= amount
-            to_user.balance += amount
-
-            await from_user.save()
-            await to_user.save()
+                to_affected = await AsyncUser.query().where(
+                    AsyncUser.c.id == to_user_id
+                ).update_all({"balance": AsyncUser.c.balance + amount})
+                if to_affected == 0:
+                    raise ValueError("User not found")
 
             await backend.commit_transaction()
 
+            from_user = await AsyncUser.find_one({'id': from_user_id})
+            to_user = await AsyncUser.find_one({'id': to_user_id})
             return {
                 'success': True,
-                'from_balance': from_user.balance,
-                'to_balance': to_user.balance
+                'from_balance': from_user.balance if from_user else None,
+                'to_balance': to_user.balance if to_user else None
             }
         except Exception as e:
             await backend.rollback_transaction()
