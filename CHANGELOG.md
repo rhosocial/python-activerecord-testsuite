@@ -1,3 +1,10 @@
+## [v1.0.0.dev16] - 2026-08-14
+
+### Internal
+
+- Release `v1.0.0.dev16` ([#19](https://github.com/rhosocial/python-activerecord-testsuite/pull/19)): completed 92-topic sync/async test parity, added composite-PK and transaction (savepoint, pool dispatch) contracts, added capability-aware `--scenarios` option and precision-tolerant assertions, reorganized `composite_pk`/`derived_field` features into `basic`/`query`, fixed collection issues (duplicate basenames, undefined fixtures) and concurrent transaction updates without `FOR UPDATE`, and removed `GEMINI.md`. ([#19](https://github.com/rhosocial/python-activerecord-testsuite/issues/19))
+
+
 ## [v1.0.0.dev15] - 2026-06-15
 
 
