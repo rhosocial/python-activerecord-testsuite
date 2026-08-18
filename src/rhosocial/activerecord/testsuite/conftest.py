@@ -35,8 +35,19 @@ if _argv_scenarios:
     os.environ["TESTSUITE_ACTIVE_SCENARIOS"] = _argv_scenarios
 
 
+# Guard against registering the same options twice when the conftest is loaded
+# both as a plugin (e.g. ``-p rhosocial.activerecord.testsuite.conftest`` in the
+# core CI) and as a path-based conftest for testsuite-path tests.
+_pytest_options_registered = False
+
+
 def pytest_addoption(parser):
     """Register the generic --scenarios option used by all backends."""
+    global _pytest_options_registered
+    if _pytest_options_registered:
+        return
+    _pytest_options_registered = True
+
     parser.addoption(
         "--scenarios",
         action="store",
@@ -44,6 +55,30 @@ def pytest_addoption(parser):
         help="Comma-separated list of scenario names to run "
              "(e.g., --scenarios=firebird_5,mysql_80). Backend scenario "
              "modules filter their registered scenarios accordingly.",
+    )
+    parser.addoption(
+        "--scenarios-parallel",
+        action="store_true",
+        default=True,
+        help="Allow scenario variants of the same test to run in parallel "
+             "(default: True). With --scenarios-parallel, scenario variants "
+             "are freely distributed across xdist workers; without it, they "
+             "are pinned to the same worker and run sequentially.",
+    )
+    parser.addoption(
+        "--db-pool-size",
+        action="store",
+        type=int,
+        default=None,
+        help="Number of pooled test_db_* databases prepared per scenario "
+             "(default: follow the number of workers, i.e. -n, minimum 1). "
+             "Use 0 to disable pooling and keep per-test unique databases.",
+    )
+    parser.addoption(
+        "--serial-group",
+        action="store",
+        default="serial",
+        help="xdist_group name that serial tests are pinned to (default: serial).",
     )
 
 
@@ -71,32 +106,183 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "benchmark_transaction: Mark transaction benchmark tests")
     config.addinivalue_line("markers", "benchmark_mixin: Mark mixin benchmark tests")
     config.addinivalue_line("markers", "benchmark_fastapi: Mark FastAPI benchmark tests")
+    config.addinivalue_line(
+        "markers", "serial: Mark tests that must run serially (never concurrently with other tests)"
+    )
 
-@pytest.hookimpl(trylast=True)
+    from rhosocial.activerecord.testsuite.core.pool import configure_pool_size
+
+    configure_pool_size(_resolve_pool_size(config))
+
+    # Preload the provider registry. Importing the registry module pulls in
+    # the backend's provider modules, whose side effect is registering the
+    # backend-specific pool reset handler (e.g. SQLite's drop-all-tables).
+    # This must happen here, in every xdist worker, so that the per-test
+    # setup hook can reset pooled databases before the first test runs.
+    try:
+        from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+
+        get_provider_registry()
+    except Exception:
+        pass
+
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     """
-    Hook to automatically skip tests that require unsupported protocols or functions.
+    Pin serial tests to a single xdist worker so they never run concurrently.
 
-    Note: During collection time, we can't access backend-specific capabilities
-    through the provider interface since providers set up backends per test scenario.
-    Protocol and function checking happens during test execution when provider-configured
-    models are available.
+    Tests marked ``serial`` (e.g. WorkerPool tests that spawn their own
+    sub-processes) must not overlap with each other: they share a dedicated
+    database and a concurrent run would race on schema setup. They are pinned
+    to one worker via the ``xdist_group`` marker, which only takes effect with
+    ``--dist=loadgroup`` (pytest-xdist appends the group name to the nodeid).
 
-    ``trylast=True`` guarantees this no-op hook never shadows backend-owned
-    ``pytest_collection_modifyitems`` hooks (e.g. Firebird's xfail registration),
-    which are registered later and must take precedence.
+    Note: pytest-xdist runs this hook in *every* worker, where ``-n`` is not
+    present on the command line. xdist is therefore detected through the
+    ``PYTEST_XDIST_WORKER`` environment variable so the markers are applied in
+    workers too. ``tryfirst=True`` makes the markers visible to xdist's own
+    nodeid-rewriting step.
+
+    During collection time, backend-specific capabilities aren't available
+    through the provider interface since providers set up backends per test
+    scenario. Protocol and function checking happens during test execution when
+    provider-configured models are available.
     """
-    # For now, we just ensure tests with requires_protocol/requires_functions markers exist properly
-    # Actual capability checking occurs at test runtime via fixtures and decorators
-    pass
+    # Apply serial / parallel scheduling only when running under xdist with
+    # more than one worker (otherwise everything is naturally serial).
+    import os
+
+    n_workers = config.getoption("-n", default=None)
+    if n_workers is None:
+        n_workers = config.getoption("--numprocesses", default=None)
+    if isinstance(n_workers, str):
+        n_workers = n_workers.strip("auto")
+    try:
+        workers = int(n_workers)
+    except (TypeError, ValueError):
+        workers = 0
+
+    if workers <= 1 and os.environ.get("PYTEST_XDIST_WORKER") is None:
+        return
+
+    serial_group = config.getoption("--serial-group", default="serial")
+    scenarios_parallel = config.getoption("--scenarios-parallel", default=True)
+    known_scenarios = _known_scenario_names()
+
+    for item in items:
+        is_serial = item.get_closest_marker("serial") is not None
+        if not is_serial:
+            # Cross-scenario tests use 2+ distinct scenario values at once and
+            # cannot be parallelized: pin them to the serial group.
+            scenario_params = _scenario_params_of(item, known_scenarios)
+            if len(scenario_params) > 1:
+                is_serial = True
+        if is_serial:
+            item.add_marker(pytest.mark.xdist_group(serial_group))
+            print(f"[AR_DBG] serial-pinned: {item.nodeid} -> group={serial_group}", flush=True)
+        elif not scenarios_parallel:
+            # Pin scenario variants of the same test to a single worker.
+            base_nodeid = item.nodeid.split("[", 1)[0]
+            item.add_marker(pytest.mark.xdist_group(f"scenario::{base_nodeid}"))
+
+
+def _resolve_pool_size(config):
+    """Resolve the database pool size.
+
+    Defaults to the number of xdist workers (``-n``, minimum 1) so that every
+    worker owns a dedicated ``test_db_*`` slot. An explicit ``--db-pool-size``
+    overrides it; 0 disables pooling.
+
+    Workers don't see the master's ``-n`` option, so the master publishes the
+    resolved size through ``RHS_AR_POOL_SIZE`` (inherited by worker processes)
+    and workers reuse it.
+    """
+    explicit = config.getoption("--db-pool-size", default=None)
+    env_size = os.environ.get("RHS_AR_POOL_SIZE")
+    if explicit is not None:
+        size = explicit
+    elif env_size:
+        size = int(env_size)
+    else:
+        size = _resolve_worker_count(config)
+    if os.environ.get("PYTEST_XDIST_WORKER") is None:
+        os.environ["RHS_AR_POOL_SIZE"] = str(size)
+    return size
+
+
+def _resolve_worker_count(config):
+    """Return the number of xdist workers from the ``-n`` option (default 1)."""
+    workers = 1
+    try:
+        n_workers = config.getoption("-n", default=None)
+    except (ValueError, TypeError):
+        n_workers = None
+    if n_workers is not None:
+        value = str(n_workers).strip().lower()
+        if value == "auto":
+            workers = os.cpu_count() or 1
+        else:
+            try:
+                workers = int(value)
+            except ValueError:
+                workers = 1
+    return max(workers, 1)
+
+
+_KNOWN_SCENARIOS = None
+
+
+def _known_scenario_names():
+    """Collect all scenario names advertised by the registered providers."""
+    global _KNOWN_SCENARIOS
+    if _KNOWN_SCENARIOS is not None:
+        return _KNOWN_SCENARIOS
+    try:
+        from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+
+        registry = get_provider_registry()
+    except Exception:
+        _KNOWN_SCENARIOS = set()
+        return _KNOWN_SCENARIOS
+    names = set()
+    for provider_class in registry.all_providers():
+        try:
+            names.update(provider_class().get_test_scenarios())
+        except Exception:
+            continue
+    _KNOWN_SCENARIOS = names
+    return names
+
+
+def _scenario_params_of(item, known_scenarios):
+    """Return the set of scenario names used by an item's parametrization."""
+    if not known_scenarios:
+        return set()
+    callspec = getattr(item, "callspec", None)
+    if callspec is None:
+        return set()
+    values = set()
+    for value in callspec.params.values():
+        if isinstance(value, str) and value in known_scenarios:
+            values.add(value)
+    return values
 
 def pytest_sessionstart(session):
     """
     Hook to generate capability support warnings at session start.
-    
+
     This hook generates warnings about important unsupported capabilities
-    to alert developers about backend limitations.
+    to alert developers about backend limitations. It also prepares this
+    worker's pooled databases (ensures they exist) before any test connects.
     """
+    try:
+        from rhosocial.activerecord.testsuite.core.pool import is_xdist_worker, prepare_pool
+
+        if not is_xdist_worker():
+            prepare_pool()
+    except Exception as e:
+        warnings.warn(f"Could not prepare the database pool at session start: {e}", UserWarning)
+
     try:
         from rhosocial.activerecord.backend.dialect.protocols import (
             WindowFunctionSupport,
@@ -105,7 +291,7 @@ def pytest_sessionstart(session):
             ReturningSupport,
         )
 
-        from .utils import get_current_backend
+        from rhosocial.activerecord.testsuite.utils import get_current_backend
         backend = get_current_backend()
 
         if backend is None:
@@ -143,3 +329,26 @@ def pytest_sessionstart(session):
             )
     except Exception as e:
         warnings.warn(f"Could not check capability support at session start: {e}", UserWarning)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Reset the database pool state.
+
+    ``test_db_*`` databases are intentionally NOT removed after the session;
+    they persist across sessions and are re-prepared on the next session.
+    """
+    from rhosocial.activerecord.testsuite.core.pool import reset_pool
+
+    reset_pool()
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_runtest_teardown(item, nextitem):
+    """Release every pool slot acquired during the just-finished test.
+
+    Fixtures have already been torn down, so backends are disconnected before
+    their slots are freed; the next test on any worker can take them.
+    """
+    from rhosocial.activerecord.testsuite.core.pool import release_all
+
+    release_all()

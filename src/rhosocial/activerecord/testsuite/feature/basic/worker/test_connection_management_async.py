@@ -12,6 +12,8 @@ from typing import Dict
 import pytest
 from rhosocial.activerecord.worker import WorkerPool, TaskContext
 
+pytestmark = pytest.mark.serial
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Task Functions
