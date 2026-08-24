@@ -80,6 +80,7 @@ def _try_construct(cls, dialect):
     """Construct an instance of cls with heuristic arguments; None on failure."""
     sig = inspect.signature(cls.__init__)
     # DataType-family declares dialect as an optional trailing keyword.
+    has_dialect = "dialect" in sig.parameters
     first_param = next((p for p in sig.parameters if p != "self"), None)
     dialect_as_kw = first_param != "dialect"
     args = []
@@ -107,6 +108,8 @@ def _try_construct(cls, dialect):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            if not has_dialect:
+                return cls(*args, **kwargs)
             if dialect_as_kw:
                 return cls(*args, dialect=dialect, **kwargs)
             return cls(dialect, *args, **kwargs)
