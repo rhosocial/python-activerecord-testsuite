@@ -16,7 +16,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 def test_cross_schema_join(schema_fixtures):
     """JOIN across two schemas with WHERE + ORDER BY."""
     Customer, Order = schema_fixtures
@@ -40,7 +40,7 @@ def test_cross_schema_join(schema_fixtures):
     assert [(r["amount"], r["customer"]) for r in rows] == [(100, "alice"), (300, "alice")]
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 def test_cross_schema_count_with_condition(schema_fixtures):
     """Scalar COUNT over a cross-schema join."""
     Customer, Order = schema_fixtures
@@ -59,7 +59,7 @@ def test_cross_schema_count_with_condition(schema_fixtures):
     assert total == 3
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 def test_cross_schema_writes_are_scoped(schema_fixtures):
     """save() lands in the owning schema; update/delete stay scoped by qualifiers."""
     Customer, Order = schema_fixtures

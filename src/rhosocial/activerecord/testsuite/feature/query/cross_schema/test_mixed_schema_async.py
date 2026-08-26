@@ -2,8 +2,10 @@
 """Async default-schema vs non-default-schema operations for identical tables."""
 import pytest
 
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+
+@requires_protocol("SchemaSupport", "supports_schema")
 async def test_async_same_named_tables_coexist(async_mixed_schema_fixtures):
     """Identical table names in default and SCHEMA_A hold independent rows."""
     AsyncUser, AsyncOrder, AsyncMixedSchemaOrder = async_mixed_schema_fixtures
@@ -19,7 +21,7 @@ async def test_async_same_named_tables_coexist(async_mixed_schema_fixtures):
     assert await AsyncMixedSchemaOrder.query().count() == 1
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 async def test_async_update_all_stays_scoped(async_mixed_schema_fixtures):
     """Bulk update on the schema-qualified namespace leaves defaults untouched."""
     AsyncUser, AsyncOrder, AsyncMixedSchemaOrder = async_mixed_schema_fixtures
@@ -42,7 +44,7 @@ async def test_async_update_all_stays_scoped(async_mixed_schema_fixtures):
     )
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 async def test_async_join_default_user_with_schema_order(async_mixed_schema_fixtures):
     """Async JOIN from the default namespace to a schema-qualified table."""
     AsyncUser, AsyncOrder, AsyncMixedSchemaOrder = async_mixed_schema_fixtures

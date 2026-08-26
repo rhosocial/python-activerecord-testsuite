@@ -6,7 +6,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 async def test_async_cross_schema_join(async_schema_fixtures):
     """JOIN across two schemas with WHERE + ORDER BY (async)."""
     AsyncCustomer, AsyncOrder = async_schema_fixtures
@@ -33,7 +33,7 @@ async def test_async_cross_schema_join(async_schema_fixtures):
     ]
 
 
-@pytest.mark.requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("SchemaSupport", "supports_schema")
 async def test_async_cross_schema_writes_are_scoped(async_schema_fixtures):
     """Writes land in the owning schema and stay scoped by qualifiers (async)."""
     AsyncCustomer, AsyncOrder = async_schema_fixtures
