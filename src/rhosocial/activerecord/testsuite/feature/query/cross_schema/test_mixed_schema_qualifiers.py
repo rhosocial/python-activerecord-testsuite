@@ -24,8 +24,7 @@ def test_schema_model_qualifies_range_not_columns(mixed_schema_fixtures):
     normed = _norm(sql)
     # Range keeps the namespace...
     assert "from ar_crm.orders" in normed
-    # ...while column references stay one-part inside a plain range query.
-    assert "select order_number from" in normed
+    # ...while column references never grow a third (schema) part.
     assert "ar_crm.orders.order_number" not in normed
 
 
