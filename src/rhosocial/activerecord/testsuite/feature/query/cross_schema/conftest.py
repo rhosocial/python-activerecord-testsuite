@@ -63,3 +63,43 @@ async def async_schema_fixtures(request):
         cleanup = getattr(provider, "cleanup_after_test", None)
         if cleanup:
             await cleanup(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
+def mixed_schema_fixtures(request):
+    """(User, Order, MixedSchemaOrder): default users/orders plus orders in SCHEMA_A."""
+    provider = _provider_for(PROVIDER_KEY_SYNC)
+    if provider is None:
+        pytest.skip("No testsuite scenarios found")
+    setup = getattr(provider, "setup_mixed_schema_fixtures", None)
+    if setup is None:
+        pytest.skip("Provider does not provide mixed-schema fixtures")
+
+    scenario = request.param
+    models = setup(scenario)
+    try:
+        yield models
+    finally:
+        cleanup = getattr(provider, "cleanup_after_test", None)
+        if cleanup:
+            cleanup(scenario)
+
+
+@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
+async def async_mixed_schema_fixtures(request):
+    """(AsyncUser, AsyncOrder, AsyncMixedSchemaOrder) with orders also in SCHEMA_A."""
+    provider = _provider_for(PROVIDER_KEY_ASYNC)
+    if provider is None:
+        pytest.skip("No async testsuite scenarios found")
+    setup = getattr(provider, "setup_mixed_schema_fixtures", None)
+    if setup is None:
+        pytest.skip("Provider does not provide mixed-schema fixtures")
+
+    scenario = request.param
+    models = await setup(scenario)
+    try:
+        yield models
+    finally:
+        cleanup = getattr(provider, "cleanup_after_test", None)
+        if cleanup:
+            await cleanup(scenario)
