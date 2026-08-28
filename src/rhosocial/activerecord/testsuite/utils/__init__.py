@@ -48,6 +48,16 @@ from .common import (
     assert_datetime_close,
 )
 
+from .expression import (
+    assert_params_equal,
+    collect_expression_classes,
+    make_instance,
+    register_all,
+    register_special_constructor,
+    roundtrip_expression,
+    sql_consistent,
+)
+
 from .fixture_selector import select_fixture
 
 __all__ = [
@@ -90,4 +100,12 @@ __all__ = [
 
     # Fixture selection
     'select_fixture',
+    # Expression round-trip/contract helpers
+    'assert_params_equal',
+    'collect_expression_classes',
+    'make_instance',
+    'register_all',
+    'register_special_constructor',
+    'roundtrip_expression',
+    'sql_consistent',
 ]

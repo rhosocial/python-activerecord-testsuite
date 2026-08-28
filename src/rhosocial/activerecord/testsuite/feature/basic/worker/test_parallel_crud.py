@@ -13,6 +13,8 @@ from typing import Dict, Any, Optional
 import pytest
 from rhosocial.activerecord.worker import WorkerPool, PoolState, TaskContext
 
+pytestmark = pytest.mark.serial
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Synchronous Task Functions (must be module-level, pickle-able)

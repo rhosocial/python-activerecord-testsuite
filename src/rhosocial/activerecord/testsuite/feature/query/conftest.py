@@ -262,7 +262,8 @@ def check_protocol_requirements(request):
                           'annotated_query_fixtures', 'mapped_models_fixtures',
                           'async_order_fixtures', 'async_blog_fixtures', 'async_json_user_fixture',
                           'async_tree_fixtures', 'async_combined_fixtures', 'async_extended_order_fixtures',
-                          'async_annotated_query_fixtures', 'async_mapped_models_fixtures']
+                          'async_annotated_query_fixtures', 'async_mapped_models_fixtures',
+                          'sync_pool_and_model', 'async_pool_and_model']
 
         for fixture_name in fixture_options:
             if fixture_name in request.fixturenames:

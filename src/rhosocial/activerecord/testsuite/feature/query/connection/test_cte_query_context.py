@@ -7,10 +7,13 @@ context for backend resolution.
 """
 import pytest
 
+from rhosocial.activerecord.backend.dialect.protocols import CTESupport
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestSyncCTEQueryContext:
     """Test synchronous CTEQuery context awareness."""
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_backend_without_context(self, sync_pool_and_model):
         """Test CTEQuery.backend() returns constructor backend without context."""
         pool, model = sync_pool_and_model
@@ -20,6 +23,7 @@ class TestSyncCTEQueryContext:
         cte_backend = cte.backend()
         assert cte_backend is original_backend
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_backend_in_connection_context(self, sync_pool_and_model):
         """Test CTEQuery.backend() returns connection backend in context."""
         pool, model = sync_pool_and_model
@@ -32,6 +36,7 @@ class TestSyncCTEQueryContext:
             assert cte_backend is conn_backend
             assert cte_backend is not original_backend
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_backend_in_transaction_context(self, sync_pool_and_model):
         """Test CTEQuery.backend() returns transaction backend in context."""
         pool, model = sync_pool_and_model
@@ -44,6 +49,7 @@ class TestSyncCTEQueryContext:
             assert cte_backend is tx_backend
             assert cte_backend is not original_backend
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_nested_connection_contexts_reuse(self, sync_pool_and_model):
         """Test nested connection contexts reuse for CTE query."""
         pool, model = sync_pool_and_model
@@ -59,6 +65,7 @@ class TestSyncCTEQueryContext:
                 assert inner_cte.backend() is outer_conn
                 assert inner_conn is outer_conn
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_nested_transaction_contexts_reuse(self, sync_pool_and_model):
         """Test nested transaction contexts reuse for CTE query."""
         pool, model = sync_pool_and_model
@@ -74,6 +81,7 @@ class TestSyncCTEQueryContext:
                 assert inner_cte.backend() is outer_tx
                 assert inner_tx is outer_tx
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_from_model_in_context(self, sync_pool_and_model):
         """Test CTEQuery created from model query in context."""
         pool, model = sync_pool_and_model
