@@ -25,6 +25,10 @@ class ProviderRegistry:
         """Retrieves a provider class for a given interface path."""
         return self._providers.get(interface_path)
 
+    def all_providers(self) -> list:
+        """Returns all registered provider classes (values of the registry)."""
+        return list(self._providers.values())
+
 # A global singleton to hold the registry instance.
 _registry_instance = None
 

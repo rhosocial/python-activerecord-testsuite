@@ -11,8 +11,13 @@ Both synchronous and asynchronous versions are included.
 import pytest
 from decimal import Decimal
 
+from rhosocial.activerecord.backend.dialect.protocols import CTESupport
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
-from rhosocial.activerecord.testsuite.utils import requires_cte, requires_recursive_cte
+from rhosocial.activerecord.testsuite.utils import (
+    requires_cte,
+    requires_protocol,
+    requires_recursive_cte,
+)
 class TestAsyncCTEQueryActiveQuery:
     """Test CTE queries with ActiveQuery subqueries (asynchronous)."""
 
@@ -102,6 +107,7 @@ class TestAsyncCTEQueryActiveQuery:
 class TestAsyncCTEQueryErrorHandling:
     """Test CTE query error handling and validation for async."""
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_with_wrong_paradigm_backend_raises_error(self, async_order_fixtures):
         """
         Test that AsyncCTEQuery raises TypeError when a sync backend is provided.
@@ -123,6 +129,7 @@ class TestAsyncCTEQueryErrorHandling:
         assert "AsyncCTEQuery requires an AsyncStorageBackend" in str(exc_info.value)
         assert "StorageBackend" in str(exc_info.value)
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_with_mock_query_raises_error(self, async_order_fixtures):
         """
         Test that AsyncCTEQuery raises TypeError when an invalid query type (mock) is provided to with_cte.
@@ -142,6 +149,7 @@ class TestAsyncCTEQueryErrorHandling:
         assert "not supported in CTE" in str(exc_info.value)
         assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_with_wrong_paradigm_query_raises_error(self, async_order_fixtures):
         """
         Test that AsyncCTEQuery raises TypeError when a sync query is provided to with_cte.
@@ -167,6 +175,7 @@ class TestAsyncCTEQueryErrorHandling:
         assert "AsyncCTEQuery (async) cannot accept sync query" in str(exc_info.value)
         assert "ActiveQuery" in str(exc_info.value)
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_with_invalid_query_type_raises_error(self, async_order_fixtures):
         """
         Test that CTEQuery raises TypeError when an unsupported query type is provided to with_cte.
@@ -338,6 +347,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
 class TestAsyncCTEQuerySyncErrorHandling:
     """Test CTE query error handling for edge cases (asynchronous)."""
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_to_sql_with_empty_ctes_raises_error(self, async_order_fixtures):
         """
         Test that calling to_sql() on an AsyncCTEQuery with no CTEs defined raises ValueError.
@@ -353,6 +363,7 @@ class TestAsyncCTEQuerySyncErrorHandling:
 
         assert "CTEQuery must have at least one CTE defined" in str(exc_info.value)
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, async_order_fixtures):
         """
         Test that calling to_sql() with a _main_cte_name that doesn't exist raises ValueError.
