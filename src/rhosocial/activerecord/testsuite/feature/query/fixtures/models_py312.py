@@ -20,7 +20,7 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig
 from rhosocial.activerecord.base.fields import UseColumn
 from typing import Annotated
@@ -30,7 +30,7 @@ from typing import Annotated
 __requires_python__ = (3, 12)
 
 
-class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with basic relations.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -83,7 +83,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
         return new_user
 
 
-class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Profile(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Profile model with HasOne relation to User.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -102,7 +102,7 @@ class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class JsonUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model specialized for JSON testing.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -125,7 +125,7 @@ class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     preferences: str | None = None
 
 
-class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order model with basic relations.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -148,7 +148,7 @@ class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
         return self
 
 
-class OrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order item model with basic relations.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -201,7 +201,7 @@ class OrderWithComplexCache(Order):
     )
 
 
-class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Post(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with user and comments relations.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -230,7 +230,7 @@ class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
         return self
 
 
-class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Comment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with user and post relations.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -266,7 +266,7 @@ class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 # --- Mapped Models ---
 
-class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with custom column name mappings for testing in query feature.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -291,7 +291,7 @@ class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with custom column name mappings for testing in query feature.
 
     Python 3.12+ version using | syntax, Self type, and @override.
@@ -318,7 +318,7 @@ class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with custom column name mappings for testing in query feature.
 
     Python 3.12+ version using | syntax, Self type, and @override.

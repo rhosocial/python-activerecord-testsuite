@@ -6,11 +6,11 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo
 
 
-class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "users"
@@ -25,7 +25,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     orders: ClassVar[HasMany['ExtendedOrder']] = HasMany(foreign_key='user_id', inverse_of='user')
 
 
-class ExtendedOrder(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class ExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Extended Order model with additional fields for advanced grouping tests."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_orders"
@@ -49,7 +49,7 @@ class ExtendedOrder(IntegerPKMixin, TimestampMixin, ActiveRecord):
     user: ClassVar[BelongsTo['User']] = BelongsTo(foreign_key='user_id', inverse_of='orders')
 
 
-class ExtendedOrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class ExtendedOrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Extended Order item model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_order_items"

@@ -5,11 +5,11 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo, AsyncHasOne
 
 
-class AsyncUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model with basic relations."""
     __table_name__ = "users"
     c: ClassVar[FieldProxy] = FieldProxy()
@@ -31,7 +31,7 @@ class AsyncUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     )
 
 
-class AsyncOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Order model with basic relations."""
     __table_name__ = "orders"
     c: ClassVar[FieldProxy] = FieldProxy()
@@ -46,7 +46,7 @@ class AsyncOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     user: ClassVar[AsyncBelongsTo['AsyncUser']] = AsyncBelongsTo(foreign_key='user_id', inverse_of='orders')
 
 
-class AsyncOrderItem(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncOrderItem(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Order item model with basic relations."""
     __table_name__ = "order_items"
     c: ClassVar[FieldProxy] = FieldProxy()
@@ -61,7 +61,7 @@ class AsyncOrderItem(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     order: ClassVar[AsyncBelongsTo['AsyncOrder']] = AsyncBelongsTo(foreign_key='order_id', inverse_of='items')
 
 
-class AsyncProfile(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncProfile(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Profile model with HasOne relation to AsyncUser.
 
     Mirrors sync Profile for sync/async parity.
@@ -81,7 +81,7 @@ class AsyncProfile(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     )
 
 
-class AsyncPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Post model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "posts"
@@ -96,7 +96,7 @@ class AsyncPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     comments: ClassVar[AsyncHasMany['AsyncComment']] = AsyncHasMany(foreign_key='post_id', inverse_of='post')
 
 
-class AsyncComment(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Comment model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "comments"

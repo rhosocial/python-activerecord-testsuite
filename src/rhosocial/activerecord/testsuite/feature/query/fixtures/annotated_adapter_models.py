@@ -16,7 +16,7 @@ except ImportError:
 
 from rhosocial.activerecord.model import ActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.base.fields import UseAdapter
 from rhosocial.activerecord.backend.type_adapter import BaseSQLTypeAdapter
 

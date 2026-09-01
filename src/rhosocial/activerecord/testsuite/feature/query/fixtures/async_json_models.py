@@ -4,10 +4,10 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 
 
-class AsyncJsonUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncJsonUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model specialized for JSON testing."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "json_users"
