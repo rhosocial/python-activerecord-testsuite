@@ -23,7 +23,7 @@ def test_event_handler_registration(event_model):
     instance.on(ModelEvent.BEFORE_INSERT, handler2)
 
     # Verify handlers are registered
-    # Note: TimestampMixin now registers BEFORE_INSERT instead of BEFORE_SAVE
+    # Note: DefaultTimestampMixin now registers BEFORE_INSERT instead of BEFORE_SAVE
     assert len(instance._event_handlers[ModelEvent.BEFORE_INSERT]) >= 2
     assert handler1 in instance._event_handlers[ModelEvent.BEFORE_INSERT]
     assert handler2 in instance._event_handlers[ModelEvent.BEFORE_INSERT]

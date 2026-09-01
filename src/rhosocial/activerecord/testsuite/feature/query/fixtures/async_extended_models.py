@@ -6,11 +6,11 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo
 
 
-class AsyncUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "users"
@@ -25,7 +25,7 @@ class AsyncUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     orders: ClassVar[AsyncHasMany['AsyncExtendedOrder']] = AsyncHasMany(foreign_key='user_id', inverse_of='user')
 
 
-class AsyncExtendedOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async ExtendedOrder model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_orders"
@@ -47,7 +47,7 @@ class AsyncExtendedOrder(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     user: ClassVar[AsyncBelongsTo['AsyncUser']] = AsyncBelongsTo(foreign_key='user_id', inverse_of='orders')
 
 
-class AsyncExtendedOrderItem(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncExtendedOrderItem(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async ExtendedOrderItem model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "extended_order_items"

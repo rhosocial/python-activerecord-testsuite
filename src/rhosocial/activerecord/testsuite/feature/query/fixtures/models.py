@@ -16,12 +16,12 @@ from pydantic import Field, EmailStr
 
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import HasMany, BelongsTo, HasOne, CacheConfig, AsyncHasMany, AsyncBelongsTo
 from rhosocial.activerecord.base.fields import UseColumn
 
 
-class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "users"
@@ -49,7 +49,7 @@ class User(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class JsonUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model specialized for JSON testing."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "json_users"
@@ -69,7 +69,7 @@ class JsonUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     preferences: Optional[str] = None
 
 
-class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "orders"
@@ -84,7 +84,7 @@ class Order(IntegerPKMixin, TimestampMixin, ActiveRecord):
     user: ClassVar[BelongsTo['User']] = BelongsTo(foreign_key='user_id', inverse_of='orders')
 
 
-class OrderItem(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order item model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "order_items"
@@ -134,7 +134,7 @@ class OrderWithComplexCache(Order):
     )
 
 
-class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Post(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with user and comments relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "posts"
@@ -155,7 +155,7 @@ class Post(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Comment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with user and post relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "comments"
@@ -176,7 +176,7 @@ class Comment(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class Profile(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Profile model with HasOne relation to User.
 
     Used for testing HasOne batch loading via with_().
@@ -197,7 +197,7 @@ class Profile(IntegerPKMixin, TimestampMixin, ActiveRecord):
 
 # --- Mapped Models (Added from new version) ---
 
-class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
@@ -219,7 +219,7 @@ class MappedUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
@@ -243,7 +243,7 @@ class MappedPost(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
@@ -267,7 +267,7 @@ class MappedComment(IntegerPKMixin, TimestampMixin, ActiveRecord):
     )
 
 
-class AsyncMappedUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model with custom column name mappings for testing in query feature.
 
     Mirrors :class:`MappedUser` using rhosocial ``UseColumn`` annotations (no
@@ -293,7 +293,7 @@ class AsyncMappedUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     )
 
 
-class AsyncMappedPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Post model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
@@ -317,7 +317,7 @@ class AsyncMappedPost(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
     )
 
 
-class AsyncMappedComment(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncMappedComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Comment model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 

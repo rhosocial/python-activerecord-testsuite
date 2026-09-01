@@ -6,11 +6,11 @@ from pydantic import Field
 
 from rhosocial.activerecord.model import AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo
 
 
-class AsyncNode(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncNode(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Node model for tree structure tests (recursive CTEs)."""
     c: ClassVar[FieldProxy] = FieldProxy()
     __table_name__ = "nodes"

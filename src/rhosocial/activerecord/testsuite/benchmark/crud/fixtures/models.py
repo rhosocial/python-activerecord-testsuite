@@ -5,11 +5,11 @@ from typing import ClassVar, Optional
 from pydantic import EmailStr, Field
 
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.field import IntegerPKMixin, TimestampMixin
+from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 
-class BenchmarkUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
+class BenchmarkUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     __table_name__ = "benchmark_users"
     c: ClassVar[FieldProxy] = FieldProxy()
 
@@ -22,7 +22,7 @@ class BenchmarkUser(IntegerPKMixin, TimestampMixin, ActiveRecord):
     is_active: bool = True
 
 
-class AsyncBenchmarkUser(IntegerPKMixin, TimestampMixin, AsyncActiveRecord):
+class AsyncBenchmarkUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     __table_name__ = "benchmark_users"
     c: ClassVar[FieldProxy] = FieldProxy()
 
