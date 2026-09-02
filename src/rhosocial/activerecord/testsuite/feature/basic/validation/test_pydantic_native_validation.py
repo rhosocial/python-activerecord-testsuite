@@ -583,7 +583,7 @@ class TestSyncPydanticNativeValidation:
         )
 
         assert model.annotated_code == "AR"
-        assert PydanticV2BoundaryModel._get_column_name("annotated_code") == "annotated_code_col"
+        assert PydanticV2BoundaryModel.get_column_name("annotated_code") == "annotated_code_col"
         assert PydanticV2BoundaryModel.model_fields["annotated_code"].metadata
 
         with pytest.raises(ValidationError) as exc_info:
@@ -609,7 +609,7 @@ class TestSyncPydanticNativeValidation:
             "outputName": "Lovelace",
         }
         assert set(AliasBoundaryModel.model_fields) == {"external_id", "display_name", "public_name"}
-        assert AliasBoundaryModel._get_column_name("external_id") == "external_id_col"
+        assert AliasBoundaryModel.get_column_name("external_id") == "external_id_col"
 
     def test_extra_config_modes_preserve_pydantic_behavior(self):
         with pytest.raises(ValidationError) as exc_info:
@@ -710,8 +710,8 @@ class TestSyncPydanticNativeValidation:
 
         assert model.field_first == "AB"
         assert model.column_first == "CD"
-        assert AnnotatedMetadataOrderModel._get_column_name("field_first") == "field_first_col"
-        assert AnnotatedMetadataOrderModel._get_column_name("column_first") == "column_first_col"
+        assert AnnotatedMetadataOrderModel.get_column_name("field_first") == "field_first_col"
+        assert AnnotatedMetadataOrderModel.get_column_name("column_first") == "column_first_col"
 
         with pytest.raises(ValidationError) as exc_info:
             AnnotatedMetadataOrderModel(field_first="A", column_first="C")
@@ -726,8 +726,8 @@ class TestSyncPydanticNativeValidation:
         assert model.different_name == "different"
         assert alias_dump == {"externalName": "same", "apiDifferentName": "different"}
         assert set(AliasUseColumnConflictModel.model_fields) == {"same_name", "different_name"}
-        assert AliasUseColumnConflictModel._get_column_name("same_name") == "externalName"
-        assert AliasUseColumnConflictModel._get_column_name("different_name") == "db_different_name"
+        assert AliasUseColumnConflictModel.get_column_name("same_name") == "externalName"
+        assert AliasUseColumnConflictModel.get_column_name("different_name") == "db_different_name"
 
         with pytest.raises(AttributeError):
             _ = AliasUseColumnConflictModel.c.externalName
