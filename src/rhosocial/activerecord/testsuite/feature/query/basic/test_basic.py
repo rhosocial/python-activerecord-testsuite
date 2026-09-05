@@ -24,8 +24,8 @@ def test_find_by_id(order_fixtures):
     order.save()
 
     found = Order.find_one(order.id)
-    assert found is not None
-    assert found.order_number == 'ORD-001'
+    assert found is not None, "Expected to find the order by id"
+    assert found.order_number == 'ORD-001', "Expected order_number to be ORD-001"
 
 
 def test_find_by_condition(order_fixtures):
@@ -47,8 +47,8 @@ def test_find_by_condition(order_fixtures):
     order.save()
 
     found = Order.find_one({'status': 'processing'})
-    assert found is not None
-    assert found.order_number == 'ORD-TEST'
+    assert found is not None, "Expected to find the order by status"
+    assert found.order_number == 'ORD-TEST', "Expected order_number to be ORD-TEST"
 
 
 def test_find_all(order_fixtures):
@@ -71,7 +71,7 @@ def test_find_all(order_fixtures):
         order.save()
 
     all_orders = Order.query().all()
-    assert len(all_orders) == 3
+    assert len(all_orders) == 3, "Expected 3 orders to be returned"
 
 
 def test_count(order_fixtures):
@@ -93,7 +93,7 @@ def test_count(order_fixtures):
         order.save()
 
     count = Order.query().count()
-    assert count == 3
+    assert count == 3, "Expected count to be 3"
 
 
 def test_exists_method(order_fixtures):
@@ -119,7 +119,7 @@ def test_exists_method(order_fixtures):
 
     # Test exists on records that do exist
     exists_result = Order.query().where('order_number = ?', ('EXISTS-TEST-001',)).exists()
-    assert exists_result is True
+    assert exists_result is True, "Expected exists() to be True for existing record"
 
     # Test exists with conditions matching multiple records
     for i in range(3):
@@ -131,23 +131,23 @@ def test_exists_method(order_fixtures):
         ).save()
 
     exists_result = Order.query().where('status = ?', ('active',)).exists()
-    assert exists_result is True
+    assert exists_result is True, "Expected exists() to be True for matching multiple records"
 
     # Test exists on records that do not exist
     exists_result = Order.query().where('order_number = ?', ('NON-EXISTENT',)).exists()
-    assert exists_result is False
+    assert exists_result is False, "Expected exists() to be False for missing record"
 
     # Test exists with complex conditions
     exists_result = (Order.query()
                      .where('total_amount > ?', (Decimal('120.00'),))
                      .where('status = ?', ('pending',))
                      .exists())
-    assert exists_result is True
+    assert exists_result is True, "Expected exists() to be True with complex conditions"
 
     exists_result = (Order.query()
                      .where('total_amount < ?', (Decimal('50.00'),))
                      .exists())
-    assert exists_result is False
+    assert exists_result is False, "Expected exists() to be False with no matches"
 
 
 # Removed tests that use or_where, start_or_group, end_or_group methods as these are no longer supported
@@ -176,15 +176,15 @@ def test_exists_with_limit_and_offset(order_fixtures):
 
     # Test exists with limit
     exists_result = Order.query().where('status = ?', ('active',)).limit(1).exists()
-    assert exists_result is True
+    assert exists_result is True, "Expected exists() to be True with limit"
 
     # Test exists with limit and offset
     exists_result = Order.query().where('status = ?', ('active',)).limit(3).offset(2).exists()
-    assert exists_result is False
+    assert exists_result is False, "Expected exists() to be False past available records"
 
     # Test exists with limit and offset that exceeds available records
     exists_result = Order.query().where('status = ?', ('active',)).limit(1).offset(10).exists()
-    assert exists_result is False
+    assert exists_result is False, "Expected exists() to be False when offset exceeds records"
 
 
 def test_exists_with_joins(order_fixtures):
@@ -226,7 +226,7 @@ def test_exists_with_joins(order_fixtures):
                      .where('users.username = ?', ('exists_join_user',))
                      .where('order_items.product_name = ?', ('Test Product',))
                      .exists())
-    assert exists_result is True
+    assert exists_result is True, "Expected exists() to be True with JOIN matching records"
 
     # Test exists with JOIN and non-matching condition
     exists_result = (Order.query()
@@ -235,4 +235,4 @@ def test_exists_with_joins(order_fixtures):
                      .where('orders.order_number = ?', ('JOIN-EXISTS-001',))
                      .where('order_items.product_name = ?', ('Non-Existent Product',))
                      .exists())
-    assert exists_result is False
+    assert exists_result is False, "Expected exists() to be False with non-matching JOIN"

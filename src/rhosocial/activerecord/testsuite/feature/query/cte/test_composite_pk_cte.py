@@ -1,9 +1,12 @@
 # src/rhosocial/activerecord/testsuite/feature/query/cte/test_composite_pk_cte.py
+"""Tests for CTE query operations on models with composite primary keys."""
 from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 class TestCTEQueryCompositePK:
+    """Test CTE query operations against models with composite primary keys."""
+
     @pytest.fixture
     def seeded(self, order_item_class):
         items = [
@@ -15,6 +18,7 @@ class TestCTEQueryCompositePK:
         return items
 
     def test_cte_aggregate(self, seeded, order_item_class):
+        """A CTE wrapping the base composite-key query should aggregate over filtered rows."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_basic_cte():
@@ -29,9 +33,10 @@ class TestCTEQueryCompositePK:
         result = cte.from_cte("order_summary").select(
             Column(dialect, "order_id"), Column(dialect, "quantity")
         ).where(Column(dialect, "order_id") == 1).aggregate()
-        assert len(result) == 2
+        assert len(result) == 2, "Expected 2 aggregated rows for order_id == 1"
 
     def test_cte_pk_filter(self, seeded, order_item_class):
+        """A CTE built on the composite key predicate should return the matching row."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_basic_cte():
@@ -46,9 +51,10 @@ class TestCTEQueryCompositePK:
         cte = CTEQuery(backend)
         cte.with_cte("single_item", base)
         result = cte.from_cte("single_item").aggregate()
-        assert len(result) == 1
+        assert len(result) == 1, "Expected 1 CTE row for the composite key"
 
     def test_cte_unsupported_backend(self, order_item_class):
+        """CTEQuery should raise UnsupportedFeatureError when the backend lacks CTE."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if dialect.supports_basic_cte():

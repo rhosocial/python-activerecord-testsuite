@@ -107,20 +107,20 @@ class TestAsyncWorkerPoolLifecycle:
         pool = WorkerPool(n_workers=2)
 
         try:
-            assert pool.state == PoolState.RUNNING
-            assert pool.n_workers == 2
-            assert pool.active_workers == 2
+            assert pool.state == PoolState.RUNNING, "Expected the pool to start in RUNNING state"
+            assert pool.n_workers == 2, "Expected the pool to spawn 2 workers"
+            assert pool.active_workers == 2, "Expected 2 workers to be active after startup"
 
             # Submit a simple task to verify pool is working
             fut = pool.submit(simple_db_task, 5, conn_params)
-            assert fut.result(timeout=30) == 10
+            assert fut.result(timeout=30) == 10, "Expected simple_db_task to double the input"
 
         finally:
             report = pool.shutdown(graceful_timeout=5.0)
 
-        assert pool.state == PoolState.STOPPED
-        assert pool.active_workers == 0
-        assert report.final_phase == "graceful"
+        assert pool.state == PoolState.STOPPED, "Expected the pool to be STOPPED after shutdown"
+        assert pool.active_workers == 0, "Expected zero active workers after shutdown"
+        assert report.final_phase == "graceful", "Expected the shutdown to finish in graceful phase"
 
 
     async def test_context_manager_usage(self, async_user_class_for_worker):
@@ -131,17 +131,17 @@ class TestAsyncWorkerPoolLifecycle:
             pytest.skip("Provider does not implement WorkerTestProtocol")
 
         with WorkerPool(n_workers=2) as pool:
-            assert pool.state == PoolState.RUNNING
+            assert pool.state == PoolState.RUNNING, "Expected the pool to be RUNNING inside the context"
 
             futures = [
                 pool.submit(simple_db_task, i, conn_params)
                 for i in range(4)
             ]
             results = [f.result(timeout=30) for f in futures]
-            assert results == [0, 2, 4, 6]
+            assert results == [0, 2, 4, 6], "Expected the doubled results [0, 2, 4, 6]"
 
         # Pool should be stopped after exiting context
-        assert pool.state == PoolState.STOPPED
+        assert pool.state == PoolState.STOPPED, "Expected the pool to be STOPPED after exiting context"
 
 
     async def test_graceful_shutdown_with_pending_tasks(self, async_user_class_for_worker):
@@ -166,10 +166,10 @@ class TestAsyncWorkerPoolLifecycle:
         report = pool.shutdown(graceful_timeout=10.0)
 
         # Should be graceful shutdown
-        assert report.final_phase == "graceful"
+        assert report.final_phase == "graceful", "Expected a graceful shutdown when tasks finish in time"
         # All tasks should have completed
-        assert all(f.done for f in futures)
-        assert all(f.succeeded for f in futures)
+        assert all(f.done for f in futures), "Expected every pending task to be done after shutdown"
+        assert all(f.succeeded for f in futures), "Expected every pending task to succeed"
 
 
     async def test_forced_shutdown_with_timeout(self, async_user_class_for_worker):
@@ -191,8 +191,9 @@ class TestAsyncWorkerPoolLifecycle:
         report = pool.shutdown(graceful_timeout=0.5, term_timeout=1.0)
 
         # Should have gone through terminate or kill phase
-        assert report.final_phase in ("terminate", "kill")
-        assert pool.state == PoolState.STOPPED
+        assert report.final_phase in ("terminate", "kill"), \
+            "Expected the shutdown to escalate beyond graceful"
+        assert pool.state == PoolState.STOPPED, "Expected the pool to be STOPPED after forced shutdown"
 
 
     async def test_multiple_pools_sequential(self, async_user_class_for_worker):
@@ -209,7 +210,7 @@ class TestAsyncWorkerPoolLifecycle:
                     for j in range(4)
                 ]
                 results = [f.result(timeout=30) for f in futures]
-                assert results == [0, 2, 4, 6]
+                assert results == [0, 2, 4, 6], "Expected each pool iteration to yield doubled results"
 
 
     async def test_pool_reuse_after_shutdown(self, async_user_class_for_worker):
@@ -222,7 +223,7 @@ class TestAsyncWorkerPoolLifecycle:
         pool = WorkerPool(n_workers=2)
         pool.shutdown(graceful_timeout=1.0)
 
-        assert pool.state == PoolState.STOPPED
+        assert pool.state == PoolState.STOPPED, "Expected the pool to be STOPPED after shutdown"
 
         # Submitting after shutdown should raise
         from rhosocial.activerecord.worker import PoolDrainingError

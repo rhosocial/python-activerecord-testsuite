@@ -23,9 +23,9 @@ class TestSyncEagerLoadingNested:
             item.save()
 
         results = Order.query().with_('items').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related_items = results[0].items()
-        assert len(related_items) == 2
+        assert len(related_items) == 2, "Expected two related items"
 
     def test_two_level_with_belongs_to(self, combined_fixtures):
         """Order.with_('user').all() preloads the single BelongsTo relation."""
@@ -36,10 +36,10 @@ class TestSyncEagerLoadingNested:
         order.save()
 
         results = Order.query().with_('user').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     def test_multiple_nested_same_parent(self, combined_fixtures):
         """Accessing the same nested relation multiple times should return consistent data."""
@@ -50,10 +50,10 @@ class TestSyncEagerLoadingNested:
         order.save()
 
         results = Order.query().with_('user').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     def test_all_nested_loaded(self, combined_fixtures):
         """When all() returns multiple parent records, each should have nested data loaded."""
@@ -66,8 +66,8 @@ class TestSyncEagerLoadingNested:
             o.save()
 
         results = Order.query().with_('user').where(Order.c.user_id == user.id).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected three results"
         for r in results:
             u = r.user()
-            assert u is not None
-            assert u.id == user.id
+            assert u is not None, "Expected the related user to be loaded"
+            assert u.id == user.id, "Expected the related user id to match"

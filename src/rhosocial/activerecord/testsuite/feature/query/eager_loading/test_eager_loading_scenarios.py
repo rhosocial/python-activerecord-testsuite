@@ -67,9 +67,9 @@ class TestSyncQueryCount:
 
         counter = self._install_counter(User)
         results = User.query().with_('orders').where(User.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].orders()
-        assert len(related) == 3
+        assert len(related) == 3, "Expected three related orders"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
     def test_belongs_to_count(self, combined_fixtures):
@@ -83,9 +83,9 @@ class TestSyncQueryCount:
 
         counter = self._install_counter(Order)
         results = Order.query().with_('user').where(Order.c.user_id == user.id).all()
-        assert len(results) == 5
+        assert len(results) == 5, "Expected five results"
         for o in results:
-            assert o.user() is not None
+            assert o.user() is not None, "Expected the related user to be loaded"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
     def test_multiple_relations_count(self, combined_fixtures):
@@ -101,9 +101,9 @@ class TestSyncQueryCount:
 
         counter = self._install_counter(User)
         results = User.query().with_('orders', 'posts').where(User.c.id == user.id).all()
-        assert len(results) == 1
-        assert len(results[0].orders()) == 2
-        assert len(results[0].posts()) == 2
+        assert len(results) == 1, "Expected exactly one result"
+        assert len(results[0].orders()) == 2, "Expected two related orders"
+        assert len(results[0].posts()) == 2, "Expected two related posts"
         assert counter.select_count == 3, f"Expected 3 queries, got {counter.select_count}"
 
     def test_without_eager_is_nplus1(self, combined_fixtures):
@@ -117,7 +117,7 @@ class TestSyncQueryCount:
 
         counter = self._install_counter(Order)
         results = Order.query().where(Order.c.user_id == user.id).all()
-        assert len(results) == 4
+        assert len(results) == 4, "Expected four results"
         for o in results:
             _ = o.user()  # lazy — each triggers a query
         assert counter.select_count == 5, f"Expected 5 queries (N+1), got {counter.select_count}"
@@ -136,9 +136,9 @@ class TestSyncEmptyRelation:
         user.save()
 
         result = User.query().with_('orders').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = result.orders()
-        assert related is not None
+        assert related is not None, "Expected the related list to not be None"
         assert related == []  # empty list, not None
 
     def test_belongs_to_none(self, combined_fixtures):
@@ -165,9 +165,9 @@ class TestSyncEmptyRelation:
             return
 
         result = Order.query().with_('user').where(Order.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
         related = result.user()
-        assert related is None
+        assert related is None, "Expected the related user to be None for an orphan FK"
 
     def test_has_many_empty_list_after_eager(self, combined_fixtures):
         """HasMany: relation_name() returns [] when no related records exist."""
@@ -176,11 +176,11 @@ class TestSyncEmptyRelation:
         user.save()
 
         result = User.query().with_('orders').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         orders = result.orders()
-        assert orders is not None
-        assert isinstance(orders, list)
-        assert len(orders) == 0
+        assert orders is not None, "Expected the related list to not be None"
+        assert isinstance(orders, list), "Expected the related orders to be a list"
+        assert len(orders) == 0, "Expected zero related orders"
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ class TestSyncEmptyResultNoQuery:
         _, Order, _, _, _ = combined_fixtures
         counter = self._install_counter(Order)
         results = Order.query().with_('user').where(Order.c.id == -1).all()
-        assert results == []
+        assert results == [], "Expected an empty result list"
         assert counter.select_count == 1, f"Expected 1 query, got {counter.select_count}"
 
     def test_one_none_no_batch(self, combined_fixtures):
@@ -205,7 +205,7 @@ class TestSyncEmptyResultNoQuery:
         _, Order, _, _, _ = combined_fixtures
         counter = self._install_counter(Order)
         result = Order.query().with_('user').where(Order.c.id == -1).one()
-        assert result is None
+        assert result is None, "Expected the result to be None"
         assert counter.select_count == 1, f"Expected 1 query, got {counter.select_count}"
 
 
@@ -224,10 +224,10 @@ class TestSyncHasOneEagerLoading:
         profile.save()
 
         result = User.query().with_('profile').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = result.profile()
-        assert related is not None
-        assert related.bio == "Test bio"
+        assert related is not None, "Expected the related profile to be loaded"
+        assert related.bio == "Test bio", "Expected the related profile bio to match"
 
     def test_has_one_count(self, profile_fixtures):
         """with_('profile') → 2 queries regardless of N."""
@@ -238,9 +238,9 @@ class TestSyncHasOneEagerLoading:
         Profile(user_id=user.id, bio="Count test").save()
 
         results = User.query().with_('profile').where(User.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         p = results[0].profile()
-        assert p is not None
+        assert p is not None, "Expected the related profile to be loaded"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
     def test_has_one_empty(self, profile_fixtures):
@@ -250,9 +250,9 @@ class TestSyncHasOneEagerLoading:
         user.save()
 
         result = User.query().with_('profile').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         profile = result.profile()
-        assert profile is None
+        assert profile is None, "Expected the related profile to be None"
 
 
 # ---------------------------------------------------------------------------
@@ -285,10 +285,13 @@ class TestSyncEagerVsLazyParity:
         lazy_user = User.find_one(user.id)
         lazy_orders = sorted(lazy_user.orders(), key=lambda o: o.id)
 
-        assert len(eager_orders) == len(lazy_orders)
+        assert len(eager_orders) == len(lazy_orders), \
+            "Expected eager and lazy to return the same number of orders"
         for eo, lo in zip(eager_orders, lazy_orders):
-            assert eo.order_number == lo.order_number
-            assert eo.total_amount == lo.total_amount
+            assert eo.order_number == lo.order_number, \
+                "Expected eager and lazy order numbers to match"
+            assert eo.total_amount == lo.total_amount, \
+                "Expected eager and lazy order totals to match"
 
     def test_eager_vs_lazy_belongs_to(self, combined_fixtures):
         """Eager and lazy return identical User for BelongsTo."""
@@ -304,8 +307,9 @@ class TestSyncEagerVsLazyParity:
         lazy_order = Order.find_one(order.id)
         lazy_user = lazy_order.user()
 
-        assert eager_user.id == lazy_user.id
-        assert eager_user.username == lazy_user.username
+        assert eager_user.id == lazy_user.id, "Expected eager and lazy user ids to match"
+        assert eager_user.username == lazy_user.username, \
+            "Expected eager and lazy usernames to match"
 
 
 # ---------------------------------------------------------------------------
@@ -325,15 +329,15 @@ class TestSyncMixedEagerLazy:
                   unit_price=Decimal('25'), subtotal=Decimal('25')).save()
 
         result = Order.query().with_('user').where(Order.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
 
         eager_user = result.user()
-        assert eager_user is not None
-        assert eager_user.username == 'mixed'
+        assert eager_user is not None, "Expected the eagerly loaded user to be present"
+        assert eager_user.username == 'mixed', "Expected the eagerly loaded username to match"
 
         items = result.items()
-        assert len(items) == 1
-        assert items[0].product_name == 'M-Item'
+        assert len(items) == 1, "Expected one lazily loaded item"
+        assert items[0].product_name == 'M-Item', "Expected the item product_name to match"
 
     def test_mixed_eager_then_lazy_same_relation(self, combined_fixtures):
         """First access via eager, second via lazy — both work (cache)."""
@@ -344,13 +348,13 @@ class TestSyncMixedEagerLazy:
         order.save()
 
         result = Order.query().with_('user').where(Order.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
 
         u1 = result.user()
-        assert u1 is not None
+        assert u1 is not None, "Expected the first access to return a user"
         u2 = result.user()
-        assert u2 is not None
-        assert u2.id == u1.id
+        assert u2 is not None, "Expected the cached access to return a user"
+        assert u2.id == u1.id, "Expected both accesses to return the same user"
 
 
 # ---------------------------------------------------------------------------
@@ -373,11 +377,11 @@ class TestSyncBlogEagerLoading:
             Comment(content=f'Comment {i}', user_id=user.id, post_id=post.id).save()
 
         result = Post.query().with_('comments').where(Post.c.id == post.id).one()
-        assert result is not None
+        assert result is not None, "Expected the post to be loaded"
         comments = result.comments()
-        assert len(comments) == 3
+        assert len(comments) == 3, "Expected three related comments"
         for c in comments:
-            assert c.post_id == post.id
+            assert c.post_id == post.id, "Expected each comment's post_id to match"
 
     def test_post_comments_count(self, blog_fixtures):
         """with_('comments') → 2 queries regardless of N."""
@@ -392,9 +396,9 @@ class TestSyncBlogEagerLoading:
 
         counter = self._install_counter(Post)
         results = Post.query().with_('comments').all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected three posts"
         for p in results:
-            assert len(p.comments()) == 2
+            assert len(p.comments()) == 2, "Expected two comments per post"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
     def test_comment_user_eager(self, blog_fixtures):
@@ -408,10 +412,10 @@ class TestSyncBlogEagerLoading:
         comment.save()
 
         result = Comment.query().with_('user').where(Comment.c.id == comment.id).one()
-        assert result is not None
+        assert result is not None, "Expected the comment to be loaded"
         u = result.user()
-        assert u is not None
-        assert u.username == 'cu_user'
+        assert u is not None, "Expected the related user to be loaded"
+        assert u.username == 'cu_user', "Expected the related user username to match"
 
     def test_comment_post_eager(self, blog_fixtures):
         """with_('post') on Comment should preload BelongsTo post."""
@@ -424,10 +428,10 @@ class TestSyncBlogEagerLoading:
         comment.save()
 
         result = Comment.query().with_('post').where(Comment.c.id == comment.id).one()
-        assert result is not None
+        assert result is not None, "Expected the comment to be loaded"
         p = result.post()
-        assert p is not None
-        assert p.title == 'CP Post'
+        assert p is not None, "Expected the related post to be loaded"
+        assert p.title == 'CP Post', "Expected the related post title to match"
 
     def test_post_comments_empty(self, blog_fixtures):
         """Post with no comments → .comments() returns []."""
@@ -438,8 +442,8 @@ class TestSyncBlogEagerLoading:
         post.save()
 
         result = Post.query().with_('comments').where(Post.c.id == post.id).one()
-        assert result is not None
-        assert result.comments() == []
+        assert result is not None, "Expected the post to be loaded"
+        assert result.comments() == [], "Expected the post to have no comments"
 
 
 # ---------------------------------------------------------------------------
@@ -462,9 +466,9 @@ class TestSyncUserCommentsEager:
             Comment(content=f'UC {i}', user_id=user.id, post_id=post.id).save()
 
         result = User.query().with_('comments').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         comments = result.comments()
-        assert len(comments) == 3
+        assert len(comments) == 3, "Expected three related comments"
 
     def test_user_comments_count(self, blog_fixtures):
         """with_('comments') → 2 queries regardless of N."""
@@ -480,8 +484,8 @@ class TestSyncUserCommentsEager:
 
         counter = self._install_counter(User)
         results = User.query().with_('comments').where(User.c.id == user.id).all()
-        assert len(results) == 1
-        assert len(results[0].comments()) == 4
+        assert len(results) == 1, "Expected exactly one result"
+        assert len(results[0].comments()) == 4, "Expected four related comments"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
 
@@ -508,11 +512,11 @@ class TestSyncNestedEagerLoading:
 
         counter = self._install_counter(User)
         results = User.query().with_('posts.comments').where(User.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         posts = results[0].posts()
-        assert len(posts) == 3
+        assert len(posts) == 3, "Expected three related posts"
         for p in posts:
-            assert len(p.comments()) == 2
+            assert len(p.comments()) == 2, "Expected two comments per post"
         assert counter.select_count == 3, f"Expected 3 queries (user + posts + comments), got {counter.select_count}"
 
     def test_nested_posts_comments_empty_posts(self, blog_fixtures):
@@ -522,8 +526,8 @@ class TestSyncNestedEagerLoading:
         user.save()
 
         result = User.query().with_('posts.comments').where(User.c.id == user.id).one()
-        assert result is not None
-        assert result.posts() == []
+        assert result is not None, "Expected the user to be loaded"
+        assert result.posts() == [], "Expected the user to have no posts"
 
     def test_nested_posts_comments_no_comments(self, blog_fixtures):
         """Post with no comments → comments() returns [] for each post."""
@@ -535,11 +539,11 @@ class TestSyncNestedEagerLoading:
                  user_id=user.id, status='published').save()
 
         result = User.query().with_('posts.comments').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         posts = result.posts()
-        assert len(posts) == 2
+        assert len(posts) == 2, "Expected two related posts"
         for p in posts:
-            assert p.comments() == []
+            assert p.comments() == [], "Expected each post to have no comments"
 
     def test_nested_posts_comments_eager_vs_lazy(self, blog_fixtures):
         """Eager dot-path and lazy produce identical data."""
@@ -565,7 +569,9 @@ class TestSyncNestedEagerLoading:
         for p in lazy_posts:
             lazy_comments.extend(p.comments())
 
-        assert len(eager_comments) == len(lazy_comments)
+        assert len(eager_comments) == len(lazy_comments), \
+            "Expected eager and lazy to return the same number of comments"
         for ec, lc in zip(sorted(eager_comments, key=lambda c: c.id),
                           sorted(lazy_comments, key=lambda c: c.id)):
-            assert ec.content == lc.content
+            assert ec.content == lc.content, \
+                "Expected eager and lazy comment contents to match"

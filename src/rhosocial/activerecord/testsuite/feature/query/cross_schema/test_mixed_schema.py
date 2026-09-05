@@ -24,8 +24,8 @@ def test_same_named_tables_coexist(mixed_schema_fixtures):
     MixedSchemaOrder(user_id=user.id, order_number="sch-2", total_amount=200).save()
     MixedSchemaOrder(user_id=user.id, order_number="sch-3", total_amount=300).save()
 
-    assert Order.query().count() == 2
-    assert MixedSchemaOrder.query().count() == 3
+    assert Order.query().count() == 2, "Expected 2 rows in default-schema orders"
+    assert MixedSchemaOrder.query().count() == 3, "Expected 3 rows in schema-qualified orders"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -38,11 +38,12 @@ def test_primary_key_lookup_is_namespace_scoped(mixed_schema_fixtures):
     Order(user_id=user.id, order_number="default-row").save()
     MixedSchemaOrder(user_id=user.id, order_number="schema-row").save()
 
-    assert Order.query().where(Order.c.id == 1).one().order_number == "default-row"
+    assert Order.query().where(Order.c.id == 1).one().order_number == "default-row", \
+        "Expected default-schema order lookup to return default-row"
     assert (
         MixedSchemaOrder.query().where(MixedSchemaOrder.c.id == 1).one().order_number
         == "schema-row"
-    )
+    ), "Expected schema-qualified order lookup to return schema-row"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -59,12 +60,15 @@ def test_update_all_and_delete_all_stay_scoped(mixed_schema_fixtures):
     MixedSchemaOrder.query().where(MixedSchemaOrder.c.user_id == user.id).update_all(
         {"status": "shipped"}
     )
-    assert Order.query().where(Order.c.status == "pending").count() == 1
-    assert MixedSchemaOrder.query().where(MixedSchemaOrder.c.status == "shipped").count() == 2
+    assert Order.query().where(Order.c.status == "pending").count() == 1, \
+        "Expected the default-schema order to remain pending"
+    assert MixedSchemaOrder.query().where(MixedSchemaOrder.c.status == "shipped").count() == 2, \
+        "Expected both schema-qualified orders to be shipped"
 
     MixedSchemaOrder.query().where(MixedSchemaOrder.c.order_number == "s1").delete_all()
-    assert MixedSchemaOrder.query().count() == 1
-    assert Order.query().count() == 1
+    assert MixedSchemaOrder.query().count() == 1, \
+        "Expected 1 schema-qualified order remaining after delete"
+    assert Order.query().count() == 1, "Expected default-schema count to remain at 1"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -88,4 +92,5 @@ def test_join_default_user_with_schema_order(mixed_schema_fixtures):
         .order_by(MixedSchemaOrder.c.total_amount)
         .aggregate()
     )
-    assert [(r["order_number"], r["owner"]) for r in rows] == [("j1", "alice"), ("j3", "alice")]
+    assert [(r["order_number"], r["owner"]) for r in rows] == [("j1", "alice"), ("j3", "alice")], \
+        "Expected joined rows for alice to be (j1, 'alice') and (j3, 'alice')"

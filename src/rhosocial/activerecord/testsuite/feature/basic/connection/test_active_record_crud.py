@@ -34,6 +34,8 @@ async def async_execute_sql(backend, sql: str, params=None):
         stmt_type = StatementType.DML
     options = ExecutionOptions(stmt_type=stmt_type)
     return await backend.execute(sql, params or (), options=options)
+
+
 class TestSyncActiveRecordCRUD:
     """Test synchronous ActiveRecord CRUD with connection pool."""
 
@@ -49,8 +51,8 @@ class TestSyncActiveRecordCRUD:
         # Verify committed
         with pool.connection() as backend:
             result = backend.fetch_all("SELECT * FROM test_users")
-            assert len(result) == 1
-            assert result[0]['name'] == "Alice"
+            assert len(result) == 1, "Expected 1 row to be persisted after commit"
+            assert result[0]['name'] == "Alice", "Expected the inserted name to be 'Alice'"
 
     def test_update_in_transaction(self, sync_pool_for_crud):
         """Test model update in transaction context."""
@@ -67,7 +69,7 @@ class TestSyncActiveRecordCRUD:
         # Verify updated
         with pool.connection() as backend:
             result = backend.fetch_all("SELECT * FROM test_users WHERE name = 'Robert'")
-            assert len(result) == 1
+            assert len(result) == 1, "Expected 1 row to be updated to name 'Robert'"
 
     def test_delete_in_transaction(self, sync_pool_for_crud):
         """Test model delete in transaction context."""
@@ -84,7 +86,7 @@ class TestSyncActiveRecordCRUD:
         # Verify deleted
         with pool.connection() as backend:
             result = backend.fetch_all("SELECT * FROM test_users")
-            assert len(result) == 0
+            assert len(result) == 0, "Expected no rows to remain after delete"
 
     def test_transaction_rollback_on_create(self, sync_pool_for_crud):
         """Test that create is rolled back on error."""
@@ -100,7 +102,7 @@ class TestSyncActiveRecordCRUD:
         # Verify rollback
         with pool.connection() as backend:
             result = backend.fetch_all("SELECT * FROM test_users")
-            assert len(result) == 0
+            assert len(result) == 0, "Expected the row to be rolled back"
 
     def test_nested_transaction_reuses_connection(self, sync_pool_for_crud):
         """Test that nested transactions reuse the same connection."""
@@ -112,11 +114,12 @@ class TestSyncActiveRecordCRUD:
             # Nested transaction should reuse connection
             with pool.transaction() as inner_tx:
                 inner_backend = model.backend()
-                assert inner_backend is outer_backend
+                assert inner_backend is outer_backend, \
+                    "Expected the inner transaction backend to reuse the outer backend"
 
                 execute_sql(inner_backend, "INSERT INTO test_users (name, email) VALUES ('Eve', 'eve@test.com')")
 
         # Verify committed
         with pool.connection() as backend:
             result = backend.fetch_all("SELECT * FROM test_users")
-            assert len(result) == 1
+            assert len(result) == 1, "Expected 1 row to be persisted after nested commit"

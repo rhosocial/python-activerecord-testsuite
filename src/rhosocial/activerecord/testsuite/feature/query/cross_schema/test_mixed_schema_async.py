@@ -17,8 +17,10 @@ async def test_async_same_named_tables_coexist(async_mixed_schema_fixtures):
         user_id=user.id, order_number="sch-1", total_amount=100
     ).save()
 
-    assert await AsyncOrder.query().count() == 1
-    assert await AsyncMixedSchemaOrder.query().count() == 1
+    assert await AsyncOrder.query().count() == 1, \
+        "Expected 1 row in default-schema orders"
+    assert await AsyncMixedSchemaOrder.query().count() == 1, \
+        "Expected 1 row in schema-qualified orders"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -35,13 +37,14 @@ async def test_async_update_all_stays_scoped(async_mixed_schema_fixtures):
     await AsyncMixedSchemaOrder.query().where(
         AsyncMixedSchemaOrder.c.user_id == user.id
     ).update_all({"status": "shipped"})
-    assert await AsyncOrder.query().where(AsyncOrder.c.status == "pending").count() == 1
+    assert await AsyncOrder.query().where(AsyncOrder.c.status == "pending").count() == 1, \
+        "Expected the default-schema order to remain pending"
     assert (
         await AsyncMixedSchemaOrder.query()
         .where(AsyncMixedSchemaOrder.c.status == "shipped")
         .count()
         == 2
-    )
+    ), "Expected both schema-qualified orders to be shipped"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -63,4 +66,5 @@ async def test_async_join_default_user_with_schema_order(async_mixed_schema_fixt
         .where(AsyncUser.c.username == "alice")
         .aggregate()
     )
-    assert [(r["order_number"], r["owner"]) for r in rows] == [("j1", "alice")]
+    assert [(r["order_number"], r["owner"]) for r in rows] == [("j1", "alice")], \
+        "Expected joined rows for alice to be (j1, 'alice')"

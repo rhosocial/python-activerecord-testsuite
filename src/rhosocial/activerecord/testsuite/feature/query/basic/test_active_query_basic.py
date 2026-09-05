@@ -38,7 +38,7 @@ class TestSyncActiveQueryBasic:
 
         # Test query initialization
         query = Order.query()
-        assert query.model_class == Order
+        assert query.model_class == Order, "Expected model_class to be Order"
 
     def test_where_with_predicate(self, order_fixtures):
         """
@@ -59,8 +59,8 @@ class TestSyncActiveQueryBasic:
 
         # Use predicate query to find the specific order
         found = Order.query().where(Order.c.order_number == 'ORD-TEST').all()
-        assert len(found) == 1
-        assert found[0].order_number == 'ORD-TEST'
+        assert len(found) == 1, "Expected exactly one matching order"
+        assert found[0].order_number == 'ORD-TEST', "Expected order_number to be ORD-TEST"
 
     def test_where_with_string_params(self, order_fixtures):
         """
@@ -81,8 +81,8 @@ class TestSyncActiveQueryBasic:
 
         # Use string parameter query to find the specific order
         found = Order.query().where('order_number = ?', ('ORD-STRING',)).all()
-        assert len(found) == 1
-        assert found[0].order_number == 'ORD-STRING'
+        assert len(found) == 1, "Expected exactly one matching order"
+        assert found[0].order_number == 'ORD-STRING', "Expected order_number to be ORD-STRING"
 
     def test_select_columns(self, order_fixtures):
         """
@@ -105,10 +105,10 @@ class TestSyncActiveQueryBasic:
         # we might need to use aggregate() or raw SQL instead of all()
         # Let's test with a query that returns all required fields
         results = Order.query().all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one matching order"
         # Verify that the model instance is properly created
-        assert isinstance(results[0], Order)
-        assert results[0].id == order.id
+        assert isinstance(results[0], Order), "Expected result to be an Order instance"
+        assert results[0].id == order.id, "Expected result id to match order id"
 
     def test_order_by(self, order_fixtures):
         """
@@ -134,13 +134,15 @@ class TestSyncActiveQueryBasic:
         # Order by order number ascending to verify correct sorting
         # Using column-based ordering
         results = Order.query().order_by(Order.c.total_amount).all()
-        assert len(results) == 3
-        assert results[0].total_amount <= results[-1].total_amount
+        assert len(results) == 3, "Expected 3 orders to be returned"
+        assert results[0].total_amount <= results[-1].total_amount, \
+            "Expected ascending order by total_amount"
 
         # Order by order number descending to verify reverse sorting
         results_desc = Order.query().order_by((Order.c.total_amount, "DESC")).all()
-        assert len(results_desc) == 3
-        assert results_desc[0].total_amount >= results_desc[-1].total_amount
+        assert len(results_desc) == 3, "Expected 3 orders to be returned"
+        assert results_desc[0].total_amount >= results_desc[-1].total_amount, \
+            "Expected descending order by total_amount"
 
     def test_limit_offset(self, order_fixtures):
         """
@@ -165,9 +167,9 @@ class TestSyncActiveQueryBasic:
 
         # Test LIMIT and OFFSET to get second and third orders
         results = Order.query().order_by(Order.c.order_number).limit(2).offset(1).all()
-        assert len(results) == 2
-        assert results[0].order_number == 'PAG-002'
-        assert results[1].order_number == 'PAG-003'
+        assert len(results) == 2, "Expected exactly 2 paginated results"
+        assert results[0].order_number == 'PAG-002', "Expected first result to be PAG-002"
+        assert results[1].order_number == 'PAG-003', "Expected second result to be PAG-003"
 
     def test_all_method_returns_model_instances(self, order_fixtures):
         """
@@ -188,10 +190,10 @@ class TestSyncActiveQueryBasic:
 
         # Execute query to get all matching records
         results = Order.query().all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one matching order"
         # Verify results are proper model instances
-        assert isinstance(results[0], Order)
-        assert results[0].id == order.id
+        assert isinstance(results[0], Order), "Expected result to be an Order instance"
+        assert results[0].id == order.id, "Expected result id to match order id"
 
     def test_one_method_returns_single_instance(self, order_fixtures):
         """
@@ -211,9 +213,9 @@ class TestSyncActiveQueryBasic:
 
         # Get single instance using one() method
         result = Order.query().where(Order.c.id == order.id).one()
-        assert result is not None
-        assert isinstance(result, Order)
-        assert result.id == order.id
+        assert result is not None, "Expected a result to be returned"
+        assert isinstance(result, Order), "Expected result to be an Order instance"
+        assert result.id == order.id, "Expected result id to match order id"
 
 
     def test_one_method_returns_none_when_no_records_match(self, order_fixtures):
@@ -234,7 +236,7 @@ class TestSyncActiveQueryBasic:
         non_existent_order = Order.query().where(Order.c.order_number == 'NON-EXISTENT-ORDER').one()
 
         # Verify that None is returned when no records match
-        assert non_existent_order is None
+        assert non_existent_order is None, "Expected one() to return None for missing record"
 
     def test_where_invalid_condition_type(self, order_fixtures):
         """Test that where method raises TypeError for invalid condition type."""
@@ -292,7 +294,7 @@ class TestSyncActiveQueryBasic:
             Order(user_id=user.id, order_number=f'ORD-{i:03d}', total_amount=Decimal(f'{(i+1)*100.00}')).save()
 
         results = Order.query().limit(3).offset(1).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected exactly 3 results after limit/offset"
 
     def test_group_by_invalid_column_type(self, order_fixtures):
         """Test that group_by method raises TypeError for invalid column type."""
@@ -314,7 +316,7 @@ class TestSyncActiveQueryBasic:
             Order(user_id=user.id, order_number=f'ORD-{i:03d}', total_amount=Decimal(f'{(i+1)*100.00}')).save()
 
         results = Order.query().select(Order.c.user_id, Order.c.order_number).group_by(Order.c.user_id).group_by(Order.c.order_number).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected 3 grouped results"
 
     def test_having_invalid_condition_type(self, order_fixtures):
         """Test that having method raises TypeError for invalid condition type."""
@@ -338,7 +340,7 @@ class TestSyncActiveQueryBasic:
         query.select(Order.c.id)
         query.select(Order.c.order_number, append=True)
         sql, params = query.to_sql()
-        assert 'order_number' in sql.lower()
+        assert 'order_number' in sql.lower(), "Expected order_number to appear in the SQL"
 
     def test_order_by_extend_existing(self, order_fixtures):
         """Test calling order_by multiple times extends existing clause."""
@@ -353,4 +355,5 @@ class TestSyncActiveQueryBasic:
         query.order_by(Order.c.id)
         query.order_by(Order.c.order_number)
         results = query.all()
-        assert [order.order_number for order in results] == ['ORD-001']
+        assert [order.order_number for order in results] == ['ORD-001'], \
+            "Expected only ORD-001 to be returned"

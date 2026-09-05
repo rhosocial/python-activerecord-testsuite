@@ -327,8 +327,9 @@ class TestParallelCRUD:
             results = [f.result(timeout=60) for f in futures]
 
         # Verify all users created successfully
-        assert all(r is not None for r in results)
-        assert len(set(results)) == 10  # All IDs should be unique
+        assert all(r is not None for r in results), \
+            "Expected every parallel create result to be a non-None user ID"
+        assert len(set(results)) == 10, "Expected 10 unique user IDs from parallel creates"  # All IDs should be unique
 
     def test_parallel_read(self, user_class_for_worker):
         """Test parallel user reading."""
@@ -354,9 +355,11 @@ class TestParallelCRUD:
                 results = [f.result(timeout=60) for f in futures]
 
             # Verify read results
-            assert all(r is not None for r in results)
+            assert all(r is not None for r in results), \
+                "Expected every parallel read result to be a non-None dict"
             usernames = {r['username'] for r in results}
-            assert usernames == {f'read_test_{i}' for i in range(5)}
+            assert usernames == {f'read_test_{i}' for i in range(5)}, \
+                "Expected the parallel reads to return the seeded usernames"
         finally:
             for user in test_users:
                 user.delete()
@@ -395,12 +398,13 @@ class TestParallelCRUD:
                 results = [f.result(timeout=60) for f in futures]
 
             # Verify updates succeeded
-            assert all(results)
+            assert all(results), "Expected every parallel update result to be True"
 
             # Refresh and verify balances
             for i, user in enumerate(test_users):
                 user.refresh()
-                assert user.balance == 100.0 + i
+                assert user.balance == 100.0 + i, \
+                    f"Expected user {i} balance to equal {100.0 + i}"
         finally:
             for user in test_users:
                 user.delete()
@@ -432,8 +436,9 @@ class TestParallelCRUD:
             results = [f.result(timeout=60) for f in futures]
 
         # Verify all deleted
-        assert all(results)
+        assert all(results), "Expected every parallel delete result to be True"
 
         # Verify users no longer exist
         for uid in test_ids:
-            assert User.find_one({'id': uid}) is None
+            assert User.find_one({'id': uid}) is None, \
+                f"Expected user {uid} to be deleted"

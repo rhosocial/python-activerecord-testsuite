@@ -22,7 +22,7 @@ async def test_count_simple(async_order_fixtures):
 
     # Count all orders for this user
     count = await AsyncOrder.query().count()
-    assert count == 3
+    assert count == 3, "Expected count to be 3"
 
 
 async def test_count_with_column(async_order_fixtures):
@@ -48,7 +48,7 @@ async def test_count_with_column(async_order_fixtures):
 
     # Count specific column values
     count = await AsyncOrder.query().count(AsyncOrder.c.order_number)
-    assert count == 3
+    assert count == 3, "Expected column count to be 3"
 
 
 async def test_count_distinct(async_order_fixtures):
@@ -108,7 +108,7 @@ async def test_sum_simple(async_order_fixtures):
 
     # Calculate total sum of amounts
     total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
-    assert total == sum(amounts)
+    assert total == sum(amounts), "Expected sum to equal total of amounts"
 
 
 async def test_sum_with_column(async_order_fixtures):
@@ -135,7 +135,7 @@ async def test_sum_with_column(async_order_fixtures):
 
     # Calculate sum for specific column
     total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
-    assert total == sum(amounts)
+    assert total == sum(amounts), "Expected column sum to equal total of amounts"
 
 
 async def test_avg_simple(async_order_fixtures):
@@ -163,7 +163,7 @@ async def test_avg_simple(async_order_fixtures):
     # Calculate average of amounts
     avg = await AsyncOrder.query().avg(AsyncOrder.c.total_amount)
     expected_avg = sum(amounts) / len(amounts)
-    assert avg == expected_avg
+    assert avg == expected_avg, "Expected average to equal mean of amounts"
 
 
 async def test_min_max_simple(async_order_fixtures):
@@ -191,9 +191,9 @@ async def test_min_max_simple(async_order_fixtures):
     # Find minimum and maximum values
     min_val = await AsyncOrder.query().min_(AsyncOrder.c.total_amount)
     max_val = await AsyncOrder.query().max_(AsyncOrder.c.total_amount)
-    
-    assert min_val == min(amounts)
-    assert max_val == max(amounts)
+
+    assert min_val == min(amounts), "Expected min to equal min of amounts"
+    assert max_val == max(amounts), "Expected max to equal max of amounts"
 
 
 async def test_aggregate_complex(async_order_fixtures):
@@ -233,10 +233,11 @@ async def test_aggregate_complex(async_order_fixtures):
         functions.count(dialect, '*').as_('count')
     ).aggregate()
 
-    assert len(results) == 1
-    assert results[0]['total'] == sum(amounts)
-    assert results[0]['average'] == sum(amounts) / len(amounts)
-    assert results[0]['count'] == len(amounts)
+    assert len(results) == 1, "Expected exactly one aggregate result row"
+    assert results[0]['total'] == sum(amounts), "Expected total to equal sum of amounts"
+    assert results[0]['average'] == sum(amounts) / len(amounts), \
+        "Expected average to equal mean of amounts"
+    assert results[0]['count'] == len(amounts), "Expected count to equal len of amounts"
 
 
 async def test_aggregate_multiple_fields(async_order_fixtures):
@@ -281,10 +282,13 @@ async def test_aggregate_multiple_fields(async_order_fixtures):
         functions.avg(dialect, AsyncOrder.c.total_amount).as_('avg_amount')
     ).aggregate()
 
-    assert len(results) == 1
-    assert results[0]['total_orders'] == len(orders_data)
-    assert results[0]['total_amount'] == sum(d['amount'] for d in orders_data)
-    assert results[0]['avg_amount'] == sum(d['amount'] for d in orders_data) / len(orders_data)
+    assert len(results) == 1, "Expected exactly one aggregate result row"
+    assert results[0]['total_orders'] == len(orders_data), \
+        "Expected total_orders to equal len of orders_data"
+    assert results[0]['total_amount'] == sum(d['amount'] for d in orders_data), \
+        "Expected total_amount to equal sum of amounts"
+    assert results[0]['avg_amount'] == sum(d['amount'] for d in orders_data) / len(orders_data), \
+        "Expected avg_amount to equal mean of amounts"
 
 
 async def test_aggregate_with_conditions(async_order_fixtures):
@@ -329,6 +333,8 @@ async def test_aggregate_with_conditions(async_order_fixtures):
     ).aggregate()
 
     active_orders = [d for d in orders_data if d['status'] == 'active']
-    assert len(results) == 1
-    assert results[0]['active_count'] == len(active_orders)
-    assert results[0]['active_total'] == sum(d['amount'] for d in active_orders)
+    assert len(results) == 1, "Expected exactly one aggregate result row"
+    assert results[0]['active_count'] == len(active_orders), \
+        "Expected active_count to match number of active orders"
+    assert results[0]['active_total'] == sum(d['amount'] for d in active_orders), \
+        "Expected active_total to equal sum of active amounts"

@@ -180,7 +180,8 @@ class TestConnectionManagement:
                     for _ in range(4)
                 ]
                 results = [f.result(timeout=30) for f in futures]
-                assert all(isinstance(r, int) for r in results)
+                assert all(isinstance(r, int) for r in results), \
+                    "Expected every count_users_task result to be an int"
 
     def test_connection_isolation_between_workers(self, user_class_for_worker):
         """Test that each worker has isolated connection."""
@@ -211,7 +212,8 @@ class TestConnectionManagement:
                 results = [f.result(timeout=30) for f in futures]
 
                 # All workers should see same count
-                assert len(set(results)) == 1
+                assert len(set(results)) == 1, \
+                    "Expected all workers to observe the same user count"
         finally:
             for user in test_users:
                 user.delete()
@@ -231,7 +233,8 @@ class TestConnectionManagement:
             results = [f.result(timeout=60) for f in futures]
 
             # All iterations should succeed
-            assert all(r == 5 for r in results)
+            assert all(r == 5 for r in results), \
+                "Expected every connection stress result to equal the iteration count"
 
     def test_task_timeout(self, user_class_for_worker):
         """Test task timeout handling."""
@@ -263,8 +266,9 @@ class TestConnectionManagement:
             ]
             results = [f.result(timeout=60) for f in futures]
 
-            assert len(results) == 20
-            assert all(isinstance(r, int) for r in results)
+            assert len(results) == 20, "Expected 20 results from parallel tasks"
+            assert all(isinstance(r, int) for r in results), \
+                "Expected every parallel count result to be an int"
 
     def test_connection_with_create_operations(self, user_class_for_worker):
         """Test connection works correctly with write operations."""
@@ -290,7 +294,8 @@ class TestConnectionManagement:
                 results = [f.result(timeout=60) for f in futures]
 
                 # All should succeed
-                assert all(r['user_id'] is not None for r in results)
+                assert all(r['user_id'] is not None for r in results), \
+                    "Expected every create_and_count_task result to include a user_id"
                 created_ids = [r['user_id'] for r in results]
 
         finally:

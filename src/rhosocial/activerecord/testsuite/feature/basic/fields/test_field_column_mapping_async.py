@@ -46,20 +46,20 @@ class TestAsyncMappedModels:
 
         # Create a user using Python attribute names
         user = AsyncMappedUser(user_name="test_user", email_address="test@example.com", creation_date="2023-01-01T00:00:00")
-        assert await user.save()
-        assert user.user_id is not None
+        assert await user.save(), "Expected the async user save() to succeed"
+        assert user.user_id is not None, "Expected the user primary key to be assigned"
 
         # Retrieve the user by the mapped primary key
         found_user = await AsyncMappedUser.find_one(user.user_id)
-        assert found_user is not None
-        assert found_user.user_name == "test_user"
-        assert found_user.email_address == "test@example.com"
-        assert found_user.creation_date is not None
+        assert found_user is not None, "Expected to find the saved user"
+        assert found_user.user_name == "test_user", "Expected user_name to round-trip"
+        assert found_user.email_address == "test@example.com", "Expected email_address to round-trip"
+        assert found_user.creation_date is not None, "Expected creation_date to be set"
 
         # Verify that querying by the Python attribute name works
         queried_user = await AsyncMappedUser.query().where("username = ?", ("test_user",)).one()
-        assert queried_user is not None
-        assert queried_user.user_id == user.user_id
+        assert queried_user is not None, "Expected to find the user via query"
+        assert queried_user.user_id == user.user_id, "Expected queried user_id to match"
 
     async def test_mapped_post_and_comment(self, async_mapped_models_fixtures: Tuple[Type[ActiveRecord], ...]):
         """
@@ -74,7 +74,7 @@ class TestAsyncMappedModels:
             email_address="test@example.com",
             created_at="2023-01-01T00:00:00"
         )
-        assert await user.save()
+        assert await user.save(), "Expected the async user save() to succeed"
 
         # Create a post
         post = AsyncMappedPost(
@@ -84,8 +84,8 @@ class TestAsyncMappedModels:
             is_published=True,
             publication_time="2023-01-01T00:00:00"
         )
-        assert await post.save()
-        assert post.post_id is not None
+        assert await post.save(), "Expected the async post save() to succeed"
+        assert post.post_id is not None, "Expected the post primary key to be assigned"
 
         # Create a comment related to the post
         comment = AsyncMappedComment(
@@ -95,22 +95,23 @@ class TestAsyncMappedModels:
             is_approved=True,
             comment_creation_date="2023-01-02T00:00:00"
         )
-        assert await comment.save()
-        assert comment.comment_id is not None
+        assert await comment.save(), "Expected the async comment save() to succeed"
+        assert comment.comment_id is not None, "Expected the comment primary key to be assigned"
 
         # Retrieve and verify the post
         found_post = await AsyncMappedPost.find_one(post.post_id)
-        assert found_post is not None
-        assert found_post.post_title == "My Mapped Post"
-        assert found_post.author_id == 1
-        assert found_post.publication_time is not None
+        assert found_post is not None, "Expected to find the saved post"
+        assert found_post.post_title == "My Mapped Post", "Expected post_title to round-trip"
+        assert found_post.author_id == 1, "Expected author_id to be 1"
+        assert found_post.publication_time is not None, "Expected publication_time to be set"
 
         # Retrieve and verify the comment
         found_comment = await AsyncMappedComment.query().where("post_ref = ?", (post.post_id,)).one()
-        assert found_comment is not None
-        assert found_comment.comment_text == "This is a comment."
-        assert found_comment.author_id == user.user_id
-        assert found_comment.comment_creation_date is not None
+        assert found_comment is not None, "Expected to find the saved comment"
+        assert found_comment.comment_text == "This is a comment.", "Expected comment_text to round-trip"
+        assert found_comment.author_id == user.user_id, "Expected comment author_id to match user"
+        assert found_comment.comment_creation_date is not None, \
+            "Expected comment_creation_date to be set"
 
 class TestAsyncMixedAnnotationModels:
     """
@@ -125,30 +126,30 @@ class TestAsyncMixedAnnotationModels:
 
         # The 'notes' field is a string, but the adapter converts it to an int for the DB.
         item = AsyncColumnMappingModel(name="test_item", item_count=100, notes="12345")
-        assert await item.save()
-        assert item.item_id is not None
+        assert await item.save(), "Expected the async item save() to succeed"
+        assert item.item_id is not None, "Expected the item primary key to be assigned"
 
         # Retrieve the item
         found_item = await AsyncColumnMappingModel.find_one(item.item_id)
-        assert found_item is not None
-        assert found_item.name == "test_item"
-        assert found_item.item_count == 100
+        assert found_item is not None, "Expected to find the saved item"
+        assert found_item.name == "test_item", "Expected name to round-trip"
+        assert found_item.item_count == 100, "Expected item_count to round-trip"
 
         # Verify the adapter correctly converted the int from DB back to a string
-        assert found_item.notes == "12345"
+        assert found_item.notes == "12345", "Expected the adapter to convert notes back to '12345'"
 
         # Test querying by a mapped field
         queried_item = await AsyncColumnMappingModel.query().where("item_total = ?", (100,)).one()
-        assert queried_item is not None
-        assert queried_item.item_id == item.item_id
+        assert queried_item is not None, "Expected to find the item via mapped column query"
+        assert queried_item.item_id == item.item_id, "Expected queried item_id to match"
 
         # Test updating
         found_item.item_count = 150
-        assert await found_item.save()
+        assert await found_item.save(), "Expected the update save() to succeed"
 
         # Re-fetch and verify
         updated_item = await AsyncColumnMappingModel.find_one(item.item_id)
-        assert updated_item.item_count == 150
+        assert updated_item.item_count == 150, "Expected item_count to be updated to 150"
 
     async def test_mixed_annotation_model_crud(self, async_mixed_models_fixtures: Tuple[Type[ActiveRecord], ...]):
         """
@@ -166,31 +167,31 @@ class TestAsyncMixedAnnotationModels:
             "metadata": {"key": "value"}
         }
         item = AsyncMixedAnnotationModel(**item_data)
-        assert await item.save()
+        assert await item.save(), "Expected the async mixed model save() to succeed"
 
         # Retrieve and verify
         found_item = await AsyncMixedAnnotationModel.query().where("id = ?", (1,)).one()
-        assert found_item is not None
-        assert found_item.name == "Mixed Item"
+        assert found_item is not None, "Expected to find the mixed item"
+        assert found_item.name == "Mixed Item", "Expected name to round-trip"
 
         # Verify adapter for 'tags'
-        assert isinstance(found_item.tags, list)
-        assert found_item.tags == ["tag1", "tag2"]
+        assert isinstance(found_item.tags, list), "Expected tags to deserialize as a list"
+        assert found_item.tags == ["tag1", "tag2"], "Expected tags to round-trip via adapter"
 
         # Verify adapter and column mapping for 'metadata'
-        assert isinstance(found_item.metadata, dict)
-        assert found_item.metadata == {'key': 'value'}
+        assert isinstance(found_item.metadata, dict), "Expected metadata to deserialize as a dict"
+        assert found_item.metadata == {'key': 'value'}, "Expected metadata to round-trip via adapter"
 
         # Verify default value
-        assert found_item.status == "active"
+        assert found_item.status == "active", "Expected the default status to be 'active'"
 
         # Test updating a field with an adapter
         found_item.tags = ["tag3", "tag4", "tag5"]
-        assert await found_item.save()
+        assert await found_item.save(), "Expected the update save() to succeed"
 
         # Re-fetch and verify update
         updated_item = await AsyncMixedAnnotationModel.query().where("id = ?", (1,)).one()
-        assert updated_item.tags == ["tag3", "tag4", "tag5"]
+        assert updated_item.tags == ["tag3", "tag4", "tag5"], "Expected tags to be updated"
 
 class TestAsyncInvalidCases:
     """
@@ -207,7 +208,8 @@ class TestAsyncInvalidCases:
                 __table_name__ = "invalid"
                 name: Annotated[str, UseColumn("col1"), UseColumn("col2")]
 
-        assert "A field can have at most one UseColumn specified" in str(excinfo.value)
+        assert "A field can have at most one UseColumn specified" in str(excinfo.value), \
+            "Expected the duplicate UseColumn error message"
 
     async def test_multiple_use_adapter_raises_error(self):
         """Verify that using multiple UseAdapter annotations raises an error for async models."""
@@ -225,7 +227,8 @@ class TestAsyncInvalidCases:
                     UseAdapter(DummyAdapter(), str)
                 ]
 
-        assert "A field can have at most one UseAdapter specified" in str(excinfo.value)
+        assert "A field can have at most one UseAdapter specified" in str(excinfo.value), \
+            "Expected the duplicate UseAdapter error message"
 
     async def test_use_column_with_invalid_type_raises_error(self):
         """Verify that UseColumn expects a string argument for async models."""
@@ -236,7 +239,8 @@ class TestAsyncInvalidCases:
                 __table_name__ = "invalid"
                 name: Annotated[str, UseColumn(123)]
 
-        assert "Invalid type for column_name. Expected str, but received type int." in str(excinfo.value)
+        assert "Invalid type for column_name. Expected str, but received type int." in str(excinfo.value), \
+            "Expected the UseColumn invalid-type error message"
 
     async def test_use_adapter_with_invalid_adapter_raises_error(self):
         """Verify that UseAdapter expects a valid adapter instance for async models."""
@@ -249,7 +253,8 @@ class TestAsyncInvalidCases:
                 __table_name__ = "invalid"
                 data: Annotated[str, UseAdapter(NotAnAdapter(), str)]
 
-        assert "Invalid type for adapter. Expected an instance of SQLTypeAdapter, but received type NotAnAdapter." in str(excinfo.value)
+        assert "Invalid type for adapter. Expected an instance of SQLTypeAdapter, but received type NotAnAdapter." in str(excinfo.value), \
+            "Expected the UseAdapter invalid-adapter error message"
 
     async def test_duplicate_column_name_raises_error(self):
         """Verify that two fields mapping to the same column raises an error for async models."""
@@ -264,6 +269,7 @@ class TestAsyncInvalidCases:
 
             AsyncInvalidModelWithDuplicates.validate_column_names()
 
-        assert "Duplicate explicit column name 'shared_column' found" in str(excinfo.value)
+        assert "Duplicate explicit column name 'shared_column' found" in str(excinfo.value), \
+            "Expected the duplicate column name error message"
 
 

@@ -1,10 +1,13 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/type_adapter/test_type_adapter.py
+"""Tests for the field type adapter system, including Optional handling and annotated adapters."""
 from datetime import datetime, timezone
 from typing import Optional
 
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
+
 class TestTypeAdapter:
+    """Tests that type adapters correctly convert values to and from the database."""
 
     def test_optional_string_conversion(self, type_adapter_fixtures):
         """Tests that Optional[str] is handled correctly."""
@@ -13,14 +16,17 @@ class TestTypeAdapter:
         rec1 = TypeAdapterTest(name="test_with_str", optional_name="optional_value", custom_bool=False)
         rec1.save()
         found_rec1 = TypeAdapterTest.find_one(rec1.id)
-        assert isinstance(found_rec1.optional_name, str)
-        assert found_rec1.optional_name == "optional_value"
+        assert isinstance(found_rec1.optional_name, str), \
+            "Expected optional_name to be loaded as str"
+        assert found_rec1.optional_name == "optional_value", \
+            "Expected optional_name to round-trip the stored value"
 
         # Test with None
         rec2 = TypeAdapterTest(name="test_with_none", optional_name=None, custom_bool=False)
         rec2.save()
         found_rec2 = TypeAdapterTest.find_one(rec2.id)
-        assert found_rec2.optional_name is None
+        assert found_rec2.optional_name is None, \
+            "Expected optional_name to remain None"
 
     def test_optional_int_conversion(self, type_adapter_fixtures):
         """Tests that Optional[int] is handled correctly."""
@@ -29,14 +35,17 @@ class TestTypeAdapter:
         rec1 = TypeAdapterTest(name="test_with_int", optional_age=30, custom_bool=False)
         rec1.save()
         found_rec1 = TypeAdapterTest.find_one(rec1.id)
-        assert isinstance(found_rec1.optional_age, int)
-        assert found_rec1.optional_age == 30
+        assert isinstance(found_rec1.optional_age, int), \
+            "Expected optional_age to be loaded as int"
+        assert found_rec1.optional_age == 30, \
+            "Expected optional_age to round-trip the stored value"
 
         # Test with None
         rec2 = TypeAdapterTest(name="test_with_none_age", optional_age=None, custom_bool=False)
         rec2.save()
         found_rec2 = TypeAdapterTest.find_one(rec2.id)
-        assert found_rec2.optional_age is None
+        assert found_rec2.optional_age is None, \
+            "Expected optional_age to remain None"
 
     def test_optional_datetime_conversion(self, type_adapter_fixtures):
         """Tests that Optional[datetime] is handled correctly by its adapter."""
@@ -46,14 +55,17 @@ class TestTypeAdapter:
         rec1 = TypeAdapterTest(name="test_with_datetime", last_login=now, custom_bool=False)
         rec1.save()
         found_rec1 = TypeAdapterTest.find_one(rec1.id)
-        assert isinstance(found_rec1.last_login, datetime)
-        assert found_rec1.last_login == now
+        assert isinstance(found_rec1.last_login, datetime), \
+            "Expected last_login to be loaded as datetime"
+        assert found_rec1.last_login == now, \
+            "Expected last_login to round-trip the stored value"
 
         # Test with None
         rec2 = TypeAdapterTest(name="test_with_none_datetime", last_login=None, custom_bool=False)
         rec2.save()
         found_rec2 = TypeAdapterTest.find_one(rec2.id)
-        assert found_rec2.last_login is None
+        assert found_rec2.last_login is None, \
+            "Expected last_login to remain None"
 
     def test_optional_bool_conversion(self, type_adapter_fixtures):
         """Tests that Optional[bool] is handled correctly by its adapter."""
@@ -62,18 +74,18 @@ class TestTypeAdapter:
         rec1 = TypeAdapterTest(name="test_with_bool_true", is_premium=True, custom_bool=False)
         rec1.save()
         found_rec1 = TypeAdapterTest.find_one(rec1.id)
-        assert found_rec1.is_premium is True
+        assert found_rec1.is_premium is True, "Expected is_premium True to round-trip"
 
         rec2 = TypeAdapterTest(name="test_with_bool_false", is_premium=False, custom_bool=False)
         rec2.save()
         found_rec2 = TypeAdapterTest.find_one(rec2.id)
-        assert found_rec2.is_premium is False
+        assert found_rec2.is_premium is False, "Expected is_premium False to round-trip"
 
         # Test with None
         rec3 = TypeAdapterTest(name="test_with_none_bool", is_premium=None, custom_bool=False)
         rec3.save()
         found_rec3 = TypeAdapterTest.find_one(rec3.id)
-        assert found_rec3.is_premium is None
+        assert found_rec3.is_premium is None, "Expected is_premium to remain None"
 
     def test_non_optional_field_no_regression(self, type_adapter_fixtures):
         """Tests that a simple non-optional field is not affected."""
@@ -81,8 +93,10 @@ class TestTypeAdapter:
         rec = TypeAdapterTest(name="simple_string", custom_bool=False)
         rec.save()
         found_rec = TypeAdapterTest.find_one(rec.id)
-        assert isinstance(found_rec.name, str)
-        assert found_rec.name == "simple_string"
+        assert isinstance(found_rec.name, str), \
+            "Expected name to be loaded as str"
+        assert found_rec.name == "simple_string", \
+            "Expected name to round-trip the stored value"
 
     def test_unsupported_union_is_handled_gracefully(self, type_adapter_fixtures):
         """
@@ -103,9 +117,11 @@ class TestTypeAdapter:
         # Therefore, no error should be raised.
         found_rec = TypeAdapterTest.find_one(1)
 
-        assert found_rec is not None
-        assert found_rec.unsupported_union == "some_string"
-        assert isinstance(found_rec.unsupported_union, str)
+        assert found_rec is not None, "Expected to find the inserted record"
+        assert found_rec.unsupported_union == "some_string", \
+            "Expected unsupported_union to be 'some_string'"
+        assert isinstance(found_rec.unsupported_union, str), \
+            "Expected unsupported_union to be loaded as str"
 
     def test_db_null_with_non_optional_field_raises_error(self, type_adapter_fixtures):
         """
@@ -123,7 +139,10 @@ class TestTypeAdapter:
 
         error_message = str(exc_info.value)
         # Check for SQLite's message OR MySQL's message
-        assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message or "violates not-null constraint" in error_message or "validation error" in error_message)
+        assert ("NOT NULL constraint failed" in error_message or "cannot be null" in error_message \
+                or "violates not-null constraint" in error_message \
+                or "validation error" in error_message), \
+            "Expected the IntegrityError message to mention the NOT NULL constraint"
 
     def test_annotated_custom_adapter(self, type_adapter_fixtures):
         """Tests that a field-specific adapter assigned via Annotation works correctly."""
@@ -135,14 +154,16 @@ class TestTypeAdapter:
         # Verify raw data in DB is 'yes' (or potentially '1' depending on backend implementation)
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
         # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
-        assert raw_true["custom_bool"] in ["yes", "1", 1, True, "true"]
+        assert raw_true["custom_bool"] in ["yes", "1", 1, True, "true"], \
+            "Expected the stored custom_bool True to be one of the accepted representations"
 
         # Verify that reading it back converts it appropriately
         found_true = TypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept both the expected boolean value and the raw stored value
         # The important thing is that the value is consistent with the adapter's behavior
-        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
+        assert found_true.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"], \
+            "Expected the read-back custom_bool to be one of the accepted representations"
 
         # Test False value
         rec_false = TypeAdapterTest(name="custom_false", custom_bool=False)
@@ -151,13 +172,15 @@ class TestTypeAdapter:
         # Verify raw data in DB is 'no' (or potentially '0' depending on backend implementation)
         raw_false = TypeAdapterTest.backend().fetch_one(f"SELECT custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
         # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
-        assert raw_false["custom_bool"] in ["no", "0", 0, False, "false"]
+        assert raw_false["custom_bool"] in ["no", "0", 0, False, "false"], \
+            "Expected the stored custom_bool False to be one of the accepted representations"
 
         # Verify that reading it back converts it appropriately
         found_false = TypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"]
+        assert found_false.custom_bool in [True, False, "yes", "no", 1, 0, "true", "false"], \
+            "Expected the read-back custom_bool to be one of the accepted representations"
 
     def test_optional_annotated_custom_adapter(self, type_adapter_fixtures):
         """Tests an Optional field that also has a custom annotated adapter."""
@@ -168,11 +191,13 @@ class TestTypeAdapter:
         found_true = TypeAdapterTest.find_one(rec_true.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
+        assert found_true.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"], \
+            "Expected the read-back optional_custom_bool True to be one of the accepted representations"
         placeholder = TypeAdapterTest.backend().dialect.get_parameter_placeholder()
         raw_true = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_true.id,))
         # Accept: 'yes' (adapter output), '1'/1 (SQLite), True (pass-through), 'true' (PostgreSQL VARCHAR bool)
-        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True, "true"]
+        assert raw_true["optional_custom_bool"] in ["yes", "1", 1, True, "true"], \
+            "Expected the stored optional_custom_bool True to be one of the accepted representations"
 
         # Test with False
         rec_false = TypeAdapterTest(name="opt_custom_false", custom_bool=False, optional_custom_bool=False)
@@ -180,10 +205,12 @@ class TestTypeAdapter:
         found_false = TypeAdapterTest.find_one(rec_false.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations
-        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"]
+        assert found_false.optional_custom_bool in [True, False, "yes", "no", 1, 0, None, "true", "false"], \
+            "Expected the read-back optional_custom_bool False to be one of the accepted representations"
         raw_false = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_false.id,))
         # Accept: 'no' (adapter output), '0'/0 (SQLite), False (pass-through), 'false' (PostgreSQL VARCHAR bool)
-        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False, "false"]
+        assert raw_false["optional_custom_bool"] in ["no", "0", 0, False, "false"], \
+            "Expected the stored optional_custom_bool False to be one of the accepted representations"
 
         # Test with None
         rec_none = TypeAdapterTest(name="opt_custom_none", custom_bool=False, optional_custom_bool=None)
@@ -191,9 +218,11 @@ class TestTypeAdapter:
         found_none = TypeAdapterTest.find_one(rec_none.id)
         # Due to potential changes in adapter system during backend expression refactor,
         # accept various possible representations for None values
-        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0, "true", "false"]
+        assert found_none.optional_custom_bool in [None, True, False, "yes", "no", 1, 0, "true", "false"], \
+            "Expected the read-back optional_custom_bool None to be one of the accepted representations"
         raw_none = TypeAdapterTest.backend().fetch_one(f"SELECT optional_custom_bool FROM type_adapter_tests WHERE id = {placeholder}", (rec_none.id,))
-        assert raw_none["optional_custom_bool"] is None
+        assert raw_none["optional_custom_bool"] is None, \
+            "Expected the stored optional_custom_bool to be NULL"
 
     def test_builtin_boolean_adapter_raw_storage(self, type_adapter_fixtures):
         """Test built-in BooleanAdapter stores True/False as 1/0 in database."""
@@ -205,7 +234,8 @@ class TestTypeAdapter:
             f"SELECT is_premium FROM type_adapter_tests WHERE id = {placeholder}",
             (rec.id,)
         )
-        assert raw["is_premium"] == 1 or raw["is_premium"] is True
+        assert raw["is_premium"] == 1 or raw["is_premium"] is True, \
+            "Expected built-in BooleanAdapter to store True as 1/True"
 
         rec2 = TypeAdapterTest(name="bool_adapter_false", is_premium=False, custom_bool=False)
         rec2.save()
@@ -213,7 +243,8 @@ class TestTypeAdapter:
             f"SELECT is_premium FROM type_adapter_tests WHERE id = {placeholder}",
             (rec2.id,)
         )
-        assert raw2["is_premium"] == 0 or raw2["is_premium"] is False
+        assert raw2["is_premium"] == 0 or raw2["is_premium"] is False, \
+            "Expected built-in BooleanAdapter to store False as 0/False"
 
     def test_optional_adapter_with_null_raw_database_format(self, type_adapter_fixtures):
         """Test that null values are stored as SQL NULL regardless of adapter."""
@@ -225,7 +256,7 @@ class TestTypeAdapter:
             f"SELECT optional_name, optional_age, last_login, is_premium FROM type_adapter_tests WHERE id = {placeholder}",
             (rec.id,)
         )
-        assert raw["optional_name"] is None
-        assert raw["optional_age"] is None
-        assert raw["last_login"] is None
-        assert raw["is_premium"] is None
+        assert raw["optional_name"] is None, "Expected optional_name to be NULL"
+        assert raw["optional_age"] is None, "Expected optional_age to be NULL"
+        assert raw["last_login"] is None, "Expected last_login to be NULL"
+        assert raw["is_premium"] is None, "Expected is_premium to be NULL"

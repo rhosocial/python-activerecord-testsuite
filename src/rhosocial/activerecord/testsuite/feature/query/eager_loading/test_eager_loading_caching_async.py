@@ -20,13 +20,13 @@ class TestAsyncEagerLoadingCaching:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related1 = await results[0].user()
-        assert related1 is not None
-        assert related1.id == user.id
+        assert related1 is not None, "Expected the related user to be loaded"
+        assert related1.id == user.id, "Expected the related user id to match"
         related2 = await results[0].user()
-        assert related2 is not None
-        assert related2.id == user.id
+        assert related2 is not None, "Expected the cached related user to be available"
+        assert related2.id == user.id, "Expected the cached related user id to match"
 
     async def test_cache_after_one(self, async_combined_fixtures):
         """After one() with with_(), the single result has its relation cached (async)."""
@@ -37,10 +37,10 @@ class TestAsyncEagerLoadingCaching:
         await order.save()
 
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
         related = await result.user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     async def test_cache_independent_per_instance(self, async_combined_fixtures):
         """Each parent instance should have its own cached relation (async)."""
@@ -58,12 +58,12 @@ class TestAsyncEagerLoadingCaching:
         results = await AsyncOrder.query().with_('user').where(
             AsyncOrder.c.id.in_([order1.id, order2.id])
         ).order_by(AsyncOrder.c.id).all()
-        assert len(results) == 2
+        assert len(results) == 2, "Expected two results"
 
         related1 = await results[0].user()
-        assert related1.id == user1.id
+        assert related1.id == user1.id, "Expected first related user id to match user1"
         related2 = await results[1].user()
-        assert related2.id == user2.id
+        assert related2.id == user2.id, "Expected second related user id to match user2"
 
     async def test_cache_not_mixed_between_instances(self, async_combined_fixtures):
         """Relation cache from one instance should never leak into another (async)."""
@@ -81,10 +81,12 @@ class TestAsyncEagerLoadingCaching:
         results = await AsyncOrder.query().with_('user') \
             .where(AsyncOrder.c.id.in_([order1.id, order2.id])) \
             .order_by(AsyncOrder.c.id).all()
-        assert len(results) == 2
+        assert len(results) == 2, "Expected two results"
 
-        assert (await results[0].user()).id == user1.id
-        assert (await results[1].user()).id == user2.id
+        assert (await results[0].user()).id == user1.id, \
+            "Expected first related user id to match user1"
+        assert (await results[1].user()).id == user2.id, \
+            "Expected second related user id to match user2"
 
 
 

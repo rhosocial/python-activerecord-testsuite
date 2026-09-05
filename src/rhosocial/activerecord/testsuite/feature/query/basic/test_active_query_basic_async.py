@@ -38,7 +38,7 @@ class TestAsyncActiveQueryBasic:
 
         # Test query initialization
         query = AsyncOrder.query()
-        assert query.model_class == AsyncOrder
+        assert query.model_class == AsyncOrder, "Expected model_class to be AsyncOrder"
 
     async def test_where_with_predicate(self, async_order_fixtures):
         """
@@ -59,8 +59,8 @@ class TestAsyncActiveQueryBasic:
 
         # Use predicate query to find the specific order
         found = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'ORD-TEST').all()
-        assert len(found) == 1
-        assert found[0].order_number == 'ORD-TEST'
+        assert len(found) == 1, "Expected exactly one matching order"
+        assert found[0].order_number == 'ORD-TEST', "Expected order_number to be ORD-TEST"
 
     async def test_where_with_string_params(self, async_order_fixtures):
         """
@@ -81,8 +81,8 @@ class TestAsyncActiveQueryBasic:
 
         # Use string parameter query to find the specific order
         found = await AsyncOrder.query().where('order_number = ?', ('ORD-STRING',)).all()
-        assert len(found) == 1
-        assert found[0].order_number == 'ORD-STRING'
+        assert len(found) == 1, "Expected exactly one matching order"
+        assert found[0].order_number == 'ORD-STRING', "Expected order_number to be ORD-STRING"
 
     async def test_select_columns(self, async_order_fixtures):
         """
@@ -105,10 +105,10 @@ class TestAsyncActiveQueryBasic:
         # we might need to use aggregate() or raw SQL instead of all()
         # Let's test with a query that returns all required fields
         results = await AsyncOrder.query().all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one matching order"
         # Verify that the model instance is properly created
-        assert isinstance(results[0], AsyncOrder)
-        assert results[0].id == order.id
+        assert isinstance(results[0], AsyncOrder), "Expected result to be an AsyncOrder instance"
+        assert results[0].id == order.id, "Expected result id to match order id"
 
     async def test_order_by(self, async_order_fixtures):
         """
@@ -135,13 +135,15 @@ class TestAsyncActiveQueryBasic:
         # Order by order number ascending to verify correct sorting
         # Using column-based ordering
         results = await AsyncOrder.query().order_by(AsyncOrder.c.total_amount).all()
-        assert len(results) == 3
-        assert results[0].total_amount <= results[-1].total_amount
+        assert len(results) == 3, "Expected 3 orders to be returned"
+        assert results[0].total_amount <= results[-1].total_amount, \
+            "Expected ascending order by total_amount"
 
         # Order by order number descending to verify reverse sorting
         results_desc = await AsyncOrder.query().order_by((AsyncOrder.c.total_amount, "DESC")).all()
-        assert len(results_desc) == 3
-        assert results_desc[0].total_amount >= results_desc[-1].total_amount
+        assert len(results_desc) == 3, "Expected 3 orders to be returned"
+        assert results_desc[0].total_amount >= results_desc[-1].total_amount, \
+            "Expected descending order by total_amount"
 
     async def test_limit_offset(self, async_order_fixtures):
         """
@@ -167,9 +169,9 @@ class TestAsyncActiveQueryBasic:
 
         # Test LIMIT and OFFSET to get second and third orders
         results = await AsyncOrder.query().order_by(AsyncOrder.c.order_number).limit(2).offset(1).all()
-        assert len(results) == 2
-        assert results[0].order_number == 'PAG-002'
-        assert results[1].order_number == 'PAG-003'
+        assert len(results) == 2, "Expected exactly 2 paginated results"
+        assert results[0].order_number == 'PAG-002', "Expected first result to be PAG-002"
+        assert results[1].order_number == 'PAG-003', "Expected second result to be PAG-003"
 
     async def test_all_method_returns_model_instances(self, async_order_fixtures):
         """
@@ -190,10 +192,10 @@ class TestAsyncActiveQueryBasic:
 
         # Execute query to get all matching records
         results = await AsyncOrder.query().all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one matching order"
         # Verify results are proper model instances
-        assert isinstance(results[0], AsyncOrder)
-        assert results[0].id == order.id
+        assert isinstance(results[0], AsyncOrder), "Expected result to be an AsyncOrder instance"
+        assert results[0].id == order.id, "Expected result id to match order id"
 
     async def test_one_method_returns_single_instance(self, async_order_fixtures):
         """
@@ -213,9 +215,9 @@ class TestAsyncActiveQueryBasic:
 
         # Get single instance using one() method
         result = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
-        assert isinstance(result, AsyncOrder)
-        assert result.id == order.id
+        assert result is not None, "Expected a result to be returned"
+        assert isinstance(result, AsyncOrder), "Expected result to be an AsyncOrder instance"
+        assert result.id == order.id, "Expected result id to match order id"
 
     async def test_one_method_returns_none_when_no_records_match(self, async_order_fixtures):
         """
@@ -235,7 +237,7 @@ class TestAsyncActiveQueryBasic:
         non_existent_order = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'NON-EXISTENT-ORDER').one()
 
         # Verify that None is returned when no records match
-        assert non_existent_order is None
+        assert non_existent_order is None, "Expected one() to return None for missing record"
 
     async def test_where_invalid_condition_type(self, async_order_fixtures):
         """Test that where method raises TypeError for invalid condition type."""
@@ -294,7 +296,7 @@ class TestAsyncActiveQueryBasic:
             await order.save()
 
         results = await AsyncOrder.query().limit(3).offset(1).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected exactly 3 results after limit/offset"
 
     async def test_group_by_invalid_column_type(self, async_order_fixtures):
         """Test that group_by method raises TypeError for invalid column type."""
@@ -317,7 +319,7 @@ class TestAsyncActiveQueryBasic:
             await order.save()
 
         results = await AsyncOrder.query().select(AsyncOrder.c.user_id, AsyncOrder.c.order_number).group_by(AsyncOrder.c.user_id).group_by(AsyncOrder.c.order_number).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected 3 grouped results"
 
     async def test_having_invalid_condition_type(self, async_order_fixtures):
         """Test that having method raises TypeError for invalid condition type."""
@@ -342,7 +344,7 @@ class TestAsyncActiveQueryBasic:
         query.select(AsyncOrder.c.id)
         query.select(AsyncOrder.c.order_number, append=True)
         sql, params = query.to_sql()
-        assert 'order_number' in sql.lower()
+        assert 'order_number' in sql.lower(), "Expected order_number to appear in the SQL"
 
     async def test_order_by_extend_existing(self, async_order_fixtures):
         """Test calling order_by multiple times extends existing clause."""
@@ -358,5 +360,6 @@ class TestAsyncActiveQueryBasic:
         query.order_by(AsyncOrder.c.id)
         query.order_by(AsyncOrder.c.order_number)
         results = await query.all()
-        assert [order.order_number for order in results] == ['ORD-001']
+        assert [order.order_number for order in results] == ['ORD-001'], \
+            "Expected only ORD-001 to be returned"
 

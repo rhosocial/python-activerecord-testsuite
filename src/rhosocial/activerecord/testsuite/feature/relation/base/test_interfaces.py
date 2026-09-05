@@ -12,20 +12,24 @@ class TestRelationInterfaces:
     def test_relation_management_interface(self, employee_class, department_class):
         """Test RelationManagementInterface implementation."""
         # Verify interface implementation
-        assert isinstance(employee_class, type)
-        assert issubclass(employee_class, IRelationManagement)
+        assert isinstance(employee_class, type), "Expected employee_class to be a type"
+        assert issubclass(employee_class, IRelationManagement), \
+            "Expected employee_class to implement IRelationManagement"
 
         # Test relation registration
         relations = employee_class.get_relations()
-        assert "department" in relations
+        assert "department" in relations, "Expected 'department' to be a registered relation"
 
         relation = employee_class.get_relation("department")
-        assert relation is not None
-        assert relation.foreign_key == "department_id"
-        assert relation.inverse_of == "employees"
+        assert relation is not None, "Expected 'department' relation to be retrieved"
+        assert relation.foreign_key == "department_id", \
+            "Expected relation foreign_key to be 'department_id'"
+        assert relation.inverse_of == "employees", \
+            "Expected relation inverse_of to be 'employees'"
 
         # Test query method creation
-        assert hasattr(employee_class, "department_query")
+        assert hasattr(employee_class, "department_query"), \
+            "Expected department_query attribute to exist"
 
     def test_relation_cache_operations(self, employee):
         """Test relation cache management."""

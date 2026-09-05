@@ -42,24 +42,25 @@ class TestRelationDescriptor:
             cache_config=CacheConfig(enabled=True)
         )
 
-        assert descriptor.foreign_key == "test_id"
-        assert descriptor.inverse_of == "test"
-        assert descriptor._loader is not None
+        assert descriptor.foreign_key == "test_id", "Expected foreign_key to be 'test_id'"
+        assert descriptor.inverse_of == "test", "Expected inverse_of to be 'test'"
+        assert descriptor._loader is not None, "Expected _loader to be set"
 
     def test_relation_descriptor_get_related_model(self, employee_class, department_class):
         """Test getting related model class."""
         relation = employee_class.get_relation("department")
-        assert relation is not None
+        assert relation is not None, "Expected 'department' relation to exist"
 
         model = relation.get_related_model(employee_class)
-        assert model == department_class
+        assert model == department_class, "Expected the related model to be department_class"
 
         # Test inverse relationship
         inverse_relation = department_class.get_relation("employees")
-        assert inverse_relation is not None
+        assert inverse_relation is not None, "Expected 'employees' relation to exist"
 
         inverse_model = inverse_relation.get_related_model(department_class)
-        assert inverse_model == employee_class
+        assert inverse_model == employee_class, \
+            "Expected the inverse related model to be employee_class"
 
     def test_relation_descriptor_load(self, employee):
         """First access triggers loader; second access returns cached result.
@@ -73,11 +74,11 @@ class TestRelationDescriptor:
 
         # First load — from loader
         data = relation._load_relation(employee)
-        assert data == {"id": 1, "name": "Test"}
+        assert data == {"id": 1, "name": "Test"}, "Expected first load to return loader data"
 
         # Second load — from cache (same data, no re-load)
         data = relation._load_relation(employee)
-        assert data == {"id": 1, "name": "Test"}
+        assert data == {"id": 1, "name": "Test"}, "Expected cached data on second load"
 
     # def test_relation_descriptor_query(self):
     #     """Test querying relation data."""
@@ -106,14 +107,15 @@ class TestRelationDescriptor:
 
         # Load data into cache
         data = relation._load_relation(employee)
-        assert data == {"id": 1, "name": "Test"}
+        assert data == {"id": 1, "name": "Test"}, "Expected load to return loader data"
 
         # Clear cache
         relation.__delete__(employee)
 
         # Verify cache is cleared by checking if loader is called again
         data = relation._load_relation(employee)
-        assert data == {"id": 1, "name": "Test"}
+        assert data == {"id": 1, "name": "Test"}, \
+            "Expected loader to be re-invoked after cache clear"
 
     def test_relation_registration_validation(self):
         """Duplicate relation names are allowed at class creation time.
@@ -161,15 +163,18 @@ class TestRelationDescriptor:
         child_relation = ChildModel.get_relation("test")
 
         # Verify parent relation remains HasOne
-        assert isinstance(parent_relation, HasOne)
-        assert parent_relation.foreign_key == "test_id"
+        assert isinstance(parent_relation, HasOne), "Expected parent relation to be HasOne"
+        assert parent_relation.foreign_key == "test_id", \
+            "Expected parent relation foreign_key to be 'test_id'"
 
         # Verify child relation is overridden to HasMany
-        assert isinstance(child_relation, HasMany)
-        assert child_relation.foreign_key == "test_id"
+        assert isinstance(child_relation, HasMany), "Expected child relation to be HasMany"
+        assert child_relation.foreign_key == "test_id", \
+            "Expected child relation foreign_key to be 'test_id'"
 
         # Verify relations are different objects
-        assert parent_relation is not child_relation
+        assert parent_relation is not child_relation, \
+            "Expected parent and child relations to be different objects"
 
     def test_forward_reference_resolution(self, author, book):
         """Forward references (e.g. BelongsTo['Author'] quoted as string) resolve correctly.
@@ -178,5 +183,5 @@ class TestRelationDescriptor:
         the resolved models are not None and can be accessed without error,
         confirming that the string-based forward reference system works.
         """
-        assert author is not None
-        assert book is not None
+        assert author is not None, "Expected author fixture to resolve"
+        assert book is not None, "Expected book fixture to resolve"

@@ -23,9 +23,10 @@ def test_schema_model_qualifies_range_not_columns(mixed_schema_fixtures):
     )
     normed = _norm(sql)
     # Range keeps the namespace...
-    assert "from ar_crm.orders" in normed
+    assert "from ar_crm.orders" in normed, "Expected FROM range to be qualified"
     # ...while column references never grow a third (schema) part.
-    assert "ar_crm.orders.order_number" not in normed
+    assert "ar_crm.orders.order_number" not in normed, \
+        "Expected column refs to stay two-part"
 
 
 @requires_protocol("JoinSupport", "supports_inner_join")
@@ -42,8 +43,9 @@ def test_schema_join_columns_stay_two_part(mixed_schema_fixtures):
         .to_sql()
     )
     normed = _norm(sql)
-    assert "from ar_crm.orders" in normed
-    assert "ar_crm.orders.user_id" not in normed
-    assert "orders.user_id = users.id" in normed
+    assert "from ar_crm.orders" in normed, "Expected FROM range to be qualified in join"
+    assert "ar_crm.orders.user_id" not in normed, \
+        "Expected joined columns to remain two-part"
+    assert "orders.user_id = users.id" in normed, "Expected join ON clause to be two-part"
 
 

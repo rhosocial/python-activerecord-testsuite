@@ -35,8 +35,9 @@ def test_sync_active_query_init(order_fixtures):
     # Sync query
     sync_query = Order.query()
     results = sync_query.where(Order.c.id == order.id).all()
-    assert len(results) == 1
-    assert results[0].order_number == 'SYNC-INIT-001'
+    assert len(results) == 1, "Expected exactly one matching order"
+    assert results[0].order_number == 'SYNC-INIT-001', \
+        "Expected order_number to be SYNC-INIT-001"
 
 
 def test_sync_aggregate_operations(order_fixtures):
@@ -62,10 +63,10 @@ def test_sync_aggregate_operations(order_fixtures):
     sync_query = Order.query()
     total = sync_query.sum_(Order.c.total_amount)
     expected_total = sum(amounts)
-    assert total == expected_total
+    assert total == expected_total, "Expected total to equal sum of amounts"
 
     count = Order.query().count()
-    assert count == len(amounts)
+    assert count == len(amounts), "Expected count to equal len of amounts"
 
 
 def test_sync_relation_loading(order_fixtures):
@@ -84,13 +85,13 @@ def test_sync_relation_loading(order_fixtures):
     # Sync relation query
     sync_query = Order.query()
     results = sync_query.with_('user').where(Order.c.id == order.id).all()
-    assert len(results) == 1
+    assert len(results) == 1, "Expected exactly one matching order"
 
     result = results[0]
-    assert hasattr(result, 'user')
+    assert hasattr(result, 'user'), "Expected result to expose a user relation"
     # Access the related user instance by calling the relation method
     related_user = result.user()
-    assert related_user.id == user.id
+    assert related_user.id == user.id, "Expected related user id to match"
 
 
 def test_sync_basic_operations(order_fixtures):
@@ -112,24 +113,24 @@ def test_sync_basic_operations(order_fixtures):
 
     # Sync one() operation - fresh query object
     one_result = Order.query().where(Order.c.id == order.id).one()
-    assert one_result is not None
-    assert one_result.id == order.id
+    assert one_result is not None, "Expected one() to return a matching order"
+    assert one_result.id == order.id, "Expected one_result id to match order id"
 
     # Sync one() with order_by - fresh query object (ORDER BY is meaningful here)
     one_result = Order.query().order_by(Order.c.order_number).one()
-    assert one_result is not None
+    assert one_result is not None, "Expected one() to return a result with order_by"
 
     # Sync exists() operation - fresh query object (no ORDER BY for aggregate)
     exists = Order.query().where(
         Order.c.order_number == 'SYNC-BASIC-001'
     ).exists()
-    assert exists is True
+    assert exists is True, "Expected exists() to be True for existing record"
 
     # Sync exists() for non-existent record - fresh query object
     exists_not = Order.query().where(
         Order.c.order_number == 'NON-EXISTENT'
     ).exists()
-    assert exists_not is False
+    assert exists_not is False, "Expected exists() to be False for missing record"
 
 
 def test_sync_join_operations(order_fixtures):
@@ -152,5 +153,6 @@ def test_sync_join_operations(order_fixtures):
         .where(Order.c.id == order.id) \
         .all()
 
-    assert len(joined_results) == 1
-    assert joined_results[0].order_number == 'SYNC-JOIN-001'
+    assert len(joined_results) == 1, "Expected exactly one joined result"
+    assert joined_results[0].order_number == 'SYNC-JOIN-001', \
+        "Expected joined order_number to be SYNC-JOIN-001"

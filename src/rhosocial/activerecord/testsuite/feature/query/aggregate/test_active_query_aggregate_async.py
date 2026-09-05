@@ -34,7 +34,7 @@ class TestAsyncActiveQueryAggregate:
 
         # Count all orders for this user
         count = await AsyncOrder.query().count()
-        assert count == 3
+        assert count == 3, "Expected count to be 3"
 
     async def test_count_with_column(self, async_order_fixtures):
         """
@@ -60,7 +60,7 @@ class TestAsyncActiveQueryAggregate:
 
         # Count specific column values
         count = await AsyncOrder.query().count(AsyncOrder.c.order_number)
-        assert count == 3
+        assert count == 3, "Expected column count to be 3"
 
     async def test_count_distinct(self, async_order_fixtures):
         """
@@ -121,7 +121,7 @@ class TestAsyncActiveQueryAggregate:
 
         # Calculate total sum of amounts
         total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
-        assert total == sum(amounts)
+        assert total == sum(amounts), "Expected sum to equal total of amounts"
 
     async def test_sum_with_column(self, async_order_fixtures):
         """
@@ -148,7 +148,7 @@ class TestAsyncActiveQueryAggregate:
 
         # Calculate sum for specific column
         total = await AsyncOrder.query().sum_(AsyncOrder.c.total_amount)
-        assert total == sum(amounts)
+        assert total == sum(amounts), "Expected column sum to equal total of amounts"
 
     async def test_avg_simple(self, async_order_fixtures):
         """
@@ -176,7 +176,7 @@ class TestAsyncActiveQueryAggregate:
         # Calculate average of amounts
         avg = await AsyncOrder.query().avg(AsyncOrder.c.total_amount)
         expected_avg = sum(amounts) / len(amounts)
-        assert avg == expected_avg
+        assert avg == expected_avg, "Expected average to equal mean of amounts"
 
     async def test_min_max_simple(self, async_order_fixtures):
         """
@@ -205,8 +205,8 @@ class TestAsyncActiveQueryAggregate:
         min_val = await AsyncOrder.query().min_(AsyncOrder.c.total_amount)
         max_val = await AsyncOrder.query().max_(AsyncOrder.c.total_amount)
 
-        assert min_val == min(amounts)
-        assert max_val == max(amounts)
+        assert min_val == min(amounts), "Expected min to equal min of amounts"
+        assert max_val == max(amounts), "Expected max to equal max of amounts"
 
     async def test_exists_method(self, async_order_fixtures):
         """
@@ -227,11 +227,11 @@ class TestAsyncActiveQueryAggregate:
 
         # Test existence case - record should exist
         exists = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'EXIST-001').exists()
-        assert exists is True
+        assert exists is True, "Expected exists() to be True for existing record"
 
         # Test non-existence case - record should not exist
         exists = await AsyncOrder.query().where(AsyncOrder.c.order_number == 'NON-EXISTENT').exists()
-        assert exists is False
+        assert exists is False, "Expected exists() to be False for missing record"
 
     async def test_aggregate_with_where_condition(self, async_order_fixtures):
         """
@@ -267,8 +267,9 @@ class TestAsyncActiveQueryAggregate:
         active_total = await AsyncOrder.query().where(AsyncOrder.c.status == 'active').sum_(AsyncOrder.c.total_amount)
 
         active_orders = [d for d in orders_data if d['status'] == 'active']
-        assert active_count == len(active_orders)
-        assert active_total == sum(d['amount'] for d in active_orders)
+        assert active_count == len(active_orders), "Expected active count to match active orders"
+        assert active_total == sum(d['amount'] for d in active_orders), \
+            "Expected active total to match sum of active amounts"
 
     async def test_count_wildcard_string(self, async_order_fixtures):
         """
@@ -284,7 +285,7 @@ class TestAsyncActiveQueryAggregate:
             await order.save()
 
         count = await AsyncOrder.query().count("*")
-        assert count == 3
+        assert count == 3, "Expected wildcard count to be 3"
 
     async def test_sum_wildcard_raises_error(self, async_order_fixtures):
         """

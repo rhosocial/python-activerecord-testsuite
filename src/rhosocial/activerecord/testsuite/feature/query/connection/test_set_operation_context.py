@@ -18,7 +18,7 @@ class TestSyncSetOperationQueryContext:
         union_query = q1.union(q2)
         union_backend = union_query.backend()
         # Should return left query's backend (class backend)
-        assert union_backend is model.__backend__
+        assert union_backend is model.__backend__, "Expected backend to be class backend"
 
     def test_union_backend_in_connection_context(self, sync_pool_and_model):
         """Test SetOperationQuery.backend() returns connection backend in context."""
@@ -29,7 +29,7 @@ class TestSyncSetOperationQueryContext:
             q2 = model.query()
             union_query = q1.union(q2)
             union_backend = union_query.backend()
-            assert union_backend is conn_backend
+            assert union_backend is conn_backend, "Expected backend to be the connection backend"
 
     def test_union_backend_in_transaction_context(self, sync_pool_and_model):
         """Test SetOperationQuery.backend() returns transaction backend in context."""
@@ -40,7 +40,7 @@ class TestSyncSetOperationQueryContext:
             q2 = model.query()
             union_query = q1.union(q2)
             union_backend = union_query.backend()
-            assert union_backend is tx_backend
+            assert union_backend is tx_backend, "Expected backend to be the transaction backend"
 
     def test_intersect_backend_in_connection_context(self, sync_pool_and_model):
         """Test INTERSECT backend in connection context."""
@@ -51,7 +51,7 @@ class TestSyncSetOperationQueryContext:
             q2 = model.query()
             intersect_query = q1.intersect(q2)
             intersect_backend = intersect_query.backend()
-            assert intersect_backend is conn_backend
+            assert intersect_backend is conn_backend, "Expected intersect backend to use connection"
 
     def test_except_backend_in_connection_context(self, sync_pool_and_model):
         """Test EXCEPT backend in connection context."""
@@ -62,7 +62,7 @@ class TestSyncSetOperationQueryContext:
             q2 = model.query()
             except_query = q1.except_(q2)
             except_backend = except_query.backend()
-            assert except_backend is conn_backend
+            assert except_backend is conn_backend, "Expected except backend to use connection"
 
     def test_nested_connection_contexts_reuse(self, sync_pool_and_model):
         """Test nested connection contexts reuse for set operation."""
@@ -72,14 +72,14 @@ class TestSyncSetOperationQueryContext:
             q1 = model.query()
             q2 = model.query()
             outer_union = q1.union(q2)
-            assert outer_union.backend() is outer_conn
+            assert outer_union.backend() is outer_conn, "Expected outer union to use outer conn"
 
             with pool.connection() as inner_conn:
                 q3 = model.query()
                 q4 = model.query()
                 inner_union = q3.union(q4)
-                assert inner_union.backend() is outer_conn
-                assert inner_conn is outer_conn
+                assert inner_union.backend() is outer_conn, "Expected inner union to reuse outer"
+                assert inner_conn is outer_conn, "Expected inner conn to be the same as outer"
 
     def test_nested_transaction_contexts_reuse(self, sync_pool_and_model):
         """Test nested transaction contexts reuse for set operation."""
@@ -89,11 +89,11 @@ class TestSyncSetOperationQueryContext:
             q1 = model.query()
             q2 = model.query()
             outer_union = q1.union(q2)
-            assert outer_union.backend() is outer_tx
+            assert outer_union.backend() is outer_tx, "Expected outer union to use outer tx"
 
             with pool.transaction() as inner_tx:
                 q3 = model.query()
                 q4 = model.query()
                 inner_union = q3.union(q4)
-                assert inner_union.backend() is outer_tx
-                assert inner_tx is outer_tx
+                assert inner_union.backend() is outer_tx, "Expected inner union to reuse outer"
+                assert inner_tx is outer_tx, "Expected inner tx to be the same as outer"

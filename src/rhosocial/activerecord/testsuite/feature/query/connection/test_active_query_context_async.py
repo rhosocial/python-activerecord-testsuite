@@ -16,7 +16,7 @@ class TestAsyncActiveQueryContext:
 
         query = model.query()
         query_backend = query.backend()
-        assert query_backend is model.__backend__
+        assert query_backend is model.__backend__, "Expected backend to be class backend"
 
     async def test_query_from_model_backend_in_connection_context(self, async_pool_and_model):
         """Test AsyncActiveQuery.backend() returns connection backend in context."""
@@ -25,7 +25,7 @@ class TestAsyncActiveQueryContext:
         async with pool.connection() as conn_backend:
             query = model.query()
             query_backend = query.backend()
-            assert query_backend is conn_backend
+            assert query_backend is conn_backend, "Expected backend to be the connection backend"
 
     async def test_query_from_model_backend_in_transaction_context(self, async_pool_and_model):
         """Test AsyncActiveQuery.backend() returns transaction backend in context."""
@@ -34,7 +34,7 @@ class TestAsyncActiveQueryContext:
         async with pool.transaction() as tx_backend:
             query = model.query()
             query_backend = query.backend()
-            assert query_backend is tx_backend
+            assert query_backend is tx_backend, "Expected backend to be the transaction backend"
 
     async def test_independent_query_backend_without_context(self, async_pool_and_model):
         """Test independent AsyncActiveQuery.backend() without context."""
@@ -42,7 +42,7 @@ class TestAsyncActiveQueryContext:
 
         query = AsyncActiveQuery(model)
         query_backend = query.backend()
-        assert query_backend is model.__backend__
+        assert query_backend is model.__backend__, "Expected independent query backend to fall back"
 
     async def test_independent_query_backend_in_connection_context(self, async_pool_and_model):
         """Test independent AsyncActiveQuery.backend() in connection context."""
@@ -52,7 +52,8 @@ class TestAsyncActiveQueryContext:
             # Create query independently
             query = AsyncActiveQuery(model)
             query_backend = query.backend()
-            assert query_backend is conn_backend
+            assert query_backend is conn_backend, \
+                "Expected independent query backend to use the context"
 
     async def test_nested_connection_contexts_reuse(self, async_pool_and_model):
         """Test nested async connection contexts reuse for query."""
@@ -60,12 +61,12 @@ class TestAsyncActiveQueryContext:
 
         async with pool.connection() as outer_conn:
             outer_query = model.query()
-            assert outer_query.backend() is outer_conn
+            assert outer_query.backend() is outer_conn, "Expected outer query to use outer conn"
 
             async with pool.connection() as inner_conn:
                 inner_query = model.query()
-                assert inner_query.backend() is outer_conn
-                assert inner_conn is outer_conn
+                assert inner_query.backend() is outer_conn, "Expected inner query to reuse outer"
+                assert inner_conn is outer_conn, "Expected inner conn to be the same as outer"
 
     async def test_nested_transaction_contexts_reuse(self, async_pool_and_model):
         """Test nested async transaction contexts reuse for query."""
@@ -73,11 +74,11 @@ class TestAsyncActiveQueryContext:
 
         async with pool.transaction() as outer_tx:
             outer_query = model.query()
-            assert outer_query.backend() is outer_tx
+            assert outer_query.backend() is outer_tx, "Expected outer query to use outer tx"
 
             async with pool.transaction() as inner_tx:
                 inner_query = model.query()
-                assert inner_query.backend() is outer_tx
-                assert inner_tx is outer_tx
+                assert inner_query.backend() is outer_tx, "Expected inner query to reuse outer"
+                assert inner_tx is outer_tx, "Expected inner tx to be the same as outer"
 
 

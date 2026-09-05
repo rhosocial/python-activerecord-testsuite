@@ -23,40 +23,40 @@ class TestRelationCache:
     def test_cache_config(self):
         """Test CacheConfig initialization and defaults."""
         config = CacheConfig()
-        assert config.enabled is True
-        assert config.ttl == 300
-        assert config.max_size == 1000
+        assert config.enabled is True, "Expected default config.enabled to be True"
+        assert config.ttl == 300, "Expected default config.ttl to be 300"
+        assert config.max_size == 1000, "Expected default config.max_size to be 1000"
 
         custom_config = CacheConfig(enabled=False, ttl=60, max_size=100)
-        assert custom_config.enabled is False
-        assert custom_config.ttl == 60
-        assert custom_config.max_size == 100
+        assert custom_config.enabled is False, "Expected custom config.enabled to be False"
+        assert custom_config.ttl == 60, "Expected custom config.ttl to be 60"
+        assert custom_config.max_size == 100, "Expected custom config.max_size to be 100"
 
     def test_global_cache_config(self):
         """Test GlobalCacheConfig singleton and configuration."""
         config1 = GlobalCacheConfig()
         config2 = GlobalCacheConfig()
-        assert config1 is config2
+        assert config1 is config2, "Expected GlobalCacheConfig to be a singleton"
 
         GlobalCacheConfig.set_config(enabled=False, ttl=60)
-        assert config1.config.enabled is False
-        assert config1.config.ttl == 60
-        assert config2.config.enabled is False
-        assert config2.config.ttl == 60
+        assert config1.config.enabled is False, "Expected config1.enabled to be False"
+        assert config1.config.ttl == 60, "Expected config1.ttl to be 60"
+        assert config2.config.enabled is False, "Expected config2.enabled to be False"
+        assert config2.config.ttl == 60, "Expected config2.ttl to be 60"
 
     def test_cache_entry(self):
         """Test CacheEntry creation and expiration."""
         entry = CacheEntry("test", ttl=1)
-        assert entry.value == "test"
-        assert not entry.is_expired()
+        assert entry.value == "test", "Expected entry.value to be 'test'"
+        assert not entry.is_expired(), "Expected a fresh entry to not be expired"
 
         # Test expiration
         time.sleep(1.1)
-        assert entry.is_expired()
+        assert entry.is_expired(), "Expected the entry to be expired after TTL"
 
         # Test no TTL
         entry = CacheEntry("test", ttl=None)
-        assert not entry.is_expired()
+        assert not entry.is_expired(), "Expected a TTL-less entry to never expire"
 
     def test_relation_cache_basic(self):
         """Test RelationCache operations."""
@@ -66,21 +66,21 @@ class TestRelationCache:
         # Test set and get
         instance = object()
         cache.set(instance, "test_value")
-        assert cache.get(instance) == "test_value"
+        assert cache.get(instance) == "test_value", "Expected get to return the cached value"
 
         # Test expiration
         time.sleep(1.1)
-        assert cache.get(instance) is None
+        assert cache.get(instance) is None, "Expected get to return None after TTL"
 
         # Test delete
         cache.set(instance, "test_value")
         cache.delete(instance)
-        assert cache.get(instance) is None
+        assert cache.get(instance) is None, "Expected get to return None after delete"
 
         # Test clear
         cache.set(instance, "test_value")
         cache.clear()
-        assert cache.get(instance) is None
+        assert cache.get(instance) is None, "Expected get to return None after clear"
 
     def test_relation_cache_max_size(self):
         """Test RelationCache max size handling."""
@@ -94,14 +94,14 @@ class TestRelationCache:
 
         cache.set(instance1, "value1")
         cache.set(instance2, "value2")
-        assert cache.get(instance1) == "value1"
-        assert cache.get(instance2) == "value2"
+        assert cache.get(instance1) == "value1", "Expected instance1 to be cached"
+        assert cache.get(instance2) == "value2", "Expected instance2 to be cached"
 
         # Add one more entry, should evict oldest entry (LRU)
         cache.set(instance3, "value3")
-        assert cache.get(instance1) is None
-        assert cache.get(instance2) == "value2"
-        assert cache.get(instance3) == "value3"
+        assert cache.get(instance1) is None, "Expected instance1 to be evicted (LRU)"
+        assert cache.get(instance2) == "value2", "Expected instance2 to still be cached"
+        assert cache.get(instance3) == "value3", "Expected instance3 to be cached"
 
     def test_relation_cache_disabled(self):
         """Test RelationCache when disabled."""
@@ -110,7 +110,7 @@ class TestRelationCache:
 
         instance = object()
         cache.set(instance, "test_value")
-        assert cache.get(instance) is None
+        assert cache.get(instance) is None, "Expected a disabled cache to return None"
 
     def test_concurrent_cache_access(self):
         """Test thread-safe cache operations."""
@@ -123,7 +123,8 @@ class TestRelationCache:
             for i in range(100):
                 instance = object()
                 cache.set(instance, f"value_{i}")
-                assert cache.get(instance) == f"value_{i}"
+                assert cache.get(instance) == f"value_{i}", \
+                    "Expected the value just set to be retrievable"
 
         threads = [
             threading.Thread(target=cache_worker)
@@ -146,4 +147,4 @@ class TestRelationCache:
             cache.set(instance, f"value_{i}")
 
         # Verify cache size is maintained
-        assert len(cache._cache) <= 5
+        assert len(cache._cache) <= 5, "Expected cache size to be bounded by max_size"

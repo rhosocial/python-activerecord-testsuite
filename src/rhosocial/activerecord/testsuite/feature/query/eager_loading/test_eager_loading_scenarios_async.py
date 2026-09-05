@@ -58,9 +58,9 @@ class TestAsyncQueryCount:
 
         counter = self._install_counter(AsyncUser)
         results = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].orders()
-        assert len(related) == 3
+        assert len(related) == 3, "Expected three related orders"
         assert counter.select_count == 2, f"Expected 2 async queries, got {counter.select_count}"
 
     async def test_belongs_to_count(self, async_combined_fixtures):
@@ -75,9 +75,9 @@ class TestAsyncQueryCount:
 
         counter = self._install_counter(AsyncOrder)
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.user_id == user.id).all()
-        assert len(results) == 4
+        assert len(results) == 4, "Expected four results"
         for o in results:
-            assert await o.user() is not None
+            assert await o.user() is not None, "Expected the related user to be loaded"
         assert counter.select_count == 2, f"Expected 2 async queries, got {counter.select_count}"
 
     async def test_multiple_relations_count(self, async_combined_fixtures):
@@ -95,9 +95,9 @@ class TestAsyncQueryCount:
 
         counter = self._install_counter(AsyncUser)
         results = await AsyncUser.query().with_('orders', 'posts').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
-        assert len(await results[0].orders()) == 2
-        assert len(await results[0].posts()) == 2
+        assert len(results) == 1, "Expected exactly one result"
+        assert len(await results[0].orders()) == 2, "Expected two related orders"
+        assert len(await results[0].posts()) == 2, "Expected two related posts"
         assert counter.select_count == 3, f"Expected 3 queries, got {counter.select_count}"
 
     async def test_without_eager_is_nplus1(self, async_combined_fixtures):
@@ -112,7 +112,7 @@ class TestAsyncQueryCount:
 
         counter = self._install_counter(AsyncOrder)
         results = await AsyncOrder.query().where(AsyncOrder.c.user_id == user.id).all()
-        assert len(results) == 4
+        assert len(results) == 4, "Expected four results"
         for o in results:
             _ = await o.user()
         assert counter.select_count == 5, f"Expected 5 async queries (N+1), got {counter.select_count}"
@@ -131,9 +131,9 @@ class TestAsyncEmptyRelation:
         await user.save()
 
         result = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = await result.orders()
-        assert related == []
+        assert related == [], "Expected the related list to be empty"
 
     async def test_belongs_to_none(self, async_combined_fixtures):
         """Order with no matching user → .user() returns None (async).
@@ -156,9 +156,9 @@ class TestAsyncEmptyRelation:
             return
 
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
         related = await result.user()
-        assert related is None
+        assert related is None, "Expected the related user to be None for an orphan FK"
 
     async def test_has_many_empty_list_after_eager(self, async_combined_fixtures):
         """HasMany: relation_name() returns [] when empty (async)."""
@@ -167,10 +167,10 @@ class TestAsyncEmptyRelation:
         await user.save()
 
         result = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         orders = await result.orders()
-        assert isinstance(orders, list)
-        assert len(orders) == 0
+        assert isinstance(orders, list), "Expected the related orders to be a list"
+        assert len(orders) == 0, "Expected zero related orders"
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +187,7 @@ class TestAsyncEmptyResultNoQuery:
         _, AsyncOrder, _, _, _ = async_combined_fixtures
         counter = self._install_counter(AsyncOrder)
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == -1).all()
-        assert results == []
+        assert results == [], "Expected an empty result list"
         assert counter.select_count == 1, f"Expected 1 async query, got {counter.select_count}"
 
     async def test_one_none_no_batch(self, async_combined_fixtures):
@@ -195,7 +195,7 @@ class TestAsyncEmptyResultNoQuery:
         _, AsyncOrder, _, _, _ = async_combined_fixtures
         counter = self._install_counter(AsyncOrder)
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == -1).one()
-        assert result is None
+        assert result is None, "Expected the result to be None"
         assert counter.select_count == 1, f"Expected 1 async query, got {counter.select_count}"
 
 
@@ -214,10 +214,10 @@ class TestAsyncHasOneEagerLoading:
         await profile.save()
 
         result = await AsyncUser.query().with_('profile').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = await result.profile()
-        assert related is not None
-        assert related.bio == "Test bio"
+        assert related is not None, "Expected the related profile to be loaded"
+        assert related.bio == "Test bio", "Expected the related profile bio to match"
 
     async def test_has_one_count(self, async_profile_fixtures):
         """with_('profile') → 2 queries regardless of N (async)."""
@@ -228,9 +228,9 @@ class TestAsyncHasOneEagerLoading:
         await AsyncProfile(user_id=user.id, bio="Count test").save()
 
         results = await AsyncUser.query().with_('profile').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         p = await results[0].profile()
-        assert p is not None
+        assert p is not None, "Expected the related profile to be loaded"
         assert counter.select_count == 2, f"Expected 2 async queries, got {counter.select_count}"
 
     async def test_has_one_empty(self, async_profile_fixtures):
@@ -240,9 +240,9 @@ class TestAsyncHasOneEagerLoading:
         await user.save()
 
         result = await AsyncUser.query().with_('profile').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         profile = await result.profile()
-        assert profile is None
+        assert profile is None, "Expected the related profile to be None"
 
 
 # ---------------------------------------------------------------------------
@@ -272,10 +272,13 @@ class TestAsyncEagerVsLazyParity:
         lazy_user = await AsyncUser.find_one(user.id)
         lazy_orders = sorted(await lazy_user.orders(), key=lambda o: o.id)
 
-        assert len(eager_orders) == len(lazy_orders)
+        assert len(eager_orders) == len(lazy_orders), \
+            "Expected eager and lazy to return the same number of orders"
         for eo, lo in zip(eager_orders, lazy_orders):
-            assert eo.order_number == lo.order_number
-            assert eo.total_amount == lo.total_amount
+            assert eo.order_number == lo.order_number, \
+                "Expected eager and lazy order numbers to match"
+            assert eo.total_amount == lo.total_amount, \
+                "Expected eager and lazy order totals to match"
 
     async def test_eager_vs_lazy_belongs_to(self, async_combined_fixtures):
         """Eager and lazy return identical User for BelongsTo (async)."""
@@ -291,8 +294,9 @@ class TestAsyncEagerVsLazyParity:
         lazy_order = await AsyncOrder.find_one(order.id)
         lazy_user = await lazy_order.user()
 
-        assert eager_user.id == lazy_user.id
-        assert eager_user.username == lazy_user.username
+        assert eager_user.id == lazy_user.id, "Expected eager and lazy user ids to match"
+        assert eager_user.username == lazy_user.username, \
+            "Expected eager and lazy usernames to match"
 
 
 # ---------------------------------------------------------------------------
@@ -313,15 +317,15 @@ class TestAsyncMixedEagerLazy:
         await item.save()
 
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
 
         eager_user = await result.user()
-        assert eager_user is not None
-        assert eager_user.username == 'amixed'
+        assert eager_user is not None, "Expected the eagerly loaded user to be present"
+        assert eager_user.username == 'amixed', "Expected the eagerly loaded username to match"
 
         lazy_items = await result.items()
-        assert len(lazy_items) == 1
-        assert lazy_items[0].product_name == 'AM-Item'
+        assert len(lazy_items) == 1, "Expected one lazily loaded item"
+        assert lazy_items[0].product_name == 'AM-Item', "Expected the item product_name to match"
 
     async def test_mixed_eager_then_lazy_same_relation(self, async_combined_fixtures):
         """First access via eager, second via lazy — both work (async)."""
@@ -332,13 +336,13 @@ class TestAsyncMixedEagerLazy:
         await order.save()
 
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
 
         u1 = await result.user()
-        assert u1 is not None
+        assert u1 is not None, "Expected the first access to return a user"
         u2 = await result.user()
-        assert u2 is not None
-        assert u2.id == u1.id
+        assert u2 is not None, "Expected the cached access to return a user"
+        assert u2.id == u1.id, "Expected both accesses to return the same user"
 
 
 # ---------------------------------------------------------------------------
@@ -362,11 +366,11 @@ class TestAsyncBlogEagerLoading:
             await c.save()
 
         result = await AsyncPost.query().with_('comments').where(AsyncPost.c.id == post.id).one()
-        assert result is not None
+        assert result is not None, "Expected the post to be loaded"
         comments = await result.comments()
-        assert len(comments) == 3
+        assert len(comments) == 3, "Expected three related comments"
         for c in comments:
-            assert c.post_id == post.id
+            assert c.post_id == post.id, "Expected each comment's post_id to match"
 
     async def test_post_comments_count(self, async_blog_fixtures):
         """with_('comments') → 2 queries regardless of N (async)."""
@@ -382,9 +386,9 @@ class TestAsyncBlogEagerLoading:
 
         counter = self._install_counter(AsyncPost)
         results = await AsyncPost.query().with_('comments').all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected three posts"
         for p in results:
-            assert len(await p.comments()) == 2
+            assert len(await p.comments()) == 2, "Expected two comments per post"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
     async def test_comment_user_eager(self, async_blog_fixtures):
@@ -398,10 +402,10 @@ class TestAsyncBlogEagerLoading:
         await comment.save()
 
         result = await AsyncComment.query().with_('author').where(AsyncComment.c.id == comment.id).one()
-        assert result is not None
+        assert result is not None, "Expected the comment to be loaded"
         u = await result.author()
-        assert u is not None
-        assert u.username == 'acu_user'
+        assert u is not None, "Expected the related author to be loaded"
+        assert u.username == 'acu_user', "Expected the related author username to match"
 
     async def test_comment_post_eager(self, async_blog_fixtures):
         """with_('post') on Comment should preload BelongsTo post (async)."""
@@ -414,10 +418,10 @@ class TestAsyncBlogEagerLoading:
         await comment.save()
 
         result = await AsyncComment.query().with_('post').where(AsyncComment.c.id == comment.id).one()
-        assert result is not None
+        assert result is not None, "Expected the comment to be loaded"
         p = await result.post()
-        assert p is not None
-        assert p.title == 'CP Post'
+        assert p is not None, "Expected the related post to be loaded"
+        assert p.title == 'CP Post', "Expected the related post title to match"
 
     async def test_post_comments_empty(self, async_blog_fixtures):
         """Post with no comments → .comments() returns [] (async)."""
@@ -428,8 +432,8 @@ class TestAsyncBlogEagerLoading:
         await post.save()
 
         result = await AsyncPost.query().with_('comments').where(AsyncPost.c.id == post.id).one()
-        assert result is not None
-        assert await result.comments() == []
+        assert result is not None, "Expected the post to be loaded"
+        assert await result.comments() == [], "Expected the post to have no comments"
 
 
 # ---------------------------------------------------------------------------
@@ -453,9 +457,9 @@ class TestAsyncUserCommentsEager:
             await c.save()
 
         result = await AsyncUser.query().with_('comments').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         comments = await result.comments()
-        assert len(comments) == 3
+        assert len(comments) == 3, "Expected three related comments"
 
     async def test_user_comments_count(self, async_blog_fixtures):
         """with_('comments') → 2 queries regardless of N (async)."""
@@ -472,8 +476,8 @@ class TestAsyncUserCommentsEager:
 
         counter = self._install_counter(AsyncUser)
         results = await AsyncUser.query().with_('comments').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
-        assert len(await results[0].comments()) == 4
+        assert len(results) == 1, "Expected exactly one result"
+        assert len(await results[0].comments()) == 4, "Expected four related comments"
         assert counter.select_count == 2, f"Expected 2 queries, got {counter.select_count}"
 
 
@@ -501,11 +505,11 @@ class TestAsyncNestedEagerLoading:
 
         counter = self._install_counter(AsyncUser)
         results = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         posts = await results[0].posts()
-        assert len(posts) == 3
+        assert len(posts) == 3, "Expected three related posts"
         for p in posts:
-            assert len(await p.comments()) == 2
+            assert len(await p.comments()) == 2, "Expected two comments per post"
         assert counter.select_count == 3, f"Expected 3 queries (user + posts + comments), got {counter.select_count}"
 
     async def test_nested_posts_comments_empty_posts(self, async_blog_fixtures):
@@ -515,8 +519,8 @@ class TestAsyncNestedEagerLoading:
         await user.save()
 
         result = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
-        assert await result.posts() == []
+        assert result is not None, "Expected the user to be loaded"
+        assert await result.posts() == [], "Expected the user to have no posts"
 
     async def test_nested_posts_comments_no_comments(self, async_blog_fixtures):
         """Post with no comments → comments() returns [] for each post (async)."""
@@ -529,11 +533,11 @@ class TestAsyncNestedEagerLoading:
             await post.save()
 
         result = await AsyncUser.query().with_('posts.comments').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         posts = await result.posts()
-        assert len(posts) == 2
+        assert len(posts) == 2, "Expected two related posts"
         for p in posts:
-            assert await p.comments() == []
+            assert await p.comments() == [], "Expected each post to have no comments"
 
     async def test_nested_posts_comments_eager_vs_lazy(self, async_blog_fixtures):
         """Eager dot-path and lazy produce identical data (async)."""
@@ -560,7 +564,9 @@ class TestAsyncNestedEagerLoading:
         for p in lazy_posts:
             lazy_comments.extend(await p.comments())
 
-        assert len(eager_comments) == len(lazy_comments)
+        assert len(eager_comments) == len(lazy_comments), \
+            "Expected eager and lazy to return the same number of comments"
         for ec, lc in zip(sorted(eager_comments, key=lambda c: c.id),
                           sorted(lazy_comments, key=lambda c: c.id)):
-            assert ec.content == lc.content
+            assert ec.content == lc.content, \
+                "Expected eager and lazy comment contents to match"

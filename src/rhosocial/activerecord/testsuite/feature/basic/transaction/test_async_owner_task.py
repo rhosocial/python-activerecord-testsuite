@@ -70,7 +70,10 @@ async def mgr_and_backend(async_pool_and_model):
 
 
 class TestAsyncOwnerTaskNoWarningSameTask:
+    """Verify that the same task nesting or re-entering transaction() does not emit a warning."""
+
     async def test_same_task_nested_transaction_no_warning(self, mgr_and_backend):
+        """A single task nesting transaction() inside itself must not emit any warning."""
         _backend, mgr = mgr_and_backend
         with warnings.catch_warnings():
             warnings.simplefilter("error")
@@ -79,6 +82,7 @@ class TestAsyncOwnerTaskNoWarningSameTask:
                     pass
 
     async def test_same_task_reentry_after_clean_exit_no_warning(self, mgr_and_backend):
+        """A task re-entering transaction() after a clean exit must not emit any warning."""
         _backend, mgr = mgr_and_backend
         async with mgr.transaction():
             pass
@@ -89,6 +93,8 @@ class TestAsyncOwnerTaskNoWarningSameTask:
 
 
 class TestAsyncOwnerTaskCrossTaskWarning:
+    """Verify that a different task entering transaction() during an active outer transaction emits a UserWarning."""
+
     async def test_cross_task_share_emits_user_warning(self, mgr_and_backend):
         """A different task entering transaction() during an active outer
         transaction owned by another task MUST emit UserWarning.
@@ -126,9 +132,10 @@ class TestAsyncOwnerTaskCrossTaskWarning:
         await asyncio.gather(owner_task, second_t)
 
         user_warnings = [w for w in caught if issubclass(w.category, UserWarning)]
-        assert user_warnings, "expected a UserWarning about shared backend"
+        assert user_warnings, "Expected a UserWarning about shared backend"
 
     async def test_cross_task_warning_message_is_stable(self, mgr_and_backend):
+        """Verify the cross-task UserWarning message text is stable for log-grep filters."""
         _backend, mgr = mgr_and_backend
 
         outer_started = asyncio.Event()
@@ -155,7 +162,7 @@ class TestAsyncOwnerTaskCrossTaskWarning:
         await asyncio.gather(owner_task, second_t)
 
         msgs = [str(w.message) for w in caught if issubclass(w.category, UserWarning)]
-        assert msgs, "no UserWarning captured"
+        assert msgs, "Expected at least one captured UserWarning"
         expected = (
             "Shared async backend instance detected: a different async task "
             "already holds an active transaction on this backend. Concurrent "
@@ -163,10 +170,12 @@ class TestAsyncOwnerTaskCrossTaskWarning:
             "transaction state inconsistency. Use separate backend instances "
             "per task or ensure serialized access."
         )
-        assert msgs[0] == expected
+        assert msgs[0] == expected, "Expected the UserWarning text to match the contract"
 
 
 class TestAsyncOwnerTaskLifecycle:
+    """Verify _owner_task reset and re-acquisition semantics across clean exits."""
+
     async def test_owner_task_cleared_after_outermost_exits(self, mgr_and_backend):
         """After a clean outermost commit, _owner_task MUST reset to None.
 
@@ -176,18 +185,19 @@ class TestAsyncOwnerTaskLifecycle:
         """
         _backend, mgr = mgr_and_backend
         async with mgr.transaction():
-            assert mgr.is_active
+            assert mgr.is_active, "Expected the manager to be active inside transaction()"
             async with mgr.transaction():
                 pass
-        assert mgr._owner_task is None
+        assert mgr._owner_task is None, "Expected _owner_task to be cleared after clean exit"
 
     async def test_owner_task_cleared_after_outermost_rolls_back(self, mgr_and_backend):
+        """A rolled-back outermost transaction must also clear _owner_task."""
         _backend, mgr = mgr_and_backend
         with pytest.raises(RuntimeError):
             async with mgr.transaction():
                 async with mgr.transaction():
                     raise RuntimeError("force rollback")
-        assert mgr._owner_task is None
+        assert mgr._owner_task is None, "Expected _owner_task to be cleared after rollback"
 
     async def test_owner_task_reacquired_by_same_task_after_clean_exit(self, mgr_and_backend):
         """After clean reset, the same task re-entering does not warn and
