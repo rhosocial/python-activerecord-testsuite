@@ -14,6 +14,8 @@ import pytest
 
 from rhosocial.activerecord.backend.errors import ValidationError, RecordNotFound, DatabaseError
 from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
+
+
 class TestSyncCRUD:
     """Synchronous CRUD test class that wraps all the test functions."""
 
@@ -21,11 +23,11 @@ class TestSyncCRUD:
         """Test creating a user record"""
         instance = user_class(username="Alice", email="alice@example.com", age=30, balance=Decimal("100.50"))
         rows = instance.save()
-        assert rows == 1
-        assert instance.id is not None
-        assert instance.created_at is not None
-        assert instance.updated_at is not None
-        assert instance.is_active is True
+        assert rows == 1, "Expected save() to affect 1 row"
+        assert instance.id is not None, "Expected the instance to have an assigned id"
+        assert instance.created_at is not None, "Expected created_at to be populated"
+        assert instance.updated_at is not None, "Expected updated_at to be populated"
+        assert instance.is_active is True, "Expected is_active to default to True"
 
     def test_create_user_with_invalid_data(self, user_class):
         """Test creating a user record with invalid data"""
@@ -51,16 +53,16 @@ class TestSyncCRUD:
 
         # Find by ID
         found = user_class.find_one(user.id)
-        assert found is not None
-        assert found.username == 'jane_doe'
-        assert found.email == 'jane@doe.com'
-        assert found.age == 25
-        assert found.balance == Decimal('200.00')
+        assert found is not None, "Expected to find the persisted user"
+        assert found.username == 'jane_doe', "Expected the username to be 'jane_doe'"
+        assert found.email == 'jane@doe.com', "Expected the email to be 'jane@doe.com'"
+        assert found.age == 25, "Expected age to be 25"
+        assert found.balance == Decimal('200.00'), "Expected balance to be 200.00"
 
     def test_find_nonexistent_user(self, user_class):
         """Test finding a non-existent user record"""
         found = user_class.find_one(999)
-        assert found is None
+        assert found is None, "Expected find_one() to return None for missing id"
 
         with pytest.raises(RecordNotFound):
             user_class.find_one_or_fail(999)
@@ -74,29 +76,30 @@ class TestSyncCRUD:
             age=40,
             balance=Decimal('300.00')
         )
-        assert user.is_new_record is True
+        assert user.is_new_record is True, "Expected the user to be new before save"
         user.save()
-        assert user.is_new_record is False
+        assert user.is_new_record is False, "Expected the user to not be new after save"
 
         # Update fields
         original_created_at = user.created_at
         original_updated_at = user.updated_at
         time.sleep(0.1)
-        assert user.is_dirty is False
+        assert user.is_dirty is False, "Expected the user to be clean after save"
         user.username = 'robert_smith'
-        assert user.is_dirty is True
+        assert user.is_dirty is True, "Expected the user to be dirty after modification"
         user.age = 41
         rows = user.save()
-        assert user.is_dirty is False
+        assert user.is_dirty is False, "Expected the user to be clean after save"
 
-        assert rows == 1
-        assert user.updated_at > user.created_at
-        assert user.updated_at > original_updated_at
+        assert rows == 1, "Expected save() to affect 1 row"
+        assert user.updated_at > user.created_at, "Expected updated_at to be later than created_at"
+        assert user.updated_at > original_updated_at, \
+            "Expected updated_at to be later than the original updated_at"
 
         # Reload to verify
         user.refresh()
-        assert user.username == 'robert_smith'
-        assert user.age == 41
+        assert user.username == 'robert_smith', "Expected username to be updated to 'robert_smith'"
+        assert user.age == 41, "Expected age to be updated to 41"
         assert user.email == 'bob@smith.com'  # field not modified should remain unchanged
         assert_datetime_equal(user.created_at, original_created_at)
 
@@ -122,17 +125,17 @@ class TestSyncCRUD:
             age=35,
             balance=Decimal('500.00')
         )
-        assert user.is_new_record is True
+        assert user.is_new_record is True, "Expected the user to be new before save"
         user.save()
-        assert user.is_new_record is False
+        assert user.is_new_record is False, "Expected the user to not be new after save"
 
         # Delete record
         user_id = user.id
         rows = user.delete()
-        assert rows == 1
+        assert rows == 1, "Expected delete() to affect 1 row"
 
         # Verify deleted
-        assert user_class.find_one(user_id) is None
+        assert user_class.find_one(user_id) is None, "Expected the deleted user to be gone"
 
     def test_save_after_delete(self, user_class):
         """Test saving a user record after it has been deleted"""
@@ -148,8 +151,8 @@ class TestSyncCRUD:
 
         # Delete the user
         rows = user.delete()
-        assert rows == 1
-        assert user_class.find_one(user_id) is None
+        assert rows == 1, "Expected delete() to affect 1 row"
+        assert user_class.find_one(user_id) is None, "Expected the user to be gone after delete"
 
         # Check state after deletion
         # Important: After deletion, the record should be considered new
@@ -160,16 +163,16 @@ class TestSyncCRUD:
 
         # Attempt to save the user again
         rows = user.save()
-        assert rows == 1
-        assert user.id is not None
+        assert rows == 1, "Expected re-save() to insert 1 row"
+        assert user.id is not None, "Expected the user to have an id after re-save"
         assert user.id != user_id  # Should have a new ID
-        assert user.is_new_record is False
+        assert user.is_new_record is False, "Expected the user to not be new after re-save"
 
         # Verify the user exists in the database
         found = user_class.find_one(user.id)
-        assert found is not None
-        assert found.username == 'deleted_user'
-        assert found.email == 'deleted@example.com'
+        assert found is not None, "Expected to find the re-saved user"
+        assert found.username == 'deleted_user', "Expected the username to be preserved"
+        assert found.email == 'deleted@example.com', "Expected the email to be preserved"
 
     def test_bulk_operations(self, user_class):
         """Test bulk operations"""
@@ -186,12 +189,13 @@ class TestSyncCRUD:
 
         # Bulk query
         found_users = user_class.query().order_by('age').all()
-        assert len(found_users) == 5
-        assert [u.age for u in found_users] == [20, 21, 22, 23, 24]
+        assert len(found_users) == 5, "Expected 5 users to be returned"
+        assert [u.age for u in found_users] == [20, 21, 22, 23, 24], \
+            "Expected the ages to be ordered from 20 to 24"
 
         # Conditional query
         young_users = user_class.query().where('age < ?', (22,)).all()
-        assert len(young_users) == 2
+        assert len(young_users) == 2, "Expected 2 young users to be returned"
 
     def test_dirty_tracking(self, user_class):
         """Test dirty data tracking"""
@@ -203,20 +207,22 @@ class TestSyncCRUD:
         )
 
         # New record should not be dirty
-        assert not user.is_dirty and user.is_new_record
-        assert 'username' not in user.dirty_fields
-        assert 'email' not in user.dirty_fields
+        assert not user.is_dirty and user.is_new_record, \
+            "Expected a new user to be clean and new"
+        assert 'username' not in user.dirty_fields, "Expected username not to be dirty"
+        assert 'email' not in user.dirty_fields, "Expected email not to be dirty"
 
         user.save()
         # Should be clean after saving
-        assert not user.is_dirty and not user.is_new_record
-        assert len(user.dirty_fields) == 0
+        assert not user.is_dirty and not user.is_new_record, \
+            "Expected the user to be clean and not new after save"
+        assert len(user.dirty_fields) == 0, "Expected no dirty fields after save"
 
         # Should be dirty after modification
         user.username = 'new_track_user'
-        assert user.is_dirty
-        assert 'username' in user.dirty_fields
-        assert 'email' not in user.dirty_fields
+        assert user.is_dirty, "Expected the user to be dirty after modification"
+        assert 'username' in user.dirty_fields, "Expected username to be in dirty_fields"
+        assert 'email' not in user.dirty_fields, "Expected email not to be in dirty_fields"
 
     def test_type_case_crud(self, type_case_class):
         """Test CRUD operations with various field types"""
@@ -245,28 +251,28 @@ class TestSyncCRUD:
 
         # Save and verify
         rows = case.save()
-        assert rows == 1
-        assert case.id is not None
+        assert rows == 1, "Expected save() to affect 1 row"
+        assert case.id is not None, "Expected the case to have an id"
 
         # Find and verify
         found = type_case_class.find_one(case.id)
-        assert found is not None
-        assert isinstance(found.id, uuid.UUID)
-        assert found.tiny_int == 127
-        assert found.small_int == 32767
-        assert found.big_int == 9223372036854775807
-        assert abs(found.float_val - 3.14) < 1e-6
-        assert abs(found.double_val - 3.141592653589793) < 1e-10
-        assert found.decimal_val == Decimal('123.4567')
-        assert found.char_val == 'fixed'
-        assert found.varchar_val == 'variable'
-        assert found.text_val == 'long text content'
-        assert isinstance(found.date_val, date)
-        assert isinstance(found.time_val, dtime)
-        assert isinstance(found.timestamp_val, datetime)
-        assert found.blob_val == b'binary data'
-        assert found.json_val == {'key': 'value'}
-        assert found.array_val == [1, 2, 3]
+        assert found is not None, "Expected to find the case"
+        assert isinstance(found.id, uuid.UUID), "Expected the id to be a UUID"
+        assert found.tiny_int == 127, "Expected tiny_int to be 127"
+        assert found.small_int == 32767, "Expected small_int to be 32767"
+        assert found.big_int == 9223372036854775807, "Expected big_int to round-trip"
+        assert abs(found.float_val - 3.14) < 1e-6, "Expected float_val to be near 3.14"
+        assert abs(found.double_val - 3.141592653589793) < 1e-10, "Expected double_val to round-trip"
+        assert found.decimal_val == Decimal('123.4567'), "Expected decimal_val to round-trip"
+        assert found.char_val == 'fixed', "Expected char_val to be 'fixed'"
+        assert found.varchar_val == 'variable', "Expected varchar_val to be 'variable'"
+        assert found.text_val == 'long text content', "Expected text_val to be preserved"
+        assert isinstance(found.date_val, date), "Expected date_val to be a date"
+        assert isinstance(found.time_val, dtime), "Expected time_val to be a time"
+        assert isinstance(found.timestamp_val, datetime), "Expected timestamp_val to be a datetime"
+        assert found.blob_val == b'binary data', "Expected blob_val to round-trip"
+        assert found.json_val == {'key': 'value'}, "Expected json_val to round-trip"
+        assert found.array_val == [1, 2, 3], "Expected array_val to round-trip"
 
     def test_validated_user_crud(self, validated_user_class):
         """Test CRUD operations with a validated user model"""
@@ -279,7 +285,7 @@ class TestSyncCRUD:
             status='active'
         )
         rows = user.save()
-        assert rows == 1
+        assert rows == 1, "Expected save() to affect 1 row"
 
         # Test invalid username (contains numbers)
         with pytest.raises(ValidationError):
@@ -334,7 +340,7 @@ class TestSyncCRUD:
         user.credit_score = 800
         user.status = 'suspended'
         rows = user.save()
-        assert rows == 1
+        assert rows == 1, "Expected update save() to affect 1 row"
 
         # Invalid update: username contains numbers
         with pytest.raises(ValidationError):
@@ -353,9 +359,9 @@ class TestSyncCRUD:
 
         # Reload to verify last valid state
         user.refresh()
-        assert user.username == 'valid_user'
-        assert user.credit_score == 800
-        assert user.status == 'suspended'
+        assert user.username == 'valid_user', "Expected the username to remain valid"
+        assert user.credit_score == 800, "Expected the credit score to be 800"
+        assert user.status == 'suspended', "Expected the status to be 'suspended'"
 
     def test_transaction_crud(self, user_class):
         """Test CRUD operations in transactions"""
@@ -374,8 +380,8 @@ class TestSyncCRUD:
 
         # Verify transaction succeeded
         saved_user = user_class.find_one(user.id)
-        assert saved_user is not None
-        assert saved_user.balance == Decimal('1500.00')
+        assert saved_user is not None, "Expected to find the user after commit"
+        assert saved_user.balance == Decimal('1500.00'), "Expected balance to be 1500.00"
 
         # Failed transaction
         with pytest.raises(ValidationError):
@@ -394,7 +400,7 @@ class TestSyncCRUD:
 
         # Verify transaction rolled back
         found = user_class.query().where('username = ?', ('transaction_user2',)).one()
-        assert found is None
+        assert found is None, "Expected the user to be rolled back"
 
     def test_refresh_record(self, validated_user_class):
         """Test record refresh functionality"""
@@ -414,7 +420,8 @@ class TestSyncCRUD:
 
         # Refresh original instance
         user.refresh()
-        assert user.username == 'refreshed_user'
+        assert user.username == 'refreshed_user', \
+            "Expected the username to be updated after refresh"
 
         # Try to refresh an unsaved record
         new_user = validated_user_class(
@@ -445,12 +452,12 @@ class TestSyncCRUD:
 
         # Test find_by_pk
         found = validated_user_class.find_one(users[0].id)
-        assert found is not None
-        assert found.username == 'query_user_0'
+        assert found is not None, "Expected to find the user by id"
+        assert found.username == 'query_user_0', "Expected the username to be 'query_user_0'"
 
         # Test find_one_or_fail
         found = validated_user_class.find_one_or_fail(users[1].id)
-        assert found.username == 'query_user_1'
+        assert found.username == 'query_user_1', "Expected the username to be 'query_user_1'"
 
         with pytest.raises(RecordNotFound):
             validated_user_class.find_one_or_fail(9999)
@@ -460,13 +467,15 @@ class TestSyncCRUD:
                          .where('age >= ?', (31,))
                          .order_by('age')
                          .all())
-        assert len(query_results) == 2
-        assert query_results[0].username == 'query_user_1'
-        assert query_results[1].username == 'query_user_2'
+        assert len(query_results) == 2, "Expected 2 users with age >= 31"
+        assert query_results[0].username == 'query_user_1', \
+            "Expected the first result to be 'query_user_1'"
+        assert query_results[1].username == 'query_user_2', \
+            "Expected the second result to be 'query_user_2'"
 
         # Test aggregate queries
         count = validated_user_class.query().count()
-        assert count == 3
+        assert count == 3, "Expected the count to be 3"
 
     def test_find_all_no_condition(self, validated_user_class):
         """Test find_all returns all records when no condition is given."""
@@ -484,11 +493,11 @@ class TestSyncCRUD:
             user.save()
 
         all_records = validated_user_class.find_all()
-        assert len(all_records) >= 3
+        assert len(all_records) >= 3, "Expected at least 3 records to be returned"
         usernames = {r.username for r in all_records}
-        assert 'find_all_0' in usernames
-        assert 'find_all_1' in usernames
-        assert 'find_all_2' in usernames
+        assert 'find_all_0' in usernames, "Expected 'find_all_0' in usernames"
+        assert 'find_all_1' in usernames, "Expected 'find_all_1' in usernames"
+        assert 'find_all_2' in usernames, "Expected 'find_all_2' in usernames"
 
     def test_find_all_with_dict_condition(self, validated_user_class):
         """Test find_all with a dictionary condition."""
@@ -506,9 +515,9 @@ class TestSyncCRUD:
             user.save()
 
         results = validated_user_class.find_all({'age': 25})
-        assert len(results) == 2
+        assert len(results) == 2, "Expected 2 users with age 25"
         for r in results:
-            assert r.age == 25
+            assert r.age == 25, "Expected the user's age to be 25"
 
     def test_find_all_with_list_of_ids(self, validated_user_class):
         """Test find_all with a list of primary key values."""
@@ -527,7 +536,7 @@ class TestSyncCRUD:
 
         target_ids = [users[0].id, users[2].id]
         results = validated_user_class.find_all(target_ids)
-        assert len(results) == 2
+        assert len(results) == 2, "Expected 2 users to be returned"
         result_ids = {r.id for r in results}
-        assert users[0].id in result_ids
-        assert users[2].id in result_ids
+        assert users[0].id in result_ids, "Expected users[0].id to be in the results"
+        assert users[2].id in result_ids, "Expected users[2].id to be in the results"

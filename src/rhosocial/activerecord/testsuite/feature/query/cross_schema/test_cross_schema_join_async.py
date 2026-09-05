@@ -30,7 +30,7 @@ async def test_async_cross_schema_join(async_schema_fixtures):
     assert [(r["amount"], r["customer"]) for r in rows] == [
         (100, "async_alice"),
         (300, "async_alice"),
-    ]
+    ], "Expected joined rows for async_alice to match the seeded amounts"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -43,13 +43,17 @@ async def test_async_cross_schema_writes_are_scoped(async_schema_fixtures):
     order = AsyncOrder(customer_id=cust.id, amount=42)
     await order.save()
 
-    assert await AsyncOrder.query().where(AsyncOrder.c.id == order.id).count() == 1
-    assert await AsyncCustomer.query().where(AsyncCustomer.c.id == cust.id).count() == 1
+    assert await AsyncOrder.query().where(AsyncOrder.c.id == order.id).count() == 1, \
+        "Expected the freshly saved order to exist"
+    assert await AsyncCustomer.query().where(AsyncCustomer.c.id == cust.id).count() == 1, \
+        "Expected the freshly saved customer to exist"
 
     await AsyncOrder.query().where(AsyncOrder.c.id == order.id).update_all({"amount": 43})
     refreshed = await AsyncOrder.query().where(AsyncOrder.c.id == order.id).one()
-    assert refreshed.amount == 43
+    assert refreshed.amount == 43, "Expected updated amount to be 43"
 
     await AsyncOrder.query().where(AsyncOrder.c.id == order.id).delete_all()
-    assert await AsyncOrder.query().where(AsyncOrder.c.id == order.id).count() == 0
-    assert await AsyncCustomer.query().where(AsyncCustomer.c.id == cust.id).count() == 1
+    assert await AsyncOrder.query().where(AsyncOrder.c.id == order.id).count() == 0, \
+        "Expected the order to be deleted"
+    assert await AsyncCustomer.query().where(AsyncCustomer.c.id == cust.id).count() == 1, \
+        "Expected the customer to remain after order delete"

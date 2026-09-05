@@ -37,7 +37,8 @@ def test_cross_schema_join(schema_fixtures):
         .order_by(Order.c.amount)
         .aggregate()
     )
-    assert [(r["amount"], r["customer"]) for r in rows] == [(100, "alice"), (300, "alice")]
+    assert [(r["amount"], r["customer"]) for r in rows] == [(100, "alice"), (300, "alice")], \
+        "Expected joined rows for alice to be (100, 'alice') and (300, 'alice')"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -56,7 +57,7 @@ def test_cross_schema_count_with_condition(schema_fixtures):
         .where(Customer.c.name == "counted")
         .count()
     )
-    assert total == 3
+    assert total == 3, "Expected count over the cross-schema join to be 3"
 
 
 @requires_protocol("SchemaSupport", "supports_schema")
@@ -69,14 +70,18 @@ def test_cross_schema_writes_are_scoped(schema_fixtures):
     order = Order(customer_id=cust.id, amount=42)
     order.save()
 
-    assert Order.query().where(Order.c.id == order.id).count() == 1
-    assert Customer.query().where(Customer.c.id == cust.id).count() == 1
+    assert Order.query().where(Order.c.id == order.id).count() == 1, \
+        "Expected the freshly saved order to exist"
+    assert Customer.query().where(Customer.c.id == cust.id).count() == 1, \
+        "Expected the freshly saved customer to exist"
 
     Order.query().where(Order.c.id == order.id).update_all({"amount": 43})
     refreshed = Order.query().where(Order.c.id == order.id).one()
-    assert refreshed.amount == 43
+    assert refreshed.amount == 43, "Expected updated amount to be 43"
 
     Order.query().where(Order.c.id == order.id).delete_all()
-    assert Order.query().where(Order.c.id == order.id).count() == 0
+    assert Order.query().where(Order.c.id == order.id).count() == 0, \
+        "Expected the order to be deleted"
     # The other schema is unaffected.
-    assert Customer.query().where(Customer.c.id == cust.id).count() == 1
+    assert Customer.query().where(Customer.c.id == cust.id).count() == 1, \
+        "Expected the customer to remain after order delete"

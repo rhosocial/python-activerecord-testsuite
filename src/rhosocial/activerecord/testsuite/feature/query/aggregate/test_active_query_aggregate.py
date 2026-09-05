@@ -33,7 +33,7 @@ class TestSyncActiveQueryAggregate:
 
         # Count all orders for this user
         count = Order.query().count()
-        assert count == 3
+        assert count == 3, "Expected count to be 3"
 
     def test_count_with_column(self, order_fixtures):
         """
@@ -58,7 +58,7 @@ class TestSyncActiveQueryAggregate:
 
         # Count specific column values
         count = Order.query().count(Order.c.order_number)
-        assert count == 3
+        assert count == 3, "Expected column count to be 3"
 
     def test_count_distinct(self, order_fixtures):
         """
@@ -116,7 +116,7 @@ class TestSyncActiveQueryAggregate:
 
         # Calculate total sum of amounts
         total = Order.query().sum_(Order.c.total_amount)
-        assert total == sum(amounts)
+        assert total == sum(amounts), "Expected sum to equal total of amounts"
 
     def test_sum_with_column(self, order_fixtures):
         """
@@ -142,7 +142,7 @@ class TestSyncActiveQueryAggregate:
 
         # Calculate sum for specific column
         total = Order.query().sum_(Order.c.total_amount)
-        assert total == sum(amounts)
+        assert total == sum(amounts), "Expected column sum to equal total of amounts"
 
     def test_avg_simple(self, order_fixtures):
         """
@@ -169,7 +169,7 @@ class TestSyncActiveQueryAggregate:
         # Calculate average of amounts
         avg = Order.query().avg(Order.c.total_amount)
         expected_avg = sum(amounts) / len(amounts)
-        assert avg == expected_avg
+        assert avg == expected_avg, "Expected average to equal mean of amounts"
 
     def test_min_max_simple(self, order_fixtures):
         """
@@ -197,8 +197,8 @@ class TestSyncActiveQueryAggregate:
         min_val = Order.query().min_(Order.c.total_amount)
         max_val = Order.query().max_(Order.c.total_amount)
 
-        assert min_val == min(amounts)
-        assert max_val == max(amounts)
+        assert min_val == min(amounts), "Expected min to equal min of amounts"
+        assert max_val == max(amounts), "Expected max to equal max of amounts"
 
     def test_exists_method(self, order_fixtures):
         """
@@ -219,11 +219,11 @@ class TestSyncActiveQueryAggregate:
 
         # Test existence case - record should exist
         exists = Order.query().where(Order.c.order_number == 'EXIST-001').exists()
-        assert exists is True
+        assert exists is True, "Expected exists() to be True for existing record"
 
         # Test non-existence case - record should not exist
         exists = Order.query().where(Order.c.order_number == 'NON-EXISTENT').exists()
-        assert exists is False
+        assert exists is False, "Expected exists() to be False for missing record"
 
     def test_aggregate_with_where_condition(self, order_fixtures):
         """
@@ -258,8 +258,9 @@ class TestSyncActiveQueryAggregate:
         active_total = Order.query().where(Order.c.status == 'active').sum_(Order.c.total_amount)
 
         active_orders = [d for d in orders_data if d['status'] == 'active']
-        assert active_count == len(active_orders)
-        assert active_total == sum(d['amount'] for d in active_orders)
+        assert active_count == len(active_orders), "Expected active count to match active orders"
+        assert active_total == sum(d['amount'] for d in active_orders), \
+            "Expected active total to match sum of active amounts"
 
     def test_count_wildcard_string(self, order_fixtures):
         """
@@ -274,7 +275,7 @@ class TestSyncActiveQueryAggregate:
             Order(user_id=user.id, order_number=f'WLD-{i+1:03d}').save()
 
         count = Order.query().count("*")
-        assert count == 3
+        assert count == 3, "Expected wildcard count to be 3"
 
     def test_sum_wildcard_raises_error(self, order_fixtures):
         """

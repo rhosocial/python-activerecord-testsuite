@@ -20,11 +20,11 @@ class TestSyncEagerLoadingWithAll:
         order.save()
 
         results = Order.query().with_('user').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].user()
-        assert related is not None
-        assert related.id == user.id
-        assert related.username == 'ela_all_user'
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
+        assert related.username == 'ela_all_user', "Expected the related username to match"
 
     def test_has_many(self, combined_fixtures):
         """After User.with_('orders').all(), user.orders() should return all related Orders."""
@@ -36,15 +36,15 @@ class TestSyncEagerLoadingWithAll:
             o.save()
 
         results = User.query().with_('orders').where(User.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].orders()
-        assert len(related) == 3
+        assert len(related) == 3, "Expected three related orders"
 
     def test_empty_result(self, combined_fixtures):
         """when no records match, with_().all() should return empty list, not raise."""
         User, Order, _, _, _ = combined_fixtures
         results = Order.query().with_('user').where(Order.c.id == -1).all()
-        assert len(results) == 0
+        assert len(results) == 0, "Expected an empty result list"
 
     def test_data_correctness(self, combined_fixtures):
         """Preloaded User instance should have correct field values (username, id)."""
@@ -55,11 +55,11 @@ class TestSyncEagerLoadingWithAll:
         post.save()
 
         results = Post.query().with_('user').where(Post.c.id == post.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].user()
-        assert related is not None
-        assert related.id == user.id
-        assert related.username == 'ela_all_dc'
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
+        assert related.username == 'ela_all_dc', "Expected the related username to match"
 
     def test_multiple_relations(self, combined_fixtures):
         """Chaining with_() and where() should still correctly preload the User relation."""
@@ -70,7 +70,7 @@ class TestSyncEagerLoadingWithAll:
         order.save()
 
         results = Order.query().with_('user').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related_user = results[0].user()
-        assert related_user is not None
-        assert related_user.id == user.id
+        assert related_user is not None, "Expected the related user to be loaded"
+        assert related_user.id == user.id, "Expected the related user id to match"

@@ -20,10 +20,10 @@ class TestAsyncEagerLoadingWithAll:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     async def test_has_many(self, async_combined_fixtures):
         """AsyncUser.with_('orders').all() should preload all related Orders."""
@@ -35,15 +35,15 @@ class TestAsyncEagerLoadingWithAll:
             await o.save()
 
         results = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].orders()
-        assert len(related) == 3
+        assert len(related) == 3, "Expected three related orders"
 
     async def test_empty_result(self, async_combined_fixtures):
         """Empty result set should return empty list, not raise (async)."""
         AsyncUser, AsyncOrder, _, _, _ = async_combined_fixtures
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == -1).all()
-        assert len(results) == 0
+        assert len(results) == 0, "Expected an empty result list"
 
     async def test_data_correctness(self, async_combined_fixtures):
         """Preloaded User instance should have correct field values (async)."""
@@ -54,11 +54,11 @@ class TestAsyncEagerLoadingWithAll:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].user()
-        assert related is not None
-        assert related.id == user.id
-        assert related.username == 'aela_all_dc'
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
+        assert related.username == 'aela_all_dc', "Expected the related username to match"
 
     async def test_multiple_relations(self, async_combined_fixtures):
         """Chaining with_() and where() with all() should preload (async)."""
@@ -69,10 +69,10 @@ class TestAsyncEagerLoadingWithAll:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related_user = await results[0].user()
-        assert related_user is not None
-        assert related_user.id == user.id
+        assert related_user is not None, "Expected the related user to be loaded"
+        assert related_user.id == user.id, "Expected the related user id to match"
 
 
 

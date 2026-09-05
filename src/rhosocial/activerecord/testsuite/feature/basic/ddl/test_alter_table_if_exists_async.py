@@ -32,18 +32,22 @@ class TestAsyncDdlAddColumn:
 
     @requires_protocol(AlterTableModifierSupport, "supports_add_column_if_not_exists")
     async def test_add_column_if_not_exists(self, async_ddl_dialect):
+        """ALTER TABLE ADD COLUMN IF NOT EXISTS should render the IF NOT EXISTS qualifier."""
         action = AddColumn(
             async_ddl_dialect, ColumnDefinition("content", TextType()), if_not_exists=True
         )
         sql, params = action.to_sql()
-        assert "IF NOT EXISTS" in sql
-        assert not params
+        assert "IF NOT EXISTS" in sql, \
+            "Expected the rendered SQL to contain the IF NOT EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE ADD COLUMN"
 
     async def test_add_column_plain_form(self, async_ddl_dialect):
+        """ALTER TABLE ADD COLUMN without if_not_exists should omit the qualifier."""
         action = AddColumn(async_ddl_dialect, ColumnDefinition("content", TextType()))
         sql, params = action.to_sql()
-        assert "IF NOT EXISTS" not in sql
-        assert not params
+        assert "IF NOT EXISTS" not in sql, \
+            "Expected the rendered SQL to omit the IF NOT EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE ADD COLUMN"
 
 
 class TestAsyncDdlDropColumn:
@@ -51,16 +55,20 @@ class TestAsyncDdlDropColumn:
 
     @requires_protocol(AlterTableModifierSupport, "supports_drop_column_if_exists")
     async def test_drop_column_if_exists(self, async_ddl_dialect):
+        """ALTER TABLE DROP COLUMN IF EXISTS should render the IF EXISTS qualifier."""
         action = DropColumn(async_ddl_dialect, column_name="content", if_exists=True)
         sql, params = action.to_sql()
-        assert "IF EXISTS" in sql
-        assert not params
+        assert "IF EXISTS" in sql, \
+            "Expected the rendered SQL to contain the IF EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE DROP COLUMN"
 
     async def test_drop_column_plain_form(self, async_ddl_dialect):
+        """ALTER TABLE DROP COLUMN without if_exists should omit the qualifier."""
         action = DropColumn(async_ddl_dialect, column_name="content")
         sql, params = action.to_sql()
-        assert "IF EXISTS" not in sql
-        assert not params
+        assert "IF EXISTS" not in sql, \
+            "Expected the rendered SQL to omit the IF EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE DROP COLUMN"
 
 
 class TestAsyncDdlDropConstraint:
@@ -68,18 +76,22 @@ class TestAsyncDdlDropConstraint:
 
     @requires_protocol(AlterTableModifierSupport, "supports_drop_constraint_if_exists")
     async def test_drop_constraint_if_exists(self, async_ddl_dialect):
+        """ALTER TABLE DROP CONSTRAINT IF EXISTS should render the IF EXISTS qualifier."""
         action = DropTableConstraint(
             async_ddl_dialect, constraint_name="uq_snapshot_content", if_exists=True
         )
         sql, params = action.to_sql()
-        assert "IF EXISTS" in sql
-        assert not params
+        assert "IF EXISTS" in sql, \
+            "Expected the rendered SQL to contain the IF EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE DROP CONSTRAINT"
 
     @requires_protocol(ConstraintSupport, "supports_drop_constraint")
     async def test_drop_constraint_plain_form(self, async_ddl_dialect):
+        """ALTER TABLE DROP CONSTRAINT without if_exists should omit the qualifier."""
         action = DropTableConstraint(
             async_ddl_dialect, constraint_name="uq_snapshot_content"
         )
         sql, params = action.to_sql()
-        assert "IF EXISTS" not in sql
-        assert not params
+        assert "IF EXISTS" not in sql, \
+            "Expected the rendered SQL to omit the IF EXISTS qualifier"
+        assert not params, "Expected no bound parameters for ALTER TABLE DROP CONSTRAINT"

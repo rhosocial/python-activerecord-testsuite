@@ -23,9 +23,9 @@ class TestAsyncEagerLoadingNested:
             await item.save()
 
         results = await AsyncOrder.query().with_('items').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related_items = await results[0].items()
-        assert len(related_items) == 2
+        assert len(related_items) == 2, "Expected two related items"
 
     async def test_two_level_with_belongs_to(self, async_combined_fixtures):
         """Async version of Order.with_('user') nested preloading."""
@@ -36,10 +36,10 @@ class TestAsyncEagerLoadingNested:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     async def test_multiple_nested_same_parent(self, async_combined_fixtures):
         """Async version: repeated access to same nested relation returns consistent data."""
@@ -50,10 +50,10 @@ class TestAsyncEagerLoadingNested:
         await order.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = await results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     async def test_all_nested_loaded(self, async_combined_fixtures):
         """When all() returns multiple parent records, each should have nested data loaded (async)."""
@@ -66,11 +66,11 @@ class TestAsyncEagerLoadingNested:
             await o.save()
 
         results = await AsyncOrder.query().with_('user').where(AsyncOrder.c.user_id == user.id).all()
-        assert len(results) == 3
+        assert len(results) == 3, "Expected three results"
         for r in results:
             u = await r.user()
-            assert u is not None
-            assert u.id == user.id
+            assert u is not None, "Expected the related user to be loaded"
+            assert u.id == user.id, "Expected the related user id to match"
 
 
 

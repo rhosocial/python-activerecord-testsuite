@@ -325,8 +325,9 @@ class TestAsyncParallelCRUD:
             ]
             results = [f.result(timeout=60) for f in futures]
 
-        assert all(r is not None for r in results)
-        assert len(set(results)) == 10
+        assert all(r is not None for r in results), \
+            "Expected every parallel async create result to be a non-None user ID"
+        assert len(set(results)) == 10, "Expected 10 unique user IDs from parallel async creates"
 
     async def test_parallel_read(self, async_user_class_for_worker):
         """Test parallel async user reading."""
@@ -355,9 +356,11 @@ class TestAsyncParallelCRUD:
                 ]
                 results = [f.result(timeout=60) for f in futures]
 
-            assert all(r is not None for r in results)
+            assert all(r is not None for r in results), \
+                "Expected every parallel async read result to be a non-None dict"
             usernames = {r['username'] for r in results}
-            assert usernames == {f'async_read_{i}' for i in range(5)}
+            assert usernames == {f'async_read_{i}' for i in range(5)}, \
+                "Expected the parallel async reads to return the seeded usernames"
         finally:
             for user in test_users:
                 await user.delete()
@@ -394,11 +397,12 @@ class TestAsyncParallelCRUD:
                 ]
                 results = [f.result(timeout=60) for f in futures]
 
-            assert all(results)
+            assert all(results), "Expected every parallel async update result to be True"
 
             for i, user in enumerate(test_users):
                 await user.refresh()
-                assert user.balance == 200.0 + i
+                assert user.balance == 200.0 + i, \
+                    f"Expected user {i} balance to equal {200.0 + i}"
         finally:
             for user in test_users:
                 await user.delete()
@@ -428,10 +432,10 @@ class TestAsyncParallelCRUD:
             ]
             results = [f.result(timeout=60) for f in futures]
 
-        assert all(results)
+        assert all(results), "Expected every parallel async delete result to be True"
 
         for uid in test_ids:
             user = await AsyncUser.find_one({'id': uid})
-            assert user is None
+            assert user is None, f"Expected async user {uid} to be deleted"
 
 

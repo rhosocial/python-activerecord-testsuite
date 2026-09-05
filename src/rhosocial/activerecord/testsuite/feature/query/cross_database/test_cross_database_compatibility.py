@@ -41,50 +41,52 @@ def test_common_sql_standard_features(order_fixtures):
 
     # 1. Basic SELECT
     all_orders = Order.query().all()
-    assert len(all_orders) == 5
+    assert len(all_orders) == 5, "Expected 5 orders to be returned"
 
     # 2. WHERE condition
     active_orders = Order.query().where(Order.c.status == 'active').all()
-    assert len(active_orders) == 3  # 0, 2, 4 index orders are active
+    assert len(active_orders) == 3, "Expected 3 active orders"  # 0, 2, 4 index orders are active
 
     # 3. ORDER BY (using correct syntax)
     ordered_orders = Order.query().order_by(Order.c.total_amount).all()
-    assert ordered_orders[0].total_amount <= ordered_orders[-1].total_amount
+    assert ordered_orders[0].total_amount <= ordered_orders[-1].total_amount, \
+        "Expected ascending order by total_amount"
 
     # Test descending order specifically using correct syntax
     ordered_desc_orders = Order.query().order_by((Order.c.total_amount, "DESC")).all()
-    assert ordered_desc_orders[0].total_amount >= ordered_desc_orders[-1].total_amount
+    assert ordered_desc_orders[0].total_amount >= ordered_desc_orders[-1].total_amount, \
+        "Expected descending order by total_amount"
 
     # 4. LIMIT and OFFSET
     limited_orders = Order.query().order_by(Order.c.order_number).limit(2).offset(1).all()
-    assert len(limited_orders) == 2
+    assert len(limited_orders) == 2, "Expected 2 limited orders"
 
     # 5. COUNT aggregation
     count = Order.query().count()
-    assert count == 5
+    assert count == 5, "Expected count to be 5"
 
     # 6. SUM aggregation
     total_amount = Order.query().sum_(Order.c.total_amount)
     expected_total = sum(Decimal(f'{(i+1)*100.00}') for i in range(5))
-    assert total_amount == expected_total
+    assert total_amount == expected_total, "Expected sum to equal expected total"
 
     # 7. GROUP BY and HAVING (using aggregate method for grouped results)
     # Get backend for dialect-specific function calls
     backend = Order.backend()
     dialect = backend.dialect
     from rhosocial.activerecord.backend.expression import functions
-    
+
     grouped_results = Order.query() \
         .select(Order.c.status, functions.count(dialect, '*').as_('count')) \
         .group_by(Order.c.status) \
         .aggregate()  # Use aggregate() instead of all() for grouped results
-    
+
     # Should have two statuses, each with count
     status_counts = {r['status']: r['count'] for r in grouped_results}
-    assert 'active' in status_counts
-    assert 'inactive' in status_counts
-    assert status_counts['active'] == 3
-    assert status_counts['inactive'] == 2
+    assert 'active' in status_counts, "Expected active status to be in counts"
+    assert 'inactive' in status_counts, "Expected inactive status to be in counts"
+    assert status_counts['active'] == 3, "Expected 3 active orders"
+    assert status_counts['inactive'] == 2, "Expected 2 inactive orders"
 
 
 @pytest.mark.requires_protocol(
@@ -124,7 +126,7 @@ def test_fulltext_search_compatibility(annotated_query_fixtures):
 
     # Basic query should always work
     basic_results = SearchableItem.query().where(SearchableItem.c.name.like('%Test%')).all()
-    assert len(basic_results) >= 1
+    assert len(basic_results) >= 1, "Expected at least one basic search result"
 
     # Advanced full-text search may require specific database support
 
@@ -152,20 +154,20 @@ def test_aggregation_compatibility(order_fixtures):
     # Test various aggregation functions
     total = Order.query().sum_(Order.c.total_amount)
     expected_total = sum(amounts)
-    assert total == expected_total
+    assert total == expected_total, "Expected total to equal sum of amounts"
 
     average = Order.query().avg(Order.c.total_amount)
     expected_avg = sum(amounts) / len(amounts)
-    assert average == expected_avg
+    assert average == expected_avg, "Expected average to equal mean of amounts"
 
     count = Order.query().count()
-    assert count == len(amounts)
+    assert count == len(amounts), "Expected count to equal len of amounts"
 
     min_val = Order.query().min_(Order.c.total_amount)
-    assert min_val == min(amounts)
+    assert min_val == min(amounts), "Expected min to equal min of amounts"
 
     max_val = Order.query().max_(Order.c.total_amount)
-    assert max_val == max(amounts)
+    assert max_val == max(amounts), "Expected max to equal max of amounts"
 
 
 def test_join_compatibility(blog_fixtures):
@@ -200,11 +202,11 @@ def test_join_compatibility(blog_fixtures):
 
     # Test basic functionality without complex joins that might cause field mapping issues
     user_with_posts = User.query().where(User.c.id == user.id).all()
-    assert len(user_with_posts) == 1
-    
+    assert len(user_with_posts) == 1, "Expected exactly one matching user"
+
     post_for_user = Post.query().where(Post.c.user_id == user.id).all()
-    assert len(post_for_user) >= 1
-    
+    assert len(post_for_user) >= 1, "Expected at least one post for the user"
+
     # Test join functionality by verifying we can join without errors
     try:
         # Try a simple join to make sure the functionality exists
@@ -212,9 +214,9 @@ def test_join_compatibility(blog_fixtures):
             .inner_join(User, on=(Post.c.user_id == User.c.id)) \
             .where(Post.c.id == post.id) \
             .all()
-        
-        assert len(joined_results) >= 1
+
+        assert len(joined_results) >= 1, "Expected at least one joined result"
     except Exception:
         # If join functionality is not fully implemented, at least verify basic queries work
         basic_results = Post.query().where(Post.c.id == post.id).all()
-        assert len(basic_results) == 1
+        assert len(basic_results) == 1, "Expected exactly one basic post result"

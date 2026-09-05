@@ -58,10 +58,10 @@ class TestCTEQueryActiveQuery:
         # Execute the CTE query using aggregate method
         result = cte_query.from_cte("high_value_nodes").select("name", "value").aggregate()
 
-        assert len(result) == 3  # root, child1, child2
+        assert len(result) == 3, "Expected 3 high-value nodes (root, child1, child2)"  # root, child1, child2
         # Check the actual structure of the result
         names = sorted([r['name'] for r in result])
-        assert names == ["Child1", "Child2", "Root"]
+        assert names == ["Child1", "Child2", "Root"], "Expected names to match seeded nodes"
 
     @requires_cte()
     def test_multiple_active_query_cte(self, tree_fixtures):
@@ -102,7 +102,8 @@ class TestCTEQueryActiveQuery:
         # Execute the CTE query using aggregate method
         result = cte_query.from_cte("high_values").select("name", "value").aggregate()
 
-        assert len(result) >= 2  # Should have results from the high_values CTE
+        assert len(result) >= 2, \
+            "Expected at least 2 high-value CTE results"  # Should have results from the high_values CTE
 
 class TestCTEQueryErrorHandling:
     """Test CTE query error handling and validation."""
@@ -129,8 +130,9 @@ class TestCTEQueryErrorHandling:
             CTEQuery(mock_async_backend)
 
         # Verify the error message mentions the incorrect backend type
-        assert "StorageBackend" in str(exc_info.value)
-        assert "Mock" in str(exc_info.value)
+        assert "StorageBackend" in str(exc_info.value), \
+            "Expected the error to mention StorageBackend"
+        assert "Mock" in str(exc_info.value), "Expected the error to mention Mock"
 
     @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_with_mock_query_raises_error(self, order_fixtures):
@@ -156,8 +158,10 @@ class TestCTEQueryErrorHandling:
             cte_query.with_cte('test_cte', invalid_query)
 
         # Verify the error message mentions the unsupported query type
-        assert "not supported in CTE" in str(exc_info.value)
-        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value)
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
+        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value), \
+            "Expected the error to mention the supported query types"
 
     @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_with_wrong_paradigm_query_raises_error(self, order_fixtures):
@@ -191,8 +195,10 @@ class TestCTEQueryErrorHandling:
             cte_query.with_cte('test_cte', async_query)
 
         # Verify the error message mentions the sync/async mixing rejection
-        assert "CTEQuery (sync) cannot accept async query" in str(exc_info.value)
-        assert "AsyncActiveQuery" in str(exc_info.value)
+        assert "CTEQuery (sync) cannot accept async query" in str(exc_info.value), \
+            "Expected the error to mention sync/async mixing rejection"
+        assert "AsyncActiveQuery" in str(exc_info.value), \
+            "Expected the error to mention AsyncActiveQuery"
 
     @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_with_invalid_query_type_raises_error(self, order_fixtures):
@@ -212,24 +218,30 @@ class TestCTEQueryErrorHandling:
             cte_query.with_cte('invalid_cte', 12345)  # Passing an integer instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'int'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'int'>" in str(exc_info.value), \
+            "Expected the error to mention int type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
         # Try to pass a list as query parameter
         with pytest.raises(TypeError) as exc_info:
             cte_query.with_cte('invalid_cte', [1, 2, 3])  # Passing a list instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'list'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'list'>" in str(exc_info.value), \
+            "Expected the error to mention list type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
         # Try to pass a dict as query parameter
         with pytest.raises(TypeError) as exc_info:
             cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})  # Passing a dict instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'dict'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'dict'>" in str(exc_info.value), \
+            "Expected the error to mention dict type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
 class TestCTEQueryExtendedFunctionality:
     """Test CTE queries with extended functionality from BaseQueryMixin, JoinQueryMixin, and RangeQueryMixin."""
@@ -265,19 +277,21 @@ class TestCTEQueryExtendedFunctionality:
         sql, params = sql_query.to_sql()
 
         # Assert the generated SQL contains dialect-independent CTE elements
-        assert 'WITH' in sql.upper()
-        assert 'basic_orders_cte' in sql.lower()
-        assert 'SELECT' in sql.upper()
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'basic_orders_cte' in sql.lower(), "Expected CTE name in generated SQL"
+        assert 'SELECT' in sql.upper(), "Expected SELECT keyword in generated SQL"
 
         # Execute the query and verify results
         results = sql_query.aggregate()
 
         # Verify results contain only active and completed orders, ordered by amount descending
-        assert len(results) == 2
-        assert results[0]['status'] == 'completed'
-        assert results[0]['total_amount'] == Decimal('200.00')
-        assert results[1]['status'] == 'active'
-        assert results[1]['total_amount'] == Decimal('100.00')
+        assert len(results) == 2, "Expected 2 CTE results"
+        assert results[0]['status'] == 'completed', "Expected first result to be completed"
+        assert results[0]['total_amount'] == Decimal('200.00'), \
+            "Expected first total_amount to be 200.00"
+        assert results[1]['status'] == 'active', "Expected second result to be active"
+        assert results[1]['total_amount'] == Decimal('100.00'), \
+            "Expected second total_amount to be 100.00"
 
     @requires_cte()
     def test_cte_with_range_conditions(self, order_fixtures):
@@ -312,17 +326,19 @@ class TestCTEQueryExtendedFunctionality:
         sql, params = sql_query.to_sql()
 
         # Assert the generated SQL contains dialect-independent query elements
-        assert 'WITH' in sql.upper()
-        assert 'range_orders_cte' in sql.lower()
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'range_orders_cte' in sql.lower(), "Expected CTE name in generated SQL"
 
         # Use the new API: specify which CTE to use and apply range conditions
         results = sql_query.aggregate()
 
         # Verify results contain limited and offset records
-        assert len(results) == 2
+        assert len(results) == 2, "Expected 2 limited CTE results"
         # With offset 1 and limit 2, we should get the 2nd and 3rd highest amounts (300 and 200)
-        assert results[0]['total_amount'] == Decimal('300.00')
-        assert results[1]['total_amount'] == Decimal('200.00')
+        assert results[0]['total_amount'] == Decimal('300.00'), \
+            "Expected first total_amount to be 300.00 after offset"
+        assert results[1]['total_amount'] == Decimal('200.00'), \
+            "Expected second total_amount to be 200.00 after offset"
 
     @requires_cte()
     def test_cte_with_joins(self, order_fixtures):
@@ -353,20 +369,22 @@ class TestCTEQueryExtendedFunctionality:
         sql, params = sql_query.to_sql()
 
         # Assert the generated SQL contains dialect-independent CTE elements
-        assert 'WITH' in sql.upper()
-        assert 'joined_orders_cte' in sql.lower()
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'joined_orders_cte' in sql.lower(), "Expected CTE name in generated SQL"
 
         # Use the new API: specify which CTE to use and apply additional conditions
         results = sql_query.aggregate()
 
         # Verify results contain joined data
-        assert len(results) == 2
+        assert len(results) == 2, "Expected 2 joined CTE results"
         # Results should be ordered by amount descending
-        assert results[0]['total_amount'] == Decimal('250.00')
-        assert results[0]['status'] == 'pending'
-        assert results[0]['username'] == 'cte_join_user'
-        assert results[1]['total_amount'] == Decimal('150.00')
-        assert results[1]['status'] == 'active'
+        assert results[0]['total_amount'] == Decimal('250.00'), \
+            "Expected first total_amount to be 250.00"
+        assert results[0]['status'] == 'pending', "Expected first status to be pending"
+        assert results[0]['username'] == 'cte_join_user', "Expected first username to match"
+        assert results[1]['total_amount'] == Decimal('150.00'), \
+            "Expected second total_amount to be 150.00"
+        assert results[1]['status'] == 'active', "Expected second status to be active"
 
 class TestCTEQuerySyncErrorHandling:
     """Test CTE query error handling for edge cases (synchronous)."""
@@ -389,7 +407,8 @@ class TestCTEQuerySyncErrorHandling:
             cte_query.to_sql()
 
         # Verify the error message mentions the missing CTE requirement
-        assert "CTEQuery must have at least one CTE defined" in str(exc_info.value)
+        assert "CTEQuery must have at least one CTE defined" in str(exc_info.value), \
+            "Expected the error to mention the missing CTE requirement"
 
     @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_query_to_sql_with_nonexistent_main_cte_name_raises_error(self, order_fixtures):
@@ -413,5 +432,7 @@ class TestCTEQuerySyncErrorHandling:
             cte_query.to_sql()
 
         # Verify the error message mentions the missing CTE
-        assert "CTE 'nonexistent_cte' not found in defined CTEs:" in str(exc_info.value)
-        assert 'existing_cte' in str(exc_info.value)  # Should show the available CTE names
+        assert "CTE 'nonexistent_cte' not found in defined CTEs:" in str(exc_info.value), \
+            "Expected the error to mention the missing CTE name"
+        assert 'existing_cte' in str(exc_info.value), \
+            "Expected the available CTE names to be listed"  # Should show the available CTE names

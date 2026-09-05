@@ -35,10 +35,11 @@ class TestSyncEagerLoadingWithModifier:
             return q.where(Order.c.order_number == 'ELA-MOD-001')
 
         result = User.query().with_(('orders', filter_order)).where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = result.orders()
-        assert len(related) == 1
-        assert related[0].order_number == 'ELA-MOD-001'
+        assert len(related) == 1, "Expected one matching related order"
+        assert related[0].order_number == 'ELA-MOD-001', \
+            "Expected the filtered order number to match"
 
     def test_order_modifier(self, combined_fixtures):
         """A modifier that sorts by total_amount DESC should return records in order."""
@@ -54,10 +55,11 @@ class TestSyncEagerLoadingWithModifier:
             return q.order_by((Order.c.total_amount, "DESC"))
 
         result = User.query().with_(('orders', desc_order)).where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = result.orders()
-        assert len(related) == 3
-        assert related[0].total_amount == Decimal('30')
+        assert len(related) == 3, "Expected three related orders"
+        assert related[0].total_amount == Decimal('30'), \
+            "Expected the first order total to be the highest"
 
     def test_without_modifier(self, combined_fixtures):
         """Using with_ without a modifier should load all related records."""
@@ -70,9 +72,9 @@ class TestSyncEagerLoadingWithModifier:
             o.save()
 
         result = User.query().with_('orders').where(User.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = result.orders()
-        assert len(related) == 2
+        assert len(related) == 2, "Expected two related orders"
 
     def test_none_modifier(self, combined_fixtures):
         """A noop modifier should not interfere with normal loading."""
@@ -84,7 +86,7 @@ class TestSyncEagerLoadingWithModifier:
             return q
 
         results = User.query().with_(('orders', noop)).where(User.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
 
     def test_eager_equivalent_to_lazy(self, combined_fixtures):
         """Backward-compatibility: eager (no modifier) == lazy loading."""
@@ -105,11 +107,14 @@ class TestSyncEagerLoadingWithModifier:
         lazy_orders = sorted(lazy_user.orders(), key=lambda o: o.id)
 
         # ---- Compare: same data regardless of loading strategy ----
-        assert len(eager_orders) == len(lazy_orders)
+        assert len(eager_orders) == len(lazy_orders), \
+            "Expected eager and lazy to return the same number of orders"
         for eo, lo in zip(eager_orders, lazy_orders):
-            assert eo.id == lo.id
-            assert eo.order_number == lo.order_number
-            assert eo.total_amount == lo.total_amount
+            assert eo.id == lo.id, "Expected eager and lazy order ids to match"
+            assert eo.order_number == lo.order_number, \
+                "Expected eager and lazy order numbers to match"
+            assert eo.total_amount == lo.total_amount, \
+                "Expected eager and lazy order totals to match"
 
     def test_eager_with_belongs_to_equivalent_to_lazy(self, combined_fixtures):
         """Backward-compatibility: with_('user') must return the same User as lazy user()."""
@@ -127,9 +132,11 @@ class TestSyncEagerLoadingWithModifier:
         lazy_order = Order.find_one(order.id)
         lazy_user = lazy_order.user()
 
-        assert eager_user.id == lazy_user.id
-        assert eager_user.username == lazy_user.username
-        assert eager_user.email == lazy_user.email
+        assert eager_user.id == lazy_user.id, "Expected eager and lazy user ids to match"
+        assert eager_user.username == lazy_user.username, \
+            "Expected eager and lazy usernames to match"
+        assert eager_user.email == lazy_user.email, \
+            "Expected eager and lazy emails to match"
 
 class TestSyncForUpdate:
     """Sync version of for_update + with_ compatibility."""
@@ -144,10 +151,10 @@ class TestSyncForUpdate:
         order.save()
 
         results = Order.query().for_update().with_('user').where(Order.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
         related = results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     @pytest.mark.requires_protocol((LockingSupport, "supports_for_update"))
     def test_for_update_with_with_one(self, combined_fixtures):

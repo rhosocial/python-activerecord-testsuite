@@ -61,10 +61,10 @@ class TestAsyncCTEQuerySetOperation:
         results = await cte_query.from_cte('union_orders_cte').select('status', 'id', 'order_number', 'total_amount').aggregate()
 
         # Verify results contain both active and completed orders (no duplicates in UNION)
-        assert len(results) >= 2  # At least active and completed orders
+        assert len(results) >= 2, "Expected at least 2 UNION results"  # At least active and completed orders
         statuses = {row.get('status') for row in results}
-        assert 'active' in statuses
-        assert 'completed' in statuses
+        assert 'active' in statuses, "Expected active status in UNION results"
+        assert 'completed' in statuses, "Expected completed status in UNION results"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -110,8 +110,9 @@ class TestAsyncCTEQuerySetOperation:
 
         # Verify results contain orders that are both high amount AND active
         for row in results:
-            assert row.get('total_amount') > Decimal('100.00')
-            assert row.get('status') == 'active'
+            assert row.get('total_amount') > Decimal('100.00'), \
+                "Expected INTERSECT rows to have amount > 100"
+            assert row.get('status') == 'active', "Expected INTERSECT rows to be active"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -157,7 +158,7 @@ class TestAsyncCTEQuerySetOperation:
 
         # Verify results contain orders that are NOT completed
         for row in results:
-            assert row.get('status') != 'completed'
+            assert row.get('status') != 'completed', "Expected EXCEPT rows to not be completed"
 
 class TestAsyncCTEQueryWithQueryExpression:
     """Test Async CTE queries with QueryExpression as parameters."""
@@ -199,9 +200,9 @@ class TestAsyncCTEQueryWithQueryExpression:
         results = await cte_query.from_cte('query_expr_cte').select('id', 'status', 'total_amount').aggregate()
 
         # Verify results contain only active orders
-        assert len(results) >= 1
+        assert len(results) >= 1, "Expected at least 1 active order"
         for row in results:
-            assert row.get('status') == 'active'
+            assert row.get('status') == 'active', "Expected rows to be active"
 
     @requires_cte()
     async def test_cte_with_query_expression_as_main_query(self, async_order_fixtures):
@@ -232,9 +233,10 @@ class TestAsyncCTEQueryWithQueryExpression:
         results = await cte_query.from_cte('simple_orders_cte').select('id', 'status', 'total_amount').where("total_amount > ?", (Decimal('100.00'),)).aggregate()
 
         # Verify results contain orders with amount > 100
-        assert len(results) >= 2
+        assert len(results) >= 2, "Expected at least 2 CTE results"
         for row in results:
-            assert row.get('total_amount') > Decimal('100.00')
+            assert row.get('total_amount') > Decimal('100.00'), \
+                "Expected rows to have amount > 100"
 
 class TestAsyncCTEQueryWithActiveQuery:
     """Test Async CTE queries with AsyncActiveQuery as parameters."""
@@ -278,9 +280,9 @@ class TestAsyncCTEQueryWithActiveQuery:
         results = await cte_query.from_cte('active_orders_cte').select('id', 'status', 'total_amount', 'order_number').aggregate()
 
         # Verify results contain only active orders
-        assert len(results) >= 1
+        assert len(results) >= 1, "Expected at least 1 active order"
         for row in results:
-            assert row.get('status') == 'active'
+            assert row.get('status') == 'active', "Expected rows to be active"
 
     @requires_cte()
     async def test_cte_with_active_query_as_main_query(self, async_order_fixtures):
@@ -312,9 +314,10 @@ class TestAsyncCTEQueryWithActiveQuery:
         results = await cte_query.from_cte('simple_orders_cte').select('id', 'status', 'total_amount').aggregate()
 
         # Verify results contain orders with expected statuses
-        assert len(results) >= 2
+        assert len(results) >= 2, "Expected at least 2 CTE results"
         statuses = {row.get('status') for row in results}
-        assert 'active' in statuses or 'pending' in statuses
+        assert 'active' in statuses or 'pending' in statuses, \
+            "Expected active or pending status in results"
 
 class TestAsyncCTEQueryInvalidTypes:
     """Test Async CTE queries with invalid query parameter types to ensure proper error handling."""
@@ -341,24 +344,30 @@ class TestAsyncCTEQueryInvalidTypes:
             cte_query.with_cte('invalid_cte', 12345)  # Passing an integer instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'int'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'int'>" in str(exc_info.value), \
+            "Expected the error to mention int type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
         # Try to pass a list as query parameter
         with pytest.raises(TypeError) as exc_info:
             cte_query.with_cte('invalid_cte', [1, 2, 3])  # Passing a list instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'list'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'list'>" in str(exc_info.value), \
+            "Expected the error to mention list type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
         # Try to pass a dict as query parameter
         with pytest.raises(TypeError) as exc_info:
             cte_query.with_cte('invalid_cte', {'query': 'SELECT * FROM users'})  # Passing a dict instead of valid query type
 
         # Verify the error message mentions the unsupported type
-        assert "Query type <class 'dict'>" in str(exc_info.value)
-        assert "not supported in CTE" in str(exc_info.value)
+        assert "Query type <class 'dict'>" in str(exc_info.value), \
+            "Expected the error to mention dict type"
+        assert "not supported in CTE" in str(exc_info.value), \
+            "Expected the error to mention unsupported CTE type"
 
     @requires_cte()
     async def test_cte_with_invalid_main_query_type_raises_error(self, async_order_fixtures):
@@ -388,10 +397,11 @@ class TestAsyncCTEQueryInvalidTypes:
             # Use the new API: specify which CTE to use and apply query conditions using mixins
             results = await cte_query.from_cte('valid_cte').select('id', 'username', 'email').aggregate()
             # Verify we get some results back
-            assert isinstance(results, list)
+            assert isinstance(results, list), "Expected results to be a list"
         except Exception as e:
             # If there's an error, make sure it's not related to the removed query() method
-            assert "query" not in str(e).lower()
+            assert "query" not in str(e).lower(), \
+                "Expected the error not to mention the removed query() method"
 
 class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
     """Test Async CTE queries with extended functionality applied to set operations."""
@@ -434,17 +444,19 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         sql, params = sql_query.to_sql()
 
         # Assert the generated SQL contains dialect-independent query elements
-        assert 'WITH' in sql.upper()
-        assert 'UNION' in sql.upper()
-        assert 'union_orders_cte' in sql.lower()
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'UNION' in sql.upper(), "Expected UNION keyword in generated SQL"
+        assert 'union_orders_cte' in sql.lower(), "Expected CTE name in generated SQL"
 
         # Use the new API: specify which CTE to use and apply extended query conditions
         results = await sql_query.aggregate()
 
         # Verify results contain both active and completed orders, ordered by amount descending, limited to 2
-        assert len(results) == 2
-        assert results[0]['status'] in ['active', 'completed']
-        assert results[1]['status'] in ['active', 'completed']
+        assert len(results) == 2, "Expected 2 limited CTE results"
+        assert results[0]['status'] in ['active', 'completed'], \
+            "Expected first result status to be active or completed"
+        assert results[1]['status'] in ['active', 'completed'], \
+            "Expected second result status to be active or completed"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -489,10 +501,11 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         results = await cte_query.from_cte('intersect_orders_cte').select('id', 'status', 'total_amount').limit(10).offset(0).aggregate()
 
         # Verify results contain orders that are both high amount AND active
-        assert len(results) >= 1
+        assert len(results) >= 1, "Expected at least 1 INTERSECT result"
         for row in results:
-            assert row.get('total_amount') > Decimal('100.00')
-            assert row.get('status') == 'active'
+            assert row.get('total_amount') > Decimal('100.00'), \
+                "Expected INTERSECT rows to have amount > 100"
+            assert row.get('status') == 'active', "Expected INTERSECT rows to be active"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -537,10 +550,12 @@ class TestAsyncCTEQueryExtendedFunctionalitySetOperations:
         results = await cte_query.from_cte('except_orders_cte').select('id', 'status', 'total_amount', 'user_id').where("total_amount > ?", (Decimal('50.00'),)).aggregate()
 
         # Verify results contain orders that are NOT completed and have amount > 50
-        assert len(results) >= 3  # Should have active, pending, and any other non-completed orders
+        assert len(results) >= 3, \
+            "Expected at least 3 non-completed orders with amount > 50"
         for row in results:
-            assert row.get('status') != 'completed'
-            assert row.get('total_amount') > Decimal('50.00')
+            assert row.get('status') != 'completed', "Expected EXCEPT rows to not be completed"
+            assert row.get('total_amount') > Decimal('50.00'), \
+                "Expected EXCEPT rows to have amount > 50"
 
 class TestAsyncCTEQueryErrorHandlingSetOperations:
     """Test error handling for Async CTE queries with set operations."""
@@ -583,10 +598,10 @@ class TestAsyncCTEQueryErrorHandlingSetOperations:
         results = await cte_query.from_cte('valid_union_cte').select('id', 'status', 'total_amount').aggregate()
 
         # Verify results contain both active and completed orders
-        assert len(results) == 2
+        assert len(results) == 2, "Expected 2 UNION results"
         statuses = {row.get('status') for row in results}
-        assert 'active' in statuses
-        assert 'completed' in statuses
+        assert 'active' in statuses, "Expected active status in UNION results"
+        assert 'completed' in statuses, "Expected completed status in UNION results"
 
 class TestAsyncCTEQuerySetOperationWithOtherQueries:
     """Test Async CTE queries with set operations against other Async query types (AsyncActiveQuery, etc.)."""
@@ -629,10 +644,11 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
         results = await union_query.aggregate()
 
         # Verify results contain both active orders from CTE and completed orders from AsyncActiveQuery (no duplicates in UNION)
-        assert len(results) >= 2  # At least one active from CTE, one completed from AsyncActiveQuery
+        assert len(results) >= 2, \
+            "Expected at least 2 UNION results"  # At least one active from CTE, one completed from AsyncActiveQuery
         statuses = {row.get('status') for row in results}
-        assert 'active' in statuses
-        assert 'completed' in statuses
+        assert 'active' in statuses, "Expected active status in UNION results"
+        assert 'completed' in statuses, "Expected completed status in UNION results"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_intersect')
@@ -674,8 +690,9 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
 
         # Verify results contain orders that are both high amount AND active
         for row in results:
-            assert row.get('total_amount') > Decimal('100.00')
-            assert row.get('status') == 'active'
+            assert row.get('total_amount') > Decimal('100.00'), \
+                "Expected INTERSECT rows to have amount > 100"
+            assert row.get('status') == 'active', "Expected INTERSECT rows to be active"
 
     @requires_cte()
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -717,4 +734,4 @@ class TestAsyncCTEQuerySetOperationWithOtherQueries:
 
         # Verify results contain orders that are NOT completed
         for row in results:
-            assert row.get('status') != 'completed'
+            assert row.get('status') != 'completed', "Expected EXCEPT rows to not be completed"

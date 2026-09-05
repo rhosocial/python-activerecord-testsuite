@@ -26,25 +26,25 @@ class TestAsyncValidation:
         # Test username validation
         with pytest.raises(ValidationError) as exc_info:
             async_validated_user(username="ab", email="valid@example.com")  # Too short
-        assert "username" in str(exc_info.value)
+        assert "username" in str(exc_info.value), "Expected ValidationError to mention 'username' (too short)"
 
         with pytest.raises(ValidationError) as exc_info:
             async_validated_user(username="x" * 51, email="valid@example.com")  # Too long
-        assert "username" in str(exc_info.value)
+        assert "username" in str(exc_info.value), "Expected ValidationError to mention 'username' (too long)"
 
         # Test email validation
         with pytest.raises(ValidationError) as exc_info:
             async_validated_user(username="validuser", email="invalid-email")
-        assert "email" in str(exc_info.value)
+        assert "email" in str(exc_info.value), "Expected ValidationError to mention 'email' (bad format)"
 
         # Test age validation
         with pytest.raises(ValidationError) as exc_info:
             async_validated_user(username="validuser", email="valid@example.com", age=-1)
-        assert "age" in str(exc_info.value)
+        assert "age" in str(exc_info.value), "Expected ValidationError to mention 'age' (negative)"
 
         with pytest.raises(ValidationError) as exc_info:
             async_validated_user(username="validuser", email="valid@example.com", age=151)
-        assert "age" in str(exc_info.value)
+        assert "age" in str(exc_info.value), "Expected ValidationError to mention 'age' (too high)"
 
     async def test_business_rule_validation(self, async_validated_user):
         """Test custom business rule validation"""
@@ -57,11 +57,12 @@ class TestAsyncValidation:
 
         with pytest.raises(DBValidationError) as exc_info:
             await user.save()
-        assert "at least 13 years old" in str(exc_info.value)
+        assert "at least 13 years old" in str(exc_info.value), \
+            "Expected the minimum-age business rule message"
 
         # Test valid age
         user.age = 13
-        assert await user.save() == 1
+        assert await user.save() == 1, "Expected save() to affect 1 row at age 13"
 
     async def test_validation_on_update(self, async_validated_user, validated_user_data):
         """Test validation during record updates"""
@@ -76,11 +77,12 @@ class TestAsyncValidation:
 
         # Verify record remains unchanged
         fresh_user = await async_validated_user.find_one(user.id)
-        assert fresh_user.email == validated_user_data['email']
+        assert fresh_user.email == validated_user_data['email'], \
+            "Expected the email to remain unchanged after rejected update"
 
         # Test valid update
         user.email = "new-valid@example.com"
-        assert await user.save() == 1
+        assert await user.save() == 1, "Expected the corrected save() to affect 1 row"
 
     async def test_null_field_validation(self, async_validated_user):
         """Test validation of nullable fields"""
@@ -89,11 +91,11 @@ class TestAsyncValidation:
             username="testuser",  # Changed to comply with alphanumeric requirement
             email="test@example.com"
         )
-        assert await user.save() == 1
+        assert await user.save() == 1, "Expected save() with optional age=None to succeed"
 
         # Verify null field was saved correctly
         saved_user = await async_validated_user.find_one(user.id)
-        assert saved_user.age is None
+        assert saved_user.age is None, "Expected the persisted age to be None"
 
     async def test_multiple_validation_errors(self, async_validated_user):
         """Test handling of multiple validation errors"""
@@ -105,6 +107,6 @@ class TestAsyncValidation:
             )
 
         error_str = str(exc_info.value)
-        assert "username" in error_str
-        assert "email" in error_str
-        assert "age" in error_str
+        assert "username" in error_str, "Expected ValidationError to mention 'username'"
+        assert "email" in error_str, "Expected ValidationError to mention 'email'"
+        assert "age" in error_str, "Expected ValidationError to mention 'age'"

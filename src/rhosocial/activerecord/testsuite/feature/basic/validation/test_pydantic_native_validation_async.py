@@ -351,81 +351,97 @@ class TestAsyncPydanticNativeValidation:
     """Asynchronous Pydantic native validation tests."""
 
     async def test_field_constraints_fail_on_init(self, async_pydantic_validated_model):
+        """Pydantic field constraints should reject invalid values on async model init."""
         data = valid_pydantic_data()
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "code": "bad-code"})
-        assert "code" in str(exc_info.value)
+        assert "code" in str(exc_info.value), "Expected ValidationError to mention 'code'"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "quantity": 0})
-        assert "quantity" in str(exc_info.value)
+        assert "quantity" in str(exc_info.value), "Expected ValidationError to mention 'quantity'"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "price": Decimal("0.00")})
-        assert "price" in str(exc_info.value)
+        assert "price" in str(exc_info.value), "Expected ValidationError to mention 'price'"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "step_count": 0})
-        assert "step_count" in str(exc_info.value)
+        assert "step_count" in str(exc_info.value), \
+            "Expected ValidationError to mention 'step_count' for below-min value"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "step_count": 100})
-        assert "step_count" in str(exc_info.value)
+        assert "step_count" in str(exc_info.value), \
+            "Expected ValidationError to mention 'step_count' for above-max value"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "step_count": 12})
-        assert "step_count" in str(exc_info.value)
+        assert "step_count" in str(exc_info.value), \
+            "Expected ValidationError to mention 'step_count' for non-multiple_of value"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "normalized_name": ""})
-        assert "normalized_name" in str(exc_info.value)
+        assert "normalized_name" in str(exc_info.value), \
+            "Expected ValidationError to mention 'normalized_name' for empty value"
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "normalized_name": "a" * 51})
-        assert "normalized_name" in str(exc_info.value)
+        assert "normalized_name" in str(exc_info.value), \
+            "Expected ValidationError to mention 'normalized_name' for too-long value"
 
     async def test_field_validator_transforms_value(self, async_pydantic_validated_model):
+        """A field_validator should transform input and the result should round-trip via async save/load."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
 
-        assert model.normalized_name == "alice"
-        assert await model.save() == 1
+        assert model.normalized_name == "alice", "Expected normalized_name to be lowercased"
+        assert await model.save() == 1, "Expected save() to affect 1 row"
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.normalized_name == "alice"
+        assert saved_model.normalized_name == "alice", \
+            "Expected normalized_name to be persisted after save"
 
     async def test_model_validator_rejects_invalid_cross_field_state(self, async_pydantic_validated_model):
+        """A model_validator should reject state that violates cross-field constraints."""
         data = valid_pydantic_data()
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "end_at": data["start_at"]})
-        assert "end_at must be after start_at" in str(exc_info.value)
+        assert "end_at must be after start_at" in str(exc_info.value), \
+            "Expected the cross-field validation message"
 
     async def test_validation_runs_again_on_save_after_assignment(self, async_pydantic_validated_model):
+        """Field constraints should be re-validated on async save() after assignment."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
 
         model.quantity = 0
         with pytest.raises(DBValidationError) as exc_info:
             await model.save()
-        assert "quantity" in str(exc_info.value)
+        assert "quantity" in str(exc_info.value), \
+            "Expected DBValidationError to mention 'quantity' on save"
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.quantity == 5
+        assert saved_model.quantity == 5, "Expected the saved quantity to be unchanged"
 
     async def test_model_validator_runs_again_on_save_after_assignment(self, async_pydantic_validated_model):
+        """Cross-field model_validator should be re-validated on async save() after assignment."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
 
         model.end_at = model.start_at
         with pytest.raises(DBValidationError) as exc_info:
             await model.save()
-        assert "end_at must be after start_at" in str(exc_info.value)
+        assert "end_at must be after start_at" in str(exc_info.value), \
+            "Expected DBValidationError to mention the cross-field rule on save"
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.end_at > saved_model.start_at
+        assert saved_model.end_at > saved_model.start_at, \
+            "Expected the saved end_at to be greater than start_at"
 
     async def test_pydantic_coercion_persists_and_loads(self, async_pydantic_validated_model):
+        """String inputs should be coerced to typed values and round-trip via async save/load."""
         data = valid_pydantic_data()
         model = async_pydantic_validated_model(
             **{
@@ -439,38 +455,43 @@ class TestAsyncPydanticNativeValidation:
         await model.save()
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.quantity == 7
-        assert isinstance(saved_model.quantity, int)
-        assert saved_model.price == Decimal("19.95")
-        assert isinstance(saved_model.price, Decimal)
-        assert isinstance(saved_model.start_at, datetime)
-        assert isinstance(saved_model.end_at, datetime)
-        assert saved_model.created_token == "generated-token"
+        assert saved_model.quantity == 7, "Expected quantity to coerce to 7"
+        assert isinstance(saved_model.quantity, int), "Expected quantity to be an int"
+        assert saved_model.price == Decimal("19.95"), "Expected price to coerce to Decimal('19.95')"
+        assert isinstance(saved_model.price, Decimal), "Expected price to be a Decimal"
+        assert isinstance(saved_model.start_at, datetime), "Expected start_at to be a datetime"
+        assert isinstance(saved_model.end_at, datetime), "Expected end_at to be a datetime"
+        assert saved_model.created_token == "generated-token", \
+            "Expected the default factory token to be present"
 
     async def test_literal_validation(self, async_pydantic_validated_model):
+        """Literal-typed fields should reject values outside the allowed set."""
         data = valid_pydantic_data()
 
         with pytest.raises(ValidationError) as exc_info:
             async_pydantic_validated_model(**{**data, "status": "deleted"})
-        assert "status" in str(exc_info.value)
+        assert "status" in str(exc_info.value), "Expected ValidationError to mention 'status'"
 
         model = async_pydantic_validated_model(**{**data, "status": "active"})
         await model.save()
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.status == "active"
+        assert saved_model.status == "active", "Expected status to round-trip as 'active'"
 
     async def test_model_dump_preserves_pydantic_state(self, async_pydantic_validated_model):
+        """model_dump() should reflect Pydantic field state and computed defaults."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
         dumped = model.model_dump()
 
-        assert dumped["normalized_name"] == "alice"
-        assert dumped["created_token"] == "generated-token"
-        assert dumped["status"] == "draft"
-        assert dumped["step_count"] == 10
-        assert "c" not in dumped
+        assert dumped["normalized_name"] == "alice", "Expected normalized_name to be 'alice'"
+        assert dumped["created_token"] == "generated-token", \
+            "Expected the default factory token to be in the dump"
+        assert dumped["status"] == "draft", "Expected status to be 'draft'"
+        assert dumped["step_count"] == 10, "Expected step_count to be 10"
+        assert "c" not in dumped, "Expected the FieldProxy 'c' attribute to be excluded"
 
     async def test_model_validate_applies_pydantic_rules(self, async_pydantic_validated_model):
+        """model_validate() should coerce inputs and apply field/model validators."""
         data = valid_pydantic_data()
         model = async_pydantic_validated_model.model_validate(
             {
@@ -483,43 +504,53 @@ class TestAsyncPydanticNativeValidation:
             }
         )
 
-        assert model.quantity == 7
-        assert model.step_count == 15
-        assert model.price == Decimal("19.95")
-        assert model.normalized_name == "alice"
-        assert isinstance(model.start_at, datetime)
-        assert isinstance(model.end_at, datetime)
+        assert model.quantity == 7, "Expected quantity to coerce to 7"
+        assert model.step_count == 15, "Expected step_count to coerce to 15"
+        assert model.price == Decimal("19.95"), "Expected price to coerce to Decimal('19.95')"
+        assert model.normalized_name == "alice", "Expected normalized_name to be lowercased"
+        assert isinstance(model.start_at, datetime), "Expected start_at to be a datetime"
+        assert isinstance(model.end_at, datetime), "Expected end_at to be a datetime"
 
     async def test_field_metadata_is_preserved(self, async_pydantic_validated_model):
+        """Field metadata should survive into the JSON schema on the async model."""
         code_field = async_pydantic_validated_model.model_fields["code"]
         schema = async_pydantic_validated_model.model_json_schema()
 
-        assert code_field.title == "Validation code"
-        assert code_field.description == "Business code used by Pydantic compatibility tests."
-        assert code_field.json_schema_extra == {"active_record_test": "pydantic-native"}
-        assert schema["properties"]["code"]["title"] == "Validation code"
-        assert schema["properties"]["code"]["active_record_test"] == "pydantic-native"
+        assert code_field.title == "Validation code", "Expected the code field title to match"
+        assert code_field.description == "Business code used by Pydantic compatibility tests.", \
+            "Expected the code field description to match"
+        assert code_field.json_schema_extra == {"active_record_test": "pydantic-native"}, \
+            "Expected the code field json_schema_extra to match"
+        assert schema["properties"]["code"]["title"] == "Validation code", \
+            "Expected the JSON schema title to match"
+        assert schema["properties"]["code"]["active_record_test"] == "pydantic-native", \
+            "Expected the JSON schema extra to match"
 
     async def test_field_proxy_queries_pydantic_fields(self, async_pydantic_validated_model):
+        """FieldProxy queries should work on the async model via the async query API."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
 
         code_matches = await async_pydantic_validated_model.query().where(
             async_pydantic_validated_model.c.code == "ABC-123"
         ).all()
-        assert [record.id for record in code_matches] == [model.id]
+        assert [record.id for record in code_matches] == [model.id], \
+            "Expected the equality query to match the saved record"
 
         quantity_matches = await async_pydantic_validated_model.query().where(
             async_pydantic_validated_model.c.quantity >= 1
         ).all()
-        assert [record.id for record in quantity_matches] == [model.id]
+        assert [record.id for record in quantity_matches] == [model.id], \
+            "Expected the comparison query to match the saved record"
 
         name_matches = await async_pydantic_validated_model.query().where(
             async_pydantic_validated_model.c.normalized_name == "alice"
         ).all()
-        assert [record.id for record in name_matches] == [model.id]
+        assert [record.id for record in name_matches] == [model.id], \
+            "Expected the normalized_name query to match the saved record"
 
     async def test_save_succeeds_after_fixing_invalid_assignment(self, async_pydantic_validated_model):
+        """A successful assignment after a failed one should save cleanly via the async API."""
         model = async_pydantic_validated_model(**valid_pydantic_data())
         await model.save()
 
@@ -528,12 +559,13 @@ class TestAsyncPydanticNativeValidation:
             await model.save()
 
         model.quantity = 8
-        assert await model.save() == 1
+        assert await model.save() == 1, "Expected the corrected save() to affect 1 row"
 
         saved_model = await async_pydantic_validated_model.find_one(model.id)
-        assert saved_model.quantity == 8
+        assert saved_model.quantity == 8, "Expected quantity to be 8 after corrected save"
 
     async def test_mutable_default_factory_values_are_instance_isolated(self):
+        """Mutable default_factory values should not be shared between instances on the async model."""
         # This verifies model-layer default isolation only; JSON/list persistence is covered by backend tests.
         first = AsyncMutableDefaultModel()
         second = AsyncMutableDefaultModel()
@@ -541,31 +573,37 @@ class TestAsyncPydanticNativeValidation:
         first.tags.append("changed")
         first.metadata["changed"] = True
 
-        assert first.tags == ["changed"]
-        assert first.metadata == {"changed": True}
-        assert second.tags == []
-        assert second.metadata == {}
-        assert first.tags is not second.tags
-        assert first.metadata is not second.metadata
+        assert first.tags == ["changed"], "Expected the first instance's tags to be updated"
+        assert first.metadata == {"changed": True}, "Expected the first instance's metadata to be updated"
+        assert second.tags == [], "Expected the second instance's tags to remain empty"
+        assert second.metadata == {}, "Expected the second instance's metadata to remain empty"
+        assert first.tags is not second.tags, "Expected the tag lists to be distinct objects"
+        assert first.metadata is not second.metadata, \
+            "Expected the metadata dicts to be distinct objects"
 
     async def test_lifecycle_hooks_and_unset_none_are_preserved(self):
+        """model_post_init and model_validator should run on the async model; unset vs None tracked."""
         omitted = AsyncLifecycleModel(required_name="alice")
         explicit_none = AsyncLifecycleModel(required_name="alice", optional_note=None)
 
-        assert omitted.derived_name == "ALICE"
-        assert explicit_none.derived_name == "ALICE"
-        assert omitted.post_init_seen is True
-        assert explicit_none.post_init_seen is True
-        assert "optional_note" not in omitted.model_fields_set
-        assert "optional_note" in explicit_none.model_fields_set
-        assert omitted.model_dump(exclude_unset=True) == {"required_name": "alice", "derived_name": "ALICE"}
+        assert omitted.derived_name == "ALICE", "Expected derived_name to be uppercased for omitted"
+        assert explicit_none.derived_name == "ALICE", "Expected derived_name to be uppercased for explicit_none"
+        assert omitted.post_init_seen is True, "Expected model_post_init to fire for omitted"
+        assert explicit_none.post_init_seen is True, "Expected model_post_init to fire for explicit_none"
+        assert "optional_note" not in omitted.model_fields_set, \
+            "Expected optional_note to be unset when omitted"
+        assert "optional_note" in explicit_none.model_fields_set, \
+            "Expected optional_note to be tracked when explicitly None"
+        assert omitted.model_dump(exclude_unset=True) == {"required_name": "alice", "derived_name": "ALICE"}, \
+            "Expected omit dump to exclude optional_note"
         assert explicit_none.model_dump(exclude_unset=True) == {
             "required_name": "alice",
             "optional_note": None,
             "derived_name": "ALICE",
-        }
+        }, "Expected explicit None to appear in dump(exclude_unset=True)"
 
     async def test_computed_field_and_serializer_are_dump_only_boundaries(self):
+        """computed_field and field_serializer should shape the async model's dump() output."""
         model = AsyncPydanticV2BoundaryModel(
             first_name="Ada",
             last_name="Lovelace",
@@ -574,12 +612,15 @@ class TestAsyncPydanticNativeValidation:
         )
         dumped = model.model_dump()
 
-        assert dumped["full_name"] == "Ada Lovelace"
-        assert dumped["score"] == "score:9.5"
-        assert "full_name" not in AsyncPydanticV2BoundaryModel.model_fields
-        assert "score" in AsyncPydanticV2BoundaryModel.model_fields
+        assert dumped["full_name"] == "Ada Lovelace", "Expected computed_field full_name to be 'Ada Lovelace'"
+        assert dumped["score"] == "score:9.5", "Expected field_serializer to format score as 'score:9.5'"
+        assert "full_name" not in AsyncPydanticV2BoundaryModel.model_fields, \
+            "Expected computed_field to not appear in model_fields"
+        assert "score" in AsyncPydanticV2BoundaryModel.model_fields, \
+            "Expected the underlying field to remain in model_fields"
 
     async def test_annotated_field_and_use_column_metadata_coexist(self):
+        """Annotated Field() and UseColumn() metadata should coexist on the async boundary model."""
         model = AsyncPydanticV2BoundaryModel(
             first_name="Ada",
             last_name="Lovelace",
@@ -587,9 +628,11 @@ class TestAsyncPydanticNativeValidation:
             annotated_code="AR",
         )
 
-        assert model.annotated_code == "AR"
-        assert AsyncPydanticV2BoundaryModel.get_column_name("annotated_code") == "annotated_code_col"
-        assert AsyncPydanticV2BoundaryModel.model_fields["annotated_code"].metadata
+        assert model.annotated_code == "AR", "Expected annotated_code to be 'AR'"
+        assert AsyncPydanticV2BoundaryModel.get_column_name("annotated_code") == "annotated_code_col", \
+            "Expected get_column_name to reflect UseColumn mapping"
+        assert AsyncPydanticV2BoundaryModel.model_fields["annotated_code"].metadata, \
+            "Expected annotated_code to retain metadata"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncPydanticV2BoundaryModel(
@@ -598,73 +641,90 @@ class TestAsyncPydanticNativeValidation:
                 score=Decimal("9.5"),
                 annotated_code="A",
             )
-        assert "annotated_code" in str(exc_info.value)
+        assert "annotated_code" in str(exc_info.value), \
+            "Expected ValidationError to mention 'annotated_code'"
 
     async def test_aliases_are_independent_from_column_mapping(self):
+        """Field aliases and UseColumn mappings should operate independently on the async model."""
         from_alias = AsyncAliasBoundaryModel(externalId=7, inputName="Ada", public_name="Lovelace")
         from_name = AsyncAliasBoundaryModel(external_id=8, inputName="Grace", public_name="Hopper")
 
-        assert from_alias.external_id == 7
-        assert from_name.external_id == 8
-        assert from_alias.display_name == "Ada"
-        assert from_alias.model_dump() == {"external_id": 7, "display_name": "Ada", "public_name": "Lovelace"}
+        assert from_alias.external_id == 7, "Expected from_alias.external_id to be 7"
+        assert from_name.external_id == 8, "Expected from_name.external_id to be 8"
+        assert from_alias.display_name == "Ada", "Expected display_name to honor validation_alias"
+        assert from_alias.model_dump() == {"external_id": 7, "display_name": "Ada", "public_name": "Lovelace"}, \
+            "Expected default dump to use Python names"
         assert from_alias.model_dump(by_alias=True) == {
             "externalId": 7,
             "display_name": "Ada",
             "outputName": "Lovelace",
-        }
-        assert set(AsyncAliasBoundaryModel.model_fields) == {"external_id", "display_name", "public_name"}
-        assert AsyncAliasBoundaryModel.get_column_name("external_id") == "external_id_col"
+        }, "Expected by_alias dump to use serialization aliases"
+        assert set(AsyncAliasBoundaryModel.model_fields) == {"external_id", "display_name", "public_name"}, \
+            "Expected model_fields to expose Python names only"
+        assert AsyncAliasBoundaryModel.get_column_name("external_id") == "external_id_col", \
+            "Expected get_column_name to reflect UseColumn"
 
     async def test_extra_config_modes_preserve_pydantic_behavior(self):
+        """Extra config modes should preserve Pydantic semantics on the async model."""
         with pytest.raises(ValidationError) as exc_info:
             AsyncExtraForbidModel(name="Ada", unknown="rejected")
-        assert "unknown" in str(exc_info.value)
+        assert "unknown" in str(exc_info.value), \
+            "Expected ValidationError to mention 'unknown' for forbid"
 
         ignored = AsyncExtraIgnoreModel(name="Ada", unknown="ignored")
-        assert ignored.model_dump() == {"name": "Ada"}
-        assert not hasattr(ignored, "unknown")
+        assert ignored.model_dump() == {"name": "Ada"}, \
+            "Expected the unknown field to be dropped in ignore mode"
+        assert not hasattr(ignored, "unknown"), \
+            "Expected the unknown field not to be set as an attribute in ignore mode"
 
         allowed = AsyncExtraAllowModel(name="Ada", unknown="kept")
-        assert allowed.model_dump() == {"name": "Ada", "unknown": "kept"}
-        assert allowed.unknown == "kept"
+        assert allowed.model_dump() == {"name": "Ada", "unknown": "kept"}, \
+            "Expected the unknown field to be retained in allow mode"
+        assert allowed.unknown == "kept", "Expected the unknown attribute to be accessible in allow mode"
 
     async def test_strict_fields_reject_coercion(self):
+        """Strict-mode fields should reject type coercion on the async model."""
         model = AsyncStrictModel(count=3, enabled=True)
-        assert model.count == 3
-        assert model.enabled is True
+        assert model.count == 3, "Expected count to be 3"
+        assert model.enabled is True, "Expected enabled to be True"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncStrictModel(count="3", enabled=True)
-        assert "count" in str(exc_info.value)
+        assert "count" in str(exc_info.value), \
+            "Expected ValidationError to mention 'count' for strict int"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncStrictModel(count=3, enabled="true")
-        assert "enabled" in str(exc_info.value)
+        assert "enabled" in str(exc_info.value), \
+            "Expected ValidationError to mention 'enabled' for strict bool"
 
     async def test_validate_default_runs_on_model_construction(self):
+        """Fields with validate_default=True should run validators on default values for the async model."""
         with pytest.raises(ValidationError) as exc_info:
             AsyncValidateDefaultModel()
-        assert "positive_count" in str(exc_info.value)
+        assert "positive_count" in str(exc_info.value), \
+            "Expected ValidationError to mention 'positive_count'"
 
         model = AsyncValidateDefaultModel(positive_count=1)
-        assert model.positive_count == 1
+        assert model.positive_count == 1, "Expected positive_count to be 1"
 
     async def test_validator_pipeline_modes_are_preserved(self):
+        """before/after/wrap validator modes should each transform inputs on the async model."""
         model = AsyncValidatorModesModel(raw_code="  RAW  ", normalized_code="MiXeD", wrapped_code="  WRAPPED  ")
 
-        assert model.raw_code == "RAW"
-        assert model.normalized_code == "mixed"
-        assert model.wrapped_code == "wrapped:wrapped"
-        assert model.combined == "  RAW  :MiXeD"
+        assert model.raw_code == "RAW", "Expected raw_code to be stripped"
+        assert model.normalized_code == "mixed", "Expected normalized_code to be lowercased"
+        assert model.wrapped_code == "wrapped:wrapped", "Expected wrapped_code to be wrapped and normalized"
+        assert model.combined == "  RAW  :MiXeD", "Expected combined to be set by the model_validator"
         assert model.model_dump() == {
             "raw_code": "RAW",
             "normalized_code": "mixed",
             "wrapped_code": "wrapped:wrapped",
             "combined": "  RAW  :MiXeD",
-        }
+        }, "Expected model_dump() to capture validator outputs"
 
     async def test_json_enum_container_and_nested_model_contracts(self):
+        """JSON serialization should preserve enums, datetimes, nested models, and containers (async)."""
         model = AsyncJsonContainerNestedModel(
             status="active",
             created_at="2024-01-01T10:00:00",
@@ -675,11 +735,13 @@ class TestAsyncPydanticNativeValidation:
         json_dump = model.model_dump(mode="json")
         parsed = json.loads(model.model_dump_json())
 
-        assert model.status is RecordStatus.active
-        assert json_dump["status"] == "active"
-        assert json_dump["created_at"] == "2024-01-01T10:00:00"
-        assert json_dump["address"] == {"city": "Paris", "zip_code": "75001"}
-        assert parsed == json_dump
+        assert model.status is RecordStatus.active, "Expected the enum value to round-trip"
+        assert json_dump["status"] == "active", "Expected the enum to serialize to its string value"
+        assert json_dump["created_at"] == "2024-01-01T10:00:00", \
+            "Expected the datetime to serialize to ISO format"
+        assert json_dump["address"] == {"city": "Paris", "zip_code": "75001"}, \
+            "Expected the nested address to serialize as a dict"
+        assert parsed == json_dump, "Expected model_dump_json() to match model_dump(mode='json')"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncJsonContainerNestedModel(
@@ -690,49 +752,61 @@ class TestAsyncPydanticNativeValidation:
                 scores={"quality": 101},
             )
         error_text = str(exc_info.value)
-        assert "address" in error_text
-        assert "labels" in error_text
-        assert "scores" in error_text
+        assert "address" in error_text, "Expected the address validation error"
+        assert "labels" in error_text, "Expected the labels validation error"
+        assert "scores" in error_text, "Expected the scores validation error"
 
     async def test_from_attributes_constructs_from_plain_objects(self):
+        """from_attributes mode should construct async models from plain attribute objects."""
         class SourceObject:
             name = "Ada"
             quantity = 3
 
         model = AsyncFromAttributesModel.model_validate(SourceObject())
-        assert model.name == "Ada"
-        assert model.quantity == 3
+        assert model.name == "Ada", "Expected name to be 'Ada'"
+        assert model.quantity == 3, "Expected quantity to be 3"
 
         class IncompleteSourceObject:
             name = "Ada"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncFromAttributesModel.model_validate(IncompleteSourceObject())
-        assert "quantity" in str(exc_info.value)
+        assert "quantity" in str(exc_info.value), \
+            "Expected ValidationError to mention 'quantity' for missing field"
 
     async def test_annotated_metadata_order_is_not_significant(self):
+        """Annotated metadata order should be irrelevant on the async model."""
         model = AsyncAnnotatedMetadataOrderModel(field_first="AB", column_first="CD")
 
-        assert model.field_first == "AB"
-        assert model.column_first == "CD"
-        assert AsyncAnnotatedMetadataOrderModel.get_column_name("field_first") == "field_first_col"
-        assert AsyncAnnotatedMetadataOrderModel.get_column_name("column_first") == "column_first_col"
+        assert model.field_first == "AB", "Expected field_first to be 'AB'"
+        assert model.column_first == "CD", "Expected column_first to be 'CD'"
+        assert AsyncAnnotatedMetadataOrderModel.get_column_name("field_first") == "field_first_col", \
+            "Expected field_first to map to field_first_col"
+        assert AsyncAnnotatedMetadataOrderModel.get_column_name("column_first") == "column_first_col", \
+            "Expected column_first to map to column_first_col"
 
         with pytest.raises(ValidationError) as exc_info:
             AsyncAnnotatedMetadataOrderModel(field_first="A", column_first="C")
-        assert "field_first" in str(exc_info.value)
-        assert "column_first" in str(exc_info.value)
+        assert "field_first" in str(exc_info.value), \
+            "Expected ValidationError to mention 'field_first'"
+        assert "column_first" in str(exc_info.value), \
+            "Expected ValidationError to mention 'column_first'"
 
     async def test_alias_use_column_conflicts_keep_separate_meanings(self):
+        """Conflicting alias and UseColumn values should remain distinct on the async model."""
         model = AsyncAliasUseColumnConflictModel(externalName="same", apiDifferentName="different")
         alias_dump = model.model_dump(by_alias=True)
 
-        assert model.same_name == "same"
-        assert model.different_name == "different"
-        assert alias_dump == {"externalName": "same", "apiDifferentName": "different"}
-        assert set(AsyncAliasUseColumnConflictModel.model_fields) == {"same_name", "different_name"}
-        assert AsyncAliasUseColumnConflictModel.get_column_name("same_name") == "externalName"
-        assert AsyncAliasUseColumnConflictModel.get_column_name("different_name") == "db_different_name"
+        assert model.same_name == "same", "Expected same_name to take 'same'"
+        assert model.different_name == "different", "Expected different_name to take 'different'"
+        assert alias_dump == {"externalName": "same", "apiDifferentName": "different"}, \
+            "Expected by_alias dump to use the alias names"
+        assert set(AsyncAliasUseColumnConflictModel.model_fields) == {"same_name", "different_name"}, \
+            "Expected model_fields to expose Python names"
+        assert AsyncAliasUseColumnConflictModel.get_column_name("same_name") == "externalName", \
+            "Expected same_name to map to externalName column"
+        assert AsyncAliasUseColumnConflictModel.get_column_name("different_name") == "db_different_name", \
+            "Expected different_name to map to db_different_name column"
 
         with pytest.raises(AttributeError):
             _ = AsyncAliasUseColumnConflictModel.c.externalName
@@ -740,15 +814,18 @@ class TestAsyncPydanticNativeValidation:
             _ = AsyncAliasUseColumnConflictModel.c.apiDifferentName
 
     async def test_validate_assignment_updates_dirty_tracking_only_after_success(self):
+        """validate_assignment should only mark fields dirty after the value is accepted (async)."""
         model = AsyncAssignmentValidationModel(name="Ada", quantity=1)
         model.reset_tracking()
 
         model.quantity = 2
-        assert model.quantity == 2
-        assert model.dirty_fields == {"quantity"}
+        assert model.quantity == 2, "Expected quantity to be 2"
+        assert model.dirty_fields == {"quantity"}, "Expected quantity to be marked dirty"
 
         with pytest.raises(ValidationError) as exc_info:
             model.name = "A"
-        assert "name" in str(exc_info.value)
-        assert model.name == "Ada"
-        assert model.dirty_fields == {"quantity"}
+        assert "name" in str(exc_info.value), \
+            "Expected ValidationError to mention 'name' for too-short value"
+        assert model.name == "Ada", "Expected name to remain unchanged after rejected assignment"
+        assert model.dirty_fields == {"quantity"}, \
+            "Expected dirty_fields to remain unchanged after rejected assignment"
