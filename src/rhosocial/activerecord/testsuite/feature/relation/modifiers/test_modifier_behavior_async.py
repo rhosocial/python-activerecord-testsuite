@@ -16,10 +16,12 @@ class TestAsyncModifierTargeting:
         query.with_(("posts.comments", my_modifier))
 
         configs = query.get_relation_configs()
-        assert "posts" in configs
-        assert "posts.comments" in configs
-        assert configs["posts"].query_modifier is None
-        assert configs["posts.comments"].query_modifier is my_modifier
+        assert "posts" in configs, "Expected 'posts' relation to be configured"
+        assert "posts.comments" in configs, "Expected 'posts.comments' relation to be configured"
+        assert configs["posts"].query_modifier is None, \
+            "Expected 'posts' relation to have no query modifier"
+        assert configs["posts.comments"].query_modifier is my_modifier, \
+            "Expected 'posts.comments' relation to use the modifier"
 
     async def test_deep_nested_modifier_only_on_leaf(self, async_user_class):
         """Deep nested modifier should only apply to the leaf."""
@@ -30,8 +32,10 @@ class TestAsyncModifierTargeting:
         query.with_(("posts.comments", leaf_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is None
-        assert configs["posts.comments"].query_modifier is leaf_modifier
+        assert configs["posts"].query_modifier is None, \
+            "Expected 'posts' relation to have no query modifier"
+        assert configs["posts.comments"].query_modifier is leaf_modifier, \
+            "Expected 'posts.comments' relation to use the leaf modifier"
 
     async def test_multiple_relations_each_with_own_modifier(self, async_user_class):
         """Each relation can have its own modifier (parent before child)."""
@@ -47,8 +51,10 @@ class TestAsyncModifierTargeting:
         query.with_(("posts.comments", comments_modifier), ("posts", posts_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is posts_modifier
-        assert configs["posts.comments"].query_modifier is comments_modifier
+        assert configs["posts"].query_modifier is posts_modifier, \
+            "Expected 'posts' relation to use posts_modifier"
+        assert configs["posts.comments"].query_modifier is comments_modifier, \
+            "Expected 'posts.comments' relation to use comments_modifier"
 
 
 class TestAsyncModifierOverwrite:
@@ -63,7 +69,8 @@ class TestAsyncModifierOverwrite:
         query.with_(("posts", my_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is my_modifier
+        assert configs["posts"].query_modifier is my_modifier, \
+            "Expected 'posts' relation to use the modifier"
 
     async def test_later_modifier_overwrites_same_path(self, async_user_class):
         """Later modifier should overwrite same path."""
@@ -78,7 +85,8 @@ class TestAsyncModifierOverwrite:
         query.with_(("posts", second_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is second_modifier
+        assert configs["posts"].query_modifier is second_modifier, \
+            "Expected the second modifier to overwrite the first"
 
     async def test_longer_path_overwrites_shorter_path(self, async_user_class):
         """Longer path should overwrite shorter path when adding new nested."""
@@ -92,8 +100,10 @@ class TestAsyncModifierOverwrite:
         query.with_(("posts", short_modifier), ("posts.comments", long_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is long_modifier
-        assert configs["posts.comments"].query_modifier is long_modifier
+        assert configs["posts"].query_modifier is long_modifier, \
+            "Expected 'posts' relation to use the long modifier"
+        assert configs["posts.comments"].query_modifier is long_modifier, \
+            "Expected 'posts.comments' relation to use the long modifier"
 
     async def test_correct_order_preserves_modifiers(self, async_user_class):
         """Correct order (child before parent) preserves modifiers."""
@@ -108,8 +118,10 @@ class TestAsyncModifierOverwrite:
         query.with_(("posts.comments", child_modifier), ("posts", parent_modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is parent_modifier
-        assert configs["posts.comments"].query_modifier is child_modifier
+        assert configs["posts"].query_modifier is parent_modifier, \
+            "Expected 'posts' relation to use the parent modifier"
+        assert configs["posts.comments"].query_modifier is child_modifier, \
+            "Expected 'posts.comments' relation to use the child modifier"
 
 
 class TestAsyncModifierDocumentationExamples:
@@ -124,8 +136,10 @@ class TestAsyncModifierDocumentationExamples:
         query.with_(("posts.comments", modifier))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is None
-        assert configs["posts.comments"].query_modifier is modifier
+        assert configs["posts"].query_modifier is None, \
+            "Expected 'posts' relation to have no query modifier"
+        assert configs["posts.comments"].query_modifier is modifier, \
+            "Expected 'posts.comments' relation to use the modifier"
 
     async def test_documentation_example_overwrite(self, async_user_class):
         """Test documentation example: overwrite rule."""
@@ -140,7 +154,8 @@ class TestAsyncModifierDocumentationExamples:
         query.with_(("posts", second))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is second
+        assert configs["posts"].query_modifier is second, \
+            "Expected the second modifier to overwrite the first"
 
     async def test_documentation_correct_order(self, async_user_class):
         """Test documentation example: correct order (child before parent)."""
@@ -154,7 +169,9 @@ class TestAsyncModifierDocumentationExamples:
         query.with_(("posts.comments", comments_mod), ("posts", posts_mod))
 
         configs = query.get_relation_configs()
-        assert configs["posts"].query_modifier is posts_mod
-        assert configs["posts.comments"].query_modifier is comments_mod
+        assert configs["posts"].query_modifier is posts_mod, \
+            "Expected 'posts' relation to use posts_mod"
+        assert configs["posts.comments"].query_modifier is comments_mod, \
+            "Expected 'posts.comments' relation to use comments_mod"
 
 

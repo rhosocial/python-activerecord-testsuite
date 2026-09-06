@@ -33,8 +33,8 @@ class TestSyncActiveQueryJoin:
 
         # Perform inner join between User and Order
         results = User.query().join(Order, User.c.id == Order.c.user_id).all()
-        assert len(results) == 1
-        assert results[0].id == user.id
+        assert len(results) == 1, "join should return exactly one matching user"
+        assert results[0].id == user.id, "joined result should contain the saved user"
 
     @pytest.mark.requires_inner_join
     def test_join_with_where_condition(self, order_fixtures):

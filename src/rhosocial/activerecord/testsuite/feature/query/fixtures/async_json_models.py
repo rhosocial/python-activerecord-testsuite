@@ -1,3 +1,6 @@
+# src/rhosocial/activerecord/testsuite/feature/query/fixtures/async_json_models.py
+"""Async JSON-field model fixtures for query feature tests."""
+
 from typing import Optional, ClassVar
 
 from pydantic import Field, EmailStr

@@ -248,7 +248,7 @@ class TestSyncRelationalValidation:
         query._process_relation_path("valid_relation")
 
         # Check that the relation was added to eager loads
-        assert "valid_relation" in query._eager_loads
+        assert "valid_relation" in query._eager_loads, "expected relation in eager loads"
 
     def test_process_relation_path_invalid_format(self):
         """Test _process_relation_path with invalid format."""
@@ -272,8 +272,8 @@ class TestSyncRelationalValidation:
 
         # Check that the config was updated
         config = query._eager_loads['test_relation']
-        assert 'more_nested' in config.nested
-        assert config.query_modifier is not None
+        assert 'more_nested' in config.nested, "expected more_nested in nested"
+        assert config.query_modifier is not None, "expected query_modifier to be set"
 
     def test_update_existing_relation_config_with_lambda(self):
         """Test _update_existing_relation_config with lambda modifier overwrite warning."""
@@ -291,7 +291,7 @@ class TestSyncRelationalValidation:
 
         # Check that the config was updated
         config = query._eager_loads['test_relation']
-        assert 'more_nested' in config.nested
+        assert 'more_nested' in config.nested, "expected more_nested in nested"
 
     def test_add_relation_config(self):
         """Test _add_relation_config method."""
@@ -300,11 +300,11 @@ class TestSyncRelationalValidation:
 
         query._add_relation_config('new_relation', ['nested'], lambda q: q)
 
-        assert 'new_relation' in query._eager_loads
+        assert 'new_relation' in query._eager_loads, "expected new_relation in eager loads"
         config = query._eager_loads['new_relation']
-        assert config.name == 'new_relation'
-        assert 'nested' in config.nested
-        assert config.query_modifier is not None
+        assert config.name == 'new_relation', "expected config name new_relation"
+        assert 'nested' in config.nested, "expected nested in config.nested"
+        assert config.query_modifier is not None, "expected query_modifier to be set"
 
     def test_validate_complete_relation_path_get_related_model_returns_none(self):
         """Test _validate_complete_relation_path when get_related_model returns None."""
@@ -356,16 +356,16 @@ class TestRefactoredHelperMethods:
         """Test _parse_relation_arg with string input."""
         query = MockQuery()
         path, modifier = query._parse_relation_arg("posts")
-        assert path == "posts"
-        assert modifier is None
+        assert path == "posts", "expected path posts"
+        assert modifier is None, "expected modifier to be None"
 
     def test_parse_relation_arg_tuple(self):
         """Test _parse_relation_arg with tuple input."""
         query = MockQuery()
         test_modifier = lambda q: q.where(True)
         path, modifier = query._parse_relation_arg(("posts", test_modifier))
-        assert path == "posts"
-        assert modifier == test_modifier
+        assert path == "posts", "expected path posts"
+        assert modifier == test_modifier, "expected modifier to be test_modifier"
 
     def test_validate_relation_calls_both_validations(self):
         """Test _validate_relation calls both path and existence validation."""
@@ -400,11 +400,11 @@ class TestRefactoredHelperMethods:
 
         # At index 0, next level should be ["posts"]
         result = query._get_next_level_parts(parts, 0)
-        assert result == ["posts"]
+        assert result == ["posts"], "expected next level posts"
 
         # At index 1, next level should be ["comments"]
         result = query._get_next_level_parts(parts, 1)
-        assert result == ["comments"]
+        assert result == ["comments"], "expected next level comments"
 
     def test_get_next_level_parts_at_end(self):
         """Test _get_next_level_parts when at the last element."""
@@ -413,7 +413,7 @@ class TestRefactoredHelperMethods:
 
         # At last index, next level should be empty
         result = query._get_next_level_parts(parts, 1)
-        assert result == []
+        assert result == [], "expected empty next level"
 
     def test_get_next_level_parts_single_element(self):
         """Test _get_next_level_parts with single element path."""
@@ -421,7 +421,7 @@ class TestRefactoredHelperMethods:
         parts = ["user"]
 
         result = query._get_next_level_parts(parts, 0)
-        assert result == []
+        assert result == [], "expected empty next level"
 
     def test_should_update_nested_relation_with_new_nested(self):
         """Test _should_update_nested_relation returns True when adding new nested."""
@@ -433,7 +433,7 @@ class TestRefactoredHelperMethods:
 
         # Should return True because 'posts' is not in nested
         result = query._should_update_nested_relation('user', ['posts'])
-        assert result is True
+        assert result is True, "expected True when adding new nested"
 
     def test_should_update_nested_relation_already_exists(self):
         """Test _should_update_nested_relation returns False when nested already exists."""
@@ -445,7 +445,7 @@ class TestRefactoredHelperMethods:
 
         # Should return False because 'posts' is already in nested
         result = query._should_update_nested_relation('user', ['posts'])
-        assert result is False
+        assert result is False, "expected False when nested already exists"
 
     def test_should_update_nested_relation_empty_next_level(self):
         """Test _should_update_nested_relation returns False when next_level is empty."""
@@ -456,7 +456,7 @@ class TestRefactoredHelperMethods:
 
         # Should return False because next_level is empty
         result = query._should_update_nested_relation('user', [])
-        assert result is False
+        assert result is False, "expected False when next_level is empty"
 
     def test_determine_modifier_target_relation(self):
         """Test _determine_modifier returns modifier for target relation."""
@@ -468,7 +468,7 @@ class TestRefactoredHelperMethods:
             is_adding_new_nested=False,
             query_modifier=test_modifier
         )
-        assert result == test_modifier
+        assert result == test_modifier, "expected modifier for target relation"
 
     def test_determine_modifier_adding_new_nested(self):
         """Test _determine_modifier returns modifier when adding new nested."""
@@ -480,7 +480,7 @@ class TestRefactoredHelperMethods:
             is_adding_new_nested=True,
             query_modifier=test_modifier
         )
-        assert result == test_modifier
+        assert result == test_modifier, "expected modifier when adding new nested"
 
     def test_determine_modifier_neither_condition(self):
         """Test _determine_modifier returns None when neither condition is met."""
@@ -492,7 +492,7 @@ class TestRefactoredHelperMethods:
             is_adding_new_nested=False,
             query_modifier=test_modifier
         )
-        assert result is None
+        assert result is None, "expected None when neither condition met"
 
     def test_determine_modifier_target_takes_precedence(self):
         """Test _determine_modifier with both conditions True (target takes precedence logically)."""
@@ -505,7 +505,7 @@ class TestRefactoredHelperMethods:
             is_adding_new_nested=True,
             query_modifier=test_modifier
         )
-        assert result == test_modifier
+        assert result == test_modifier, "expected modifier when target takes precedence"
 
     def test_with_method_uses_parse_relation_arg(self):
         """Test with_ method uses _parse_relation_arg helper."""
@@ -519,9 +519,9 @@ class TestRefactoredHelperMethods:
         query.with_(('posts', test_modifier))
 
         # Verify the modifier was applied
-        assert 'posts' in query._eager_loads
+        assert 'posts' in query._eager_loads, "expected posts in eager loads"
         config = query._eager_loads['posts']
-        assert config.query_modifier == test_modifier
+        assert config.query_modifier == test_modifier, "expected query_modifier to be test_modifier"
 
     def test_with_method_multiple_relations(self):
         """Test with_ method with multiple relations."""
@@ -533,5 +533,5 @@ class TestRefactoredHelperMethods:
 
         query.with_('posts', 'comments')
 
-        assert 'posts' in query._eager_loads
-        assert 'comments' in query._eager_loads
+        assert 'posts' in query._eager_loads, "expected posts in eager loads"
+        assert 'comments' in query._eager_loads, "expected comments in eager loads"

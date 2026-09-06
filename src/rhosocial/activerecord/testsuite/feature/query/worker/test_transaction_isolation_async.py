@@ -411,12 +411,12 @@ class TestAsyncTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert result['success']
+            assert result['success'], "expected transfer to succeed"
 
             await user1.refresh()
             await user2.refresh()
-            assert user1.balance == 70.0
-            assert user2.balance == 80.0
+            assert user1.balance == 70.0, "expected user1 balance 70.0"
+            assert user2.balance == 80.0, "expected user2 balance 80.0"
         finally:
             await user1.delete()
             await user2.delete()
@@ -452,12 +452,12 @@ class TestAsyncTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert not result['success']
+            assert not result['success'], "expected transfer to fail"
 
             await user1.refresh()
             await user2.refresh()
-            assert user1.balance == 100.0
-            assert user2.balance == 50.0
+            assert user1.balance == 100.0, "expected user1 balance unchanged"
+            assert user2.balance == 50.0, "expected user2 balance unchanged"
         finally:
             await user1.delete()
             await user2.delete()
@@ -508,7 +508,7 @@ class TestAsyncTransactionIsolation:
             for t in targets:
                 user = await AsyncUser.find_one({'id': t.id})
                 total_target += user.balance
-            assert source.balance + total_target == 1000.0
+            assert source.balance + total_target == 1000.0, "expected total balance conserved"
 
         finally:
             await source.delete()
@@ -538,10 +538,10 @@ class TestAsyncTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert result['success']
+            assert result['success'], "expected status update to succeed"
 
             await order.refresh()
-            assert order.status == 'completed'
+            assert order.status == 'completed', "expected status completed"
 
         finally:
             order.status = original_status

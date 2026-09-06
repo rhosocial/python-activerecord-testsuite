@@ -45,4 +45,4 @@ class TestRelationInterfaces:
             employee.clear_relation_cache("invalid_relation")
             assert False, "Should raise ValueError"
         except ValueError as e:
-            assert "Unknown relation" in str(e)
+            assert "Unknown relation" in str(e), "Expected error message to contain 'Unknown relation'"

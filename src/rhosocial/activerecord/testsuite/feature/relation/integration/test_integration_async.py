@@ -20,9 +20,9 @@ class TestAsyncIntegration:
         await post.save()
 
         results = await post_class.find_all(derived=["title_length", "hotness"])
-        assert len(results) == 1
-        assert results[0].title_length == 11
-        assert results[0].hotness == 11
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title_length == 11, "Expected title_length to be 11"
+        assert results[0].hotness == 11, "Expected hotness to be 11"
 
     async def test_relation_with_field_proxy(self, async_user_post_comment_classes):
         """Relations should work with FieldProxy."""
@@ -34,8 +34,8 @@ class TestAsyncIntegration:
         await post.save()
 
         results = await post_class.find_all(post_class.c.user_id == user.id)
-        assert len(results) == 1
-        assert results[0].title == "Proxy Test"
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title == "Proxy Test", "Expected title to be 'Proxy Test'"
 
     async def test_derived_field_with_field_proxy(self, async_user_post_comment_classes):
         """Derived fields using FieldProxy should work."""
@@ -47,8 +47,8 @@ class TestAsyncIntegration:
         await post.save()
 
         results = await post_class.find_all(derived=["title_length"])
-        assert len(results) == 1
-        assert results[0].title_length == 13
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title_length == 13, "Expected title_length to be 13"
 
     async def test_eager_load_with_derived(self, async_user_post_comment_classes):
         """Eager loading should work with derived fields."""
@@ -62,8 +62,8 @@ class TestAsyncIntegration:
         await post2.save()
 
         results = await user_class.find_all(derived=["display_name"])
-        assert len(results) == 1
-        assert results[0].display_name is not None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].display_name is not None, "Expected display_name to be computed"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -87,9 +87,9 @@ class TestAsyncIntegration:
 
         # Query with JSON derived fields
         results = await user_class.find_all(derived=["language", "theme"])
-        assert len(results) == 1
-        assert results[0].language == "fr"
-        assert results[0].theme == "dark"
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].language == "fr", "Expected language to be 'fr'"
+        assert results[0].theme == "dark", "Expected theme to be 'dark'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -126,23 +126,23 @@ class TestAsyncIntegration:
 
         # User: JSON derived fields
         users = await user_class.find_all(derived="all")
-        assert len(users) == 1
-        assert users[0].display_name is not None
-        assert users[0].language == "de"
-        assert users[0].theme == "auto"
+        assert len(users) == 1, "Expected 1 user record to be found"
+        assert users[0].display_name is not None, "Expected display_name to be computed"
+        assert users[0].language == "de", "Expected language to be 'de'"
+        assert users[0].theme == "auto", "Expected theme to be 'auto'"
 
         # Post: title_length, hotness=view_count+1, first_tag, source
         posts = await post_class.find_all(derived="all")
-        assert len(posts) == 1
+        assert len(posts) == 1, "Expected 1 post record to be found"
         assert posts[0].title_length == 21  # len("Full Integration Test")
         assert posts[0].hotness == 101  # view_count(100) + 1
-        assert posts[0].first_tag == "integration"
-        assert posts[0].source == "ci"
+        assert posts[0].first_tag == "integration", "Expected first_tag to be 'integration'"
+        assert posts[0].source == "ci", "Expected source to be 'ci'"
 
         # Comment: body_length, platform
         comments = await comment_class.find_all(derived="all")
-        assert len(comments) == 1
+        assert len(comments) == 1, "Expected 1 comment record to be found"
         assert comments[0].body_length == 27  # len("Excellent integration test!")
-        assert comments[0].platform == "github"
+        assert comments[0].platform == "github", "Expected platform to be 'github'"
 
 

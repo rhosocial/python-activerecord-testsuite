@@ -1,4 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/annotated_adapter_models.py
+"""Model fixtures using Annotated-based type adapters for query feature tests."""
 
 import sys
 from typing import Any, List, Type, Dict, Optional, Set, get_origin, ClassVar

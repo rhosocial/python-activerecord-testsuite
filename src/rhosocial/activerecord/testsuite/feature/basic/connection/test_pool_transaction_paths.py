@@ -38,6 +38,7 @@ class TestSyncPath1ExistingTransactionIsReused:
     """
 
     def test_inner_pool_transaction_yields_same_backend(self, sync_pool_and_model):
+        """Verifies a nested pool.transaction() yields the same backend instance as the outer transaction."""
         pool, _model = sync_pool_and_model
         with pool.transaction() as outer:
             with pool.transaction() as inner:
@@ -45,6 +46,7 @@ class TestSyncPath1ExistingTransactionIsReused:
                     "Expected the inner transaction backend to be the same as the outer one"
 
     def test_inner_exits_does_not_commit_outer(self, sync_pool_and_model):
+        """Verifies that exiting the inner Path 1 block does not commit or close the outer transaction."""
         pool, _model = sync_pool_and_model
         with pool.transaction() as outer:
             mgr = outer.transaction_manager
@@ -59,6 +61,7 @@ class TestSyncPath1ExistingTransactionIsReused:
                 "Expected the transaction level to return to 1 after Path 1 exit"
 
     def test_path1_does_not_register_a_new_transaction_backend(self, sync_pool_and_model):
+        """Verifies that entering an inner transaction via Path 1 does not replace the transaction token's backend."""
         pool, _model = sync_pool_and_model
         with pool.transaction() as outer:
             with pool.transaction() as _inner:
@@ -78,6 +81,7 @@ class TestSyncPath2ConnectionOnlyBranch:
     """
 
     def test_transaction_reuses_the_connection_backend(self, sync_pool_and_model):
+        """Verifies a transaction in a connection-only context reuses that connection backend without acquiring."""
         pool, _model = sync_pool_and_model
         with pool.connection() as conn:
             with pool.transaction() as tx_backend:
@@ -85,6 +89,7 @@ class TestSyncPath2ConnectionOnlyBranch:
                     "Expected the transaction backend to reuse the connection backend"
 
     def test_tx_token_set_during_path2_and_cleared_after(self, sync_pool_and_model):
+        """Verifies the Path 2 transaction token is cleared after exit while the connection token persists."""
         pool, _model = sync_pool_and_model
         with pool.connection():
             assert get_current_transaction_backend() is None, \
@@ -101,6 +106,7 @@ class TestSyncPath2ConnectionOnlyBranch:
                 "Expected the connection token to persist after Path 2 exit"
 
     def test_path2_commits_visible_after_exit(self, sync_pool_and_model):
+        """Verifies a write inside a Path 2 transaction is committed and visible after exit."""
         pool, model = sync_pool_and_model
         with pool.connection():
             with pool.transaction() as backend:
@@ -112,6 +118,7 @@ class TestSyncPath2ConnectionOnlyBranch:
                 "Expected the Path 2 commit to be visible after exit"
 
     def test_path2_rollback_on_exception_leaves_no_tx_token(self, sync_pool_and_model):
+        """Verifies an exception in Path 2 rolls back and leaves no transaction or connection tokens bound."""
         pool, _model = sync_pool_and_model
         with pytest.raises(RuntimeError):
             with pool.connection() as conn:
@@ -149,6 +156,7 @@ class TestSyncPath3AcquireBranch:
     """Path 3 (sync_pool.py:584-598): no existing context, full acquire cycle."""
 
     def test_path3_yields_a_backend_bound_to_both_tx_and_conn_tokens(self, sync_pool_and_model):
+        """Verifies that the Path 3 backend is bound to both the transaction and connection tokens."""
         pool, _model = sync_pool_and_model
         with pool.transaction() as backend:
             assert get_current_transaction_backend() is backend, \
@@ -160,6 +168,7 @@ class TestSyncPath3AcquireBranch:
                 "Expected get_current_backend() to resolve to the Path 3 backend"
 
     def test_path3_tokens_cleared_after_exit(self, sync_pool_and_model):
+        """Verifies that both tokens and get_current_backend are cleared after a clean Path 3 exit."""
         pool, _model = sync_pool_and_model
         with pool.transaction():
             pass
@@ -171,6 +180,7 @@ class TestSyncPath3AcquireBranch:
             "Expected get_current_backend() to be cleared after Path 3 exit"
 
     def test_path3_commit_on_clean_exit(self, sync_pool_and_model):
+        """Verifies that a write inside a Path 3 transaction is committed on clean exit."""
         pool, model = sync_pool_and_model
         with pool.transaction() as _backend:
             model(name="P3Ok", email="p3ok@test.local").save()
@@ -179,6 +189,7 @@ class TestSyncPath3AcquireBranch:
                 "Expected the Path 3 commit to be visible after exit"
 
     def test_path3_rollback_on_exception(self, sync_pool_and_model):
+        """Verifies that a write inside a Path 3 transaction is rolled back when an exception is raised."""
         pool, model = sync_pool_and_model
         with pytest.raises(RuntimeError):
             with pool.transaction() as _backend:
@@ -189,6 +200,7 @@ class TestSyncPath3AcquireBranch:
                 "Expected the Path 3 write to be rolled back"
 
     def test_path3_tokens_cleared_after_exception(self, sync_pool_and_model):
+        """Verifies that both tokens are cleared after a Path 3 transaction rolls back on exception."""
         pool, _model = sync_pool_and_model
         with pytest.raises(RuntimeError):
             with pool.transaction():

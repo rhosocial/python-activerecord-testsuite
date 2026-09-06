@@ -1,4 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/query/logging/test_logging_data_summarization.py
+"""Test logging data summarization and masking for query log payloads."""
 import copy
 import json
 from pathlib import Path
@@ -297,7 +298,10 @@ def _assert_multilingual_text_round_trip(Post):
 
 
 class TestLoggingDataSummarization:
+    """Verify that query logging summarizes and masks sensitive data without altering storage."""
+
     def test_long_web_content_is_truncated_in_summary_not_storage(self, blog_fixtures):
+        """Long web content should be truncated in the summary but preserved in storage."""
         User, Post, _ = blog_fixtures
         samples = _sample_contents()
         _assert_sample_integrity(samples)
@@ -308,15 +312,18 @@ class TestLoggingDataSummarization:
         _assert_round_trip_and_summary(Post, samples)
 
     def test_sensitive_fields_are_masked_in_query_payload(self, blog_fixtures):
+        """Sensitive fields should be masked in the query log payload."""
         User, Post, _ = blog_fixtures
         samples = _sample_contents()
         user = _create_user(User)
         posts = _create_posts(Post, user.id, samples)
 
         _assert_sensitive_payload_summary(posts[0], samples)
-        assert _find_post(Post, "HTML sample").content == samples["html_content"]
+        assert _find_post(Post, "HTML sample").content == samples["html_content"], \
+            "stored content should remain unchanged after masking"
 
     def test_json_fixture_preserves_sample_json_round_trip(self, json_user_fixture):
+        """JSON fixture should preserve the sample JSON through a save/load round trip."""
         JsonUser = json_user_fixture
         json_content = _read_sample("jsonplaceholder_posts.json")
         original_data = json.loads(json_content)
@@ -329,19 +336,20 @@ class TestLoggingDataSummarization:
         user.save()
 
         results = JsonUser.query().where(JsonUser.c.username == "json-content-user").all()
-        assert len(results) == 1
+        assert len(results) == 1, "query should return exactly one JSON user"
         found = results[0]
 
         # Backends with native JSON types return dict/list; normalize for comparison
         retrieved_data = json.loads(_normalize_json_value(found.preferences))
-        assert retrieved_data == original_data
-        assert retrieved_data[0]["userId"] == 1
+        assert retrieved_data == original_data, "retrieved JSON should match the original data"
+        assert retrieved_data[0]["userId"] == 1, "first post userId should be 1"
 
         prefs_str = _normalize_json_value(found.preferences)
         summary = _make_logging_config().summarize_data({"preferences": prefs_str})
         _assert_truncated(summary["preferences"], prefs_str)
 
     def test_unicode_multilingual_content_round_trip(self, blog_fixtures):
+        """Unicode multilingual content should survive a save/load round trip."""
         User, Post, _ = blog_fixtures
         samples = _unicode_sample_contents()
         _assert_unicode_integrity(samples)
@@ -352,22 +360,26 @@ class TestLoggingDataSummarization:
         _assert_unicode_round_trip(Post, samples)
 
     def test_unicode_emoji_burst_truncated_in_summary(self, blog_fixtures):
+        """Long emoji bursts should be truncated in the summary but not in storage."""
         User, Post, _ = blog_fixtures
         user = _create_user(User)
         _assert_unicode_emoji_round_trip(Post)
 
     def test_sql_injection_payloads_as_content_round_trip(self, blog_fixtures):
+        """SQL injection payload text should be preserved verbatim as content."""
         User, Post, _ = blog_fixtures
         user = _create_user(User)
         content, _ = _create_injection_payload_post(Post, user.id)
         _assert_injection_payloads_preserved(Post, content)
 
     def test_multilingual_text_preserved_round_trip(self, blog_fixtures):
+        """Multilingual text in many scripts should be preserved verbatim."""
         User, Post, _ = blog_fixtures
         user = _create_user(User)
         _assert_multilingual_text_round_trip(Post)
 
     def test_unicode_json_fixture_json_field_round_trip(self, json_user_fixture):
+        """Unicode JSON fixture should preserve its JSON field through a round trip."""
         JsonUser = json_user_fixture
         json_content = _read_sample("unicode_multilingual.json")
         original_data = json.loads(json_content)
@@ -380,14 +392,14 @@ class TestLoggingDataSummarization:
         user.save()
 
         results = JsonUser.query().where(JsonUser.c.username == "unicode-json-user").all()
-        assert len(results) == 1
+        assert len(results) == 1, "query should return exactly one unicode JSON user"
         found = results[0]
 
         # Backends with native JSON types return dict/list; normalize for comparison
         retrieved = json.loads(_normalize_json_value(found.preferences))
-        assert retrieved == original_data
-        assert retrieved[0]["greetings"]["zh"] == "你好，世界！"
-        assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!"
+        assert retrieved == original_data, "retrieved JSON should match the original data"
+        assert retrieved[0]["greetings"]["zh"] == "你好，世界！", "Chinese greeting should be preserved"
+        assert retrieved[0]["greetings"]["ar"] == "مرحباً بالعالم!", "Arabic greeting should be preserved"
 
         prefs_str = _normalize_json_value(found.preferences)
         summary = _make_logging_config().summarize_data({"preferences": prefs_str})

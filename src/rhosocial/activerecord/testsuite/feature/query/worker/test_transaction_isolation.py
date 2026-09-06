@@ -401,13 +401,13 @@ class TestTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert result['success']
+            assert result['success'], "expected transfer to succeed"
 
             # Verify balances
             user1.refresh()
             user2.refresh()
-            assert user1.balance == 70.0
-            assert user2.balance == 80.0
+            assert user1.balance == 70.0, "expected user1 balance 70.0"
+            assert user2.balance == 80.0, "expected user2 balance 80.0"
         finally:
             user1.delete()
             user2.delete()
@@ -435,14 +435,14 @@ class TestTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert not result['success']
-            assert 'Insufficient balance' in result['error']
+            assert not result['success'], "expected transfer to fail"
+            assert 'Insufficient balance' in result['error'], "expected insufficient balance error"
 
             # Verify balances unchanged
             user1.refresh()
             user2.refresh()
-            assert user1.balance == 100.0
-            assert user2.balance == 50.0
+            assert user1.balance == 100.0, "expected user1 balance unchanged"
+            assert user2.balance == 50.0, "expected user2 balance unchanged"
         finally:
             user1.delete()
             user2.delete()
@@ -491,7 +491,7 @@ class TestTransactionIsolation:
             )
 
             # Total should equal initial 1000
-            assert source.balance + total_target == 1000.0
+            assert source.balance + total_target == 1000.0, "expected total balance conserved"
 
         finally:
             source.delete()
@@ -522,11 +522,11 @@ class TestTransactionIsolation:
                     conn_params
                 ).result(timeout=60)
 
-            assert result['success']
+            assert result['success'], "expected status update to succeed"
 
             # Verify status changed
             order.refresh()
-            assert order.status == 'completed'
+            assert order.status == 'completed', "expected status completed"
 
         finally:
             # Restore original status

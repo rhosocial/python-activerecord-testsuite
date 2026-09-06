@@ -12,36 +12,44 @@ class TestAsyncDerivedFieldBasic:
 
     async def test_derived_fields_registered(self, async_user_class):
         """Derived fields should be registered on the model."""
-        assert "display_name" in async_user_class.__derived_fields__
-        assert "language" in async_user_class.__derived_fields__
-        assert "theme" in async_user_class.__derived_fields__
+        assert "display_name" in async_user_class.__derived_fields__, \
+            "Expected 'display_name' to be a derived field"
+        assert "language" in async_user_class.__derived_fields__, \
+            "Expected 'language' to be a derived field"
+        assert "theme" in async_user_class.__derived_fields__, \
+            "Expected 'theme' to be a derived field"
 
     async def test_post_derived_fields_registered(self, async_post_class):
         """Post derived fields should be registered."""
-        assert "title_length" in async_post_class.__derived_fields__
-        assert "hotness" in async_post_class.__derived_fields__
+        assert "title_length" in async_post_class.__derived_fields__, \
+            "Expected 'title_length' to be a derived field"
+        assert "hotness" in async_post_class.__derived_fields__, \
+            "Expected 'hotness' to be a derived field"
 
     async def test_comment_derived_fields_registered(self, async_comment_class):
         """Comment derived fields should be registered."""
-        assert "body_length" in async_comment_class.__derived_fields__
-        assert "platform" in async_comment_class.__derived_fields__
+        assert "body_length" in async_comment_class.__derived_fields__, \
+            "Expected 'body_length' to be a derived field"
+        assert "platform" in async_comment_class.__derived_fields__, \
+            "Expected 'platform' to be a derived field"
 
     async def test_descriptor_class_access(self, async_user_class):
         """Class access should return DerivedField instance."""
         from rhosocial.activerecord.base import DerivedField
-        assert isinstance(async_user_class.display_name, DerivedField)
+        assert isinstance(async_user_class.display_name, DerivedField), \
+            "Expected display_name to be a DerivedField instance"
 
     async def test_descriptor_instance_default_none(self, async_user_class):
         """Instance should have None for derived fields by default."""
         user = async_user_class(name="Test", email="test@example.com")
-        assert user.display_name is None
-        assert user.language is None
+        assert user.display_name is None, "Expected derived field to be None by default"
+        assert user.language is None, "Expected derived field to be None by default"
 
     async def test_field_proxy_on_post(self, async_post_class):
         """Post should have FieldProxy that provides column access."""
-        assert hasattr(async_post_class, 'c')
-        assert hasattr(async_post_class.c, 'title')
-        assert hasattr(async_post_class.c, 'body')
+        assert hasattr(async_post_class, 'c'), "Expected post_class to expose a 'c' field accessor"
+        assert hasattr(async_post_class.c, 'title'), "Expected 'title' column access"
+        assert hasattr(async_post_class.c, 'body'), "Expected 'body' column access"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -51,8 +59,8 @@ class TestAsyncDerivedFieldBasic:
         await user.save()
 
         results = await async_user_class.find_all(derived=True)
-        assert len(results) == 1
-        assert results[0].display_name is not None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].display_name is not None, "Expected display_name to be computed"
 
     async def test_find_all_derived_list(self, async_user_class):
         """derived=[field] should return only specified fields."""
@@ -60,9 +68,9 @@ class TestAsyncDerivedFieldBasic:
         await user.save()
 
         results = await async_user_class.find_all(derived=["display_name"])
-        assert len(results) == 1
-        assert results[0].display_name is not None
-        assert results[0].language is None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].display_name is not None, "Expected display_name to be computed"
+        assert results[0].language is None, "Expected unspecified derived field to remain None"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -72,8 +80,8 @@ class TestAsyncDerivedFieldBasic:
         await user.save()
 
         result = await async_user_class.find_one(user.id, derived=True)
-        assert result is not None
-        assert result.display_name is not None
+        assert result is not None, "Expected the user record to be found"
+        assert result.display_name is not None, "Expected display_name to be computed"
 
     async def test_find_all_derived_false_default(self, async_user_class):
         """Default (no derived) should not return derived fields."""
@@ -81,8 +89,8 @@ class TestAsyncDerivedFieldBasic:
         await user.save()
 
         results = await async_user_class.find_all()
-        assert len(results) == 1
-        assert results[0].display_name is None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].display_name is None, "Expected derived field to be None by default"
 
     async def test_title_length_derived(self, async_user_post_comment_classes):
         """title_length should compute correctly."""
@@ -94,8 +102,8 @@ class TestAsyncDerivedFieldBasic:
         await post.save()
 
         results = await post_class.find_all(derived=["title_length"])
-        assert len(results) == 1
-        assert results[0].title_length == 11
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title_length == 11, "Expected title_length to be 11"
 
     async def test_hotness_derived(self, async_user_post_comment_classes):
         """hotness should compute correctly."""
@@ -107,8 +115,8 @@ class TestAsyncDerivedFieldBasic:
         await post.save()
 
         results = await post_class.find_all(derived=["hotness"])
-        assert len(results) == 1
-        assert results[0].hotness == 43
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].hotness == 43, "Expected hotness to be 43"
 
     async def test_body_length_derived(self, async_user_post_comment_classes):
         """body_length should compute correctly."""
@@ -123,8 +131,8 @@ class TestAsyncDerivedFieldBasic:
         await comment.save()
 
         results = await comment_class.find_all(derived=["body_length"])
-        assert len(results) == 1
-        assert results[0].body_length == 17
+        assert len(results) == 1, "Expected 1 comment record to be found"
+        assert results[0].body_length == 17, "Expected body_length to be 17"
 
 
 class TestAsyncDerivedFieldWithProxy:
@@ -140,6 +148,6 @@ class TestAsyncDerivedFieldWithProxy:
         await post.save()
 
         results = await post_class.find_all(derived=["title_length"])
-        assert results[0].title_length == 10
+        assert results[0].title_length == 10, "Expected title_length to be 10"
 
 

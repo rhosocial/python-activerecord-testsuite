@@ -55,7 +55,7 @@ class TestAsyncSetOperations:
         except (AttributeError, TypeError):
             # If union method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_intersect_operation(self, async_order_fixtures):
@@ -102,7 +102,7 @@ class TestAsyncSetOperations:
         except (AttributeError, TypeError):
             # If intersect method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_except_operation(self, async_order_fixtures):
@@ -149,7 +149,7 @@ class TestAsyncSetOperations:
         except (AttributeError, TypeError):
             # If except method doesn't exist or is incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_multiple_set_operations(self, async_order_fixtures):
@@ -198,7 +198,7 @@ class TestAsyncSetOperations:
         except (AttributeError, TypeError):
             # If set operations don't exist or are incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     async def test_set_operations_backend_consistency(self, async_order_fixtures):
         """
@@ -228,12 +228,12 @@ class TestAsyncSetOperations:
             union_query = AsyncSetOperationQuery(query1, query2, "UNION")
 
             # Verify both operands use same backend
-            assert query1.backend() == query2.backend()
-            assert union_query.left.backend() == union_query.right.backend()
+            assert query1.backend() == query2.backend(), "expected same backend"
+            assert union_query.left.backend() == union_query.right.backend(), "expected same backend"
         except (AttributeError, TypeError):
             # If set operations don't exist or are incompatible, at least verify basic functionality works
             basic_results = await AsyncOrder.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     async def test_set_operation_union_method(self, async_order_fixtures):
         """
@@ -257,8 +257,8 @@ class TestAsyncSetOperations:
 
         # Test union method
         union_result = initial_async_set_op.union(query3)
-        assert isinstance(union_result, AsyncSetOperationQuery)
-        assert union_result.operation == "UNION"
+        assert isinstance(union_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert union_result.operation == "UNION", "expected operation to be UNION"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_set_operation_intersect_method(self, async_order_fixtures):
@@ -283,8 +283,8 @@ class TestAsyncSetOperations:
 
         # Test intersect method
         intersect_result = initial_async_set_op.intersect(query3)
-        assert isinstance(intersect_result, AsyncSetOperationQuery)
-        assert intersect_result.operation == "INTERSECT"
+        assert isinstance(intersect_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert intersect_result.operation == "INTERSECT", "expected operation to be INTERSECT"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_set_operation_except_method(self, async_order_fixtures):
@@ -309,8 +309,8 @@ class TestAsyncSetOperations:
 
         # Test except_ method
         except_result = initial_async_set_op.except_(query3)
-        assert isinstance(except_result, AsyncSetOperationQuery)
-        assert except_result.operation == "EXCEPT"
+        assert isinstance(except_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert except_result.operation == "EXCEPT", "expected operation to be EXCEPT"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -336,18 +336,18 @@ class TestAsyncSetOperations:
 
         # Test union operator (__or__)
         union_result = initial_async_set_op | query3
-        assert isinstance(union_result, AsyncSetOperationQuery)
-        assert union_result.operation == "UNION"
+        assert isinstance(union_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert union_result.operation == "UNION", "expected operation to be UNION"
 
         # Test intersect operator (__and__)
         intersect_result = initial_async_set_op & query3
-        assert isinstance(intersect_result, AsyncSetOperationQuery)
-        assert intersect_result.operation == "INTERSECT"
+        assert isinstance(intersect_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert intersect_result.operation == "INTERSECT", "expected operation to be INTERSECT"
 
         # Test except operator (__sub__)
         except_result = initial_async_set_op - query3
-        assert isinstance(except_result, AsyncSetOperationQuery)
-        assert except_result.operation == "EXCEPT"
+        assert isinstance(except_result, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert except_result.operation == "EXCEPT", "expected operation to be EXCEPT"
 
     async def test_set_operation_with_invalid_operation_type(self, async_order_fixtures):
         """
@@ -366,8 +366,8 @@ class TestAsyncSetOperations:
         # Create AsyncSetOperationQuery with an invalid operation type
         # This should work but might cause issues later when generating SQL
         async_set_op_query = AsyncSetOperationQuery(query1, query2, "INVALID_OP")
-        assert async_set_op_query is not None
-        assert async_set_op_query.operation == "INVALID_OP"
+        assert async_set_op_query is not None, "expected async_set_op_query to be created"
+        assert async_set_op_query.operation == "INVALID_OP", "expected operation to be INVALID_OP"
 
     async def test_active_query_union_method(self, async_order_fixtures):
         """
@@ -387,10 +387,10 @@ class TestAsyncSetOperations:
         union_query = query1.union(query2)
 
         # Verify it returns an AsyncSetOperationQuery
-        assert isinstance(union_query, AsyncSetOperationQuery)
-        assert union_query.operation == "UNION"
-        assert union_query.left == query1
-        assert union_query.right == query2
+        assert isinstance(union_query, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert union_query.operation == "UNION", "expected operation to be UNION"
+        assert union_query.left == query1, "expected left operand query1"
+        assert union_query.right == query2, "expected right operand query2"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     async def test_active_query_intersect_method(self, async_order_fixtures):
@@ -411,10 +411,10 @@ class TestAsyncSetOperations:
         intersect_query = query1.intersect(query2)
 
         # Verify it returns an AsyncSetOperationQuery
-        assert isinstance(intersect_query, AsyncSetOperationQuery)
-        assert intersect_query.operation == "INTERSECT"
-        assert intersect_query.left == query1
-        assert intersect_query.right == query2
+        assert isinstance(intersect_query, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert intersect_query.operation == "INTERSECT", "expected operation to be INTERSECT"
+        assert intersect_query.left == query1, "expected left operand query1"
+        assert intersect_query.right == query2, "expected right operand query2"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     async def test_active_query_except_method(self, async_order_fixtures):
@@ -435,10 +435,10 @@ class TestAsyncSetOperations:
         except_query = query1.except_(query2)
 
         # Verify it returns an AsyncSetOperationQuery
-        assert isinstance(except_query, AsyncSetOperationQuery)
-        assert except_query.operation == "EXCEPT"
-        assert except_query.left == query1
-        assert except_query.right == query2
+        assert isinstance(except_query, AsyncSetOperationQuery), "expected AsyncSetOperationQuery"
+        assert except_query.operation == "EXCEPT", "expected operation to be EXCEPT"
+        assert except_query.left == query1, "expected left operand query1"
+        assert except_query.right == query2, "expected right operand query2"
 
     async def test_mixed_sync_async_set_operations_should_fail(self, async_order_fixtures):
         """Test that mixing sync and async queries raises TypeError."""

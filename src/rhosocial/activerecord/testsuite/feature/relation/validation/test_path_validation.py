@@ -18,28 +18,32 @@ class TestInvalidRelationPath:
         query = user_class.query()
         with pytest.raises(InvalidRelationPathError) as exc_info:
             query.with_("")
-        assert "cannot be empty" in str(exc_info.value)
+        assert "cannot be empty" in str(exc_info.value), \
+            "Expected error message about empty path"
 
     def test_leading_dot(self, user_class):
         """Path with leading dot should raise InvalidRelationPathError."""
         query = user_class.query()
         with pytest.raises(InvalidRelationPathError) as exc_info:
             query.with_(".posts")
-        assert "cannot start with a dot" in str(exc_info.value)
+        assert "cannot start with a dot" in str(exc_info.value), \
+            "Expected error message about leading dot"
 
     def test_trailing_dot(self, user_class):
         """Path with trailing dot should raise InvalidRelationPathError."""
         query = user_class.query()
         with pytest.raises(InvalidRelationPathError) as exc_info:
             query.with_("posts.")
-        assert "cannot end with a dot" in str(exc_info.value)
+        assert "cannot end with a dot" in str(exc_info.value), \
+            "Expected error message about trailing dot"
 
     def test_consecutive_dots(self, user_class):
         """Path with consecutive dots should raise InvalidRelationPathError."""
         query = user_class.query()
         with pytest.raises(InvalidRelationPathError) as exc_info:
             query.with_("posts..comments")
-        assert "cannot contain consecutive dots" in str(exc_info.value)
+        assert "cannot contain consecutive dots" in str(exc_info.value), \
+            "Expected error message about consecutive dots"
 
     def test_multiple_invalid_paths(self, user_class):
         """Multiple invalid paths should raise on the first one."""
@@ -55,15 +59,16 @@ class TestRelationPathAnalysis:
         """Valid path should return correct parts and configs."""
         query = user_class.query()
         parts, configs = query.analyze_relation_path("posts.comments")
-        assert parts == ["posts", "comments"]
-        assert configs == ["posts", "posts.comments"]
+        assert parts == ["posts", "comments"], "Expected parts to be posts and comments"
+        assert configs == ["posts", "posts.comments"], \
+            "Expected configs to be posts and posts.comments"
 
     def test_analyze_relation_path_single(self, user_class):
         """Single-level path should return single part."""
         query = user_class.query()
         parts, configs = query.analyze_relation_path("posts")
-        assert parts == ["posts"]
-        assert configs == ["posts"]
+        assert parts == ["posts"], "Expected parts to be a single 'posts' entry"
+        assert configs == ["posts"], "Expected configs to be a single 'posts' entry"
 
 
 class TestRelationNotFound:

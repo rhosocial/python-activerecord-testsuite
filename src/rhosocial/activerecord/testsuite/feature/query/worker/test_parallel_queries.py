@@ -318,7 +318,7 @@ class TestParallelQueries:
             results = [f.result(timeout=60) for f in futures]
 
         # All counts should return the same value
-        assert len(set(results)) == 1
+        assert len(set(results)) == 1, "expected all counts to be equal"
 
     def test_parallel_order_queries_by_user(self, order_fixtures_for_worker):
         """Test parallel queries for orders by user."""
@@ -340,8 +340,8 @@ class TestParallelQueries:
             results = [f.result(timeout=60) for f in futures]
 
         # Verify results structure
-        assert len(results) == len(user_ids)
-        assert all(isinstance(r, list) for r in results)
+        assert len(results) == len(user_ids), "expected results for each user"
+        assert all(isinstance(r, list) for r in results), "expected list results"
 
     def test_parallel_aggregate_queries(self, order_fixtures_for_worker):
         """Test parallel aggregate queries."""
@@ -362,8 +362,8 @@ class TestParallelQueries:
         # All aggregate results should be consistent
         totals = {r['total'] for r in results}
         counts = {r['count'] for r in results}
-        assert len(totals) == 1
-        assert len(counts) == 1
+        assert len(totals) == 1, "expected consistent totals"
+        assert len(counts) == 1, "expected consistent counts"
 
     def test_parallel_order_item_queries(self, order_fixtures_for_worker):
         """Test parallel queries for order items."""
@@ -384,4 +384,4 @@ class TestParallelQueries:
             ]
             results = [f.result(timeout=60) for f in futures]
 
-        assert len(results) == len(order_ids)
+        assert len(results) == len(order_ids), "expected results for each order"

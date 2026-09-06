@@ -1,4 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/async_cte_models.py
+"""Async model fixtures for CTE query feature tests."""
+
 from decimal import Decimal
 from typing import Optional, ClassVar
 
