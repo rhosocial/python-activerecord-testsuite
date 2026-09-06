@@ -28,14 +28,14 @@ from rhosocial.activerecord.model import ActiveRecord
 
 class IQueryProvider(ABC):
     """查询功能测试的提供者接口。"""
-    
+
     @abstractmethod
     def get_test_scenarios(self) -> List[str]:
-        """返回可用的测试场景（例如，'local', 'docker'）。"""
+        """返回可用的测试场景（例如，'sqlite_memory', 'mysql_80'）。"""
         pass
-    
+
     @abstractmethod
-    def setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+    def setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
         """
         设置订单相关模型 (User, Order, OrderItem)。
 
@@ -43,200 +43,128 @@ class IQueryProvider(ABC):
             (User, Order, OrderItem) 模型类的元组
         """
         pass
-    
+
     @abstractmethod
-    def setup_tree_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord]]:
+    def teardown_order_fixtures(self, scenario_name: str) -> None:
+        """拆除订单相关夹具（断开连接、删除表）。"""
+        pass
+
+    @abstractmethod
+    async def async_setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
         """
-        设置树结构模型 (Node)。
+        异步设置订单相关模型。
 
         返回:
-            包含 (Node,) 的单元素元组
+            (AsyncUser, AsyncOrder, AsyncOrderItem) 模型类的元组
         """
         pass
-    
+
     @abstractmethod
-    def cleanup_after_test(self, scenario_name: str):
-        """测试执行后清理。"""
+    async def async_teardown_order_fixtures(self, scenario_name: str) -> None:
+        """异步拆除订单相关夹具。"""
         pass
 ```
+
+设置与拆除钩子以**成对**方法声明，同步与异步 API 分别声明：
+`setup_*_fixtures` / `teardown_*_fixtures` 以及 `async_setup_*_fixtures` /
+`async_teardown_*_fixtures`。只支持一侧的后端实现对应的一对，另一对保持
+`@abstractmethod`（其 conftest 则只导入受支持的文件）。
 
 ### 后端驱动和命名空间
 
-在配置之前，了解后端是如何加载的非常重要：
+后端通过**provider 注册表**被发现，而非由测试套件的默认配置加载器硬编码：
 
-- **官方后端**：由 `rhosocial` 发布的后端安装在 `rhosocial.activerecord.backend.impl` 命名空间下（例如，`...impl.mysql`）。测试套件的默认配置加载器知道如何找到这些后端。
-- **第三方后端**：如果您正在开发第三方后端，它应该位于自己的命名空间中（例如，`acme_corp.activerecord.backend.impl.acme_db`）。要使测试套件识别您的驱动，您需要注册它，通常使用 Python 的 `entry_points` 机制在您的包的 `pyproject.toml` 中进行。
+- 后端在 `tests/providers/registry.py` 中注册其 provider 类。
+- 测试套件通过 `TESTSUITE_PROVIDER_REGISTRY` 环境变量定位该注册表
+  （测试套件的 `conftest.py` 将其默认设为 `providers.registry:provider_registry`，
+  后端可在自身 `tests/conftest.py` 中覆盖它）。
 
 ### 必需的后端接口
 
-每个后端必须实现以下接口以与测试套件正确配合：
-
-- **Schema 提供者接口**：根据测试要求创建和管理数据库schema。
-- **夹具 提供者接口**：根据测试规范提供测试夹具。
-- **配置 提供者接口**：处理后端特定的配置选项。
+每个后端必须针对每个主题实现该主题 `interfaces.py` 中定义的 provider 接口
+（schema 创建、夹具生成和配置均属于同一 provider 合约）。该合约是成对的：
+同步为 `setup_*_fixtures` / `teardown_*_fixtures`，异步为
+`async_setup_*_fixtures` / `async_teardown_*_fixtures`。
 
 ### 内置 SQLite 支持
 
-测试套件包含对 `rhosocial-activerecord` 附带的 `sqlite` 后端的内置支持。配置由您用于运行测试的 Python 版本决定。
+测试套件包含对 `rhosocial-activerecord` 附带的 `sqlite` 后端的内置支持。
+SQLite 是参考后端：它提供 provider 实现、场景集合和模型夹具，供其他后端参照。
 
-- **自动检测**：默认情况下，测试套件会检测当前的 Python 版本（例如，3.11）并针对其相应的 SQLite 版本运行测试（例如，`sqlite_py311_mem` 和 `sqlite_py311_file`）。
-- **CI/CD 覆盖**：您可以通过设置 `PYTEST_TARGET_VERSION` 环境变量来强制测试针对特定 Python 版本的配置运行。例如：
-    ```bash
-    PYTEST_TARGET_VERSION=3.10 pytest
-    ```
+### Provider 注册表与场景
 
-### SQLite 测试场景
-
-`rhosocial-activerecord` 的 SQLite 后端支持多种预定义的测试场景，可以通过环境变量激活。这些场景允许测试 SQLite 的不同操作模式和性能特征。
-
-- **`memory`**：默认且最快的场景，使用内存中的 SQLite 数据库。此场景始终处于活动状态。
-- **`tempfile`**：使用磁盘上的临时文件作为数据库。对于需要数据库持久性的测试功能非常有用。通过设置 `TEST_SQLITE_FILE=true` 激活。
-- **`debug`**：一个内存中的数据库，通过日志配置启用 SQL 回显，用于调试目的。通过设置 `TEST_SQLITE_DEBUG=true` 激活。
-- **`performance`**：一个内存中的数据库，配置了优化的 PRAGMA 设置，用于性能测试。通过设置 `TEST_SQLITE_PERFORMANCE=true` 激活。
-- **`concurrent`**：使用基于文件的数据库，启用 WAL（Write-Ahead Logging）模式，用于并发测试。通过设置 `TEST_SQLITE_CONCURRENT=true` 激活。
-
-您可以通过同时设置相应的环境变量来启用多个场景。例如：
+测试套件通过 **provider 注册表** 将自身与任何特定后端解耦。后端通过注册表模块暴露其 provider 实现，测试套件通过 `TESTSUITE_PROVIDER_REGISTRY` 环境变量定位它（测试套件的 `conftest.py` 默认将其设为 `providers.registry:provider_registry`）。
 
 ```bash
-export TEST_SQLITE_FILE=true
-export TEST_SQLITE_DEBUG=true
-export TEST_SQLITE_PERFORMANCE=true
-export TEST_SQLITE_CONCURRENT=true
-pytest
+export TESTSUITE_PROVIDER_REGISTRY='tests.providers.registry:provider_registry'
 ```
 
-或者，您可以使用 `--test-scenarios` pytest 选项指定要运行的场景：
+每个 provider 通过 `get_test_scenarios()` 声明一个或多个**场景**（如 `sqlite_memory`、`mysql_80`、`firebird_5`）。测试会跨已注册的场景进行参数化。`--scenarios` pytest 选项可选择其中一部分：
 
 ```bash
-pytest --test-scenarios="memory,debug"
+pytest --scenarios=sqlite_memory,mysql_80
 ```
 
 ### 自定义后端配置
 
-要测试您自己的后端（或其他可选后端，如 MySQL、PostgreSQL），您需要配置连接详细信息。这可以通过使用环境变量来完成。
+要测试您自己的后端，您需要编写一个实现主题接口的 provider，并在后端的 `tests/providers/registry.py` 中注册它。连接详情（主机、端口、凭据、数据库）放在您的 provider 内部，而不再放在测试套件中。然后 `--scenarios` 选项选择要运行的场景。
 
-#### 使用环境变量（推荐）
+相关 conftest 选项：
 
-您可以通过在执行 `pytest` 的 shell 中设置一系列环境变量来定义一个或多个测试目标。使用数字后缀（`_1`、`_2` 等）来区分不同的配置。
-
-例如，要定义一个名为 `mysql_ci` 的测试目标：
-```bash
-export AR_TEST_BACKEND_NAME_1=mysql_ci
-export AR_TEST_BACKEND_DRIVER_1=mysql
-export AR_TEST_BACKEND_HOST_1=127.0.0.1
-export AR_TEST_BACKEND_PORT_1=3306
-export AR_TEST_BACKEND_USER_1=root
-export AR_TEST_BACKEND_PASSWORD_1=password
-export AR_TEST_BACKEND_DATABASE_1=test_db
-```
+- `--scenarios=<list>` — 要运行的逗号分隔场景名列表。
+- `--scenarios-parallel` / `--no-scenarios-parallel` — 是否将同一测试的场景变体分布到 `pytest-xdist` worker 上（默认 `True`）。
+- `--db-pool-size=<n>` — 每个场景预备的 `test_db_*` 数据库池大小（默认为 worker 数量；`0` 禁用池）。
+- `--serial-group=<name>` — 用于固定串行测试的 `xdist_group` 名称。
 
 ## [2. 基于能力的测试选择](#2-基于能力的测试选择)
 
 ### 概述
 
-能力协商机制使用两级层次结构：
+后端特有的、并非每个数据库都通用的能力，通过**恰好两个**通用的 pytest 装饰器表达，二者均定义在 `rhosocial.activerecord.testsuite.utils`：
 
-1. **能力类别** (CapabilityCategory)：顶级分组，如 CTE、WINDOW_FUNCTIONS
-2. **特定能力**：每个类别中的单个功能
+| 装饰器 | 标记 | 捕获 |
+|-----------|--------|----------|
+| `requires_protocol(ProtocolClass, method_name=None)` | `requires_protocol` | 由方言上的 Protocol 类表达的能力（可选特定 `supports_*` 方法）。 |
+| `requires_functions(*fn_names)` | `requires_functions` | 由方言的 `supports_functions(...)` 接受的 SQL 函数名表达的能力。 |
 
-### 能力建筑
+二者都会展开为单个 pytest 标记；运行时跳过逻辑位于主题级 `conftest.py` 文件中，通过 `request.node.get_closest_marker(...)` 读取标记。当所需能力不受支持时，测试在该后端上被**跳过**而非失败。
+
+**不要**引入每个功能的别名标记（如 `requires_partition`、`requires_cte`、`requires_json`）。这两个通用装饰器是代码库中唯一的能力标记。
+
+### 声明 Protocol 类要求
 
 ```python
-# 能力层次结构
-CapabilityCategory.CTE                    # 类别
-    ├── CTECapability.BASIC_CTE          # 特定能力
-    ├── CTECapability.RECURSIVE_CTE      # 特定能力
-    └── CTECapability.MATERIALIZED_CTE   # 特定能力
+from rhosocial.activerecord.backend.dialect.protocols import WindowFunctionSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 
-CapabilityCategory.WINDOW_FUNCTIONS       # 类别
-    ├── WindowFunctionCapability.ROW_NUMBER
-    ├── WindowFunctionCapability.RANK
-    └── WindowFunctionCapability.LAG
+# 协议级要求（任意支持）
+@requires_protocol(WindowFunctionSupport)
+def test_window_functions(order_fixtures):
+    """测试需要窗口函数支持。"""
+    pass
 
-# 预定义组合
-ALL_CTE_FEATURES = (
-    CTECapability.BASIC_CTE |
-    CTECapability.RECURSIVE_CTE |
-    CTECapability.COMPOUND_RECURSIVE_CTE |
-    CTECapability.CTE_IN_DML |
-    CTECapability.MATERIALIZED_CTE
-)
+# 特定方法要求
+@requires_protocol(WindowFunctionSupport, "supports_window_functions")
+def test_window_functions(order_fixtures):
+    """测试需要 supports_window_functions 能力。"""
+    pass
 ```
 
-### 后端能力声明
+### 声明 SQL 函数要求
 
 ```python
-# 后端声明其能力
-# src/rhosocial/activerecord/backend/impl/sqlite/backend.py
-from rhosocial.activerecord.backend.capabilities import (
-    DatabaseCapabilities,
-    CapabilityCategory,
-    CTECapability,
-    WindowFunctionCapability,
-    ALL_CTE_FEATURES,
-    ALL_WINDOW_FUNCTIONS
-)
+from rhosocial.activerecord.testsuite.utils import requires_functions
 
-class SQLiteBackend(StorageBackend):
-    def _initialize_capabilities(self):
-        """初始化并返回后端的能力描述符。"""
-        capabilities = DatabaseCapabilities()
-        version = self.get_server_version()
-
-        # CTEs 支持从 3.8.3+
-        if version >= (3, 8, 3):
-            # 添加特定能力
-            capabilities.add_cte([
-                CTECapability.BASIC_CTE,
-                CTECapability.RECURSIVE_CTE
-            ])
-            # 这会自动添加 CapabilityCategory.CTE
-
-        # 窗口函数从 3.25.0+
-        if version >= (3, 25, 0):
-            # 使用预定义组合
-            capabilities.add_window_function(ALL_WINDOW_FUNCTIONS)
-
-        return capabilities
-```
-
-### 声明测试要求
-
-测试必须指定类别和特定能力：
-
-```python
-# 正确格式：(category, specific_capability)
-from rhosocial.activerecord.backend.capabilities import (
-    CapabilityCategory,
-    CTECapability
-)
-from rhosocial.activerecord.testsuite.utils import requires_capabilities
-
-# 单个能力要求
-@requires_capabilities((CapabilityCategory.CTE, CTECapability.BASIC_CTE))
-def test_basic_cte(order_fixtures):
-    """测试需要基本CTE支持。"""
+# 单个函数要求
+@requires_functions('json_array_insert')
+def test_json_insert(json_fixtures):
+    """测试需要 json_array_insert SQL 函数。"""
     pass
 
-# 同一类别中的多个能力
-@requires_capabilities((CapabilityCategory.CTE, [CTECapability.BASIC_CTE, CTECapability.RECURSIVE_CTE]))
-def test_recursive_cte(tree_fixtures):
-    """测试需要基本和递归CTE。"""
-    pass
-
-# 不同类别中的多个能力
-@requires_capabilities(
-    (CapabilityCategory.CTE, CTECapability.RECURSIVE_CTE),
-    (CapabilityCategory.WINDOW_FUNCTIONS, WindowFunctionCapability.ROW_NUMBER)
-)
-def test_complex_query(order_fixtures):
-    """测试需要递归CTE和窗口函数。"""
-    pass
-
-# 仅类别检查（类别中的任何能力）
-@requires_capabilities((CapabilityCategory.JSON_OPERATIONS, None))
-def test_json_support(json_user_fixtures):
-    """测试需要任何JSON操作支持。"""
+# 多个函数要求（必须全部受支持）
+@requires_functions('json_array_insert', 'jsonb_array_insert')
+def test_json_operations(json_fixtures):
+    """测试需要多个 JSON SQL 函数。"""
     pass
 ```
 
@@ -245,72 +173,39 @@ def test_json_support(json_user_fixtures):
 ```mermaid
 sequenceDiagram
     participant Test as 测试函数
-    participant Decorator as @requires_capabilities
-    participant Fixture as order_fixtures
-    participant Backend as 数据库后端
-    participant Caps as DatabaseCapabilities
+    participant Marker as @requires_protocol / @requires_functions
+    participant Conftest as 主题 conftest.py
+    participant Dialect as 后端方言
     
-    Test->>Decorator: 执行测试
-    Decorator->>Fixture: 提取模型类
-    Fixture->>Decorator: 返回 (User, Order, OrderItem)
-    Decorator->>Backend: 从User获取后端
-    Backend->>Caps: 查询能力
+    Test->>Marker: 收集（附加标记）
+    Conftest->>Dialect: 检查方言 Protocol / supports_functions()
+    Dialect-->>Conftest: True / False
     
-    alt 类别检查
-        Decorator->>Caps: supports_category(category)
-        Caps-->>Decorator: True/False
-    else 特定能力检查
-        Decorator->>Caps: supports_cte(CTECapability.RECURSIVE_CTE)
-        Caps-->>Decorator: True/False
-    end
-    
-    alt 能力支持
-        Decorator->>Test: 继续测试
-    else 能力不支持
-        Decorator->>Test: pytest.skip(reason)
+    alt 能力受支持
+        Conftest->>Test: 继续测试
+    else 能力不受支持
+        Conftest->>Test: pytest.skip(reason)
     end
 ```
 
 ### 运行时 vs 收集时检查
 
-**收集时检查** (在 conftest.py 中)：
-- 更快 - 在测试执行前检查能力
-- 需要在收集阶段访问后端
-- 如果后端初始化开销大，可能需要变通方法
-- 如果在设置期间尝试访问夹具，可能会引起问题
+能力检查在**运行时**进行，即 provider 配置后端之后，因为后端能力只有在 provider 配置的模型针对某一场景绑定到实时后端之后才可用。
 
-**运行时检查** (在测试或装饰器中)：
-- 更慢 - 在测试执行时检查能力
-- 始终准确 - 使用实际配置的后端
-- 推荐用于动态能力场景
-- 使用 `pytest_runtest_call` 钩子访问包含已解析夹具的 `item.funcargs`
-
-**常见问题及解决方案：**
-如果在 `pytest_runtest_setup` 中执行能力检查并尝试访问夹具，可能会引起如下问题：
-`AssertionError: (<Function test_func[memory]>, {})` - 这是在测试设置期间尝试访问夹具时发生的。
-将能力检查移到 `pytest_runtest_call` 并通过 `item.funcargs` 访问夹具，而不是使用 `request.getfixturevalue()`。
+- 主题级 `conftest.py` 在测试执行期间读取标记
+  (`request.node.get_closest_marker(...)`)，并内联跳过测试。
+- 优先将标记作为「此测试需要能力 X」的**单一事实来源**。不要同时在测试体中再次检查 `supports_X()`；内联 `pytest.skip` 仅用于场景本地条件。
 
 ### 夹具 vs 原始对象访问模式
 
 **复合夹具返回模式：**
-当夹具返回模型元组（如 `order_fixtures` 返回 `(User, Order, OrderItem)`）但测试期望元组时：
-- 测试代码可能使用：`Node = tree_fixtures[0]`
-- 但夹具返回原始对象：`yield Node` 而不是 `yield (Node,)`
-- 这导致错误：`TypeError: cannot be parametrized because it does not inherit from typing.Generic`
-- 解决方案：如果测试代码期望元组索引，请确保夹具返回元组
+当夹具返回模型元组（如 `order_fixtures` 返回 `(User, Order, OrderItem)`）时，provider 的 `setup_*_fixtures` 方法即对于单个模型也必须返回元组，以便测试代码可以一致地索引它。
 
-**正确的夹具实现：**
+provider 方法因此应始终返回元组：
+
 ```python
-# 如果测试使用 tree_fixtures[0]，返回元组
-@pytest.fixture
-def tree_fixtures(request):
-    # 通过夹具组获取测试的Node模型
-    result = provider.setup_tree_fixtures(scenario)
-    
-    # 确保我们返回元组以与测试期望保持一致
-    if isinstance(result, tuple):
-        yield result
-    else:
-        # 如果只返回单个模型，将其包装在元组中
-        yield (result,)
+# 正确 — 始终是元组，即使对于单个模型
+def setup_tree_fixtures(self, scenario):
+    Node = self._configure_node(scenario)
+    return (Node,)
 ```

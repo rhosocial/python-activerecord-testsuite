@@ -28,14 +28,14 @@ from rhosocial.activerecord.model import ActiveRecord
 
 class IQueryProvider(ABC):
     """Provider interface for query feature tests."""
-    
+
     @abstractmethod
     def get_test_scenarios(self) -> List[str]:
-        """Return available test scenarios (e.g., 'local', 'docker')."""
+        """Return available test scenarios (e.g., 'sqlite_memory', 'mysql_80')."""
         pass
-    
+
     @abstractmethod
-    def setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], Type[ActiveRecord], Type[ActiveRecord]]:
+    def setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
         """
         Setup order-related models (User, Order, OrderItem).
 
@@ -43,200 +43,154 @@ class IQueryProvider(ABC):
             Tuple of (User, Order, OrderItem) model classes
         """
         pass
-    
+
     @abstractmethod
-    def setup_tree_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord]]:
+    def teardown_order_fixtures(self, scenario_name: str) -> None:
+        """Tear down order-related fixtures (disconnect, drop tables)."""
+        pass
+
+    @abstractmethod
+    async def async_setup_order_fixtures(self, scenario_name: str) -> Tuple[Type[ActiveRecord], ...]:
         """
-        Setup tree structure model (Node).
+        Async setup of order-related models.
 
         Returns:
-            Single-element tuple containing (Node,)
+            Tuple of (AsyncUser, AsyncOrder, AsyncOrderItem) model classes
         """
         pass
-    
+
     @abstractmethod
-    def cleanup_after_test(self, scenario_name: str):
-        """Cleanup after test execution."""
+    async def async_teardown_order_fixtures(self, scenario_name: str) -> None:
+        """Async teardown of order-related fixtures."""
         pass
 ```
+
+Setup and teardown hooks are declared as **paired** methods, separately for
+the sync and async APIs: `setup_*_fixtures` / `teardown_*_fixtures` and
+`async_setup_*_fixtures` / `async_teardown_*_fixtures`. A backend that only
+supports one side implements the corresponding pair and leaves the other pair
+`@abstractmethod` (its conftest then imports only the supported files).
 
 ### Backend Drivers and Namespaces
 
-Before configuring, it's important to understand how backends are loaded:
+Backends are discovered through the **provider registry**, not hard-coded by
+the test suite:
 
-- **Official Backends**: Backends released by `rhosocial` are installed under the `rhosocial.activerecord.backend.impl` namespace (e.g., `...impl.mysql`). The test suite's default configuration loader knows how to find these.
-- **Third-Party Backends**: If you are developing a third-party backend, it should reside in its own namespace (e.g., `acme_corp.activerecord.backend.impl.acme_db`). To make the test suite aware of your driver, you would need to register it, typically using Python's `entry_points` mechanism in your package's `pyproject.toml`.
+- A backend registers its provider classes in `tests/providers/registry.py`.
+- The test suite locates that registry through the
+  `TESTSUITE_PROVIDER_REGISTRY` environment variable (the testsuite
+  `conftest.py` defaults it to `providers.registry:provider_registry`; a
+  backend may override it in its own `tests/conftest.py`).
 
 ### Required Backend Interfaces
 
-Each backend must implement the following interfaces to properly work with the test suite:
-
-- **Schema Provider Interface**: To create and manage database schemas per test requirements.
-- **Fixture Provider Interface**: To supply test fixtures according to test specifications.
-- **Configuration Provider Interface**: To handle backend-specific configuration options.
+Each backend must implement, per topic, the provider interface defined in that
+topic's `interfaces.py` (schema creation, fixture generation, and
+configuration are all part of the same provider contract). The contract is
+paired: `setup_*_fixtures` / `teardown_*_fixtures` for sync and
+`async_setup_*_fixtures` / `async_teardown_*_fixtures` for async.
 
 ### Built-in SQLite Support
 
-The test suite includes built-in support for testing the `sqlite` backend that ships with `rhosocial-activerecord`. The configurations are determined by the Python version you are using to run the tests.
+The test suite includes built-in support for testing the `sqlite` backend
+that ships with `rhosocial-activerecord`. SQLite is the reference backend:
+it provides the provider implementations, scenario set, and model fixtures
+that other backends mirror.
 
-- **Automatic Detection**: By default, the test suite detects the current Python version (e.g., 3.11) and runs tests against its corresponding SQLite version (e.g., `sqlite_py311_mem` and `sqlite_py311_file`).
-- **CI/CD Override**: You can force tests to run against a specific Python version's configuration by setting the `PYTEST_TARGET_VERSION` environment variable. For example:
-    ```bash
-    PYTEST_TARGET_VERSION=3.10 pytest
-    ```
+### Provider Registry and Scenarios
 
-### SQLite Test Scenarios
-
-The `rhosocial-activerecord` backend for SQLite supports several predefined test scenarios, which can be activated via environment variables. These scenarios allow for testing different operational modes and performance characteristics of SQLite.
-
-- **`memory`**: The default and fastest scenario, using an in-memory SQLite database. This is always active.
-- **`tempfile`**: Uses a temporary file on disk for the database. Useful for testing features that require database persistence. Activated by setting `TEST_SQLITE_FILE=true`.
-- **`debug`**: An in-memory database with SQL echoing enabled (via logging configuration) for debugging purposes. Activated by setting `TEST_SQLITE_DEBUG=true`.
-- **`performance`**: An in-memory database configured with optimized PRAGMA settings for performance testing. Activated by setting `TEST_SQLITE_PERFORMANCE=true`.
-- **`concurrent`**: Uses a file-based database with WAL (Write-Ahead Logging) mode enabled for concurrency testing. Activated by setting `TEST_SQLITE_CONCURRENT=true`.
-
-You can enable multiple scenarios simultaneously by setting their respective environment variables. For example:
+The testsuite decouples itself from any specific backend through a
+**provider registry**. A backend exposes its provider implementations via a
+registry module, and the testsuite locates it through the
+`TESTSUITE_PROVIDER_REGISTRY` environment variable (the testsuite `conftest.py`
+defaults it to `providers.registry:provider_registry`).
 
 ```bash
-export TEST_SQLITE_FILE=true
-export TEST_SQLITE_DEBUG=true
-export TEST_SQLITE_PERFORMANCE=true
-export TEST_SQLITE_CONCURRENT=true
-pytest
+export TESTSUITE_PROVIDER_REGISTRY='tests.providers.registry:provider_registry'
 ```
 
-Alternatively, you can specify which scenarios to run using the `--test-scenarios` pytest option:
+Each provider advertises one or more **scenarios** (e.g. `sqlite_memory`,
+`mysql_80`, `firebird_5`) via `get_test_scenarios()`. Tests are parametrized
+across the registered scenarios. The `--scenarios` pytest option selects a
+subset:
 
 ```bash
-pytest --test-scenarios="memory,debug"
+pytest --scenarios=sqlite_memory,mysql_80
 ```
 
 ### Custom Backend Configuration
 
-To test your own backend (or other optional backends like MySQL, PostgreSQL), you need to configure the connection details. This can be done using environment variables.
+To test your own backend, you write a provider that implements the topic
+interfaces and register it in your backend's `tests/providers/registry.py`.
+Connection details (host, port, credentials, database) live inside your
+provider, not in the testsuite. The `--scenarios` option then selects which of
+your scenarios to run.
 
-#### Using Environment Variables (Recommended)
+Related conftest options:
 
-You can define one or more test targets by setting a series of environment variables in the shell where `pytest` is executed. Use a numeric suffix (`_1`, `_2`, etc.) to distinguish between different configurations.
-
-For example, to define a test target named `mysql_ci`:
-```bash
-export AR_TEST_BACKEND_NAME_1=mysql_ci
-export AR_TEST_BACKEND_DRIVER_1=mysql
-export AR_TEST_BACKEND_HOST_1=127.0.0.1
-export AR_TEST_BACKEND_PORT_1=3306
-export AR_TEST_BACKEND_USER_1=root
-export AR_TEST_BACKEND_PASSWORD_1=password
-export AR_TEST_BACKEND_DATABASE_1=test_db
-```
+- `--scenarios=<list>` — comma-separated scenario names to run.
+- `--scenarios-parallel` / `--no-scenarios-parallel` — distribute scenario
+  variants of a test across `pytest-xdist` workers (`default: True`).
+- `--db-pool-size=<n>` — number of pooled `test_db_*` databases prepared per
+  scenario (defaults to the number of workers; `0` disables pooling).
+- `--serial-group=<name>` — `xdist_group` name used to pin serial tests.
 
 ## [2. Capability-Based Test Selection](#2-capability-based-test-selection)
 
 ### Overview
 
-The capability negotiation mechanism uses a two-level hierarchy:
+Backend-specific capabilities that are not universal across every database
+are expressed with exactly **two** generic pytest decorators, both defined in
+`rhosocial.activerecord.testsuite.utils`:
 
-1. **Capability Categories** (CapabilityCategory): Top-level groupings like CTE, WINDOW_FUNCTIONS
-2. **Specific Capabilities**: Individual features within each category
+| Decorator | Marker | Captures |
+|-----------|--------|----------|
+| `requires_protocol(ProtocolClass, method_name=None)` | `requires_protocol` | A capability expressed by a Protocol class on the dialect (optionally a specific `supports_*` method). |
+| `requires_functions(*fn_names)` | `requires_functions` | A capability expressed by SQL function name(s) the dialect's `supports_functions(...)` accepts. |
 
-### Capability Architecture
+Both expand to a single pytest marker; the runtime skip logic lives in
+topic-level `conftest.py` files, which read the markers via
+`request.node.get_closest_marker(...)`. When the required capability is not
+supported, the test is skipped — not failed — on that backend.
+
+Do **not** introduce per-feature alias markers (e.g. `requires_partition`,
+`requires_cte`, `requires_json`). The two generic decorators are the only
+capability markers in the codebase.
+
+### Declaring a Protocol-class requirement
 
 ```python
-# Capability hierarchy structure
-CapabilityCategory.CTE                    # Category
-    ├── CTECapability.BASIC_CTE          # Specific capability
-    ├── CTECapability.RECURSIVE_CTE      # Specific capability
-    └── CTECapability.MATERIALIZED_CTE   # Specific capability
+from rhosocial.activerecord.backend.dialect.protocols import WindowFunctionSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
 
-CapabilityCategory.WINDOW_FUNCTIONS       # Category
-    ├── WindowFunctionCapability.ROW_NUMBER
-    ├── WindowFunctionCapability.RANK
-    └── WindowFunctionCapability.LAG
+# Protocol-level requirement (any support)
+@requires_protocol(WindowFunctionSupport)
+def test_window_functions(order_fixtures):
+    """Test requires window function support."""
+    pass
 
-# Pre-defined combinations
-ALL_CTE_FEATURES = (
-    CTECapability.BASIC_CTE |
-    CTECapability.RECURSIVE_CTE |
-    CTECapability.COMPOUND_RECURSIVE_CTE |
-    CTECapability.CTE_IN_DML |
-    CTECapability.MATERIALIZED_CTE
-)
+# Specific method requirement
+@requires_protocol(WindowFunctionSupport, "supports_window_functions")
+def test_window_functions(order_fixtures):
+    """Test requires the supports_window_functions capability."""
+    pass
 ```
 
-### Backend Capability Declaration
+### Declaring a SQL-function requirement
 
 ```python
-# Backend declares its capabilities
-# src/rhosocial/activerecord/backend/impl/sqlite/backend.py
-from rhosocial.activerecord.backend.capabilities import (
-    DatabaseCapabilities,
-    CapabilityCategory,
-    CTECapability,
-    WindowFunctionCapability,
-    ALL_CTE_FEATURES,
-    ALL_WINDOW_FUNCTIONS
-)
+from rhosocial.activerecord.testsuite.utils import requires_functions
 
-class SQLiteBackend(StorageBackend):
-    def _initialize_capabilities(self):
-        """Initialize and return the backend's capability descriptor."""
-        capabilities = DatabaseCapabilities()
-        version = self.get_server_version()
-
-        # CTEs supported from 3.8.3+
-        if version >= (3, 8, 3):
-            # Add specific capabilities
-            capabilities.add_cte([
-                CTECapability.BASIC_CTE,
-                CTECapability.RECURSIVE_CTE
-            ])
-            # This automatically adds CapabilityCategory.CTE
-
-        # Window functions from 3.25.0+
-        if version >= (3, 25, 0):
-            # Use pre-defined combination
-            capabilities.add_window_function(ALL_WINDOW_FUNCTIONS)
-
-        return capabilities
-```
-
-### Declaring Test Requirements
-
-Tests must specify BOTH category AND specific capability:
-
-```python
-# Correct format: (category, specific_capability)
-from rhosocial.activerecord.backend.capabilities import (
-    CapabilityCategory,
-    CTECapability
-)
-from rhosocial.activerecord.testsuite.utils import requires_capabilities
-
-# Single capability requirement
-@requires_capabilities((CapabilityCategory.CTE, CTECapability.BASIC_CTE))
-def test_basic_cte(order_fixtures):
-    """Test requires basic CTE support."""
+# Single function requirement
+@requires_functions('json_array_insert')
+def test_json_insert(json_fixtures):
+    """Test requires the json_array_insert SQL function."""
     pass
 
-# Multiple capabilities from same category
-@requires_capabilities((CapabilityCategory.CTE, [CTECapability.BASIC_CTE, CTECapability.RECURSIVE_CTE]))
-def test_recursive_cte(tree_fixtures):
-    """Test requires both basic and recursive CTE."""
-    pass
-
-# Multiple capabilities from different categories
-@requires_capabilities(
-    (CapabilityCategory.CTE, CTECapability.RECURSIVE_CTE),
-    (CapabilityCategory.WINDOW_FUNCTIONS, WindowFunctionCapability.ROW_NUMBER)
-)
-def test_complex_query(order_fixtures):
-    """Test requires recursive CTE and window functions."""
-    pass
-
-# Category-only check (any capability in category)
-@requires_capabilities((CapabilityCategory.JSON_OPERATIONS, None))
-def test_json_support(json_user_fixtures):
-    """Test requires any JSON operation support."""
+# Multiple function requirements (all must be supported)
+@requires_functions('json_array_insert', 'jsonb_array_insert')
+def test_json_operations(json_fixtures):
+    """Test requires multiple JSON SQL functions."""
     pass
 ```
 
@@ -245,72 +199,46 @@ def test_json_support(json_user_fixtures):
 ```mermaid
 sequenceDiagram
     participant Test as Test Function
-    participant Decorator as @requires_capabilities
-    participant Fixture as order_fixtures
-    participant Backend as Database Backend
-    participant Caps as DatabaseCapabilities
+    participant Marker as @requires_protocol / @requires_functions
+    participant Conftest as topic conftest.py
+    participant Dialect as Backend Dialect
     
-    Test->>Decorator: Execute test
-    Decorator->>Fixture: Extract model class
-    Fixture->>Decorator: Return (User, Order, OrderItem)
-    Decorator->>Backend: Get backend from User
-    Backend->>Caps: Query capabilities
-    
-    alt Category Check
-        Decorator->>Caps: supports_category(category)
-        Caps-->>Decorator: True/False
-    else Specific Capability Check
-        Decorator->>Caps: supports_cte(CTECapability.RECURSIVE_CTE)
-        Caps-->>Decorator: True/False
-    end
+    Test->>Marker: collect (marker attached)
+    Conftest->>Dialect: inspect dialect Protocol / supports_functions()
+    Dialect-->>Conftest: True / False
     
     alt Capability Supported
-        Decorator->>Test: Proceed with test
+        Conftest->>Test: proceed with test
     else Capability Not Supported
-        Decorator->>Test: pytest.skip(reason)
+        Conftest->>Test: pytest.skip(reason)
     end
 ```
 
 ### Runtime vs Collection-Time Checking
 
-**Collection-time checking** (in conftest.py):
-- Faster - checks capabilities before test execution
-- Requires access to backend during collection phase
-- May need workaround if backend initialization is expensive
-- Can cause issues if trying to access fixtures during setup
+Capability checks happen at **runtime**, after the backend is configured by the
+provider, because backend capabilities are only available once the
+provider-configured models are bound to a live backend for a given scenario.
 
-**Runtime checking** (in test or decorator):
-- Slower - capabilities checked during test execution
-- Always accurate - uses actual configured backend
-- Recommended for dynamic capability scenarios
-- Use `pytest_runtest_call` hook to access `item.funcargs` which contains already resolved fixtures
-
-**Common Issue & Solution:**
-If capability checks are performed in `pytest_runtest_setup` and attempt to access fixtures, it can cause issues like:
-`AssertionError: (<Function test_func[memory]>, {})` - This happens when trying to access fixtures during test setup.
-Move capability checks to `pytest_runtest_call` and access fixtures via `item.funcargs` instead of `request.getfixturevalue()`.
+- Topic-level `conftest.py` reads the marker during test execution
+  (`request.node.get_closest_marker(...)`) and skips the test inline.
+- Prefer the marker as the **single source of truth** for "this test requires
+  capability X". Do **not** also re-check `supports_X()` in the test body;
+  use inline `pytest.skip` only for scenario-local conditions.
 
 ### Fixtures vs Raw Objects Access Patterns
 
 **Composite Fixtures Return Pattern:**
-When fixtures return tuples of models (like `order_fixtures` returns `(User, Order, OrderItem)`) but test expects a tuple:
-- Test code may use: `Node = tree_fixtures[0]`
-- But fixture returns raw object: `yield Node` instead of `yield (Node,)`
-- This causes error: `TypeError: cannot be parametrized because it does not inherit from typing.Generic`
-- Solution: Ensure fixture returns tuple if test code expects tuple indexing
+When fixtures return tuples of models (like `order_fixtures` returns
+`(User, Order, OrderItem)`), the provider's `setup_*_fixtures` method must
+return a tuple even for a single model, so the consuming test can index it
+consistently.
 
-**Correct Fixture Implementation:**
+Provider methods should therefore always return a tuple:
+
 ```python
-# If test uses tree_fixtures[0], return a tuple
-@pytest.fixture
-def tree_fixtures(request):
-    # Get Node model for the test via fixture group
-    result = provider.setup_tree_fixtures(scenario)
-    
-    # Ensure we return a tuple for consistency with test expectation
-    if isinstance(result, tuple):
-        yield result
-    else:
-        # If only a single model is returned, wrap it in a tuple
-        yield (result,)
+# Correct — always a tuple, even for a single model
+def setup_tree_fixtures(self, scenario):
+    Node = self._configure_node(scenario)
+    return (Node,)
 ```
