@@ -20,11 +20,11 @@ class TestAsyncEagerLoadingWithOne:
         await order.save()
 
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
-        assert result.id == order.id
+        assert result is not None, "one() should return a record"
+        assert result.id == order.id, "record id should match the saved order"
         related = await result.user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "belongs_to relation should be eagerly loaded"
+        assert related.id == user.id, "related record id should match the saved user"
 
     async def test_with_post_belongs_to(self, async_combined_fixtures):
         """Same eager-loading on a different async model pair (AsyncPost -> author).
@@ -40,16 +40,16 @@ class TestAsyncEagerLoadingWithOne:
         await post.save()
 
         result = await AsyncPost.query().with_('author').where(AsyncPost.c.id == post.id).one()
-        assert result is not None
+        assert result is not None, "one() should return a record"
         related = await result.author()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "belongs_to relation should be eagerly loaded"
+        assert related.id == user.id, "related record id should match the saved user"
 
     async def test_none_result(self, async_combined_fixtures):
         """with_().one() should return None when no records match (async)."""
         AsyncUser, AsyncOrder, _, _, _ = async_combined_fixtures
         result = await AsyncOrder.query().with_('user').where(AsyncOrder.c.id == -1).one()
-        assert result is None
+        assert result is None, "one() should return None when no records match"
 
 
 

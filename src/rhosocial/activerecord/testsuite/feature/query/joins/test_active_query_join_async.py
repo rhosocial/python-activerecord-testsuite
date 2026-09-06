@@ -33,8 +33,8 @@ class TestAsyncActiveQueryJoin:
 
         # Perform inner join between User and Order
         results = await AsyncUser.query().join(AsyncOrder, AsyncUser.c.id == AsyncOrder.c.user_id).all()
-        assert len(results) == 1
-        assert results[0].id == user.id
+        assert len(results) == 1, "join should return exactly one matching user"
+        assert results[0].id == user.id, "joined result should contain the saved user"
 
     @pytest.mark.requires_inner_join
     async def test_join_with_where_condition(self, async_order_fixtures):

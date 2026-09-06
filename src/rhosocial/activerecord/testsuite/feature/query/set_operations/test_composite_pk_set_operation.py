@@ -1,4 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/set_operations/test_composite_pk_set_operation.py
+"""Tests for set operations on models with a composite primary key."""
+
 from decimal import Decimal
 import pytest
 
@@ -6,6 +8,8 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 
 
 class TestSetOperationCompositePK:
+    """Tests for UNION, INTERSECT, and EXCEPT on composite primary key queries."""
+
     @pytest.fixture
     def seeded(self, order_item_class):
         items = [
@@ -18,6 +22,7 @@ class TestSetOperationCompositePK:
         return items
 
     def test_union(self, seeded, order_item_class):
+        """Test that UNION combines results from composite primary key queries."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_union():
@@ -30,9 +35,10 @@ class TestSetOperationCompositePK:
             order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
         )
         result = q1.union(q2).aggregate()
-        assert len(result) == 2
+        assert len(result) == 2, "expected 2 results"
 
     def test_intersect(self, seeded, order_item_class):
+        """Test that INTERSECT returns overlapping composite primary key results."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_intersect():
@@ -48,6 +54,7 @@ class TestSetOperationCompositePK:
         assert len(result) == 0  # No overlap
 
     def test_except_(self, seeded, order_item_class):
+        """Test that EXCEPT returns the difference of composite primary key queries."""
         backend = order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_except():
@@ -61,4 +68,4 @@ class TestSetOperationCompositePK:
         )
         # EXCEPT of same set should yield empty
         result = q1.except_(q2).aggregate()
-        assert len(result) == 0
+        assert len(result) == 0, "expected 0 results"

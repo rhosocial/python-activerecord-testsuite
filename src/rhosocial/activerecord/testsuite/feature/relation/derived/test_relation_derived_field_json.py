@@ -25,8 +25,8 @@ class TestJsonDerivedField:
         user.save()
 
         results = user_class.find_all(derived=["language"])
-        assert len(results) == 1
-        assert results[0].language == "zh-CN"
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].language == "zh-CN", "Expected language to be 'zh-CN'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -40,8 +40,8 @@ class TestJsonDerivedField:
         user.save()
 
         results = user_class.find_all(derived=["theme"])
-        assert len(results) == 1
-        assert results[0].theme == "light"
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].theme == "light", "Expected theme to be 'light'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -60,8 +60,8 @@ class TestJsonDerivedField:
         post.save()
 
         results = post_class.find_all(derived=["first_tag"])
-        assert len(results) == 1
-        assert results[0].first_tag == "python"
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].first_tag == "python", "Expected first_tag to be 'python'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -80,8 +80,8 @@ class TestJsonDerivedField:
         post.save()
 
         results = post_class.find_all(derived=["source"])
-        assert len(results) == 1
-        assert results[0].source == "newsletter"
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].source == "newsletter", "Expected source to be 'newsletter'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -102,8 +102,8 @@ class TestJsonDerivedField:
         comment.save()
 
         results = comment_class.find_all(derived=["platform"])
-        assert len(results) == 1
-        assert results[0].platform == "web"
+        assert len(results) == 1, "Expected 1 comment record to be found"
+        assert results[0].platform == "web", "Expected platform to be 'web'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -118,9 +118,9 @@ class TestJsonDerivedField:
 
         # Query with derived fields
         results = user_class.find_all(derived=["language", "theme"])
-        assert len(results) == 1
-        assert results[0].language == "ja"
-        assert results[0].theme == "dark"
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].language == "ja", "Expected language to be 'ja'"
+        assert results[0].theme == "dark", "Expected theme to be 'dark'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -134,7 +134,7 @@ class TestJsonDerivedField:
         user.save()
 
         results = user_class.find_all(derived="all")
-        assert len(results) == 1
-        assert results[0].language == "ko"
-        assert results[0].theme == "auto"
-        assert results[0].display_name is not None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].language == "ko", "Expected language to be 'ko'"
+        assert results[0].theme == "auto", "Expected theme to be 'auto'"
+        assert results[0].display_name is not None, "Expected display_name to be computed"

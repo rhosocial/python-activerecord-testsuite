@@ -17,11 +17,11 @@ class TestNestedRelationshipAccess:
         """Author -> books -> chapters (deeply nested chain access)."""
         try:
             author_books = author.books()
-            assert author_books is not None
+            assert author_books is not None, "Expected author.books() to return a list"
 
             if author_books:
                 book_chapters = author_books[0].chapters() if hasattr(author_books[0], 'chapters') else None
-                assert book_chapters is not None
+                assert book_chapters is not None, "Expected chapters() to return a list"
         except AttributeError:
             pass
 
@@ -34,11 +34,11 @@ class TestNestedRelationshipAccess:
         - book.author() returns the same author object (by id).
         """
         author_books = author.books()
-        assert len(author_books) > 0
+        assert len(author_books) > 0, "Expected at least one book for the author"
         first_book = author_books[0]
 
         book_author = first_book.author()
-        assert book_author.id == author.id
+        assert book_author.id == author.id, "Expected the book's author id to match author.id"
 
     def test_custom_loader_caching(self, author):
         """Custom loader: first access uses loader, second hits cache, TTL expiry reloads.
@@ -49,7 +49,7 @@ class TestNestedRelationshipAccess:
         - After TTL=1s expires, third call triggers loader again (new object).
         """
         books = author.books()
-        assert books is not None
+        assert books is not None, "Expected books() to return data from the loader"
 
         cached_books = author.books()
         assert cached_books == books  # cache hit: same data
@@ -68,9 +68,9 @@ class TestNestedRelationshipAccess:
         - Both sides agree on the foreign key values.
         """
         author_profile = author.profile()
-        assert author_profile is not None
-        assert author_profile.author_id == author.id
+        assert author_profile is not None, "Expected author.profile() to return a profile"
+        assert author_profile.author_id == author.id, "Expected profile.author_id to match author.id"
 
         profile_author = profile.author()
-        assert profile_author is not None
-        assert profile_author.id == profile.author_id
+        assert profile_author is not None, "Expected profile.author() to return an author"
+        assert profile_author.id == profile.author_id, "Expected author id to match profile.author_id"

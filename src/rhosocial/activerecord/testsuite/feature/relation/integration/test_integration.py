@@ -22,9 +22,9 @@ class TestIntegration:
 
         # Query posts with derived fields
         results = post_class.find_all(derived=["title_length", "hotness"])
-        assert len(results) == 1
-        assert results[0].title_length == 11
-        assert results[0].hotness == 11
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title_length == 11, "Expected title_length to be 11"
+        assert results[0].hotness == 11, "Expected hotness to be 11"
 
     def test_relation_with_field_proxy(self, user_post_comment_classes):
         """Relations should work with FieldProxy."""
@@ -37,8 +37,8 @@ class TestIntegration:
 
         # Query using FieldProxy
         results = post_class.find_all(post_class.c.user_id == user.id)
-        assert len(results) == 1
-        assert results[0].title == "Proxy Test"
+        assert len(results) == 1, "Expected 1 post record to be found"
+        assert results[0].title == "Proxy Test", "Expected title to be 'Proxy Test'"
 
     def test_derived_field_with_field_proxy(self, user_post_comment_classes):
         """Derived fields using FieldProxy should work."""
@@ -51,7 +51,7 @@ class TestIntegration:
 
         # title_length uses Post.c.title (FieldProxy)
         results = post_class.find_all(derived=["title_length"])
-        assert len(results) == 1
+        assert len(results) == 1, "Expected 1 post record to be found"
         assert results[0].title_length == 13  # len("Derived Proxy")
 
     def test_eager_load_with_derived(self, user_post_comment_classes):
@@ -67,8 +67,8 @@ class TestIntegration:
 
         # Query with eager loading and derived fields
         results = user_class.find_all(derived=["display_name"])
-        assert len(results) == 1
-        assert results[0].display_name is not None
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].display_name is not None, "Expected display_name to be computed"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -92,9 +92,9 @@ class TestIntegration:
 
         # Query with JSON derived fields
         results = user_class.find_all(derived=["language", "theme"])
-        assert len(results) == 1
-        assert results[0].language == "fr"
-        assert results[0].theme == "dark"
+        assert len(results) == 1, "Expected 1 user record to be found"
+        assert results[0].language == "fr", "Expected language to be 'fr'"
+        assert results[0].theme == "dark", "Expected theme to be 'dark'"
 
     @requires_protocol(JSONSupport, 'supports_json_type')
     @requires_functions('json_extract_text')
@@ -131,21 +131,21 @@ class TestIntegration:
 
         # User derived fields: display_name=coalesce(email,name), language/theme from JSON
         users = user_class.find_all(derived="all")
-        assert len(users) == 1
-        assert users[0].display_name is not None
-        assert users[0].language == "de"
-        assert users[0].theme == "auto"
+        assert len(users) == 1, "Expected 1 user record to be found"
+        assert users[0].display_name is not None, "Expected display_name to be computed"
+        assert users[0].language == "de", "Expected language to be 'de'"
+        assert users[0].theme == "auto", "Expected theme to be 'auto'"
 
         # Post derived fields: title_length, hotness=view_count+1, first_tag, source
         posts = post_class.find_all(derived="all")
-        assert len(posts) == 1
+        assert len(posts) == 1, "Expected 1 post record to be found"
         assert posts[0].title_length == 21  # len("Full Integration Test")
         assert posts[0].hotness == 101  # view_count(100) + 1
-        assert posts[0].first_tag == "integration"
-        assert posts[0].source == "ci"
+        assert posts[0].first_tag == "integration", "Expected first_tag to be 'integration'"
+        assert posts[0].source == "ci", "Expected source to be 'ci'"
 
         # Comment derived fields: body_length, platform
         comments = comment_class.find_all(derived="all")
-        assert len(comments) == 1
+        assert len(comments) == 1, "Expected 1 comment record to be found"
         assert comments[0].body_length == 27  # len("Excellent integration test!")
-        assert comments[0].platform == "github"
+        assert comments[0].platform == "github", "Expected platform to be 'github'"

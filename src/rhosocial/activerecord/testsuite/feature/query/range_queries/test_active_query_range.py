@@ -43,11 +43,11 @@ class TestSyncActiveQueryRange:
 
         assert len(results) == 3  # Should match 3 statuses
         result_statuses = [r.status for r in results]
-        assert 'pending' in result_statuses
-        assert 'shipped' in result_statuses
-        assert 'delivered' in result_statuses
-        assert 'processing' not in result_statuses
-        assert 'cancelled' not in result_statuses
+        assert 'pending' in result_statuses, "pending status should be included"
+        assert 'shipped' in result_statuses, "shipped status should be included"
+        assert 'delivered' in result_statuses, "delivered status should be included"
+        assert 'processing' not in result_statuses, "processing status should be excluded"
+        assert 'cancelled' not in result_statuses, "cancelled status should be excluded"
 
     def test_active_query_not_in_integration(self, order_fixtures):
         """
@@ -79,11 +79,11 @@ class TestSyncActiveQueryRange:
 
         assert len(results) == 3  # Should exclude pending and cancelled, leaving 3
         result_statuses = [r.status for r in results]
-        assert 'pending' not in result_statuses
-        assert 'cancelled' not in result_statuses
-        assert 'processing' in result_statuses
-        assert 'shipped' in result_statuses
-        assert 'delivered' in result_statuses
+        assert 'pending' not in result_statuses, "pending status should be excluded"
+        assert 'cancelled' not in result_statuses, "cancelled status should be excluded"
+        assert 'processing' in result_statuses, "processing status should be included"
+        assert 'shipped' in result_statuses, "shipped status should be included"
+        assert 'delivered' in result_statuses, "delivered status should be included"
 
     def test_active_query_between_integration(self, order_fixtures):
         """
@@ -113,9 +113,9 @@ class TestSyncActiveQueryRange:
 
         assert len(results) == 3  # 100, 150, 200 are in range
         result_amounts = [r.total_amount for r in results]
-        assert Decimal('100.00') in result_amounts
-        assert Decimal('150.00') in result_amounts
-        assert Decimal('200.00') in result_amounts
+        assert Decimal('100.00') in result_amounts, "100.00 should be within range"
+        assert Decimal('150.00') in result_amounts, "150.00 should be within range"
+        assert Decimal('200.00') in result_amounts, "200.00 should be within range"
 
     def test_active_query_not_between_integration(self, order_fixtures):
         """
@@ -145,8 +145,8 @@ class TestSyncActiveQueryRange:
 
         assert len(results) == 2  # 50 and 250 are not in 100-200 range
         result_amounts = [r.total_amount for r in results]
-        assert Decimal('50.00') in result_amounts
-        assert Decimal('250.00') in result_amounts
+        assert Decimal('50.00') in result_amounts, "50.00 should be outside range"
+        assert Decimal('250.00') in result_amounts, "250.00 should be outside range"
 
     def test_active_query_comparison_operators_integration(self, order_fixtures):
         """
@@ -176,24 +176,24 @@ class TestSyncActiveQueryRange:
         query = Order.query()
         results_gt = query.greater_than(Order.c.total_amount, Decimal('100.00')).all()
         # Just verify that the query executes without error and returns a list
-        assert isinstance(results_gt, list)
+        assert isinstance(results_gt, list), "greater_than should return a list"
 
         # Test ActiveQuery with greater_than_or_equal method from RangeQueryMixin
         results_gte = query.greater_than_or_equal(Order.c.total_amount, Decimal('100.00')).all()
-        assert isinstance(results_gte, list)
+        assert isinstance(results_gte, list), "greater_than_or_equal should return a list"
 
         # Test ActiveQuery with less_than method from RangeQueryMixin
         results_lt = query.less_than(Order.c.total_amount, Decimal('150.00')).all()
-        assert isinstance(results_lt, list)
+        assert isinstance(results_lt, list), "less_than should return a list"
 
         # Test ActiveQuery with less_than_or_equal method from RangeQueryMixin
         results_lte = query.less_than_or_equal(Order.c.total_amount, Decimal('150.00')).all()
-        assert isinstance(results_lte, list)
+        assert isinstance(results_lte, list), "less_than_or_equal should return a list"
 
         # Verify that the query object still supports chaining after range methods
         chained_query = query.greater_than(Order.c.total_amount, Decimal('50.00')).less_than(Order.c.total_amount, Decimal('200.00'))
         chained_results = chained_query.all()
-        assert isinstance(chained_results, list)
+        assert isinstance(chained_results, list), "chained range query should return a list"
 
     def test_active_query_pattern_matching_integration(self, order_fixtures):
         """
@@ -219,16 +219,16 @@ class TestSyncActiveQueryRange:
         query = User.query()
         results_like = query.like(User.c.username, '%smith%').all()
         # Just verify that the query executes without error and returns a list
-        assert isinstance(results_like, list)
+        assert isinstance(results_like, list), "like should return a list"
 
         # Test ActiveQuery with not_like method from RangeQueryMixin
         results_not_like = query.not_like(User.c.username, '%smith%').all()
-        assert isinstance(results_not_like, list)
+        assert isinstance(results_not_like, list), "not_like should return a list"
 
         # Verify that the query object still supports chaining after pattern matching methods
         chained_query = query.like(User.c.username, '%test%').not_like(User.c.username, '%admin%')
         chained_results = chained_query.all()
-        assert isinstance(chained_results, list)
+        assert isinstance(chained_results, list), "chained pattern query should return a list"
 
     def test_active_query_null_check_integration(self, order_fixtures):
         """
@@ -254,16 +254,16 @@ class TestSyncActiveQueryRange:
         query = User.query()
         results_null = query.is_null(User.c.age).all()
         # Just verify that the query executes without error and returns a list
-        assert isinstance(results_null, list)
+        assert isinstance(results_null, list), "is_null should return a list"
 
         # Test ActiveQuery with is_not_null method from RangeQueryMixin
         results_not_null = query.is_not_null(User.c.age).all()
-        assert isinstance(results_not_null, list)
+        assert isinstance(results_not_null, list), "is_not_null should return a list"
 
         # Verify that the query object still supports chaining after null checking methods
         chained_query = query.is_null(User.c.age).is_not_null(User.c.email)
         chained_results = chained_query.all()
-        assert isinstance(chained_results, list)
+        assert isinstance(chained_results, list), "chained null query should return a list"
 
     def test_active_query_range_method_chaining(self, order_fixtures):
         """
@@ -298,9 +298,9 @@ class TestSyncActiveQueryRange:
                    .all())
 
         # Should match user2 (age=25, balance=200.0) and user3 (age=30, balance=300.0)
-        assert len(results) == 2
+        assert len(results) == 2, "range chain should match exactly two users"
         usernames = {u.username for u in results}
-        assert 'user2' in usernames
-        assert 'user3' in usernames
+        assert 'user2' in usernames, "user2 should match the range chain"
+        assert 'user3' in usernames, "user3 should match the range chain"
         assert 'user1' not in usernames  # Too young
         assert 'user4' not in usernames  # Too old

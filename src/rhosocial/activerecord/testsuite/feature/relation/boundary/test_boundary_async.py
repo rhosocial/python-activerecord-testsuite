@@ -11,6 +11,7 @@ class TestAsyncRelationBoundary:
         self,
         async_relation_boundary_context,
     ):
+        """BelongsTo should return None when the foreign key is null."""
         provider, scenario, owner_class, profile_class, post_class = async_relation_boundary_context
         ids = await provider.load_relation_boundary_dataset(scenario, "null_foreign_key")
 
@@ -24,6 +25,7 @@ class TestAsyncRelationBoundary:
         self,
         async_relation_boundary_context,
     ):
+        """BelongsTo should return None when the target record is missing."""
         provider, scenario, owner_class, profile_class, post_class = async_relation_boundary_context
         ids = await provider.load_relation_boundary_dataset(scenario, "orphan_foreign_key")
 
@@ -39,6 +41,7 @@ class TestAsyncRelationBoundary:
         self,
         async_relation_boundary_context,
     ):
+        """HasOne should return None when no matching related record exists."""
         provider, scenario, owner_class, profile_class, post_class = async_relation_boundary_context
         ids = await provider.load_relation_boundary_dataset(scenario, "owner_without_children")
 
@@ -51,6 +54,7 @@ class TestAsyncRelationBoundary:
         self,
         async_relation_boundary_context,
     ):
+        """HasMany should return an empty list when no matching related records exist."""
         provider, scenario, owner_class, profile_class, post_class = async_relation_boundary_context
         ids = await provider.load_relation_boundary_dataset(scenario, "owner_without_children")
 
@@ -63,6 +67,7 @@ class TestAsyncRelationBoundary:
         self,
         async_relation_boundary_context,
     ):
+        """HasOne should return a related record when multiple matches exist."""
         provider, scenario, owner_class, profile_class, post_class = async_relation_boundary_context
         ids = await provider.load_relation_boundary_dataset(scenario, "multiple_has_one_matches")
 

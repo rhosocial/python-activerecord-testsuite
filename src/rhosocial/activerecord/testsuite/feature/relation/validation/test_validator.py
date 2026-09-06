@@ -45,7 +45,7 @@ class TestSyncRelationshipValidator:
         # Trigger validation by resolving the relation
         rel = Owner.get_relation("items")
         model = rel.get_related_model(Owner)
-        assert model is not None
+        assert model is not None, "Expected related model to be resolved"
 
     def test_belongs_to_has_one_valid(self):
         """BelongsTo <-> HasOne is a valid pair."""
@@ -64,7 +64,7 @@ class TestSyncRelationshipValidator:
 
         rel = User.get_relation("profile")
         model = rel.get_related_model(User)
-        assert model is not None
+        assert model is not None, "Expected related model to be resolved"
 
     def test_invalid_pair_raises(self):
         """BelongsTo <-> BelongsTo should raise ValueError."""
@@ -121,7 +121,7 @@ class TestSyncRelationshipValidator:
         rel.get_related_model(Owner)
         # The validator should have set inverse_of on the Related.owner descriptor
         related_rel = Related.get_relation("owner")
-        assert related_rel.inverse_of == "items"
+        assert related_rel.inverse_of == "items", "Expected inverse_of to be auto-set to 'items'"
 
 # ── Async Validator Tests ─────────────────────────────────
 
@@ -149,7 +149,7 @@ class TestAsyncRelationshipValidator:
 
         rel = AsyncOwner.get_relation("items")
         model = rel.get_related_model(AsyncOwner)
-        assert model is not None
+        assert model is not None, "Expected related model to be resolved"
 
     def test_async_belongs_to_has_one_valid(self):
         """AsyncBelongsTo <-> AsyncHasOne is a valid pair."""
@@ -172,7 +172,7 @@ class TestAsyncRelationshipValidator:
 
         rel = AsyncUser.get_relation("profile")
         model = rel.get_related_model(AsyncUser)
-        assert model is not None
+        assert model is not None, "Expected related model to be resolved"
 
     def test_async_invalid_pair_raises(self):
         """AsyncBelongsTo <-> AsyncBelongsTo should raise ValueError."""
@@ -240,6 +240,6 @@ class TestAsyncRelationshipValidator:
         rel = AsyncOwner.get_relation("items")
         rel.get_related_model(AsyncOwner)
         related_rel = AsyncRelated.get_relation("owner")
-        assert related_rel.inverse_of == "items"
+        assert related_rel.inverse_of == "items", "Expected inverse_of to be auto-set to 'items'"
 
 

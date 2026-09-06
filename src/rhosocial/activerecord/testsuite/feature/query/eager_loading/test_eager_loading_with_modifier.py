@@ -166,7 +166,7 @@ class TestSyncForUpdate:
         order.save()
 
         result = Order.query().for_update().with_('user').where(Order.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
         related = result.user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"

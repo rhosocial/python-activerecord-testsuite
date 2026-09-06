@@ -1,4 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/fixtures/async_extended_models.py
+"""Async extended model fixtures for query feature tests."""
+
 from decimal import Decimal
 from typing import Optional, ClassVar
 

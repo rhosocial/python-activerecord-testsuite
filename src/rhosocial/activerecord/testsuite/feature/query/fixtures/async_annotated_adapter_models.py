@@ -1,3 +1,6 @@
+# src/rhosocial/activerecord/testsuite/feature/query/fixtures/async_annotated_adapter_models.py
+"""Async model fixtures using Annotated-based type adapters for query tests."""
+
 from typing import Optional, ClassVar
 import sys
 

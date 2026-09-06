@@ -1,4 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/query/set_operations/test_composite_pk_set_operation_async.py
+"""Async tests for set operations on models with a composite primary key."""
+
 from decimal import Decimal
 import pytest
 
@@ -6,6 +8,8 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 
 
 class TestAsyncSetOperationCompositePK:
+    """Async tests for UNION, INTERSECT, and EXCEPT on composite primary key queries."""
+
     @pytest.fixture
     async def seeded(self, async_order_item_class):
         items = [
@@ -19,6 +23,7 @@ class TestAsyncSetOperationCompositePK:
 
 
     async def test_union(self, seeded, async_order_item_class):
+        """Test that UNION combines results from composite primary key queries."""
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_union():
@@ -31,10 +36,11 @@ class TestAsyncSetOperationCompositePK:
             async_order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
         )
         result = await q1.union(q2).aggregate()
-        assert len(result) == 2
+        assert len(result) == 2, "expected 2 results"
 
 
     async def test_intersect(self, seeded, async_order_item_class):
+        """Test that INTERSECT returns overlapping composite primary key results."""
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_intersect():
@@ -51,6 +57,7 @@ class TestAsyncSetOperationCompositePK:
 
 
     async def test_except_(self, seeded, async_order_item_class):
+        """Test that EXCEPT returns the difference of composite primary key queries."""
         backend = async_order_item_class.backend()
         dialect = backend.dialect
         if not dialect.supports_except():
@@ -64,4 +71,4 @@ class TestAsyncSetOperationCompositePK:
         )
         # EXCEPT of same set should yield empty
         result = await q1.except_(q2).aggregate()
-        assert len(result) == 0
+        assert len(result) == 0, "expected 0 results"

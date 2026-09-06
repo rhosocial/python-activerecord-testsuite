@@ -14,7 +14,7 @@ class TestWithMethod:
         """with_() with no arguments should not add any relations."""
         query = user_class.query()
         configs = query.get_relation_configs()
-        assert len(configs) == 0
+        assert len(configs) == 0, "Expected no relation configs by default"
 
     def test_with_single_string_relation(self, user_class):
         """with_() with single string should add the relation."""
@@ -22,8 +22,8 @@ class TestWithMethod:
         query.with_("posts")
 
         configs = query.get_relation_configs()
-        assert "posts" in configs
-        assert configs["posts"].query_modifier is None
+        assert "posts" in configs, "Expected 'posts' in relation configs"
+        assert configs["posts"].query_modifier is None, "Expected query_modifier to be None"
 
     def test_with_single_tuple_relation(self, user_class):
         """with_() with tuple (path, modifier) should add the relation with modifier."""
@@ -34,8 +34,8 @@ class TestWithMethod:
         query.with_(("posts", my_modifier))
 
         configs = query.get_relation_configs()
-        assert "posts" in configs
-        assert configs["posts"].query_modifier is my_modifier
+        assert "posts" in configs, "Expected 'posts' in relation configs"
+        assert configs["posts"].query_modifier is my_modifier, "Expected query_modifier to be set"
 
     def test_with_none_modifier(self, user_class):
         """with_() with None modifier should add the relation without modifier."""
@@ -43,8 +43,8 @@ class TestWithMethod:
         query.with_(("posts", None))
 
         configs = query.get_relation_configs()
-        assert "posts" in configs
-        assert configs["posts"].query_modifier is None
+        assert "posts" in configs, "Expected 'posts' in relation configs"
+        assert configs["posts"].query_modifier is None, "Expected query_modifier to be None"
 
     def test_multiple_relations_with_validation(self, user_class):
         """with_() with multiple relations should validate all."""
@@ -52,8 +52,8 @@ class TestWithMethod:
         query.with_("posts", "posts.comments")
 
         configs = query.get_relation_configs()
-        assert "posts" in configs
-        assert "posts.comments" in configs
+        assert "posts" in configs, "Expected 'posts' in relation configs"
+        assert "posts.comments" in configs, "Expected 'posts.comments' in relation configs"
 
 
 class TestRelationConfig:
@@ -62,9 +62,9 @@ class TestRelationConfig:
     def test_relation_config_defaults(self):
         """RelationConfig should have correct defaults."""
         config = RelationConfig(name="test", nested=False, query_modifier=None)
-        assert config.name == "test"
-        assert config.nested is False
-        assert config.query_modifier is None
+        assert config.name == "test", "Expected name to be 'test'"
+        assert config.nested is False, "Expected nested to be False"
+        assert config.query_modifier is None, "Expected query_modifier to be None"
 
     def test_relation_config_with_modifier(self):
         """RelationConfig should store modifier."""
@@ -72,13 +72,13 @@ class TestRelationConfig:
             return q
 
         config = RelationConfig(name="test", nested=False, query_modifier=my_modifier)
-        assert config.query_modifier is my_modifier
+        assert config.query_modifier is my_modifier, "Expected query_modifier to be set"
 
     def test_get_relation_configs_empty(self, user_class):
         """get_relation_configs should return empty dict initially."""
         query = user_class.query()
         configs = query.get_relation_configs()
-        assert len(configs) == 0
+        assert len(configs) == 0, "Expected no relation configs by default"
 
     def test_get_relation_configs_returns_copy(self, user_class):
         """get_relation_configs should return a copy."""
@@ -87,5 +87,5 @@ class TestRelationConfig:
 
         configs1 = query.get_relation_configs()
         configs2 = query.get_relation_configs()
-        assert configs1 == configs2
-        assert configs1 is not configs2
+        assert configs1 == configs2, "Expected config copies to be equal"
+        assert configs1 is not configs2, "Expected config copies to be distinct objects"

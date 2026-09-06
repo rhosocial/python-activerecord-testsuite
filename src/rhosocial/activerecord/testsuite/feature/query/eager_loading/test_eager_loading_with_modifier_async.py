@@ -35,10 +35,11 @@ class TestAsyncEagerLoadingWithModifier:
             return q.where(AsyncOrder.c.order_number == 'AELA-MOD-001')
 
         result = await AsyncUser.query().with_(('orders', filter_order)).where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = await result.orders()
-        assert len(related) == 1
-        assert related[0].order_number == 'AELA-MOD-001'
+        assert len(related) == 1, "Expected one matching related order"
+        assert related[0].order_number == 'AELA-MOD-001', \
+            "Expected the filtered order number to match"
 
     async def test_order_modifier(self, async_combined_fixtures):
         """An order modifier should sort related records (async)."""
@@ -54,10 +55,11 @@ class TestAsyncEagerLoadingWithModifier:
             return q.order_by((AsyncOrder.c.total_amount, "DESC"))
 
         result = await AsyncUser.query().with_(('orders', desc_order)).where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = await result.orders()
-        assert len(related) == 3
-        assert related[0].total_amount == Decimal('30')
+        assert len(related) == 3, "Expected three related orders"
+        assert related[0].total_amount == Decimal('30'), \
+            "Expected the first order total to be the highest"
 
     async def test_without_modifier(self, async_combined_fixtures):
         """Using with_ without a modifier should load all related records (async)."""
@@ -70,9 +72,9 @@ class TestAsyncEagerLoadingWithModifier:
             await o.save()
 
         result = await AsyncUser.query().with_('orders').where(AsyncUser.c.id == user.id).one()
-        assert result is not None
+        assert result is not None, "Expected the user to be loaded"
         related = await result.orders()
-        assert len(related) == 2
+        assert len(related) == 2, "Expected two related orders"
 
     async def test_none_modifier(self, async_combined_fixtures):
         """A noop modifier should not interfere with normal loading (async)."""
@@ -84,7 +86,7 @@ class TestAsyncEagerLoadingWithModifier:
             return q
 
         results = await AsyncUser.query().with_(('orders', noop)).where(AsyncUser.c.id == user.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected exactly one result"
 
     async def test_eager_equivalent_to_lazy(self, async_combined_fixtures):
         """Backward-compatibility: eager (no modifier) == lazy loading (async)."""
@@ -104,11 +106,14 @@ class TestAsyncEagerLoadingWithModifier:
         lazy_user = await AsyncUser.find_one(user.id)
         lazy_orders = sorted(await lazy_user.orders(), key=lambda o: o.id)
 
-        assert len(eager_orders) == len(lazy_orders)
+        assert len(eager_orders) == len(lazy_orders), \
+            "Expected eager and lazy to return the same number of orders"
         for eo, lo in zip(eager_orders, lazy_orders):
-            assert eo.id == lo.id
-            assert eo.order_number == lo.order_number
-            assert eo.total_amount == lo.total_amount
+            assert eo.id == lo.id, "Expected eager and lazy order ids to match"
+            assert eo.order_number == lo.order_number, \
+                "Expected eager and lazy order numbers to match"
+            assert eo.total_amount == lo.total_amount, \
+                "Expected eager and lazy order totals to match"
 
     async def test_eager_with_belongs_to_equivalent_to_lazy(self, async_combined_fixtures):
         """Backward-compatibility: eager with_('user') == lazy user() (async)."""
@@ -124,9 +129,11 @@ class TestAsyncEagerLoadingWithModifier:
         lazy_order = await AsyncOrder.find_one(order.id)
         lazy_user = await lazy_order.user()
 
-        assert eager_user.id == lazy_user.id
-        assert eager_user.username == lazy_user.username
-        assert eager_user.email == lazy_user.email
+        assert eager_user.id == lazy_user.id, "Expected eager and lazy user ids to match"
+        assert eager_user.username == lazy_user.username, \
+            "Expected eager and lazy usernames to match"
+        assert eager_user.email == lazy_user.email, \
+            "Expected eager and lazy emails to match"
 
 class TestAsyncForUpdate:
     """Async version of for_update + with_ compatibility."""
@@ -141,10 +148,10 @@ class TestAsyncForUpdate:
         await order.save()
 
         results = await AsyncOrder.query().for_update().with_('user').where(AsyncOrder.c.id == order.id).all()
-        assert len(results) == 1
+        assert len(results) == 1, "Expected 1 order to be loaded"
         related = await results[0].user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
     @pytest.mark.requires_protocol((LockingSupport, "supports_for_update"))
     async def test_for_update_with_with_one(self, async_combined_fixtures):
@@ -156,10 +163,10 @@ class TestAsyncForUpdate:
         await order.save()
 
         result = await AsyncOrder.query().for_update().with_('user').where(AsyncOrder.c.id == order.id).one()
-        assert result is not None
+        assert result is not None, "Expected the order to be loaded"
         related = await result.user()
-        assert related is not None
-        assert related.id == user.id
+        assert related is not None, "Expected the related user to be loaded"
+        assert related.id == user.id, "Expected the related user id to match"
 
 
 

@@ -54,7 +54,7 @@ class TestSyncSetOperations:
         except AttributeError:
             # If union method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_intersect_operation(self, order_fixtures):
@@ -100,7 +100,7 @@ class TestSyncSetOperations:
         except AttributeError:
             # If intersect method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_except_operation(self, order_fixtures):
@@ -145,7 +145,7 @@ class TestSyncSetOperations:
         except AttributeError:
             # If except method doesn't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_multiple_set_operations(self, order_fixtures):
@@ -192,7 +192,7 @@ class TestSyncSetOperations:
         except AttributeError:
             # If set operations don't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     def test_set_operations_backend_consistency(self, order_fixtures):
         """
@@ -220,12 +220,12 @@ class TestSyncSetOperations:
             union_query = query1.union(query2)
 
             # Verify both operands use same backend
-            assert query1.backend() == query2.backend()
-            assert union_query.left.backend() == union_query.right.backend()
+            assert query1.backend() == query2.backend(), "expected same backend"
+            assert union_query.left.backend() == union_query.right.backend(), "expected same backend"
         except AttributeError:
             # If set operations don't exist, at least verify basic functionality works
             basic_results = Order.query().all()
-            assert len(basic_results) > 0
+            assert len(basic_results) > 0, "expected at least one result"
 
     def test_set_operation_union_method(self, order_fixtures):
         """
@@ -249,8 +249,8 @@ class TestSyncSetOperations:
 
         # Test union method
         union_result = initial_set_op.union(query3)
-        assert isinstance(union_result, SetOperationQuery)
-        assert union_result.operation == "UNION"
+        assert isinstance(union_result, SetOperationQuery), "expected SetOperationQuery"
+        assert union_result.operation == "UNION", "expected operation to be UNION"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_set_operation_intersect_method(self, order_fixtures):
@@ -275,8 +275,8 @@ class TestSyncSetOperations:
 
         # Test intersect method
         intersect_result = initial_set_op.intersect(query3)
-        assert isinstance(intersect_result, SetOperationQuery)
-        assert intersect_result.operation == "INTERSECT"
+        assert isinstance(intersect_result, SetOperationQuery), "expected SetOperationQuery"
+        assert intersect_result.operation == "INTERSECT", "expected operation to be INTERSECT"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_set_operation_except_method(self, order_fixtures):
@@ -301,8 +301,8 @@ class TestSyncSetOperations:
 
         # Test except_ method
         except_result = initial_set_op.except_(query3)
-        assert isinstance(except_result, SetOperationQuery)
-        assert except_result.operation == "EXCEPT"
+        assert isinstance(except_result, SetOperationQuery), "expected SetOperationQuery"
+        assert except_result.operation == "EXCEPT", "expected operation to be EXCEPT"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     @requires_protocol(SetOperationSupport, 'supports_except')
@@ -328,18 +328,18 @@ class TestSyncSetOperations:
 
         # Test union operator (__or__)
         union_result = initial_set_op | query3
-        assert isinstance(union_result, SetOperationQuery)
-        assert union_result.operation == "UNION"
+        assert isinstance(union_result, SetOperationQuery), "expected SetOperationQuery"
+        assert union_result.operation == "UNION", "expected operation to be UNION"
 
         # Test intersect operator (__and__)
         intersect_result = initial_set_op & query3
-        assert isinstance(intersect_result, SetOperationQuery)
-        assert intersect_result.operation == "INTERSECT"
+        assert isinstance(intersect_result, SetOperationQuery), "expected SetOperationQuery"
+        assert intersect_result.operation == "INTERSECT", "expected operation to be INTERSECT"
 
         # Test except operator (__sub__)
         except_result = initial_set_op - query3
-        assert isinstance(except_result, SetOperationQuery)
-        assert except_result.operation == "EXCEPT"
+        assert isinstance(except_result, SetOperationQuery), "expected SetOperationQuery"
+        assert except_result.operation == "EXCEPT", "expected operation to be EXCEPT"
 
     def test_set_operation_with_invalid_operation_type(self, order_fixtures):
         """
@@ -358,8 +358,8 @@ class TestSyncSetOperations:
         # Create SetOperationQuery with an invalid operation type
         # This should work but might cause issues later when generating SQL
         set_op_query = SetOperationQuery(query1, query2, "INVALID_OP")
-        assert set_op_query is not None
-        assert set_op_query.operation == "INVALID_OP"
+        assert set_op_query is not None, "expected set_op_query to be created"
+        assert set_op_query.operation == "INVALID_OP", "expected operation to be INVALID_OP"
 
     def test_active_query_union_method(self, order_fixtures):
         """
@@ -379,10 +379,10 @@ class TestSyncSetOperations:
         union_query = query1.union(query2)
 
         # Verify it returns a SetOperationQuery
-        assert isinstance(union_query, SetOperationQuery)
-        assert union_query.operation == "UNION"
-        assert union_query.left == query1
-        assert union_query.right == query2
+        assert isinstance(union_query, SetOperationQuery), "expected SetOperationQuery"
+        assert union_query.operation == "UNION", "expected operation to be UNION"
+        assert union_query.left == query1, "expected left operand query1"
+        assert union_query.right == query2, "expected right operand query2"
 
     @requires_protocol(SetOperationSupport, 'supports_intersect')
     def test_active_query_intersect_method(self, order_fixtures):
@@ -403,10 +403,10 @@ class TestSyncSetOperations:
         intersect_query = query1.intersect(query2)
 
         # Verify it returns a SetOperationQuery
-        assert isinstance(intersect_query, SetOperationQuery)
-        assert intersect_query.operation == "INTERSECT"
-        assert intersect_query.left == query1
-        assert intersect_query.right == query2
+        assert isinstance(intersect_query, SetOperationQuery), "expected SetOperationQuery"
+        assert intersect_query.operation == "INTERSECT", "expected operation to be INTERSECT"
+        assert intersect_query.left == query1, "expected left operand query1"
+        assert intersect_query.right == query2, "expected right operand query2"
 
     @requires_protocol(SetOperationSupport, 'supports_except')
     def test_active_query_except_method(self, order_fixtures):
@@ -427,10 +427,10 @@ class TestSyncSetOperations:
         except_query = query1.except_(query2)
 
         # Verify it returns a SetOperationQuery
-        assert isinstance(except_query, SetOperationQuery)
-        assert except_query.operation == "EXCEPT"
-        assert except_query.left == query1
-        assert except_query.right == query2
+        assert isinstance(except_query, SetOperationQuery), "expected SetOperationQuery"
+        assert except_query.operation == "EXCEPT", "expected operation to be EXCEPT"
+        assert except_query.left == query1, "expected left operand query1"
+        assert except_query.right == query2, "expected right operand query2"
 
     def test_mixed_sync_async_set_operations_should_fail(self, order_fixtures):
         """Test that mixing sync and async queries raises TypeError."""

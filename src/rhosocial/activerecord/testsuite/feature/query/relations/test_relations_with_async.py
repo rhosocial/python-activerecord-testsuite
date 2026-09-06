@@ -21,11 +21,11 @@ class TestAsyncRelationsWith:
         query = AsyncOrder.query().with_("user")
 
         # Verify that exactly one relation is configured for eager loading
-        assert len(query._eager_loads) == 1
-        assert "user" in query._eager_loads
-        assert query._eager_loads["user"].name == "user"
-        assert query._eager_loads["user"].nested == []
-        assert query._eager_loads["user"].query_modifier is None
+        assert len(query._eager_loads) == 1, "expected one eager load"
+        assert "user" in query._eager_loads, "expected user in eager loads"
+        assert query._eager_loads["user"].name == "user", "expected relation name user"
+        assert query._eager_loads["user"].nested == [], "expected empty nested"
+        assert query._eager_loads["user"].query_modifier is None, "expected no query modifier"
 
 
     async def test_relations_with_nested_relations(self, async_order_fixtures):
@@ -42,12 +42,12 @@ class TestAsyncRelationsWith:
         query = AsyncOrder.query().with_("user.orders")
 
         # Verify that both the base relation and nested relation are configured
-        assert len(query._eager_loads) == 2
-        assert "user" in query._eager_loads
-        assert "user.orders" in query._eager_loads
-        assert query._eager_loads["user"].nested == ["orders"]
-        assert query._eager_loads["user.orders"].name == "user.orders"
-        assert query._eager_loads["user.orders"].nested == []
+        assert len(query._eager_loads) == 2, "expected two eager loads"
+        assert "user" in query._eager_loads, "expected user in eager loads"
+        assert "user.orders" in query._eager_loads, "expected user.orders in eager loads"
+        assert query._eager_loads["user"].nested == ["orders"], "expected nested orders"
+        assert query._eager_loads["user.orders"].name == "user.orders", "expected relation name user.orders"
+        assert query._eager_loads["user.orders"].nested == [], "expected empty nested"
 
 
     async def test_relations_with_query_modifier(self, async_order_fixtures):
@@ -68,9 +68,9 @@ class TestAsyncRelationsWith:
         query = AsyncOrder.query().with_(("user", modifier))
 
         # Verify that the modifier is properly stored
-        assert len(query._eager_loads) == 1
-        assert "user" in query._eager_loads
-        assert query._eager_loads["user"].query_modifier == modifier
+        assert len(query._eager_loads) == 1, "expected one eager load"
+        assert "user" in query._eager_loads, "expected user in eager loads"
+        assert query._eager_loads["user"].query_modifier == modifier, "expected stored modifier"
 
 
     async def test_relations_with_multiple_relations(self, async_order_fixtures):
@@ -95,12 +95,12 @@ class TestAsyncRelationsWith:
         )
 
         # Verify that all relations are configured
-        assert len(query._eager_loads) == 3
-        assert "user" in query._eager_loads
-        assert "items" in query._eager_loads
-        assert "user.orders" in query._eager_loads
-        assert query._eager_loads["items"].query_modifier == modifier
-        assert query._eager_loads["user"].nested == ["orders"]
+        assert len(query._eager_loads) == 3, "expected three eager loads"
+        assert "user" in query._eager_loads, "expected user in eager loads"
+        assert "items" in query._eager_loads, "expected items in eager loads"
+        assert "user.orders" in query._eager_loads, "expected user.orders in eager loads"
+        assert query._eager_loads["items"].query_modifier == modifier, "expected stored modifier"
+        assert query._eager_loads["user"].nested == ["orders"], "expected nested orders"
 
 
     async def test_relations_with_duplicate_relations(self, async_order_fixtures):
@@ -127,10 +127,10 @@ class TestAsyncRelationsWith:
         )
 
         # Verify that only one relation is kept with the last modifier
-        assert len(query._eager_loads) == 1
-        assert "user" in query._eager_loads
+        assert len(query._eager_loads) == 1, "expected one eager load"
+        assert "user" in query._eager_loads, "expected user in eager loads"
         # Last modifier should override previous one
-        assert query._eager_loads["user"].query_modifier == modifier2
+        assert query._eager_loads["user"].query_modifier == modifier2, "expected last modifier"
 
 
     async def test_relations_with_chained_calls(self, async_order_fixtures):
@@ -150,10 +150,10 @@ class TestAsyncRelationsWith:
             .with_("user.orders")
 
         # Verify that all relations from chained calls are configured
-        assert len(query._eager_loads) == 3
+        assert len(query._eager_loads) == 3, "expected three eager loads"
         assert all(name in query._eager_loads
-                   for name in ["user", "items", "user.orders"])
-        assert query._eager_loads["user"].nested == ["orders"]
+                   for name in ["user", "items", "user.orders"]), "expected all relations loaded"
+        assert query._eager_loads["user"].nested == ["orders"], "expected nested orders"
 
 
     async def test_relations_with_deep_nesting(self, async_order_fixtures):
@@ -172,19 +172,19 @@ class TestAsyncRelationsWith:
             query = AsyncOrder.query().with_("user.orders.items.detail")
 
             # Verify that all levels of nesting are configured
-            assert len(query._eager_loads) == 4
+            assert len(query._eager_loads) == 4, "expected four eager loads"
             assert all(name in query._eager_loads for name in [
                 "user",
                 "user.orders",
                 "user.orders.items",
                 "user.orders.items.detail"
-            ])
+            ]), "expected all nested relations loaded"
 
             # Verify nested relations are properly configured
-            assert query._eager_loads["user"].nested == ["orders"]
-            assert query._eager_loads["user.orders"].nested == ["items"]
-            assert query._eager_loads["user.orders.items"].nested == ["detail"]
-            assert query._eager_loads["user.orders.items.detail"].nested == []
+            assert query._eager_loads["user"].nested == ["orders"], "expected nested orders"
+            assert query._eager_loads["user.orders"].nested == ["items"], "expected nested items"
+            assert query._eager_loads["user.orders.items"].nested == ["detail"], "expected nested detail"
+            assert query._eager_loads["user.orders.items.detail"].nested == [], "expected empty nested"
 
 
     async def test_relation_path_validation(self, async_blog_fixtures):
@@ -222,7 +222,7 @@ class TestAsyncRelationsWith:
         try:
             query = AsyncPost.query().with_('author')
             # Should not throw exception as we're just building query
-            assert "author" in query._eager_loads
+            assert "author" in query._eager_loads, "expected author in eager loads"
         except Exception:
             assert False, "Valid relation path should not raise exception"
 
@@ -261,8 +261,8 @@ class TestAsyncRelationsWith:
         try:
             query = AsyncOrder.query().with_('user.nonexistent.nested')
             # Check if relation path is set correctly
-            assert "user" in query._eager_loads
-            assert query._eager_loads["user"].nested == ["nonexistent"]
+            assert "user" in query._eager_loads, "expected user in eager loads"
+            assert query._eager_loads["user"].nested == ["nonexistent"], "expected nested nonexistent"
         except Exception as e:
             # According to implementation, this might fail at query execution time rather than build time
             # That's acceptable behavior
@@ -325,8 +325,8 @@ class TestAsyncRelationsWith:
                 accessed_users_eager.append(await AsyncUser.find_one(order.user_id))
 
         # Verify both approaches return same number of results
-        assert len(orders_without_eager) == len(orders_with_eager)
-        assert len(orders_with_eager) == 5
+        assert len(orders_without_eager) == len(orders_with_eager), "expected same number of results"
+        assert len(orders_with_eager) == 5, "expected 5 eager loaded orders"
 
 
 
