@@ -77,13 +77,13 @@ graph LR
     subgraph "Testsuite Layer"
         TEST[Test Functions<br/>Backend-agnostic logic]
         IFACE[Provider Interfaces<br/>Contract definitions]
-        CAPS[Capability Requirements<br/>Feature declarations]
+        CAPS[Capability Markers<br/>requires_protocol / requires_functions]
     end
     
     subgraph "Backend Layer"
         PROV[Provider Implementation<br/>Model setup & fixtures]
         SCHEMA[SQL Schemas<br/>Database structure]
-        CAPSDECL[Capability Declaration<br/>Supported features]
+        DIALECT[Dialect<br/>Protocols & supported functions]
     end
     
     subgraph "Database Layer"
@@ -93,11 +93,11 @@ graph LR
     TEST -->|uses| IFACE
     TEST -->|requires| CAPS
     IFACE -->|implemented by| PROV
-    CAPS -->|checked against| CAPSDECL
+    CAPS -->|checked against| DIALECT
     PROV -->|creates| SCHEMA
-    PROV -->|configures models with| CAPSDECL
+    PROV -->|configures models with| DIALECT
     SCHEMA -->|executed on| DB
-    CAPSDECL -->|describes| DB
+    DIALECT -->|describes| DB
 ```
 
 ### Responsibilities Division
@@ -108,15 +108,14 @@ graph LR
 - Create test fixtures and utilities
 - NEVER assume backend-specific features
 - NEVER write SQL directly in tests
-- Document required capabilities using correct category+capability format
+- Document required capabilities using `requires_protocol` / `requires_functions`
 
 #### Backend Developers MUST:
-- Implement provider interfaces
+- Implement provider interfaces (paired `setup_*_fixtures` / `async_setup_*_fixtures`)
 - Create backend-specific schema files
 - Handle database connection/cleanup
-- Write backend-specific tests separately
-- Generate compatibility reports
-- Declare backend capabilities using add_* methods
+- Import the testsuite into your own `tests/` tree via thin bridge files
+- Wire `TESTSUITE_PROVIDER_REGISTRY` to your provider registry
 
 ### Provider Responsibilities
 
@@ -159,7 +158,7 @@ Different backends have different requirements:
 **Implementation Example:**
 
 ```python
-async def cleanup_after_test_async(self, scenario_name: str):
+async def async_teardown_order_fixtures(self, scenario_name: str):
     """Proper cleanup order: data first, then cursors, then disconnect."""
     # Step 1: Drop tables (while connection is alive)
     for table in tables_to_drop:
@@ -184,7 +183,7 @@ async def cleanup_after_test_async(self, scenario_name: str):
 | Database setup | Defines interface | ✅ Implements |
 | Model configuration | Defines fixtures | ✅ Provides models |
 | Cleanup/teardown | Defines hooks | ✅ Implements |
-| Capability declaration | Defines requirements | ✅ Declares support |
+| Capability handling | Defines requirements via `requires_protocol` / `requires_functions` | ✅ Implements dialect protocols & functions |
 
 ## [2. Getting Started for Backend Developers](#2-getting-started-for-backend-developers)
 

@@ -77,13 +77,13 @@ graph LR
     subgraph "测试套件层"
         TEST[测试函数<br/>后端无关逻辑]
         IFACE[提供者接口<br/>合约定义]
-        CAPS[能力要求<br/>功能声明]
+        CAPS[能力标记<br/>requires_protocol / requires_functions]
     end
     
     subgraph "后端层"
         PROV[提供者实现<br/>模型设置&夹具]
         SCHEMA[SQL Schemas<br/>数据库结构]
-        CAPSDECL[能力声明<br/>支持的功能]
+        DIALECT[方言<br/>Protocol & 支持的函数]
     end
     
     subgraph "数据库层"
@@ -93,11 +93,11 @@ graph LR
     TEST -->|使用| IFACE
     TEST -->|需要| CAPS
     IFACE -->|被实现| PROV
-    CAPS -->|被检查| CAPSDECL
+    CAPS -->|被检查| DIALECT
     PROV -->|创建| SCHEMA
-    PROV -->|配置模型| CAPSDECL
+    PROV -->|配置模型| DIALECT
     SCHEMA -->|执行于| DB
-    CAPSDECL -->|描述| DB
+    DIALECT -->|描述| DB
 ```
 
 ### 职责分工
@@ -108,15 +108,14 @@ graph LR
 - 创建测试夹具和工具
 - 永远不要假设后端特定功能
 - 永远不要在测试中直接编写SQL
-- 使用正确的category+capability格式记录所需能力
+- 使用 `requires_protocol` / `requires_functions` 记录所需能力
 
 #### 后端开发者必须：
-- 实现提供者接口
+- 实现提供者接口（成对的 `setup_*_fixtures` / `async_setup_*_fixtures`）
 - 创建后端特定的schema文件
 - 处理数据库连接/清理
-- 分别编写后端特定的测试
-- 生成兼容性报告
-- 使用add_*方法声明后端能力
+- 通过薄桥文件将测试套件导入自身的 `tests/` 树中
+- 将 `TESTSUITE_PROVIDER_REGISTRY` 指向您的 provider 注册表
 
 ### 提供者职责
 
@@ -159,7 +158,7 @@ graph LR
 **实现示例：**
 
 ```python
-async def cleanup_after_test_async(self, scenario_name: str):
+async def async_teardown_order_fixtures(self, scenario_name: str):
     """正确的清理顺序：先数据，后游标，最后断开连接。"""
     # 步骤 1：删除表（连接仍然存活时）
     for table in tables_to_drop:
@@ -184,7 +183,7 @@ async def cleanup_after_test_async(self, scenario_name: str):
 | 数据库设置 | 定义接口 | ✅ 实现 |
 | 模型配置 | 定义夹具 | ✅ 提供模型 |
 | 清理/拆除 | 定义钩子 | ✅ 实现 |
-| 能力声明 | 定义要求 | ✅ 声明支持 |
+| 能力处理 | 通过 `requires_protocol` / `requires_functions` 定义要求 | ✅ 实现方言协议与函数 |
 
 ## [2. 后端开发者入门](#2-后端开发者入门)
 

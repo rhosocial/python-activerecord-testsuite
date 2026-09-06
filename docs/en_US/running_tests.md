@@ -4,7 +4,7 @@ This guide explains how to execute tests using the test suite.
 
 ## Table of Contents
 - [1. Running Feature Tests](#1-running-feature-tests)
-- [2. CRITICAL: PYTHONPATH Configuration](#2-critical-pythonpath-configuration)
+- [2. PYTHONPATH Configuration](#2-pythonpath-configuration)
 - [3. Running Tests](#3-running-tests)
 - [4. Generating Code Coverage Reports](#4-generating-code-coverage-reports)
 - [5. Writing Tests](#5-writing-tests)
@@ -19,88 +19,83 @@ This section details how to run the `feature` tests. The tests under the `basic`
 
 ### Schema Definition and Fixtures
 
-The test suite defines the requirements for database schemas and test fixtures, but does not handle their creation or management directly. Instead, it provides **interfaces** that backends must implement to provide these resources.
+The test suite defines the requirements for database schemas and test fixtures, but does not handle their creation or management directly. Instead, each topic exposes an **interface** (`interfaces.py`) that backends implement to provide these resources.
 
-For each test category (like `basic`), the test suite defines what schema and fixtures are needed. Your backend implementation is responsible for providing the SQL dialect-specific schema creation and fixture management through the required interfaces.
-
-- **Schema Interface**: Backends must implement the schema creation interface to handle database-specific DDL statements.
-- **Fixture Interface**: Backends need to provide test fixtures according to the specified requirements.
+For each test topic (like `basic`), the test suite defines what schema and fixtures are needed. Your backend implementation is responsible for providing the SQL dialect-specific schema creation and fixture management through the required provider interfaces (`setup_*_fixtures` / `async_setup_*_fixtures` and their teardown counterparts).
 
 ### Test Execution Flow
 
-1. **Discovery**: `pytest` discovers the tests (e.g., `test_crud.py`).
-2. **Configuration Loading**: The root `conftest.py` in the test suite calls `load_backend_configs()` to get a list of all database configurations to test against (both built-in SQLite and custom ones).
-3. **Parametrization**: `pytest` creates a parameterized run for each configuration.
-4. **Fixture Setup (`database`)**: For each run, the `database` fixture does the following:
-    a. Connects to the specified database.
-    b. Locates the correct schema file (e.g., `basic.sql`) based on the test file's path.
-    c. Executes the SQL to create the necessary tables.
-    d. Yields a tuple containing the configured backend instance and the connection configuration object.
-5. **Model Fixture Setup**: Fixtures like `user_class` receive the result from the `database` fixture and bind the generic `User` model from `fixtures/models.py` to the live database connection.
-6. **Test Run**: The test function (e.g., `test_create_user(user_class)`) executes using the fully configured model.
-7. **Fixture Teardown**: The `database` fixture cleans up the database (drops tables, disconnects).
+1. **Discovery**: `pytest` discovers the tests imported into the backend's own `tests/` tree.
+2. **Provider resolution**: Tests request model fixtures (e.g. `user_class`); these fixtures route through the backend's registered provider, which creates the schema and configures the model classes against a live backend.
+3. **Scenario parametrization**: Each backend registers one or more scenarios via its provider (e.g. SQLite `memory`, MySQL `mysql_80`). Tests are parametrized across the registered scenarios; the `--scenarios` option selects a subset.
+4. **Test run**: `test_create_user(user_class)` executes using the fully configured model bound to the scenario's backend.
+5. **Fixture teardown**: The provider tears down fixtures and disconnects in the correct order (data → cursors → connection).
 
-## [2. CRITICAL: PYTHONPATH Configuration](#2-critical-pythonpath-configuration)
+## [2. PYTHONPATH Configuration](#2-pythonpath-configuration)
 
-**MUST configure PYTHONPATH before running tests.** The test directories (`tests/`, `tests_original/`) are **NOT** on the Python path by default.
+**Set `PYTHONPATH` so pytest can import the backend's test utilities.** When running the testsuite from a backend project root, the backend's `tests/` directory contains the provider registry (e.g. `tests/providers/registry.py`) that the testsuite discovers via the `TESTSUITE_PROVIDER_REGISTRY` environment variable. Without `PYTHONPATH=tests`, pytest cannot import this module.
 
 ### Why PYTHONPATH is Required
 
 ```
-project-root/
-├── src/rhosocial/activerecord/    # ← Python can import this
-├── tests/                          # ← NOT importable by default
-└── tests_original/                 # ← NOT importable by default
+backend-project/
+├── src/                    # ← the package under test (importable if installed)
+└── tests/
+    └── providers/registry.py   # ← NOT importable by default; needs PYTHONPATH=tests
 ```
 
-Tests import from `rhosocial.activerecord`, but the test files themselves are not in the package structure. Without PYTHONPATH, pytest cannot find the source code.
+The testsuite locates the backend's provider registry through
+`TESTSUITE_PROVIDER_REGISTRY` (default `providers.registry:provider_registry`).
+Without `PYTHONPATH=tests`, python cannot import the `providers` package and the
+run fails with `ImportError: No module named 'providers'`.
 
 ### Platform-Specific Commands
 
 **Linux/macOS (bash/zsh):**
 ```bash
-# Single command execution
-PYTHONPATH=src pytest tests/
+# Single command execution (from a backend project root)
+PYTHONPATH=tests pytest tests/rhosocial/activerecord_test/feature/
 
 # Persistent for session
-export PYTHONPATH=src
+export PYTHONPATH=tests
 pytest tests/
 ```
 
 **Windows (PowerShell):**
 ```powershell
 # Single command execution
-$env:PYTHONPATH="src"; pytest tests/
+$env:PYTHONPATH="tests"; pytest tests/
 
 # Persistent for session
-$env:PYTHONPATH="src"
+$env:PYTHONPATH="tests"
 pytest tests/
 ```
 
 **Windows (CMD):**
 ```cmd
 REM Single command execution
-set PYTHONPATH=src && pytest tests/
+set PYTHONPATH=tests && pytest tests/
 
 REM Persistent for session
-set PYTHONPATH=src
+set PYTHONPATH=tests
 pytest tests/
 ```
 
 ### Common Errors Without PYTHONPATH
 
 ```python
-# Error you'll see:
-ModuleNotFoundError: No module named 'rhosocial.activerecord'
+# Error you'll see (when PYTHONPATH=tests is missing):
+ImportError: No module named 'providers'
 
 # Solution:
-# Set PYTHONPATH=src before running pytest
+# Set PYTHONPATH=tests before running pytest so the backend's
+# tests/providers/registry.py can be imported.
 ```
 
 ### IDE Configuration
 
 **PyCharm:**
-- Mark `src/` as "Sources Root"
+- Mark the backend's `tests/` as a "Sources Root"
 - Test runner automatically adds it to PYTHONPATH
 
 **VS Code:**
@@ -117,48 +112,71 @@ ModuleNotFoundError: No module named 'rhosocial.activerecord'
 
 ```bash
 # .env file
-PYTHONPATH=src
+PYTHONPATH=tests
 ```
 
 ## [3. Running Tests](#3-running-tests)
 
-### Quick Reference
+The test suite is imported by backend packages rather than run on its own.
+Run the tests from a backend project root (e.g. `python-activerecord/`), not
+from this directory. A backend wires the suite into its own `tests/` tree and
+provides `TESTSUITE_PROVIDER_REGISTRY` via its top-level `tests/conftest.py`.
+
+### Running the imported tests
 
 ```bash
-# ALWAYS set PYTHONPATH first
-export PYTHONPATH=src  # or equivalent for your platform
+# Run the feature tests imported by the backend
+pytest tests/rhosocial/activerecord_test/feature/basic
 
-# Run local backend tests only (default)
+# Run a single topic (e.g. relation)
+pytest tests/rhosocial/activerecord_test/feature/relation
+
+# Run the whole imported suite
 pytest tests/
-
-# Run testsuite validation tests
-pytest tests/ --run-testsuite
-
-# Run specific feature tests
-pytest tests/ --run-testsuite -m "feature_crud"
-
-# Run original comprehensive tests
-pytest tests_original/
-
-# Run with capability report
-pytest tests/ --run-testsuite --show-skipped-capabilities
 ```
 
-### Test Selection by Markers
+### Sync / async selection
+
+The project configures `asyncio_mode = "auto"`, so pytest-asyncio marks every
+`async def test_*` as an `asyncio` test at collection time. No explicit marker
+is written in source. To select:
+
+```bash
+# Async tests only
+pytest tests/ -m asyncio
+
+# Sync tests only
+pytest tests/ -m "not asyncio"
+
+# Or by path / name (async files carry the `_async` suffix)
+pytest tests/ -k async
+pytest tests/ -k "not async"
+```
+
+### Test selection by category
+
+Category is expressed through directory layout, not markers:
 
 ```bash
 # Feature tests
-pytest -m "feature"
-pytest -m "feature_crud"
-pytest -m "feature_query"
-
-# Real-world scenarios
-pytest -m "realworld"
-pytest -m "scenario_ecommerce"
+pytest tests/rhosocial/activerecord_test/feature
 
 # Benchmarks
-pytest -m "benchmark"
-pytest -m "benchmark_bulk"
+pytest tests/rhosocial/activerecord_test/benchmark
+```
+
+### Capability-based filtering
+
+Backend-specific capability skips are driven by two generic markers:
+`requires_protocol` and `requires_functions` (see `configuration.md`). You may
+filter with:
+
+```bash
+# List registered markers
+pytest --markers
+
+# Collect only tests that do not require extra capabilities
+pytest tests/ -m "not requires_protocol and not requires_functions" --collect-only
 ```
 
 ## [4. Generating Code Coverage Reports](#4-generating-code-coverage-reports)
@@ -183,32 +201,27 @@ This will create a `coverage.xml` file in the project root. You can inspect the 
 - NEVER write SQL directly (use provider interface)
 - NEVER assume database features without declaring capability requirements
 - ALWAYS use fixtures provided by provider
-- ALWAYS use pytest markers
-- ALWAYS specify BOTH category AND specific capability in requirements
+- Capability requirements use exactly two decorators: `requires_protocol` and `requires_functions`
 
 **Example:**
 
 ```python
-# Good - backend-agnostic with capability declaration
-from rhosocial.activerecord.backend.capabilities import (
-    CapabilityCategory,
-    CTECapability
-)
-from rhosocial.activerecord.testsuite.utils import requires_capabilities
+# Good - backend-agnostic with a protocol capability declaration
+from rhosocial.activerecord.backend.dialect.protocols import WindowFunctionSupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol, requires_functions
 
-@pytest.mark.feature
-@pytest.mark.feature_query
-@requires_capabilities((CapabilityCategory.CTE, CTECapability.BASIC_CTE))
-def test_basic_cte(order_fixtures):
-    """Test basic CTE functionality."""
+@requires_protocol(WindowFunctionSupport, "supports_window_functions")
+def test_window_functions(order_fixtures):
+    """Test window function support."""
     User, Order, OrderItem = order_fixtures
-    
-    user = User(username='test', email='test@example.com')
-    assert user.save()
 
-# Bad - missing category in capability requirement
-@requires_capabilities(CTECapability.BASIC_CTE)  # WRONG - no category
-def test_basic_cte(order_fixtures):
+    user = User(username='test', email='test@example.com')
+    assert user.save(), "expected user to be saved"
+
+# Good - function-name capability declaration
+@requires_functions('json_array_insert', 'jsonb_array_insert')
+def test_json_insert(json_user_fixtures):
+    """Test JSON insert function support."""
     pass
 
 # Bad - backend-specific
@@ -220,10 +233,13 @@ def test_basic_cte():
 ### For Backend Developers
 
 **Rules:**
-- MUST implement all provider interface methods
-- MUST create schema files matching testsuite structure
-- MUST prefix backend-specific tests with `test_{backend}_`
-- MUST handle database connection pooling
-- MUST clean up test data
-- MUST declare backend capabilities accurately using add_* methods
-- MUST return tuples from provider methods (even for single model)
+- MUST implement all provider interface methods (both `setup_*_fixtures` and
+  `async_setup_*_fixtures` pairs as supported by the backend).
+- MUST create schema files matching the testsuite structure.
+- MUST import the testsuite into your own `tests/` tree via thin bridge files
+  (`from ...testsuite.feature.<topic>.test_x import *`).
+- MUST handle database connection pooling and clean up test data.
+- MUST return tuples from provider methods (even for single model).
+- Capability handling is driven by the dialects: `requires_protocol` reads
+  Protocol-class support, `requires_functions` reads `supports_functions(...)`
+  — backends do not declare capabilities separately with `add_*` methods.
