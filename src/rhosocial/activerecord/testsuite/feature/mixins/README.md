@@ -15,7 +15,7 @@ individually and in combination.
 
 | File | Sync/Async | Scope |
 |------|------------|-------|
-| `test_timestamps.py` | both | `TimestampMixin` — `created_at` / `updated_at` auto-set and update, timezone handling |
-| `test_soft_delete.py` | both | `SoftDeleteMixin` — `deleted_at` timestamp, `delete()` behavior, query filtering |
-| `test_optimistic_lock.py` | both | `OptimisticLockMixin` — version increment, `DatabaseError` on concurrent conflict |
+| `test_timestamps.py` | both | `DefaultTimestampMixin` — `created_at` / `updated_at` auto-set and update, timezone handling |
+| `test_soft_delete.py` | both | `DefaultSoftDeleteMixin` — `deleted_at` timestamp, `delete()` behavior, query filtering |
+| `test_optimistic_lock.py` | both | `DefaultOptimisticLockMixin` — version increment, `DatabaseError` on concurrent conflict |
 | `test_combined_articles.py` | both | All three mixins combined on one model — verify coordinated behavior on update, delete, and query |
