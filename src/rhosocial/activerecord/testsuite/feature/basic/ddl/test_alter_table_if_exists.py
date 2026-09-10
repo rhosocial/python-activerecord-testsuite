@@ -43,7 +43,7 @@ class TestDdlAddColumn:
     @requires_protocol(AlterTableModifierSupport, "supports_add_column_if_not_exists")
     def test_add_column_if_not_exists(self, ddl_dialect):
         """ALTER TABLE ADD COLUMN IF NOT EXISTS should render the IF NOT EXISTS qualifier."""
-        action = AddColumn(ddl_dialect, ColumnDefinition("content", TextType()), if_not_exists=True)
+        action = AddColumn(ddl_dialect, ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)), if_not_exists=True)
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" in sql, \
             "Expected the rendered SQL to contain the IF NOT EXISTS qualifier"
@@ -51,7 +51,7 @@ class TestDdlAddColumn:
 
     def test_add_column_plain_form(self, ddl_dialect):
         """ALTER TABLE ADD COLUMN without if_not_exists should omit the qualifier."""
-        action = AddColumn(ddl_dialect, ColumnDefinition("content", TextType()))
+        action = AddColumn(ddl_dialect, ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)))
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" not in sql, \
             "Expected the rendered SQL to omit the IF NOT EXISTS qualifier"
