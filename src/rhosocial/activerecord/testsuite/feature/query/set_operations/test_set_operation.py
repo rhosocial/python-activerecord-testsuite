@@ -437,6 +437,7 @@ class TestSyncSetOperations:
         from rhosocial.activerecord.query import SetOperationQuery, AsyncSetOperationQuery
         from unittest.mock import Mock
         from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
         from rhosocial.activerecord.query.active_query import AsyncActiveQuery
 
         User, Order, OrderItem = order_fixtures
@@ -448,7 +449,7 @@ class TestSyncSetOperations:
         # model/backend is used only to satisfy construction; the rejection
         # fires before any backend interaction occurs.
         mock_async_backend = Mock(spec=AsyncStorageBackend)
-        mock_async_backend.dialect = Mock()
+        mock_async_backend.dialect = Mock(spec=SQLDialectBase)
         mock_async_model = Mock()
         mock_async_model.backend.return_value = mock_async_backend
         async_query = AsyncActiveQuery(mock_async_model)

@@ -42,6 +42,10 @@ def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
             return {}
         if raw is str or "str" in text:
             return "x"
+        if "DataType" in text or "Type" in text.split(".")[-1:]:
+            from rhosocial.activerecord.backend.expression.types import IntegerType
+
+            return IntegerType()
         if raw is int:
             return 1
         if raw is float:
@@ -124,6 +128,7 @@ def special_constructors():
     backends may register their own entries for backend-specific expressions.
     """
     return {
+        "statements.ddl_table.ColumnDefinition": _column_definition,
         "advanced_functions.JSONExpression": _json_expr,
         "query_parts.JoinExpression": _join_expr,
         "statements.ddl_partition.PartitionClause": _partition_clause,
@@ -138,6 +143,13 @@ def special_constructors():
         "datetime.DateTimeSubtractExpression": _datetime_sub_expr,
         "datetime.DateTimeAddExpression": _datetime_add_expr,
     }
+
+
+def _column_definition(dialect):
+    from rhosocial.activerecord.backend.expression.statements import ColumnDefinition
+    from rhosocial.activerecord.backend.expression.types import IntegerType
+
+    return ColumnDefinition(dialect, "col", IntegerType())
 
 
 def _json_expr(dialect):

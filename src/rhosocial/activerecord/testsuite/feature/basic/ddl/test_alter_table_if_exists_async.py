@@ -34,7 +34,7 @@ class TestAsyncDdlAddColumn:
     async def test_add_column_if_not_exists(self, async_ddl_dialect):
         """ALTER TABLE ADD COLUMN IF NOT EXISTS should render the IF NOT EXISTS qualifier."""
         action = AddColumn(
-            async_ddl_dialect, ColumnDefinition("content", TextType()), if_not_exists=True
+            async_ddl_dialect, ColumnDefinition(async_ddl_dialect, "content", TextType(async_ddl_dialect)), if_not_exists=True
         )
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" in sql, \
@@ -43,7 +43,7 @@ class TestAsyncDdlAddColumn:
 
     async def test_add_column_plain_form(self, async_ddl_dialect):
         """ALTER TABLE ADD COLUMN without if_not_exists should omit the qualifier."""
-        action = AddColumn(async_ddl_dialect, ColumnDefinition("content", TextType()))
+        action = AddColumn(async_ddl_dialect, ColumnDefinition(async_ddl_dialect, "content", TextType(async_ddl_dialect)))
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" not in sql, \
             "Expected the rendered SQL to omit the IF NOT EXISTS qualifier"

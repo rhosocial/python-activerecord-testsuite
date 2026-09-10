@@ -121,9 +121,10 @@ class TestCTEQueryErrorHandling:
         # Create a mock async backend to simulate passing an async backend to sync CTEQuery
         from unittest.mock import Mock
         from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
 
         mock_async_backend = Mock(spec=AsyncStorageBackend)
-        mock_async_backend.dialect = Mock()
+        mock_async_backend.dialect = Mock(spec=SQLDialectBase)
 
         # Try to create a CTEQuery with an async backend - should raise TypeError
         with pytest.raises(TypeError) as exc_info:
@@ -182,10 +183,11 @@ class TestCTEQueryErrorHandling:
         # before any backend interaction occurs.
         from unittest.mock import Mock
         from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
         from rhosocial.activerecord.query.active_query import AsyncActiveQuery
 
         mock_async_backend = Mock(spec=AsyncStorageBackend)
-        mock_async_backend.dialect = Mock()
+        mock_async_backend.dialect = Mock(spec=SQLDialectBase)
         mock_async_model = Mock()
         mock_async_model.backend.return_value = mock_async_backend
         async_query = AsyncActiveQuery(mock_async_model)

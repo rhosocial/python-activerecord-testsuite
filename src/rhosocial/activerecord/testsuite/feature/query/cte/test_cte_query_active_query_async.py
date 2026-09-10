@@ -117,10 +117,11 @@ class TestAsyncCTEQueryErrorHandling:
 
         # Get sync backend from model (sync backend for sync model)
         from rhosocial.activerecord.backend.base import StorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
         from unittest.mock import Mock
 
         mock_sync_backend = Mock(spec=StorageBackend)
-        mock_sync_backend.dialect = Mock()
+        mock_sync_backend.dialect = Mock(spec=SQLDialectBase)
 
         # Try to create an AsyncCTEQuery with a sync backend - should raise TypeError
         with pytest.raises(TypeError) as exc_info:
@@ -162,11 +163,12 @@ class TestAsyncCTEQueryErrorHandling:
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
         from rhosocial.activerecord.backend.base import StorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
         from rhosocial.activerecord.query.active_query import ActiveQuery
         from unittest.mock import Mock
 
         mock_sync_backend = Mock(spec=StorageBackend)
-        mock_sync_backend.dialect = Mock()
+        mock_sync_backend.dialect = Mock(spec=SQLDialectBase)
         mock_sync_model = Mock()
         mock_sync_model.backend.return_value = mock_sync_backend
         sync_query = ActiveQuery(mock_sync_model)
