@@ -54,6 +54,68 @@ def _unicode_sample_contents():
     }
 
 
+# --- BMP-only Unicode fixtures ------------------------------------------------
+#
+# See test_logging_data_summarization.py for rationale.  These are the async
+# mirror of the BMP-only tests — same data, async execution.
+
+_BMP_MULTILINGUAL_SCRIPTS = (
+    "中文：你好，世界！",
+    "日本語：こんにちは世界",
+    "العربية: مرحباً بالعالم",
+    "עברית: שלום עולם",
+    "हिन्दी: नमस्ते दुनिया",
+    "ภาษาไทย: สวัสดีชาวโลก",
+    "한국어: 안녕하세요 세계",
+    "Русский: Привет, мир",
+    "Ελληνικά: Γειά σου Κόσμε",
+    "Deutsch: Hallo Welt",
+)
+
+_BMP_SYMBOLS = "☺ ☀ ✓ ✔ ✗ ☂ ❤ ♥ ★ ☆ ☯ ☃ ♫ ✂ ☎ ✈ ✉ ☁ ☄ ♜ ♞ ♝"
+
+
+def _bmp_multilingual_content() -> str:
+    """Compose a BMP-only payload exercising the widest portable charset."""
+    return "\n".join(_BMP_MULTILINGUAL_SCRIPTS) + "\n" + _BMP_SYMBOLS
+
+
+def _bmp_json_payload() -> dict:
+    """Return a JSON-serializable BMP-only payload."""
+    return {
+        "greetings": {
+            "zh": "你好，世界！",
+            "ja": "こんにちは世界",
+            "ar": "مرحباً بالعالم",
+            "he": "שלום עולם",
+            "hi": "नमस्ते दुनिया",
+            "th": "สวัสดีชาวโลก",
+            "ko": "안녕하세요 세계",
+            "ru": "Привет, мир",
+        },
+        "symbols": _BMP_SYMBOLS,
+        "numbers": [1, 2, 3, 42],
+    }
+
+
+async def _async_assert_bmp_round_trip(Post) -> None:
+    """Save/load a BMP-only payload and assert verbatim round-trip."""
+    content = _bmp_multilingual_content()
+    post = Post(user_id=1, title="BMP multilingual", content=content, status="published")
+    await post.save()
+
+    results = await Post.query().where(Post.c.title == "BMP multilingual").all()
+    assert len(results) == 1, "query should return exactly one BMP post"
+    found = results[0]
+    assert found.content == content, "BMP-only content should round-trip verbatim"
+    assert len(found.content) == len(content)
+
+    config = _make_logging_config()
+    summary = config.summarize_data({"content": found.content})
+    _assert_truncated(summary["content"], content)
+    assert found.content == content
+
+
 def _make_logging_config() -> LoggingConfig:
     return LoggingConfig(
         log_data_mode=LogDataMode.SUMMARY,
@@ -357,6 +419,36 @@ class TestAsyncLoggingDataSummarization:
         User, Post, _ = async_blog_fixtures
         user = await _async_create_user(User)
         await _async_assert_emoji_round_trip(Post)
+
+    async def test_bmp_multilingual_content_round_trip(self, async_blog_fixtures):
+        """BMP-only multilingual content should round-trip on every backend."""
+        User, Post, _ = async_blog_fixtures
+        user = await _async_create_user(User)
+        await _async_assert_bmp_round_trip(Post)
+
+    async def test_bmp_json_field_round_trip(self, async_json_user_fixture):
+        """BMP-only unicode JSON field should round-trip on every backend."""
+        JsonUser = async_json_user_fixture
+        original_data = _bmp_json_payload()
+        json_content = json.dumps(original_data, ensure_ascii=False)
+
+        user = JsonUser(
+            username="bmp-json-user",
+            email="bmp-json@example.com",
+            age=28,
+            preferences=json_content,
+        )
+        await user.save()
+
+        results = await JsonUser.query().where(JsonUser.c.username == "bmp-json-user").all()
+        assert len(results) == 1, "query should return exactly one BMP JSON user"
+        found = results[0]
+
+        retrieved = json.loads(_normalize_json_value(found.preferences))
+        assert retrieved == original_data, "retrieved JSON should match the original data"
+        assert retrieved["greetings"]["zh"] == "你好，世界！"
+        assert retrieved["symbols"] == _BMP_SYMBOLS
+        assert retrieved["numbers"] == [1, 2, 3, 42]
 
     async def test_sql_injection_payloads_as_content_round_trip(self, async_blog_fixtures):
         """SQL injection payload text should be preserved verbatim as content."""

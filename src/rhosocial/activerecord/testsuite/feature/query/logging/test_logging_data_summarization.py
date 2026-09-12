@@ -55,6 +55,74 @@ def _unicode_sample_contents():
     }
 
 
+# --- BMP-only Unicode fixtures ------------------------------------------------
+#
+# These exercise the widest character set that every backend supporting
+# Unicode can guarantee to store — the entire Basic Multilingual Plane
+# (U+0000..U+FFFF) with no supplementary-plane characters.  Backends whose
+# charset cannot round-trip supplementary characters (e.g. Oracle 18c's
+# AL32UTF8) should skip the full Unicode tests above and run these instead.
+#
+# The names and docstrings are backend-agnostic; the decision to skip the
+# full tests is made by each backend's own conftest.py.
+
+_BMP_MULTILINGUAL_SCRIPTS = (
+    "中文：你好，世界！",
+    "日本語：こんにちは世界",
+    "العربية: مرحباً بالعالم",
+    "עברית: שלום עולם",
+    "हिन्दी: नमस्ते दुनिया",
+    "ภาษาไทย: สวัสดีชาวโลก",
+    "한국어: 안녕하세요 세계",
+    "Русский: Привет, мир",
+    "Ελληνικά: Γειά σου Κόσμε",
+    "Deutsch: Hallo Welt",
+)
+
+_BMP_SYMBOLS = "☺ ☀ ✓ ✔ ✗ ☂ ❤ ♥ ★ ☆ ☯ ☃ ♫ ✂ ☎ ✈ ✉ ☁ ☄ ♜ ♞ ♝"
+
+
+def _bmp_multilingual_content() -> str:
+    """Compose a BMP-only payload exercising the widest portable charset."""
+    return "\n".join(_BMP_MULTILINGUAL_SCRIPTS) + "\n" + _BMP_SYMBOLS
+
+
+def _bmp_json_payload() -> dict:
+    """Return a JSON-serializable BMP-only payload."""
+    return {
+        "greetings": {
+            "zh": "你好，世界！",
+            "ja": "こんにちは世界",
+            "ar": "مرحباً بالعالم",
+            "he": "שלום עולם",
+            "hi": "नमस्ते दुनिया",
+            "th": "สวัสดีชาวโลก",
+            "ko": "안녕하세요 세계",
+            "ru": "Привет, мир",
+        },
+        "symbols": _BMP_SYMBOLS,
+        "numbers": [1, 2, 3, 42],
+    }
+
+
+def _assert_bmp_round_trip(Post) -> None:
+    """Save/load a BMP-only payload and assert verbatim round-trip."""
+    content = _bmp_multilingual_content()
+    post = Post(user_id=1, title="BMP multilingual", content=content, status="published")
+    post.save()
+
+    results = Post.query().where(Post.c.title == "BMP multilingual").all()
+    assert len(results) == 1, "query should return exactly one BMP post"
+    found = results[0]
+    assert found.content == content, "BMP-only content should round-trip verbatim"
+    assert len(found.content) == len(content)
+
+    config = _make_logging_config()
+    summary = config.summarize_data({"content": found.content})
+    _assert_truncated(summary["content"], content)
+    assert found.content == content
+
+
 def _make_logging_config() -> LoggingConfig:
     return LoggingConfig(
         log_data_mode=LogDataMode.SUMMARY,
@@ -364,6 +432,41 @@ class TestLoggingDataSummarization:
         User, Post, _ = blog_fixtures
         user = _create_user(User)
         _assert_unicode_emoji_round_trip(Post)
+
+    def test_bmp_multilingual_content_round_trip(self, blog_fixtures):
+        """BMP-only multilingual content should round-trip on every backend.
+
+        This complements the full Unicode tests (which contain supplementary-plane
+        characters).  Backends whose charset cannot store supplementary characters
+        should skip the full tests and run this one instead.
+        """
+        User, Post, _ = blog_fixtures
+        user = _create_user(User)
+        _assert_bmp_round_trip(Post)
+
+    def test_bmp_json_field_round_trip(self, json_user_fixture):
+        """BMP-only unicode JSON field should round-trip on every backend."""
+        JsonUser = json_user_fixture
+        original_data = _bmp_json_payload()
+        json_content = json.dumps(original_data, ensure_ascii=False)
+
+        user = JsonUser(
+            username="bmp-json-user",
+            email="bmp-json@example.com",
+            age=28,
+            preferences=json_content,
+        )
+        user.save()
+
+        results = JsonUser.query().where(JsonUser.c.username == "bmp-json-user").all()
+        assert len(results) == 1, "query should return exactly one BMP JSON user"
+        found = results[0]
+
+        retrieved = json.loads(_normalize_json_value(found.preferences))
+        assert retrieved == original_data, "retrieved JSON should match the original data"
+        assert retrieved["greetings"]["zh"] == "你好，世界！"
+        assert retrieved["symbols"] == _BMP_SYMBOLS
+        assert retrieved["numbers"] == [1, 2, 3, 42]
 
     def test_sql_injection_payloads_as_content_round_trip(self, blog_fixtures):
         """SQL injection payload text should be preserved verbatim as content."""
