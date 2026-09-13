@@ -322,6 +322,50 @@ class TestAsyncCTEQueryExtendedFunctionality:
             "Expected second total_amount to be 200.00 after offset"
 
     @requires_cte()
+    async def test_cte_range_conditions_without_inner_order(self, async_order_fixtures):
+        """
+        CTE range conditions with ORDER BY only on the outer query (async).
+
+        This covers backends that prohibit ORDER BY inside CTE definitions
+        (e.g. SQL Server). The CTE selects raw data; sorting is applied
+        externally before LIMIT/OFFSET.
+        """
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+
+        user = AsyncUser(username='cte_no_inner_order', email='cte_no_inner_order@example.com', age=30)
+        await user.save()
+
+        order1 = AsyncOrder(user_id=user.id, order_number='CTE-NIO-001', total_amount=Decimal('100.00'), status='active')
+        order2 = AsyncOrder(user_id=user.id, order_number='CTE-NIO-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = AsyncOrder(user_id=user.id, order_number='CTE-NIO-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = AsyncOrder(user_id=user.id, order_number='CTE-NIO-004', total_amount=Decimal('400.00'), status='active')
+        await order1.save()
+        await order2.save()
+        await order3.save()
+        await order4.save()
+
+        backend = AsyncOrder.backend()
+
+        # CTE definition has NO ORDER BY — only a plain SELECT
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte('nio_cte', (f"SELECT id, status, total_amount FROM {AsyncOrder.table_name()}", ()))
+
+        # ORDER BY applied on the outer query only
+        sql_query = cte_query.from_cte('nio_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1)
+        sql, params = sql_query.to_sql()
+
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'nio_cte' in sql.lower(), "Expected CTE name in generated SQL"
+
+        results = await sql_query.aggregate()
+
+        assert len(results) == 2, "Expected 2 limited CTE results"
+        assert results[0]['total_amount'] == Decimal('300.00'), \
+            "Expected first total_amount to be 300.00 after offset"
+        assert results[1]['total_amount'] == Decimal('200.00'), \
+            "Expected second total_amount to be 200.00 after offset"
+
+    @requires_cte()
     async def test_cte_with_joins(self, async_order_fixtures):
         """
         Test CTE query with join conditions.
