@@ -15,6 +15,7 @@ from rhosocial.activerecord.backend.dialect.protocols import CTESupport
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
 from rhosocial.activerecord.testsuite.utils import (
     requires_cte,
+    requires_cte_order_by,
     requires_protocol,
     requires_recursive_cte,
 )
@@ -273,6 +274,7 @@ class TestAsyncCTEQueryExtendedFunctionality:
             "Expected second total_amount to be 100.00"
 
     @requires_cte()
+    @requires_cte_order_by()
     async def test_cte_with_range_conditions(self, async_order_fixtures):
         """
         Test CTE query with range conditions (limit, offset).

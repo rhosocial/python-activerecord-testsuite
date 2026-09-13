@@ -268,6 +268,11 @@ def requires_recursive_cte():
     from rhosocial.activerecord.backend.dialect.protocols import CTESupport
     return requires_protocol(CTESupport, 'supports_recursive_cte')
 
+def requires_cte_order_by():
+    """Decorator for tests requiring ORDER BY inside CTE definitions."""
+    from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+    return requires_protocol(CTESupport, 'supports_cte_order_by')
+
 def requires_json_operations():
     """
     Decorator for tests requiring JSON operations.
