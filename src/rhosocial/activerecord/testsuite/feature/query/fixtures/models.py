@@ -202,7 +202,6 @@ class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "users"
-    __primary_key__ = "id"
 
     user_id: Annotated[Optional[int], UseColumn("id")] = None
     user_name: Annotated[str, UseColumn("username")]
@@ -224,7 +223,6 @@ class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "posts"
-    __primary_key__ = "id"
 
     post_id: Annotated[Optional[int], UseColumn("id")] = None
     author_id: Annotated[int, UseColumn("author")]
@@ -248,7 +246,6 @@ class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "comments"
-    __primary_key__ = "id"
 
     comment_id: Annotated[Optional[int], UseColumn("id")] = None
     post_id: Annotated[int, UseColumn("post_ref")]
@@ -276,7 +273,6 @@ class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "users"
-    __primary_key__ = "id"
 
     user_id: Annotated[Optional[int], UseColumn("id")] = None
     user_name: Annotated[str, UseColumn("username")]
@@ -298,7 +294,6 @@ class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "posts"
-    __primary_key__ = "id"
 
     post_id: Annotated[Optional[int], UseColumn("id")] = None
     author_id: Annotated[int, UseColumn("author")]
@@ -322,7 +317,6 @@ class AsyncMappedComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecor
     c: ClassVar[FieldProxy] = FieldProxy()
 
     __table_name__ = "comments"
-    __primary_key__ = "id"
 
     comment_id: Annotated[Optional[int], UseColumn("id")] = None
     post_id: Annotated[int, UseColumn("post_ref")]
