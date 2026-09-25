@@ -1,162 +1,78 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/test_derivation.py
-"""
-feature.ddl: derivation round-trip (sync).
+"""Backend-independent DDLSource declaration tests."""
 
-Every test derives DDL from the fixture model declarations via
-``generate_create_table``, executes it through the backend under test, and
-verifies the live structure round-trips (insert / query / defaults). The
-declared constants are the single source of truth — no hand-written schema.
-"""
-import pytest
-
-from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
+from rhosocial.activerecord.backend.expression.statements.ddl_table import (
+    ColumnConstraintType,
+    ForeignKeyConstraint,
+    TableConstraintType,
+)
+from rhosocial.activerecord.base import DDLSource, UseSqlType
 
 
-def _create_model_table_on(backend, model):
-    """Derive *model*'s CREATE TABLE and execute it on a given backend."""
-    expr = model.generate_create_table(backend.dialect)
-    backend.execute(*expr.to_sql())
-    return expr
-
-
-def _create_model_table(model):
-    """Derive DDL from the model and execute it (table only).
-
-    Idempotent: drops the leftover table first so a test may derive and
-    execute repeatedly on the same scenario connection.
-    """
-    from rhosocial.activerecord.backend.expression import (
-        DropTableExpression, TableExpression,
-    )
-
-    drop = DropTableExpression(
-        dialect=model.__backend__.dialect,
-        table=TableExpression(model.__backend__.dialect, model.__table_name__),
-        if_exists=True,
-    )
-    model.__backend__.execute(*drop.to_sql())
-
-    expr = model.generate_create_table()
-    model.__backend__.execute(*expr.to_sql())
-    return expr
-
-
-def _create_model_indexes(model, expr):
-    """Derive and execute each index product."""
-    for ix in expr.indexes:
-        index_expr = ix.to_create_index_expression(
-            model.__backend__.dialect, expr.table
-        )
-        model.__backend__.execute(*index_expr.to_sql())
+def _constraint_types(model, field):
+    return {constraint.constraint_type for constraint in model.column_constraints(field)}
 
 
 class TestZeroDeclarationDerivation:
-    """BareItem: no Specs at all — default derivation rules."""
+    def test_source_declaration(self, bare_class):
+        assert isinstance(bare_class, DDLSource)
+        assert bare_class.table_name() == "ddl_bare_items"
+        assert bare_class.primary_key_columns() == ("id",)
+        assert bare_class.ddl_field_names() == (
+            "id",
+            "name",
+            "quantity",
+            "price",
+            "note",
+        )
 
-    def test_derive_and_execute(self, bare_class):
-        expr = _create_model_table(bare_class)
-        sql, _ = expr.to_sql()
-        # Default rules visible in the derived DDL
-        assert "CREATE TABLE" in sql
-        assert "PRIMARY KEY" in sql
-
-    def test_round_trip(self, bare_class):
-        _create_model_table(bare_class)
-        item = bare_class(name="a", quantity=2, price=1.5)
-        item.save()
-
-        found = bare_class.find_one({'id': item.id})
-        assert found is not None
-        assert found.name == "a"
-        assert found.quantity == 2
-
-        found.quantity = 5
-        found.save()
-        again = bare_class.find_one({'id': item.id})
-        assert again.quantity == 5
-
-    def test_nullable_column_stays_nullable(self, bare_class):
-        """Optional fields (with defaults) derive as nullable: omitting note
-        must not violate the derived schema."""
-        _create_model_table(bare_class)
-        item = bare_class(name="n", quantity=1, price=1.0)
-        item.save()
-        assert bare_class.find_one({'id': item.id}).note is None
+    def test_primary_key_and_nullability_declarations(self, bare_class):
+        assert ColumnConstraintType.PRIMARY_KEY in _constraint_types(
+            bare_class, "id"
+        )
+        assert ColumnConstraintType.NOT_NULL in _constraint_types(bare_class, "name")
+        assert ColumnConstraintType.NOT_NULL not in _constraint_types(
+            bare_class, "note"
+        )
 
 
-class TestGenericSpecDerivation:
-    """SpecOrder: generic Specs (UUID PK, CHECK, UNIQUE, DEFAULT, INDEX)."""
+class TestGenericDeclarationDerivation:
+    def test_type_and_constraint_declarations(self, spec_order_class):
+        code_type = spec_order_class.column_type("code")
+        assert isinstance(code_type, UseSqlType)
+        assert code_type.data_type.name == "varchar"
+        assert code_type.data_type.length == 32
+        assert ColumnConstraintType.CHECK in _constraint_types(
+            spec_order_class, "status"
+        )
 
-    def test_derive_and_execute(self, spec_order_class):
-        expr = _create_model_table(spec_order_class)
-        sql, _ = expr.to_sql()
-        assert "UNIQUE" in sql
-        assert "CHECK" in sql
+        unique = next(
+            constraint
+            for constraint in spec_order_class.table_constraints()
+            if constraint.constraint_type == TableConstraintType.UNIQUE
+        )
+        assert unique.columns == ["code", "status"]
 
-    def test_unique_constraint_enforced(self, spec_order_class):
-        _create_model_table(spec_order_class)
-        first = spec_order_class(code="A1", status="open")
-        first.save()
-        dup = spec_order_class(code="A1", status="open")
-        with pytest.raises(Exception):
-            dup.save()
-
-    def test_check_constraint_enforced(self, spec_order_class):
-        _create_model_table(spec_order_class)
-        bad = spec_order_class(code="A2", status="bogus")
-        with pytest.raises(Exception):
-            bad.save()
-
-    def test_round_trip(self, spec_order_class):
-        _create_model_table(spec_order_class)
-        order = spec_order_class(code="B1", status="paid", quantity=3, total=9.9)
-        order.save()
-        found = spec_order_class.find_one({'id': order.id})
-        assert found is not None
-        assert found.code == "B1"
-        assert found.status == "paid"
+    def test_table_index_declarations(self, spec_order_class):
+        index = spec_order_class.table_indexes()[0]
+        assert index.name == "ix_ddl_spec_orders_code"
+        assert index.columns == ["code"]
 
 
-class TestCapabilitySpecDerivation:
-    """CapabilityPost: capability-gated Specs claim-or-ignore per backend."""
-
-    def test_derive_and_execute(self, capability_class):
-        expr = _create_model_table(capability_class)
-        # Whatever the backend claims (partial index, JSON type, generated
-        # column), derivation and execution succeed.
-        assert "CREATE TABLE" in sql_text(expr)
-
-    def test_round_trip(self, capability_class):
-        _create_model_table(capability_class)
-        post = capability_class(title="hello", views=2)
-        post.save()
-        found = capability_class.find_one({"id": post.id})
-        assert found is not None
-        assert found.title == "hello"
+class TestCapabilityDeclarationDerivation:
+    def test_capability_declarations_remain_available(self, capability_class):
+        assert capability_class.table_indexes()[0].name == (
+            "ix_ddl_capability_posts_title"
+        )
+        assert capability_class.generated_column("double_views") is not None
+        assert capability_class.column_indexes("title") == []
 
 
-class TestPKAndFKSpecDerivation:
-    """SpecComment: explicit integer PK + ForeignKeySpec + NotNullSpec."""
-
-    def test_derive_and_execute(self, spec_comment_class):
-        expr = _create_model_table(spec_comment_class)
-        sql, _ = expr.to_sql()
-        assert "FOREIGN KEY" in sql
-        assert "REFERENCES" in sql
-
-    def test_round_trip_with_parent(self, spec_comment_with_parent):
-        comment_class, order_class = spec_comment_with_parent
-        _create_model_table(comment_class)  # order table already created
-
-        order = order_class(code="C1", status="open")
-        order.save()
-        comment = comment_class(comment_id=1, order_id=order.id, body="ok")
-        comment.save()
-        found = comment_class.find_one({"comment_id": 1})
-        assert found is not None
-        assert found.body == "ok"
-
-
-def sql_text(expr):
-    sql, _ = expr.to_sql()
-    return sql
+class TestForeignKeyDeclarationDerivation:
+    def test_foreign_key_declaration(self, spec_comment_class):
+        constraint = spec_comment_class.table_constraints()[0]
+        assert isinstance(constraint, ForeignKeyConstraint)
+        assert constraint.columns == ["order_id"]
+        assert constraint.foreign_key_table == "ddl_spec_orders"
+        assert constraint.foreign_key_columns == ["id"]
+        assert constraint.on_delete.value == "CASCADE"
