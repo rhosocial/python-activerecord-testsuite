@@ -110,3 +110,9 @@ git checkout as a development dependency.
    `python-activerecord-mysql`, etc.) and their `tests/` mirror trees.
 3. For provider interface contracts, browse
    `src/rhosocial/activerecord/testsuite/feature/<topic>/interfaces.py`.
+
+## Search Scope
+
+- Use `rg` for repository searches; never use `grep`.
+- Limit searches to this `python-activerecord` repository and its related testsuite/backend directories.
+- Exclude `.git/`, `.venv*/`, `__pycache__/`, `build/`, `dist/`, and other cache directories.
