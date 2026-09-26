@@ -43,6 +43,12 @@ removed an assumption that turned out not to be universal:
 3. Column aliases and ``CASCADE`` are not universal either — BigQuery's
    ``CREATE MATERIALIZED VIEW`` takes column names from the query and its
    ``DROP`` has no ``CASCADE``.
+4. The generic expression is not universal either — ClickHouse requires a ``TO``
+   target table or an ``ENGINE``, fields the generic expression does not have,
+   so it legitimately refuses. Likewise its ``DROP`` is spelled ``DROP VIEW``.
+
+The rendering group therefore asserts only statement *kind* and object
+reference, and skips a backend that requires its own expression.
 
 Everything else (aliases, CASCADE, TABLESPACE, storage parameters, refresh
 schedules) is a per-backend feature, asserted in that backend's own suite.
@@ -50,7 +56,10 @@ schedules) is a per-backend feature, asserted in that backend's own suite.
 
 import pytest
 
-from rhosocial.activerecord.backend.dialect.exceptions import DialectNotAdaptedException
+from rhosocial.activerecord.backend.dialect.exceptions import (
+    DialectNotAdaptedException,
+    UnsupportedFeatureError,
+)
 from rhosocial.activerecord.backend.dialect.mixins import ViewMixin
 from rhosocial.activerecord.backend.dialect.protocols import ViewSupport
 from rhosocial.activerecord.backend.expression import Column, QueryExpression, TableExpression
@@ -172,72 +181,66 @@ class TestMaterializedViewCapabilityInvariants:
             f"resolves the formatter to the core ViewMixin implementation"
         )
 
-    def test_generic_expression_renders_when_supported(self, ddl_dialect):
-        """The generic expressions must work on any backend that claims support.
 
-        Catches formatters written against a private expression surface: those
-        raise ``AttributeError`` when handed the generic expression.
+class TestMaterializedViewRendering:
+    """Rendering checks for backends whose MV DDL the generic expression covers."""
+
+    def _render_generic_create(self, dialect):
+        """Render the generic CREATE, skipping backends that need their own.
+
+        The generic ``CreateMaterializedViewExpression`` cannot express every
+        backend's MV: ClickHouse requires a ``TO`` target table or an ``ENGINE``
+        and has no such fields, so it legitimately refuses. Where the generic
+        path *is* supported, the result must be a real CREATE that binds no
+        parameters.
         """
+        expression = CreateMaterializedViewExpression(
+            dialect=dialect, view_name="mv_contract", query=_source_query(dialect)
+        )
+        try:
+            return _render(expression)
+        except UnsupportedFeatureError:
+            pytest.skip(
+                "backend needs its own materialized view expression; rendering is "
+                "covered in that backend's own suite"
+            )
+
+    def test_create_renders_query(self, ddl_dialect):
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
-
-        create = CreateMaterializedViewExpression(
-            dialect=ddl_dialect, view_name="mv_contract", query=_source_query(ddl_dialect)
-        )
-        sql, _ = _render(create)
+        sql, params = self._render_generic_create(ddl_dialect)
         assert sql.upper().startswith("CREATE MATERIALIZED VIEW"), (
             f"CREATE MATERIALIZED VIEW rendered as {sql!r}"
         )
-
-        drop = DropMaterializedViewExpression(
-            dialect=ddl_dialect, view_name="mv_contract", if_exists=True
-        )
-        drop_sql, _ = _render(drop)
-        assert drop_sql.upper().startswith("DROP MATERIALIZED VIEW"), (
-            f"DROP MATERIALIZED VIEW rendered as {drop_sql!r}"
-        )
-
-
-class TestMaterializedViewRendering:
-    """Statement shape for backends that advertise materialized views."""
-
-    def test_create_renders_query_and_data_clause(self, ddl_dialect):
-        if not _mv_supported(ddl_dialect):
-            pytest.skip("backend does not advertise materialized view support")
-        expression = CreateMaterializedViewExpression(
-            dialect=ddl_dialect,
-            view_name="mv_contract",
-            query=_source_query(ddl_dialect),
-        )
-        sql, params = _render(expression)
-        assert "mv_contract" in sql
+        assert "MV_CONTRACT" in sql.upper()
         assert params == (), "materialized view DDL must not bind parameters"
 
-    def test_drop_supports_if_exists(self, ddl_dialect):
-        """``IF EXISTS`` is the one DROP modifier every MV database shares.
+    def test_drop_renders(self, ddl_dialect):
+        """``DROP`` is rendered either as ``DROP MATERIALIZED VIEW`` or ``DROP VIEW``.
 
-        ``CASCADE`` is deliberately not asserted: BigQuery's
-        ``DROP MATERIALIZED VIEW`` has no such clause.
+        ClickHouse removes materialized views with ``DROP VIEW``, so only the
+        statement kind is asserted, not the exact keywords.
         """
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
         expression = DropMaterializedViewExpression(
-            dialect=ddl_dialect,
-            view_name="mv_contract",
-            if_exists=True,
+            dialect=ddl_dialect, view_name="mv_contract", if_exists=True
         )
-        sql, _ = _render(expression)
+        sql, params = _render(expression)
+        assert sql.upper().startswith("DROP "), f"DROP rendered as {sql!r}"
+        assert "VIEW" in sql.upper()
         assert "IF EXISTS" in sql
-
+        assert "MV_CONTRACT" in sql.upper()
+        assert params == ()
 
     def test_refresh_renders_statement(self, ddl_dialect):
         """A refreshing backend must render *something* that refreshes the view.
 
         The leading keyword is deliberately not asserted: not every database
         exposes a ``REFRESH MATERIALIZED VIEW`` statement. Oracle refreshes via a
-        ``DBMS_MVIEW.REFRESH`` PL/SQL block. The contract is that the request
-        renders and refers to the view; the concrete statement shape is asserted
-        per backend.
+        ``DBMS_MVIEW.REFRESH`` PL/SQL block and ClickHouse via
+        ``SYSTEM REFRESH VIEW``. The contract is that the request renders and
+        refers to the view; the concrete statement shape is asserted per backend.
         """
         if not _mv_refresh_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view refresh")
@@ -251,6 +254,7 @@ class TestMaterializedViewRendering:
         # insensitively.
         assert "MV_CONTRACT" in sql.upper()
         assert params == ()
+
 
 
 class TestMaterializedViewProtocolDeclaration:
