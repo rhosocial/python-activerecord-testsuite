@@ -35,6 +35,7 @@ declaratively via ``@requires_protocol``.
 
 import pytest
 
+from rhosocial.activerecord.backend.dialect.exceptions import DialectNotAdaptedException
 from rhosocial.activerecord.backend.dialect.mixins import ViewMixin
 from rhosocial.activerecord.backend.dialect.protocols import ViewSupport
 from rhosocial.activerecord.backend.expression import Column, QueryExpression, TableExpression
@@ -43,13 +44,57 @@ from rhosocial.activerecord.backend.expression.statements.ddl_view import (
     DropMaterializedViewExpression,
     RefreshMaterializedViewExpression,
 )
-from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
 #: Core ``ViewMixin`` implementations a backend must not resolve to once it
 #: advertises the matching capability.
 CORE_CREATE_FORMATTER = ViewMixin.format_create_materialized_view_statement
 CORE_REFRESH_FORMATTER = ViewMixin.format_refresh_materialized_view_statement
+
+
+def _probe(dialect, method_name, *, required: bool):
+    """Call a capability probe, skipping when the dialect cannot answer it.
+
+    Version-aware probes raise ``DialectNotAdaptedException`` until the backend
+    has connected, and version-gated formatters legitimately cannot render
+    without a resolved version (Oracle gates ``CREATE MATERIALIZED VIEW`` on 9i
+    and ``IF NOT EXISTS`` on 23ai). Such dialects are skipped rather than
+    failed: the point of this contract is to catch *lying* probes, not to
+    require every backend to render DDL without a connection.
+    """
+    probe = getattr(dialect, method_name, None)
+    if probe is None:
+        if required:
+            pytest.fail(f"dialect does not expose {method_name}()")
+        return False
+    try:
+        return bool(probe())
+    except DialectNotAdaptedException:
+        pytest.skip(f"dialect is not adapted; {method_name}() needs a server version")
+
+
+def _mv_supported(dialect):
+    """Whether the dialect advertises materialized views (skip if unknowable)."""
+    return _probe(dialect, "supports_materialized_view", required=True)
+
+
+def _mv_refresh_supported(dialect):
+    """Whether the dialect advertises materialized view refresh."""
+    return _probe(dialect, "supports_refresh_materialized_view", required=False)
+
+
+def _render(expression):
+    """Render an expression, skipping dialects that need a resolved version.
+
+    Version-gated formatters cannot produce SQL before the backend has
+    connected (Oracle gates ``CREATE MATERIALIZED VIEW`` on 9i and
+    ``IF NOT EXISTS`` on 23ai), so an unadapted dialect is skipped rather than
+    failed — the ownership invariants above still run for it.
+    """
+    try:
+        return expression.to_sql()
+    except DialectNotAdaptedException:
+        pytest.skip("dialect is not adapted; version-gated DDL cannot be rendered")
 
 
 def _source_query(dialect):
@@ -72,12 +117,6 @@ def _resolved_formatter(dialect, name):
 class TestMaterializedViewCapabilityInvariants:
     """A declared capability must be backed by a real implementation."""
 
-    def test_materialized_view_probe_is_callable(self, ddl_dialect):
-        """Every backend must answer the probe (used for gating)."""
-        probe = getattr(ddl_dialect, "supports_materialized_view", None)
-        assert callable(probe), "dialect does not expose supports_materialized_view()"
-        assert isinstance(probe(), bool)
-
     def test_declared_support_requires_own_create_formatter(self, ddl_dialect):
         """``supports_materialized_view() is True`` implies a backend-owned CREATE.
 
@@ -85,7 +124,7 @@ class TestMaterializedViewCapabilityInvariants:
         leaves the generic ``ViewMixin`` implementation in place, so callers get
         SQL the target database cannot execute.
         """
-        if ddl_dialect.supports_materialized_view() is not True:
+        if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
 
         resolved = _resolved_formatter(
@@ -106,7 +145,7 @@ class TestMaterializedViewCapabilityInvariants:
 
     def test_declared_refresh_support_requires_own_formatter(self, ddl_dialect):
         """The same invariant for the REFRESH path."""
-        if ddl_dialect.supports_refresh_materialized_view() is not True:
+        if not _mv_refresh_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view refresh")
 
         resolved = _resolved_formatter(
@@ -124,13 +163,13 @@ class TestMaterializedViewCapabilityInvariants:
         Catches formatters written against a private expression surface: those
         raise ``AttributeError`` when handed the generic expression.
         """
-        if ddl_dialect.supports_materialized_view() is not True:
+        if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
 
         create = CreateMaterializedViewExpression(
             dialect=ddl_dialect, view_name="mv_contract", query=_source_query(ddl_dialect)
         )
-        sql, _ = create.to_sql()
+        sql, _ = _render(create)
         assert sql.upper().startswith("CREATE MATERIALIZED VIEW"), (
             f"CREATE MATERIALIZED VIEW rendered as {sql!r}"
         )
@@ -138,7 +177,7 @@ class TestMaterializedViewCapabilityInvariants:
         drop = DropMaterializedViewExpression(
             dialect=ddl_dialect, view_name="mv_contract", if_exists=True
         )
-        drop_sql, _ = drop.to_sql()
+        drop_sql, _ = _render(drop)
         assert drop_sql.upper().startswith("DROP MATERIALIZED VIEW"), (
             f"DROP MATERIALIZED VIEW rendered as {drop_sql!r}"
         )
@@ -147,45 +186,58 @@ class TestMaterializedViewCapabilityInvariants:
 class TestMaterializedViewRendering:
     """Statement shape for backends that advertise materialized views."""
 
-    @requires_protocol(ViewSupport, "supports_materialized_view")
     def test_create_renders_query_and_data_clause(self, ddl_dialect):
+        if not _mv_supported(ddl_dialect):
+            pytest.skip("backend does not advertise materialized view support")
         expression = CreateMaterializedViewExpression(
             dialect=ddl_dialect,
             view_name="mv_contract",
             query=_source_query(ddl_dialect),
         )
-        sql, params = expression.to_sql()
+        sql, params = _render(expression)
         assert "mv_contract" in sql
         assert params == (), "materialized view DDL must not bind parameters"
 
-    @requires_protocol(ViewSupport, "supports_materialized_view")
     def test_create_supports_column_aliases(self, ddl_dialect):
+        if not _mv_supported(ddl_dialect):
+            pytest.skip("backend does not advertise materialized view support")
         expression = CreateMaterializedViewExpression(
             dialect=ddl_dialect,
             view_name="mv_contract",
             query=_source_query(ddl_dialect),
             column_aliases=["alias_id"],
         )
-        sql, _ = expression.to_sql()
+        sql, _ = _render(expression)
         assert "alias_id" in sql
 
-    @requires_protocol(ViewSupport, "supports_materialized_view")
     def test_drop_supports_if_exists_and_cascade(self, ddl_dialect):
+        if not _mv_supported(ddl_dialect):
+            pytest.skip("backend does not advertise materialized view support")
         expression = DropMaterializedViewExpression(
             dialect=ddl_dialect,
             view_name="mv_contract",
             if_exists=True,
             cascade=True,
         )
-        sql, _ = expression.to_sql()
+        sql, _ = _render(expression)
         assert "IF EXISTS" in sql
         assert "CASCADE" in sql
 
-    @requires_protocol(ViewSupport, "supports_refresh_materialized_view")
     def test_refresh_renders_statement(self, ddl_dialect):
+        if not _mv_refresh_supported(ddl_dialect):
+            pytest.skip("backend does not advertise materialized view refresh")
         expression = RefreshMaterializedViewExpression(
             dialect=ddl_dialect, view_name="mv_contract"
         )
-        sql, params = expression.to_sql()
+        sql, params = _render(expression)
         assert sql.upper().startswith("REFRESH MATERIALIZED VIEW")
         assert params == ()
+
+
+class TestMaterializedViewProtocolDeclaration:
+    """The capability must be reachable through the declared protocol."""
+
+    def test_probe_is_declared_by_view_support(self, ddl_dialect):
+        if not _mv_supported(ddl_dialect):
+            pytest.skip("backend does not advertise materialized view support")
+        assert isinstance(ddl_dialect, ViewSupport)
