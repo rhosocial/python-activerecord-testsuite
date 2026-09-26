@@ -30,7 +30,22 @@ most databases have no ``REFRESH MATERIALIZED VIEW`` statement at all.
 
 **Capability-gated rendering.** Backends that do support materialized views must
 render the expected statement shape; backends that do not are skipped
-declaratively via ``@requires_protocol``.
+declaratively.
+
+**Scope rule.** This contract asserts only what *every* MV-capable database
+shares. It was written three times against three backends and each round trip
+removed an assumption that turned out not to be universal:
+
+1. ``DROP`` need not be backend-owned — ``DROP MATERIALIZED VIEW [IF EXISTS]
+   [CASCADE]`` is broadly valid, so inheriting the generic formatter is fine.
+2. ``REFRESH`` is not a SQL statement everywhere — Oracle refreshes through a
+   ``DBMS_MVIEW.REFRESH`` PL/SQL block.
+3. Column aliases and ``CASCADE`` are not universal either — BigQuery's
+   ``CREATE MATERIALIZED VIEW`` takes column names from the query and its
+   ``DROP`` has no ``CASCADE``.
+
+Everything else (aliases, CASCADE, TABLESPACE, storage parameters, refresh
+schedules) is a per-backend feature, asserted in that backend's own suite.
 """
 
 import pytest
@@ -198,30 +213,22 @@ class TestMaterializedViewRendering:
         assert "mv_contract" in sql
         assert params == (), "materialized view DDL must not bind parameters"
 
-    def test_create_supports_column_aliases(self, ddl_dialect):
-        if not _mv_supported(ddl_dialect):
-            pytest.skip("backend does not advertise materialized view support")
-        expression = CreateMaterializedViewExpression(
-            dialect=ddl_dialect,
-            view_name="mv_contract",
-            query=_source_query(ddl_dialect),
-            column_aliases=["alias_id"],
-        )
-        sql, _ = _render(expression)
-        assert "alias_id" in sql
+    def test_drop_supports_if_exists(self, ddl_dialect):
+        """``IF EXISTS`` is the one DROP modifier every MV database shares.
 
-    def test_drop_supports_if_exists_and_cascade(self, ddl_dialect):
+        ``CASCADE`` is deliberately not asserted: BigQuery's
+        ``DROP MATERIALIZED VIEW`` has no such clause.
+        """
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
         expression = DropMaterializedViewExpression(
             dialect=ddl_dialect,
             view_name="mv_contract",
             if_exists=True,
-            cascade=True,
         )
         sql, _ = _render(expression)
         assert "IF EXISTS" in sql
-        assert "CASCADE" in sql
+
 
     def test_refresh_renders_statement(self, ddl_dialect):
         """A refreshing backend must render *something* that refreshes the view.
