@@ -224,13 +224,25 @@ class TestMaterializedViewRendering:
         assert "CASCADE" in sql
 
     def test_refresh_renders_statement(self, ddl_dialect):
+        """A refreshing backend must render *something* that refreshes the view.
+
+        The leading keyword is deliberately not asserted: not every database
+        exposes a ``REFRESH MATERIALIZED VIEW`` statement. Oracle refreshes via a
+        ``DBMS_MVIEW.REFRESH`` PL/SQL block. The contract is that the request
+        renders and refers to the view; the concrete statement shape is asserted
+        per backend.
+        """
         if not _mv_refresh_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view refresh")
         expression = RefreshMaterializedViewExpression(
             dialect=ddl_dialect, view_name="mv_contract"
         )
         sql, params = _render(expression)
-        assert sql.upper().startswith("REFRESH MATERIALIZED VIEW")
+        assert sql.strip(), "REFRESH rendered an empty statement"
+        # Backends that fold unquoted identifiers may emit the name in upper
+        # case (Oracle passes a string name to DBMS_MVIEW), so compare case
+        # insensitively.
+        assert "MV_CONTRACT" in sql.upper()
         assert params == ()
 
 
