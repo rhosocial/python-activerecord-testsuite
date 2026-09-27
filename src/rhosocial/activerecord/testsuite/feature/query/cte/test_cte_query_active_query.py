@@ -15,6 +15,7 @@ from rhosocial.activerecord.backend.dialect.protocols import CTESupport
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
 from rhosocial.activerecord.testsuite.utils import (
     requires_cte,
+    requires_cte_order_by,
     requires_protocol,
     requires_recursive_cte,
 )
@@ -121,9 +122,10 @@ class TestCTEQueryErrorHandling:
         # Create a mock async backend to simulate passing an async backend to sync CTEQuery
         from unittest.mock import Mock
         from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
 
         mock_async_backend = Mock(spec=AsyncStorageBackend)
-        mock_async_backend.dialect = Mock()
+        mock_async_backend.dialect = Mock(spec=SQLDialectBase)
 
         # Try to create a CTEQuery with an async backend - should raise TypeError
         with pytest.raises(TypeError) as exc_info:
@@ -182,10 +184,11 @@ class TestCTEQueryErrorHandling:
         # before any backend interaction occurs.
         from unittest.mock import Mock
         from rhosocial.activerecord.backend.base import AsyncStorageBackend
+        from rhosocial.activerecord.backend.dialect.base import SQLDialectBase
         from rhosocial.activerecord.query.active_query import AsyncActiveQuery
 
         mock_async_backend = Mock(spec=AsyncStorageBackend)
-        mock_async_backend.dialect = Mock()
+        mock_async_backend.dialect = Mock(spec=SQLDialectBase)
         mock_async_model = Mock()
         mock_async_model.backend.return_value = mock_async_backend
         async_query = AsyncActiveQuery(mock_async_model)
@@ -294,6 +297,7 @@ class TestCTEQueryExtendedFunctionality:
             "Expected second total_amount to be 100.00"
 
     @requires_cte()
+    @requires_cte_order_by()
     def test_cte_with_range_conditions(self, order_fixtures):
         """
         Test CTE query with range conditions (limit, offset).
@@ -335,6 +339,50 @@ class TestCTEQueryExtendedFunctionality:
         # Verify results contain limited and offset records
         assert len(results) == 2, "Expected 2 limited CTE results"
         # With offset 1 and limit 2, we should get the 2nd and 3rd highest amounts (300 and 200)
+        assert results[0]['total_amount'] == Decimal('300.00'), \
+            "Expected first total_amount to be 300.00 after offset"
+        assert results[1]['total_amount'] == Decimal('200.00'), \
+            "Expected second total_amount to be 200.00 after offset"
+
+    @requires_cte()
+    def test_cte_range_conditions_without_inner_order(self, order_fixtures):
+        """
+        CTE range conditions with ORDER BY only on the outer query.
+
+        This covers backends that prohibit ORDER BY inside CTE definitions
+        (e.g. SQL Server). The CTE selects raw data; sorting is applied
+        externally before LIMIT/OFFSET.
+        """
+        User, Order, OrderItem = order_fixtures
+
+        user = User(username='cte_no_inner_order', email='cte_no_inner_order@example.com', age=30)
+        user.save()
+
+        order1 = Order(user_id=user.id, order_number='CTE-NIO-001', total_amount=Decimal('100.00'), status='active')
+        order2 = Order(user_id=user.id, order_number='CTE-NIO-002', total_amount=Decimal('200.00'), status='completed')
+        order3 = Order(user_id=user.id, order_number='CTE-NIO-003', total_amount=Decimal('300.00'), status='pending')
+        order4 = Order(user_id=user.id, order_number='CTE-NIO-004', total_amount=Decimal('400.00'), status='active')
+        order1.save()
+        order2.save()
+        order3.save()
+        order4.save()
+
+        backend = Order.backend()
+
+        # CTE definition has NO ORDER BY — only a plain SELECT
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte('nio_cte', (f"SELECT id, status, total_amount FROM {Order.table_name()}", ()))
+
+        # ORDER BY applied on the outer query only
+        sql_query = cte_query.from_cte('nio_cte').select('id', 'status', 'total_amount').order_by(('total_amount', 'DESC')).limit(2).offset(1)
+        sql, params = sql_query.to_sql()
+
+        assert 'WITH' in sql.upper(), "Expected WITH clause in generated SQL"
+        assert 'nio_cte' in sql.lower(), "Expected CTE name in generated SQL"
+
+        results = sql_query.aggregate()
+
+        assert len(results) == 2, "Expected 2 limited CTE results"
         assert results[0]['total_amount'] == Decimal('300.00'), \
             "Expected first total_amount to be 300.00 after offset"
         assert results[1]['total_amount'] == Decimal('200.00'), \

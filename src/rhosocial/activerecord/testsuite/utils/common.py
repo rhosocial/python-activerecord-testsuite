@@ -10,7 +10,7 @@ This module provides:
 
 All tests across the entire testsuite should import protocol utilities from this module.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pytest
@@ -268,6 +268,11 @@ def requires_recursive_cte():
     from rhosocial.activerecord.backend.dialect.protocols import CTESupport
     return requires_protocol(CTESupport, 'supports_recursive_cte')
 
+def requires_cte_order_by():
+    """Decorator for tests requiring unconditional ORDER BY inside CTE definitions."""
+    from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+    return requires_protocol(CTESupport, 'supports_unconditional_cte_order_by')
+
 def requires_json_operations():
     """
     Decorator for tests requiring JSON operations.
@@ -405,9 +410,15 @@ DEFAULT_DATETIME_TOLERANCE = timedelta(microseconds=10_000)
 
 
 def _normalize_for_compare(value: datetime) -> datetime:
-    """Strip tzinfo so timezone-aware and tz-naive datetimes can be compared."""
+    """Normalize a datetime onto the naive UTC wall clock for comparison.
+
+    Timezone-aware values are converted to UTC and then stripped of their
+    tzinfo, so two datetimes representing the *same instant* compare equal
+    regardless of the session time zone they were read back in. Naive values
+    pass through unchanged (compared as wall-clock values).
+    """
     if value.tzinfo is not None:
-        return value.replace(tzinfo=None)
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
     return value
 
 
