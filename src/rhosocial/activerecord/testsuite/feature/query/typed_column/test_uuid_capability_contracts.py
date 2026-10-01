@@ -50,6 +50,19 @@ _MAX = "ffffffff-ffff-ffff-ffff-ffffffffffff"
 # ---------------------------------------------------------------------------
 
 
+def _supports(dialect, probe: str) -> bool:
+    """Whether *dialect* advertises *probe*, treating absence as "no".
+
+    A backend that does not implement UUID at all declares no probe, which is
+    the same answer as declaring False. Reading it with a bare getattr() turns
+    a capability question into an AttributeError, which is the confusion this
+    contract exists to catch — so it reads it the way the expression layer
+    does.
+    """
+    found = getattr(dialect, probe, None)
+    return bool(found()) if callable(found) else False
+
+
 @pytest.mark.parametrize(
     "probe, factory",
     [
@@ -61,7 +74,7 @@ _MAX = "ffffffff-ffff-ffff-ffff-ffffffffffff"
 )
 def test_supported_uuid_operation_renders(dialect, probe, factory):
     """A True probe must render, not refuse."""
-    if not getattr(dialect, probe)():
+    if not _supports(dialect, probe):
         pytest.skip(f"{dialect.name} does not advertise {probe}")
 
     sql, params = factory(dialect).to_sql()
@@ -83,7 +96,7 @@ def test_unsupported_uuid_operation_refuses(dialect, probe, factory):
     Refusing is the whole value of an honest probe: the caller can pick
     another route instead of shipping SQL the server will reject.
     """
-    if getattr(dialect, probe)():
+    if _supports(dialect, probe):
         pytest.skip(f"{dialect.name} advertises {probe}")
 
     with pytest.raises(UnsupportedFeatureError):
@@ -92,7 +105,7 @@ def test_unsupported_uuid_operation_refuses(dialect, probe, factory):
 
 def test_refusal_carries_a_suggestion(dialect):
     """An error the caller cannot act on is only marginally better than wrong SQL."""
-    if dialect.supports_uuid_generation():
+    if _supports(dialect, "supports_uuid_generation"):
         pytest.skip(f"{dialect.name} can generate UUIDs")
 
     with pytest.raises(UnsupportedFeatureError) as excinfo:
