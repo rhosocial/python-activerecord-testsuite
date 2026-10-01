@@ -19,6 +19,10 @@ from typing import Optional
 
 import pytest
 
+from rhosocial.activerecord.testsuite.feature.query.conftest import (
+    json_user_fixture,
+)
+
 from rhosocial.activerecord.backend.expression import (
     ArrayColumn,
     BinaryColumn,
@@ -33,24 +37,6 @@ from rhosocial.activerecord.backend.expression import (
     build_json_path,
 )
 from rhosocial.activerecord.base.column_dispatch import build_column, column_class_for
-
-
-@pytest.fixture(scope="module")
-def dialect():
-    """The dialect under test, from whichever backend is installed.
-
-    Providers are per-backend, so this reads the dialect off a throwaway model
-    rather than requiring a new provider method: a contract must not demand
-    interface changes from ten backends to check something that is pure
-    expression behaviour.
-    """
-    from rhosocial.activerecord.model import ActiveRecord
-
-    class _DialectProbe(ActiveRecord):
-        __table_name__ = "typed_column_contract_probe"
-        id: int
-
-    return _DialectProbe.backend().dialect
 
 
 # ---------------------------------------------------------------------------

@@ -13,6 +13,10 @@ No live database is needed: every assertion is on rendered SQL.
 # src/rhosocial/activerecord/testsuite/feature/query/typed_column/test_uuid_capability_contracts.py
 import pytest
 
+from rhosocial.activerecord.testsuite.feature.query.conftest import (
+    json_user_fixture,
+)
+
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import (
     Literal,
@@ -20,17 +24,6 @@ from rhosocial.activerecord.backend.expression import (
     UUIDConstantExpression,
     UUIDGenerationExpression,
 )
-
-
-@pytest.fixture(scope="module")
-def dialect():
-    from rhosocial.activerecord.model import ActiveRecord
-
-    class _UuidProbe(ActiveRecord):
-        __table_name__ = "uuid_capability_contract_probe"
-        id: int
-
-    return _UuidProbe.backend().dialect
 
 
 _NIL = "00000000-0000-0000-0000-000000000000"

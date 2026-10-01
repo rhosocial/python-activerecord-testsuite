@@ -22,19 +22,12 @@ Two layers are needed, because either alone passes while the defect is live:
 # src/rhosocial/activerecord/testsuite/feature/query/json/test_json_probe_honesty.py
 import pytest
 
+from rhosocial.activerecord.testsuite.feature.query.conftest import (
+    json_user_fixture,
+)
+
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import Column, JSONExpression
-
-
-@pytest.fixture(scope="module")
-def dialect():
-    from rhosocial.activerecord.model import ActiveRecord
-
-    class _JsonProbe(ActiveRecord):
-        __table_name__ = "json_probe_honesty_probe"
-        id: int
-
-    return _JsonProbe.backend().dialect
 
 
 #: Function names that belong to one specific backend. A dialect rendering any
