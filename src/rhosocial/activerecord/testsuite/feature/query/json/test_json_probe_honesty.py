@@ -80,11 +80,19 @@ def _sql(dialect, mode, operation, path="a"):
     ],
 )
 def test_true_json_probe_renders(dialect, probe, operation):
-    """If the probe says the dialect handles JSON, it must not then refuse."""
+    """If the probe says the dialect handles JSON, it must not then refuse.
+
+    The arrow mode is only required of the arrow probe. Having JSON and having
+    ``->`` are separate capabilities — Oracle, Snowflake, BigQuery and Firebird
+    all have the first without the second — so demanding arrows of the type
+    probe asks the dialect for something it never claimed. The modes each probe
+    does cover must render.
+    """
     if not getattr(dialect, probe)():
         pytest.skip(f"{dialect.name} does not advertise {probe}")
 
-    for mode in ("auto", "arrow", "function"):
+    modes = ("auto", "arrow", "function") if probe == "supports_json_arrow_operators" else ("auto", "function")
+    for mode in modes:
         try:
             sql, params = _sql(dialect, mode, operation)
         except Exception as exc:  # noqa: BLE001 - any refusal is a defect
@@ -93,6 +101,22 @@ def test_true_json_probe_renders(dialect, probe, operation):
                 f"{mode!r} raised {type(exc).__name__}: {exc}"
             )
         assert sql, f"{dialect.name} rendered an empty statement for mode={mode!r}"
+
+
+def test_arrow_mode_is_refused_without_arrow_support(dialect):
+    """Asking for a spelling the server lacks should be a clear refusal.
+
+    AUTO covers the honest answer — it falls back to the function form — so a
+    dialect that says it has JSON but not arrows is not a defect, and neither
+    is refusing the mode that would need them.
+    """
+    if dialect.supports_json_arrow_operators():
+        pytest.skip(f"{dialect.name} has arrow operators")
+    if not dialect.supports_json_type():
+        pytest.skip(f"{dialect.name} has no JSON support at all")
+
+    with pytest.raises(UnsupportedFeatureError):
+        _sql(dialect, "arrow", "->")
 
 
 def test_forced_arrow_mode_is_honoured(dialect):
