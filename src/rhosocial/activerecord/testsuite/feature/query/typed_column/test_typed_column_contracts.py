@@ -166,11 +166,17 @@ def test_narrowing_actually_narrows(dialect):
     ids=lambda c: c.__name__,
 )
 def test_rendering_is_identical_across_column_classes(dialect, column_class):
-    """Narrowing changed the API surface, not the SQL."""
-    col = column_class(dialect, "settings", table="t", schema_name="s")
-    assert col.to_sql() == (f'{dialect.format_identifier("s")}.'
-                            f'{dialect.format_identifier("t")}.'
-                            f'{dialect.format_identifier("settings")}', ())
+    """Narrowing changed the API surface, not the SQL.
+
+    Compared against a plain Column on the same dialect rather than against a
+    hardcoded string: how a backend qualifies a name is its own business, and
+    BigQuery renders a path as one quoted identifier where most render three.
+    The invariant under test is that the typed layers render exactly what the
+    untyped one does.
+    """
+    typed = column_class(dialect, "settings", table="t", schema_name="s")
+    plain = Column(dialect, "settings", table="t", schema_name="s")
+    assert typed.to_sql() == plain.to_sql()
 
 
 def test_qualified_and_aliased_forms(dialect):
