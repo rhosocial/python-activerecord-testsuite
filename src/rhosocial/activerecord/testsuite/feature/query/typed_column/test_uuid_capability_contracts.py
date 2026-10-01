@@ -13,10 +13,6 @@ No live database is needed: every assertion is on rendered SQL.
 # src/rhosocial/activerecord/testsuite/feature/query/typed_column/test_uuid_capability_contracts.py
 import pytest
 
-from rhosocial.activerecord.testsuite.feature.query.conftest import (
-    json_user_fixture,
-)
-
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import (
     Literal,

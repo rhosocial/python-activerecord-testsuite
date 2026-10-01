@@ -22,10 +22,6 @@ Two layers are needed, because either alone passes while the defect is live:
 # src/rhosocial/activerecord/testsuite/feature/query/json/test_json_probe_honesty.py
 import pytest
 
-from rhosocial.activerecord.testsuite.feature.query.conftest import (
-    json_user_fixture,
-)
-
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import Column, JSONExpression
 

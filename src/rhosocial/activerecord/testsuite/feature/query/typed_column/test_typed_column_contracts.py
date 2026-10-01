@@ -19,10 +19,6 @@ from typing import Optional
 
 import pytest
 
-from rhosocial.activerecord.testsuite.feature.query.conftest import (
-    json_user_fixture,
-)
-
 from rhosocial.activerecord.backend.expression import (
     ArrayColumn,
     BinaryColumn,
