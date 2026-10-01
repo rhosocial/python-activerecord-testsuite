@@ -47,18 +47,24 @@ def dialect(json_user_fixture):
 
 #: Function names that belong to one specific backend. A dialect rendering any
 #: of these is emitting foreign syntax.
+#: Names that identify one dialect's spelling rather than another's. Kept to
+#: functions only a single backend has: JSON_VALUE and JSON_QUERY are the
+#: standard spellings and Oracle, SQL Server and BigQuery all use them, so
+#: listing them as foreign failed the dialect that legitimately renders them.
+#: A dialect's own declared set is what decides, not this table — see
+#: _own_function_names.
 _FOREIGN_FUNCTION_NAMES = (
-    "JSON_EXTRACT",     # MySQL
-    "JSON_UNQUOTE",     # MySQL
-    "JSON_CONTAINS",    # MySQL
-    "JSON_TYPE",        # MySQL
-    "JSON_SEARCH",      # MySQL
-    "GET_PATH",         # Snowflake
-    "JSON_QUERY",       # BigQuery
-    "jsonb_path_query",  # PostgreSQL
-    "OPENJSON",         # SQL Server
-    "JSON_VALUE",       # Oracle / SQL Server / BigQuery
-    "JSON_TABLE",       # Oracle / MySQL / SQL Server
+    "JSON_EXTRACT",      # MySQL / MariaDB
+    "JSON_UNQUOTE",      # MySQL / MariaDB
+    "JSON_CONTAINS",     # MySQL
+    "JSON_TYPE",         # MySQL
+    "JSON_SEARCH",       # MySQL
+    "GET_PATH",          # Snowflake
+    "JSONExtractRaw",     # ClickHouse
+    "JSONExtractString",  # ClickHouse
+    "jsonb_path_query_first",   # PostgreSQL
+    "jsonb_path_query_array",   # PostgreSQL
+    "OPENJSON",          # SQL Server
 )
 
 
@@ -197,26 +203,40 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
     )
 
 
-def _own_function_names(dialect):
+#: The JSON function names worth asking about. Every backend's
+#: supports_json_function takes a name rather than returning a set, so the
+#: question is asked one name at a time.
+_JSON_FUNCTION_NAMES = (
+    "JSON_EXTRACT", "JSON_UNQUOTE", "JSON_QUERY", "JSON_VALUE", "JSON_TABLE",
+    "JSON_CONTAINS", "JSON_TYPE", "JSON_SEARCH", "GET_PATH", "OPENJSON",
+    "JSONExtractRaw", "JSONExtractString",
+    "jsonb_path_query_first", "jsonb_path_query_array", "jsonb_path_query",
+)
+
+
+def _own_function_names(dialect) -> tuple:
     """JSON function names this dialect declares for itself.
 
-    Read from the dialect's own ``supports_json_function`` set, falling back
-    to nothing. An empty result is a legitimate state: it means the dialect
-    must render with operators only, and the test above then demands it
-    invent no function name at all.
+    Asks ``supports_json_function(name)`` per name, because that is the shape
+    every backend implements. Calling it with no arguments — which an earlier
+    version of this helper did — raises TypeError on all of them and returns
+    nothing, so the check silently degraded to "render no function name at
+    all" and no backend was ever really compared against its own set.
+
+    A dialect with no such probe gets an empty result, which is legitimate: it
+    means the dialect renders with operators only.
     """
     probe = getattr(dialect, "supports_json_function", None)
     if probe is None:
         return ()
-    try:
-        declared = probe()
-    except Exception:  # noqa: BLE001 - a broken probe is not a test failure
-        return ()
-    if isinstance(declared, dict):
-        return tuple(declared)
-    if isinstance(declared, (set, frozenset, list, tuple)):
-        return tuple(str(item) for item in declared)
-    return ()
+    own = []
+    for name in _JSON_FUNCTION_NAMES:
+        try:
+            if probe(name):
+                own.append(name)
+        except Exception:  # noqa: BLE001 - a probe that cannot answer is not a failure here
+            return ()
+    return tuple(own)
 
 
 # ---------------------------------------------------------------------------
