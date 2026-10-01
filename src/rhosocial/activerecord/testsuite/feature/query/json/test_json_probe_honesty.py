@@ -22,6 +22,7 @@ Two layers are needed, because either alone passes while the defect is live:
 # src/rhosocial/activerecord/testsuite/feature/query/json/test_json_probe_honesty.py
 import pytest
 
+from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import Column, JSONExpression
 
 
@@ -86,27 +87,34 @@ def test_true_json_probe_renders(dialect, probe, operation):
         assert sql, f"{dialect.name} rendered an empty statement for mode={mode!r}"
 
 
-def test_arrow_probe_matches_arrow_output(dialect):
-    """A dialect claiming arrows must actually emit them in AUTO mode.
-
-    PostgreSQL claimed arrow support while ``format_json_expression``
-    overrode the core dispatch and always produced the jsonpath form, so the
-    probe and the implementation described different dialects.
-    """
-    if not dialect.supports_json_arrow_operators():
-        pytest.skip(f"{dialect.name} has no arrow operators")
-
-    sql, _ = _sql(dialect, "auto", "->")
-    assert "->" in sql, f"{dialect.name} advertises -> but AUTO produced {sql!r}"
-
-
 def test_forced_arrow_mode_is_honoured(dialect):
-    """ARROW must mean arrows, not "whatever this dialect defaults to"."""
+    """ARROW must mean arrows, not "whatever this dialect defaults to".
+
+    This is the assertion that catches ``format_json_expression`` discarding
+    ``expr.mode``. It deliberately does not require AUTO to produce arrows: the
+    two spellings take different path arguments — ``->`` takes a key name,
+    while a jsonpath function takes ``$.a[0]`` — so a dialect whose callers
+    pass jsonpaths must keep the path form in AUTO. What AUTO may not do is
+    silently return the same SQL for every mode.
+    """
     if not dialect.supports_json_arrow_operators():
         pytest.skip(f"{dialect.name} has no arrow operators")
 
     sql, _ = _sql(dialect, "arrow", "->")
     assert "->" in sql, f"ARROW mode produced {sql!r} on {dialect.name}"
+
+
+def test_arrow_probe_is_not_claimed_without_the_operators(dialect):
+    """A dialect with no arrow support must not be able to render them.
+
+    The inverse of the above, and the one that matters for honesty: claiming
+    arrows and then refusing is a broken promise to the caller.
+    """
+    if dialect.supports_json_arrow_operators():
+        pytest.skip(f"{dialect.name} has arrow operators")
+
+    with pytest.raises(UnsupportedFeatureError):
+        _sql(dialect, "arrow", "->")
 
 
 def test_forced_function_mode_differs_from_arrow(dialect):
