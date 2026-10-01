@@ -124,7 +124,7 @@ def test_refusal_carries_a_suggestion(dialect):
 
 def test_generation_emits_no_other_backends_function(dialect):
     """Each backend's generator is its own; borrowing one fails at runtime."""
-    if not dialect.supports_uuid_generation():
+    if not _supports(dialect, "supports_uuid_generation"):
         pytest.skip(f"{dialect.name} cannot generate UUIDs")
 
     sql, _ = UUIDGenerationExpression(dialect).to_sql()
@@ -148,7 +148,7 @@ def test_generation_emits_no_other_backends_function(dialect):
 
 
 def test_generation_is_aliasable(dialect):
-    if not dialect.supports_uuid_generation():
+    if not _supports(dialect, "supports_uuid_generation"):
         pytest.skip(f"{dialect.name} cannot generate UUIDs")
 
     sql, _ = UUIDGenerationExpression(dialect, alias="u").to_sql()
@@ -169,7 +169,7 @@ def test_constants_carry_the_right_value(dialect, which, value):
     A constant that renders as a placeholder would compare every row against
     NULL.
     """
-    if not dialect.supports_uuid_constant():
+    if not _supports(dialect, "supports_uuid_constant"):
         pytest.skip(f"{dialect.name} has no UUID constants")
 
     sql, _ = UUIDConstantExpression(dialect, which).to_sql()
@@ -189,7 +189,7 @@ def test_unknown_constant_kind_is_rejected(dialect):
 
 def test_cast_keeps_its_parameters(dialect):
     """The operand must stay bound, not be inlined into the statement."""
-    if not dialect.supports_uuid_cast():
+    if not _supports(dialect, "supports_uuid_cast"):
         pytest.skip(f"{dialect.name} cannot cast to UUID")
 
     expr = UUIDCastExpression(dialect, Literal(dialect, "not-a-uuid"))
@@ -216,7 +216,11 @@ def test_storage_capability_is_declared_independently(dialect):
     stores_natively = "uuid" in supported
     has_substitute = "uuid" in suggested
 
-    assert stores_natively != has_substitute, (
+    # Only the combination is wrong. A dialect may render the type, or suggest
+    # a substitute, or say nothing about UUID at all — declaring neither is a
+    # legitimate answer and is skipped below. Asserting the two differ would
+    # reject that third case before the skip could catch it.
+    assert not (stores_natively and has_substitute), (
         f"{dialect.name} both renders the uuid type and suggests a substitute "
         f"for it; a suggestion exists for types the dialect cannot render"
     )
