@@ -21,6 +21,19 @@ import pytest
 from rhosocial.activerecord.backend.expression.types import EnumType
 
 
+@pytest.fixture
+def dialect(json_user_fixture):
+    """The dialect under test, taken from a provider-configured model.
+
+    The same source as the other contracts here: ``__backend__`` is the
+    instance the provider configured and needs no connection, while
+    ``Model.backend()`` resolves the currently active backend and raises on a
+    shard with no live connection. The model arrives as a direct argument
+    because ``getfixturevalue`` cannot be combined with parametrisation.
+    """
+    return json_user_fixture.__backend__.dialect
+
+
 def _renderable(dialect) -> set:
     """The generic type names this dialect can actually render."""
     return set(dialect.supports_data_types())
