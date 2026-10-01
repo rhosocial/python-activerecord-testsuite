@@ -35,6 +35,24 @@ from rhosocial.activerecord.backend.expression import (
 from rhosocial.activerecord.base.column_dispatch import build_column, column_class_for
 
 
+@pytest.fixture
+def dialect(request):
+    """The dialect under test, taken from a provider-configured model.
+
+    Read off ``__backend__`` rather than calling ``Model.backend()``. The
+    latter resolves the *currently active* backend and raises "No backend
+    configured" on shards that have no live connection, which is exactly the
+    case here: every assertion below is on an expression tree or on SQL from a
+    dialect that was never connected. ``__backend__`` is the provider's
+    configured instance and needs no connection.
+
+    The model is requested through ``getfixturevalue`` so the existing fixture
+    keeps ownership of scenario setup and teardown.
+    """
+    model = request.getfixturevalue("json_user_fixture")
+    return model.__backend__.dialect
+
+
 # ---------------------------------------------------------------------------
 # Class identity is backend-independent
 # ---------------------------------------------------------------------------
