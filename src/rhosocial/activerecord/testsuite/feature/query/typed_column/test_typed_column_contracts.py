@@ -26,6 +26,7 @@ from rhosocial.activerecord.backend.expression import (
     Column,
     ColumnBase,
     DateTimeColumn,
+    IntegerColumn,
     JSONColumn,
     NumericColumn,
     StringColumn,
@@ -63,7 +64,7 @@ def dialect(json_user_fixture):
     "annotation, expected",
     [
         (str, StringColumn),
-        (int, NumericColumn),
+        (int, IntegerColumn),
         (float, NumericColumn),
         (decimal.Decimal, NumericColumn),
         (bool, BooleanColumn),
