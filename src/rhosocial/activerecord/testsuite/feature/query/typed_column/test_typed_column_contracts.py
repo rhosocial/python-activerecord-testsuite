@@ -96,7 +96,7 @@ def test_optional_is_transparent(dialect, annotation):
     inner = {
         Optional[str]: StringColumn,
         Optional[dict]: JSONColumn,
-        Optional[int]: NumericColumn,
+        Optional[int]: IntegerColumn,
     }[annotation]
     assert type(build_column(dialect, "f", annotation)) is inner
 
