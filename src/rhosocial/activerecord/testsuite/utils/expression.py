@@ -134,6 +134,7 @@ def special_constructors():
         "statements.ddl_partition.PartitionClause": _partition_clause,
         "statements.dml.OnConflictClause": _on_conflict,
         "statements.dml.UpdateExpression": _update_expr,
+        "statements.ddl_alter.AlterTableExpression": _alter_table_expr,
         "statements.ddl_view.CreateViewExpression": _create_view_expr,
         "datetime.ExtractExpression": _extract_expr,
         "datetime.DatePartExpression": _datepart_expr,
@@ -199,6 +200,20 @@ def _update_expr(dialect):
     from rhosocial.activerecord.backend.expression.statements.dml import UpdateExpression
 
     return UpdateExpression(dialect, table=_table(dialect), assignments={"a": Literal(dialect, 1)})
+
+
+def _alter_table_expr(dialect):
+    from rhosocial.activerecord.backend.expression.statements.ddl_alter import (
+        AddColumn,
+        AlterTableExpression,
+        DropColumn,
+    )
+
+    return AlterTableExpression(
+        dialect,
+        table=_table(dialect, "t"),
+        actions=[DropColumn(dialect, "a"), AddColumn(dialect, column=None)],
+    )
 
 
 def _create_view_expr(dialect):
