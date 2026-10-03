@@ -40,6 +40,10 @@ def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
             return []
         if raw is dict:
             return {}
+        if "TableExpression" in text:
+            from rhosocial.activerecord.backend.expression.core import TableExpression
+
+            return TableExpression(dialect, "t")
         if raw is str or "str" in text:
             return "x"
         if "DataType" in text or "Type" in text.split(".")[-1:]:
