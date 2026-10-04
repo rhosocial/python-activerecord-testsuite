@@ -138,6 +138,8 @@ def special_constructors():
         "statements.ddl_partition.PartitionClause": _partition_clause,
         "statements.dml.OnConflictClause": _on_conflict,
         "statements.dml.UpdateExpression": _update_expr,
+        "statements.dml.InsertExpression": _insert_expr,
+        "statements.dml.DeleteExpression": _delete_expr,
         "statements.ddl_alter.AlterTableExpression": _alter_table_expr,
         "statements.ddl_view.CreateViewExpression": _create_view_expr,
         "datetime.ExtractExpression": _extract_expr,
@@ -197,6 +199,22 @@ def _on_conflict(dialect):
     from rhosocial.activerecord.backend.expression.statements.dml import OnConflictClause
 
     return OnConflictClause(dialect, do_nothing=True, conflict_target=["id"])
+
+
+def _insert_expr(dialect):
+    from rhosocial.activerecord.backend.expression.core import Literal
+    from rhosocial.activerecord.backend.expression.statements.dml import (
+        InsertExpression,
+        ValuesSource,
+    )
+
+    return InsertExpression(dialect, into=_table(dialect), source=ValuesSource(dialect, [[Literal(dialect, 1)]]))
+
+
+def _delete_expr(dialect):
+    from rhosocial.activerecord.backend.expression.statements.dml import DeleteExpression
+
+    return DeleteExpression(dialect, tables=_table(dialect))
 
 
 def _update_expr(dialect):
