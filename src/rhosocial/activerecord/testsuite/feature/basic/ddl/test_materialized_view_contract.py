@@ -61,8 +61,13 @@ from rhosocial.activerecord.backend.dialect.exceptions import (
     UnsupportedFeatureError,
 )
 from rhosocial.activerecord.backend.dialect.mixins import ViewMixin
-from rhosocial.activerecord.backend.dialect.protocols import ViewSupport
-from rhosocial.activerecord.backend.expression import Column, QueryExpression, TableExpression
+from rhosocial.activerecord.backend.dialect.protocols import ViewObjectSupport
+from rhosocial.activerecord.backend.expression import Column, QueryExpression
+from rhosocial.activerecord.backend.expression.objects import (
+    MaterializedView,
+    Table,
+)
+from rhosocial.activerecord.backend.expression.sources import NamedRelationRef
 from rhosocial.activerecord.backend.expression.statements.ddl_view import (
     CreateMaterializedViewExpression,
     DropMaterializedViewExpression,
@@ -126,7 +131,7 @@ def _source_query(dialect):
     return QueryExpression(
         dialect=dialect,
         select=[Column(dialect, "id")],
-        from_=TableExpression(dialect, "source_table"),
+        from_=NamedRelationRef(dialect, Table(dialect, "source_table")),
     )
 
 
@@ -195,7 +200,9 @@ class TestMaterializedViewRendering:
         parameters.
         """
         expression = CreateMaterializedViewExpression(
-            dialect=dialect, view_name="mv_contract", query=_source_query(dialect)
+            dialect=dialect,
+            view=MaterializedView(dialect, "mv_contract"),
+            query=_source_query(dialect),
         )
         try:
             return _render(expression)
@@ -224,7 +231,9 @@ class TestMaterializedViewRendering:
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
         expression = DropMaterializedViewExpression(
-            dialect=ddl_dialect, view_name="mv_contract", if_exists=True
+            dialect=ddl_dialect,
+            view=MaterializedView(ddl_dialect, "mv_contract"),
+            if_exists=True,
         )
         sql, params = _render(expression)
         assert sql.upper().startswith("DROP "), f"DROP rendered as {sql!r}"
@@ -245,7 +254,8 @@ class TestMaterializedViewRendering:
         if not _mv_refresh_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view refresh")
         expression = RefreshMaterializedViewExpression(
-            dialect=ddl_dialect, view_name="mv_contract"
+            dialect=ddl_dialect,
+            view=MaterializedView(ddl_dialect, "mv_contract"),
         )
         sql, params = _render(expression)
         assert sql.strip(), "REFRESH rendered an empty statement"
@@ -260,7 +270,7 @@ class TestMaterializedViewRendering:
 class TestMaterializedViewProtocolDeclaration:
     """The capability must be reachable through the declared protocol."""
 
-    def test_probe_is_declared_by_view_support(self, ddl_dialect):
+    def test_probe_is_declared_by_view_object_support(self, ddl_dialect):
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
-        assert isinstance(ddl_dialect, ViewSupport)
+        assert isinstance(ddl_dialect, ViewObjectSupport)

@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/query/joins/test_join_using.py
 """USING-clause join coverage.
 
-``JoinExpression`` renders ``... JOIN ... USING ("col")`` when ``using``
+``JoinClause`` renders ``... JOIN ... USING ("col")`` when ``using``
 columns are given instead of an ON predicate; the ActiveQuery convenience
 methods forward the ``using`` keyword.
 """
