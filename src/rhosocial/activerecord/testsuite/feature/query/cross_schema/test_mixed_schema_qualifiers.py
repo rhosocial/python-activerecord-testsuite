@@ -11,7 +11,7 @@ def _norm(sql: str) -> str:
     return re.sub(r"\s+", " ", cleaned).lower()
 
 
-@requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")
 def test_schema_model_qualifies_range_not_columns(mixed_schema_fixtures):
     """A schema-bound model qualifies its FROM range, never three-part cols."""
     _, _, MixedSchemaOrder = mixed_schema_fixtures
@@ -29,7 +29,7 @@ def test_schema_model_qualifies_range_not_columns(mixed_schema_fixtures):
         "Expected column refs to stay two-part"
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_schema_join_columns_stay_two_part(mixed_schema_fixtures):
     """Even joined against default-schema tables, schema-model columns stay
     two-part (TABLE.COLUMN) in ON/WHERE positions."""

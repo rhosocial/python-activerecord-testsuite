@@ -11,7 +11,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")
 def test_same_named_tables_coexist(mixed_schema_fixtures):
     """Identical table names in default and SCHEMA_A hold independent rows."""
     User, Order, MixedSchemaOrder = mixed_schema_fixtures
@@ -28,7 +28,7 @@ def test_same_named_tables_coexist(mixed_schema_fixtures):
     assert MixedSchemaOrder.query().count() == 3, "Expected 3 rows in schema-qualified orders"
 
 
-@requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")
 def test_primary_key_lookup_is_namespace_scoped(mixed_schema_fixtures):
     """The same PK value resolves to different rows per namespace."""
     User, Order, MixedSchemaOrder = mixed_schema_fixtures
@@ -46,7 +46,7 @@ def test_primary_key_lookup_is_namespace_scoped(mixed_schema_fixtures):
     ), "Expected schema-qualified order lookup to return schema-row"
 
 
-@requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")
 def test_update_all_and_delete_all_stay_scoped(mixed_schema_fixtures):
     """Bulk writes on one namespace never leak into the other."""
     User, Order, MixedSchemaOrder = mixed_schema_fixtures
@@ -71,7 +71,7 @@ def test_update_all_and_delete_all_stay_scoped(mixed_schema_fixtures):
     assert Order.query().count() == 1, "Expected default-schema count to remain at 1"
 
 
-@requires_protocol("SchemaSupport", "supports_schema")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")
 def test_join_default_user_with_schema_order(mixed_schema_fixtures):
     """JOIN from the default namespace to a schema-qualified table."""
     User, Order, MixedSchemaOrder = mixed_schema_fixtures

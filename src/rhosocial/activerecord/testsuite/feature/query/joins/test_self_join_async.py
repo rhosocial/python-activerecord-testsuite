@@ -23,7 +23,7 @@ async def _seed_tree(async_tree_fixtures):
     return named
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 async def test_async_self_join_child_to_parent(async_tree_fixtures):
     await _seed_tree(async_tree_fixtures)
 
@@ -39,7 +39,7 @@ async def test_async_self_join_child_to_parent(async_tree_fixtures):
     assert [(r["child_name"], r["parent_name"]) for r in rows] == [("a", "root"), ("b", "root")]
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 async def test_async_self_join_left_keeps_roots(async_tree_fixtures):
     await _seed_tree(async_tree_fixtures)
 

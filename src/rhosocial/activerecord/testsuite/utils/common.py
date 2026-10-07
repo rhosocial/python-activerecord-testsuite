@@ -79,7 +79,7 @@ def skip_test_if_protocol_unsupported(model_class, protocol_class, method_name=N
     Args:
         model_class: A provider-configured model class
         protocol_class: The protocol class to check for (e.g., WindowFunctionSupport),
-            or a fully-qualified dotted string (e.g. 'rhosocial.activerecord.backend.dialect.protocols.IndexSupport'),
+            or a fully-qualified dotted string (e.g. 'rhosocial.activerecord.backend.dialect.protocols.FulltextIndexSupport'),
             or None for no specific protocol
         method_name: Optional specific method name to check for (e.g., 'supports_window_functions')
 

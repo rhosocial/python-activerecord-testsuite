@@ -7,7 +7,7 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 from rhosocial.activerecord.backend.expression import functions
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_join_group_by_count(order_fixtures):
     """Count orders per user across the join."""
     User, Order, _ = order_fixtures
@@ -32,7 +32,7 @@ def test_join_group_by_count(order_fixtures):
     assert counts == {"agg_alice": 2, "agg_bob": 1}
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_join_group_by_sum_having(order_fixtures):
     """HAVING filters aggregated groups after a join."""
     User, Order, _ = order_fixtures
