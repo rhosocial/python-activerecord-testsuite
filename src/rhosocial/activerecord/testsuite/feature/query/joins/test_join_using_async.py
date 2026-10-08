@@ -5,7 +5,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 async def test_inner_join_with_using_column(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
 
@@ -22,7 +22,7 @@ async def test_inner_join_with_using_column(async_order_fixtures):
     assert [r["order_number"] for r in rows] == ["u1"]
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 async def test_left_join_with_using(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
 

@@ -73,6 +73,6 @@ class TestForeignKeyDeclarationDerivation:
         constraint = spec_comment_class.table_constraints()[0]
         assert isinstance(constraint, ForeignKeyConstraint)
         assert constraint.columns == ["order_id"]
-        assert constraint.foreign_key_table == "ddl_spec_orders"
+        assert constraint.foreign_key_table.name == "ddl_spec_orders"
         assert constraint.foreign_key_columns == ["id"]
         assert constraint.on_delete.value == "CASCADE"

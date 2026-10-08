@@ -31,6 +31,7 @@ from rhosocial.activerecord.base import (
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.field import UUIDMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
+from rhosocial.activerecord.backend.expression.objects import Table
 
 
 class BareItem(ActiveRecord):
@@ -190,7 +191,7 @@ class SpecComment(ActiveRecord):
         ForeignKeyConstraint(
             None,
             columns=["order_id"],
-            foreign_key_table="ddl_spec_orders",
+            foreign_key_table=Table(None, "ddl_spec_orders"),
             foreign_key_columns=["id"],
             on_delete=ReferentialAction.CASCADE,
             name="fk_ddl_spec_comments_order",
@@ -213,7 +214,7 @@ class AsyncSpecComment(AsyncActiveRecord):
         ForeignKeyConstraint(
             None,
             columns=["order_id"],
-            foreign_key_table="ddl_spec_orders",
+            foreign_key_table=Table(None, "ddl_spec_orders"),
             foreign_key_columns=["id"],
             on_delete=ReferentialAction.CASCADE,
             name="fk_ddl_spec_comments_order",

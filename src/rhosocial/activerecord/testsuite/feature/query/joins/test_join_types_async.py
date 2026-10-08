@@ -11,7 +11,7 @@ async def _user_without_orders(users):
     return lonely
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 async def test_left_join_preserves_unmatched_left_rows(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
     await _user_without_orders([AsyncUser])
@@ -27,7 +27,7 @@ async def test_left_join_preserves_unmatched_left_rows(async_order_fixtures):
     assert lonely_rows[0]["order_id"] is None
 
 
-@requires_protocol("JoinSupport", "supports_right_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_right_join")
 async def test_right_join_preserves_right_side(async_order_fixtures):
     AsyncOrder, AsyncUser = async_order_fixtures[1], async_order_fixtures[0]
     await _user_without_orders([async_order_fixtures[0]])
@@ -42,7 +42,7 @@ async def test_right_join_preserves_right_side(async_order_fixtures):
     assert len(joined) == total_orders
 
 
-@requires_protocol("JoinSupport", "supports_full_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_full_join")
 async def test_full_outer_join_covers_both_sides(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
     await _user_without_orders([AsyncUser])
@@ -60,7 +60,7 @@ async def test_full_outer_join_covers_both_sides(async_order_fixtures):
     assert len(rows) == orders_total + (users_total - matched_users)
 
 
-@requires_protocol("JoinSupport", "supports_cross_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_cross_join")
 async def test_cross_join_is_cartesian(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
 
@@ -71,7 +71,7 @@ async def test_cross_join_is_cartesian(async_order_fixtures):
     assert len(rows) == users_total * orders_total
 
 
-@requires_protocol("JoinSupport", "supports_straight_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_straight_join")
 async def test_straight_join_returns_inner_equivalent(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
 

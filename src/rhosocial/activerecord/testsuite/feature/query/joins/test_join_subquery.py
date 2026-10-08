@@ -6,7 +6,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_join_filtered_by_in_subquery(order_fixtures):
     """Only users having a 'big' order survive an IN-subquery filter."""
     User, Order, _ = order_fixtures
@@ -29,7 +29,7 @@ def test_join_filtered_by_in_subquery(order_fixtures):
     assert [r["username"] for r in rows] == ["sub_rich"]
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_three_table_join_with_in_subquery(order_fixtures):
     """Chained joins remain composable with a subquery predicate."""
     User, Order, OrderItem = order_fixtures

@@ -7,7 +7,7 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 from rhosocial.activerecord.backend.expression import functions
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 async def test_join_group_by_count(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
     dialect = AsyncUser.__backend__.dialect
@@ -31,7 +31,7 @@ async def test_join_group_by_count(async_order_fixtures):
     assert counts == {"agg_alice": 2, "agg_bob": 1}
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 async def test_join_group_by_sum_having(async_order_fixtures):
     AsyncUser, AsyncOrder, _ = async_order_fixtures
     dialect = AsyncUser.__backend__.dialect

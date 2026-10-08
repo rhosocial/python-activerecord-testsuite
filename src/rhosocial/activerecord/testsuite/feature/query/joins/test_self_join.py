@@ -32,7 +32,7 @@ def _seed_tree(tree_fixtures):
     return named
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_self_join_child_to_parent(tree_fixtures):
     _seed_tree(tree_fixtures)
 
@@ -48,7 +48,7 @@ def test_self_join_child_to_parent(tree_fixtures):
     assert [(r["child_name"], r["parent_name"]) for r in rows] == [("a", "root"), ("b", "root")]
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 def test_self_join_left_keeps_roots(tree_fixtures):
     """LEFT self-join keeps parents without parents of their own."""
     _seed_tree(tree_fixtures)
@@ -64,7 +64,7 @@ def test_self_join_left_keeps_roots(tree_fixtures):
     assert [(r["node"], r["child_name"]) for r in rows] == [("root", "a"), ("root", "b")]
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_self_join_aggregates_children_per_parent(tree_fixtures):
     _seed_tree(tree_fixtures)
 

@@ -90,7 +90,7 @@ def test_common_sql_standard_features(order_fixtures):
 
 
 @pytest.mark.requires_protocol(
-    ('rhosocial.activerecord.backend.dialect.protocols.IndexSupport',
+    ('rhosocial.activerecord.backend.dialect.protocols.FulltextIndexSupport',
      'supports_fulltext_search'))
 def test_fulltext_search_compatibility(annotated_query_fixtures):
     """

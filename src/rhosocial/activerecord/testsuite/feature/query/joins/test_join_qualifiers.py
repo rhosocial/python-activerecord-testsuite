@@ -20,7 +20,7 @@ def _norm(sql: str) -> str:
     return re.sub(r"\s+", " ", cleaned).lower()
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_join_columns_are_table_qualified(order_fixtures):
     """ON predicates and select lists qualify columns with their table."""
     User, Order, _ = order_fixtures
@@ -46,7 +46,7 @@ def test_join_columns_are_table_qualified(order_fixtures):
     assert [r["order_number"] for r in rows] == ["q1"]
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 async def test_aliased_self_join_references_alias_only(tree_fixtures):
     """Self-join columns address the runtime alias, not the base table."""
     NodeModel = tree_fixtures[0]

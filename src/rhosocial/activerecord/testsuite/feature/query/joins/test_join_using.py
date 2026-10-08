@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/query/joins/test_join_using.py
 """USING-clause join coverage.
 
-``JoinExpression`` renders ``... JOIN ... USING ("col")`` when ``using``
+``JoinClause`` renders ``... JOIN ... USING ("col")`` when ``using``
 columns are given instead of an ON predicate; the ActiveQuery convenience
 methods forward the ``using`` keyword.
 """
@@ -10,7 +10,7 @@ import pytest
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
-@requires_protocol("JoinSupport", "supports_inner_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")
 def test_inner_join_with_using_column(order_fixtures):
     """JOIN ... USING ("id") pairs the tables' identical surrogate keys.
 
@@ -32,7 +32,7 @@ def test_inner_join_with_using_column(order_fixtures):
     assert [r["order_number"] for r in rows] == ["u1"]
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 def test_left_join_with_using(order_fixtures):
     """LEFT JOIN ... USING keeps unmatched left rows like its ON counterpart."""
     User, Order, _ = order_fixtures

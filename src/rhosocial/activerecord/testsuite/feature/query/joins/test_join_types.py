@@ -16,7 +16,7 @@ def _user_without_orders(users):
     return lonely
 
 
-@requires_protocol("JoinSupport", "supports_left_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_left_join")
 def test_left_join_preserves_unmatched_left_rows(order_fixtures):
     """Rows without a match still appear, right-side columns being NULL."""
     User, Order, _ = order_fixtures
@@ -33,7 +33,7 @@ def test_left_join_preserves_unmatched_left_rows(order_fixtures):
     assert lonely_rows[0]["order_id"] is None
 
 
-@requires_protocol("JoinSupport", "supports_right_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_right_join")
 def test_right_join_preserves_right_side(order_fixtures):
     """RIGHT JOIN keeps every right-hand row even when left side has gaps."""
     User, Order, _ = order_fixtures
@@ -49,7 +49,7 @@ def test_right_join_preserves_right_side(order_fixtures):
     assert len(joined) == total_orders
 
 
-@requires_protocol("JoinSupport", "supports_full_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_full_join")
 def test_full_outer_join_covers_both_sides(order_fixtures):
     """FULL OUTER JOIN yields unmatched rows of both sides exactly once."""
     User, Order, _ = order_fixtures
@@ -74,7 +74,7 @@ def test_full_outer_join_covers_both_sides(order_fixtures):
     assert [r["username"] for r in null_extended] == ["lonely"]
 
 
-@requires_protocol("JoinSupport", "supports_cross_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_cross_join")
 def test_cross_join_is_cartesian(order_fixtures):
     """CROSS JOIN produces |left| x |right| rows without an ON clause."""
     User, Order, _ = order_fixtures
@@ -86,7 +86,7 @@ def test_cross_join_is_cartesian(order_fixtures):
     assert len(rows) == users_total * orders_total
 
 
-@requires_protocol("JoinSupport", "supports_straight_join")
+@requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_straight_join")
 def test_straight_join_returns_inner_equivalent(order_fixtures):
     """STRAIGHT_JOIN is result-equivalent to INNER JOIN (MySQL optimizer hint)."""
     User, Order, _ = order_fixtures
