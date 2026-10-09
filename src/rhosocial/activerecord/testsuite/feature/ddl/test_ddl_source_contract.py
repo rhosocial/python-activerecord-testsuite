@@ -9,6 +9,11 @@ except ImportError:
 
 import pytest
 
+from rhosocial.activerecord.backend.expression import (
+    ArrayColumn,
+    JSONColumn,
+    StringColumn,
+)
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression.statements import (
     ColumnConstraintType,
@@ -35,6 +40,7 @@ from rhosocial.activerecord.base import (
     DerivedField,
     UseColumn,
     UseColumnAttributes,
+    UseColumnType,
     UseComment,
     UseConstraint,
     UseGeneratedColumn,
@@ -79,6 +85,8 @@ FIRST_INDEX = UseIndex(
 SECOND_INDEX = UseIndex("idx_payload_secondary", type="BTREE")
 FIRST_COMMENT = UseComment("first comment")
 SECOND_COMMENT = UseComment("second comment")
+COLUMN_TYPE_PAYLOAD = UseColumnType(JSONColumn)
+COLUMN_TYPE_LABEL = UseColumnType(StringColumn)
 
 
 def first_generated(dialect):
@@ -289,6 +297,23 @@ class AsyncPlainModel(AsyncActiveRecord):
     note: Optional[str] = None
 
 
+class ColumnTypeDeclarations:
+    __table_name__ = "ddl_contract_column_types"
+
+    record_id: Annotated[int, UseColumn("record_id")]
+    payload: Annotated[dict, COLUMN_TYPE_PAYLOAD]
+    label: Annotated[str, COLUMN_TYPE_LABEL]
+    note: Optional[str] = None
+
+
+class SyncColumnTypeModel(ColumnTypeDeclarations, ActiveRecord):
+    pass
+
+
+class AsyncColumnTypeModel(ColumnTypeDeclarations, AsyncActiveRecord):
+    pass
+
+
 class UnhandledAnnotation(DDLAnnotation):
     pass
 
@@ -335,7 +360,7 @@ def test_contract_source_collects_table_and_field_declarations(model):
 
 def test_contract_field_collection_preserves_order_and_first_singular_marker():
     model = SyncContractModel
-    sql_type = model.column_type("status")
+    sql_type = model.column_data_type("status")
     assert sql_type is SQL_TYPE
     assert len(sql_type.data_types) == 2
     assert isinstance(sql_type.data_types[0], JsonType)
@@ -362,11 +387,51 @@ def test_contract_field_collection_preserves_order_and_first_singular_marker():
     assert indexes[0].if_exists is True
     assert indexes[0].concurrent is True
     assert model.column_options("status") is BACKEND_OPTION
-    assert model.column_type("payload") is PAYLOAD_TYPE
-    assert len(model.column_type("payload").data_types) == 2
-    assert isinstance(model.column_type("payload").data_types[0], JsonType)
-    assert isinstance(model.column_type("payload").data_types[1], TextType)
+    assert model.column_data_type("payload") is PAYLOAD_TYPE
+    assert len(model.column_data_type("payload").data_types) == 2
+    assert isinstance(model.column_data_type("payload").data_types[0], JsonType)
+    assert isinstance(model.column_data_type("payload").data_types[1], TextType)
+    assert model.column_data_type("note") is None
+
+
+@pytest.mark.parametrize(
+    "model", [SyncColumnTypeModel, AsyncColumnTypeModel], ids=("sync", "async")
+)
+def test_contract_column_type_presents_the_declaration_as_written(model):
+    """``column_type()`` hands the declaration back; it chooses nothing.
+
+    Identity is preserved: which class the declaration *means* on a given
+    backend is the field accessor's question (answered in the typed-column
+    contracts), and this accessor must not pre-empt it. A field that declares
+    nothing answers ``None``, exactly as ``column_data_type()`` does when
+    storage is left to inference.
+    """
+    assert model.column_type("payload") is COLUMN_TYPE_PAYLOAD
+    assert model.column_type("payload").column_class is JSONColumn
+    assert model.column_type("label") is COLUMN_TYPE_LABEL
     assert model.column_type("note") is None
+
+
+def test_contract_repeated_column_type_declarations_fail_explicitly():
+    """One field declares one column class; a second declaration is a mistake.
+
+    Keeping the first silently would make the model behave as whichever the
+    annotation order happened to put first -- a coin flip its author never
+    wrote down. The failure names the declaration mechanism, so the fix is
+    obvious.
+    """
+
+    class DoubleDeclared:
+        __table_name__ = "ddl_contract_double_column_types"
+
+        record_id: Annotated[int, UseColumn("record_id")]
+        payload: Annotated[dict, UseColumnType(JSONColumn), UseColumnType(ArrayColumn)]
+
+    class SyncDoubleDeclared(DoubleDeclared, ActiveRecord):
+        pass
+
+    with pytest.raises(TypeError, match="UseColumnType"):
+        SyncDoubleDeclared.column_type("payload")
 
 
 def test_contract_table_collection_preserves_overrides_and_copies_sequences():
@@ -391,7 +456,7 @@ def test_contract_table_collection_preserves_overrides_and_copies_sequences():
 def test_contract_batch_interfaces_cover_all_model_fields():
     model = SyncContractModel
     assert list(model.columns_name()) == ["record_id", "status", "payload", "note"]
-    assert list(model.columns_type()) == ["record_id", "status", "payload", "note"]
+    assert list(model.columns_data_type()) == ["record_id", "status", "payload", "note"]
     assert list(model.columns_constraints()) == ["record_id", "status", "payload", "note"]
     assert list(model.columns_attributes()) == ["record_id", "status", "payload", "note"]
     assert list(model.columns_indexes()) == ["record_id", "status", "payload", "note"]
@@ -401,7 +466,7 @@ def test_contract_batch_interfaces_cover_all_model_fields():
     fields = ["status", "record_id", "note"]
     for method_name in (
         "columns_name",
-        "columns_type",
+        "columns_data_type",
         "columns_constraints",
         "columns_attributes",
         "columns_indexes",
@@ -467,7 +532,7 @@ def test_contract_primary_key_nullability_overrides_follow_source_rules():
 @pytest.mark.parametrize("model", [PlainModel, AsyncPlainModel], ids=("sync", "async"))
 def test_contract_defaults_are_empty_or_none(model):
     assert model.ddl_field_names() == ("id", "note")
-    assert model.column_type("id") is None
+    assert model.column_data_type("id") is None
     assert model.column_constraints("note") == []
     assert model.column_attributes("note") == []
     assert model.column_indexes("note") == []
@@ -488,7 +553,7 @@ def test_contract_defaults_are_empty_or_none(model):
 
 
 def test_contract_unknown_fields_and_unhandled_annotations_fail_explicitly():
-    assert SyncContractModel.column_type("missing") is None
+    assert SyncContractModel.column_data_type("missing") is None
     assert SyncContractModel.column_constraints("missing") == []
     assert SyncContractModel.column_attributes("missing") == []
     assert SyncContractModel.column_indexes("missing") == []

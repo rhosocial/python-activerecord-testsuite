@@ -2,10 +2,20 @@
 
 This directory holds the cross-backend contracts of the typed-column work:
 
-* ``test_typed_column_contracts.py`` — the column-expression layer: the
-  column class a model field resolves to is backend-independent, narrowing
-  is real, rendering does not depend on the column class, and JSON paths
-  are built identically everywhere.
+* ``test_typed_column_contracts.py`` — the column-expression layer: an
+  explicit ``UseColumnType`` declaration means the same class on every
+  backend, inference follows each backend's own ``suggested_column_types()``
+  table, narrowing is real, rendering does not depend on the column class,
+  and JSON paths are built identically everywhere.
+* ``test_protocol_guarantees.py`` — the protocol's own claims, asserted per
+  backend: every common entry is answered (a class or an explicit ``None``),
+  the table's answers stay class-or-``None``, the column object has no slot
+  for a field's DataType and carries no value-family label, and an annotation
+  outside the vocabulary fails naming ``UseColumnType`` rather than falling
+  back to a universal column.
+* ``column_helpers.py`` — the test-side helper that mirrors the field
+  accessor's selection step, plus the canonical ``COMMON_TYPES`` list the
+  completeness contract holds each backend to.
 * ``test_enum_capability_contracts.py`` / ``test_uuid_capability_contracts.py``
   — the concept-specific capability contracts (enum storage, UUID storage).
 

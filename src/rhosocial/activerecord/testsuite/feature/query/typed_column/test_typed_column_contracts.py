@@ -12,20 +12,24 @@ or on SQL produced from a dialect that was never connected to.
 
 Two contracts, not one
 ----------------------
-Which column class an annotation means is now **the backend's answer**, so the
-old "the class is backend-independent" contract has no subject any more. What
-replaced it is a pair:
+Which column class an annotation means is the **backend's answer** (through
+the ``ColumnTypeSupport`` tables), so "the class is backend-independent" holds
+only for explicit declarations:
 
 * an **explicit** ``UseColumnType(SomeColumn)`` is backend-independent by
-  contract -- naming a class is a statement about operations, and the operations
-  are the same everywhere. A backend that disagreed here would be changing what
-  a column class *means*, which the typed_column contracts forbid everywhere;
+  contract -- naming a class is a statement about operations, and the
+  operations are the same everywhere. A backend that disagreed here would be
+  changing what a column class *means*, which the typed_column contracts
+  forbid everywhere;
 * **inference** is per backend. Each dialect's ``suggested_column_types()`` is
-  the authority, and what a model builds must equal that table's answer for the
-  annotation. A backend that suggests ``ArrayColumn`` for ``list`` where another
-  suggests ``JSONColumn`` is not breaking a contract -- it is reporting a real
-  difference in what those servers can do, and the pairing work (Phase 3) is what
-  turns the difference into a stated guarantee.
+  the authority, and what the selection builds must equal that table's answer
+  for the annotation. A backend that suggests ``ArrayColumn`` for ``list``
+  where another suggests ``JSONColumn`` is not breaking a contract -- it is
+  reporting a real difference in what those servers can do.
+
+The inference cases below use *exact* table keys (``str`` is the ``str``
+entry), so comparing against the table by key does not restate the
+normalisation rules.
 """
 
 # src/rhosocial/activerecord/testsuite/feature/query/typed_column/test_typed_column_contracts.py
@@ -50,51 +54,33 @@ from rhosocial.activerecord.backend.expression import (
     UUIDColumn,
     build_json_path,
 )
-from rhosocial.activerecord.backend.expression.column_suggestions import (
-    UNSUPPORTED,
-    strip_annotation,
-)
 from rhosocial.activerecord.base.fields import UseColumnType
 
+from rhosocial.activerecord.testsuite.feature.query.typed_column.column_helpers import (
+    build_column,
+)
 
-def build_column(dialect, column_name, annotation, table=None, schema_name=None, column_type=None):
-    """Build the column *dialect* suggests for *annotation*.
 
-    The two steps the model layer performs in ``base/field_proxy.py``, written
-    out here because a contract test is not a model: resolve through the
-    dialect, then construct the class the answer names. There is no framework
-    factory any more -- the dispatch module was removed, since a table held in
-    core can only answer for the half of the key space core knows about.
+def _class_or_skip(dialect, annotation, column_name):
+    """The class this dialect answers for *annotation*, or a skip when it refuses.
+
+    ``None`` is a legitimate answer -- the backend genuinely has no column for
+    the value, and the field needs an explicit declaration -- so a test about
+    the class *surface* skips rather than fails. A *missing* key is different:
+    that is an omission, whatever the reason, and it fails here.
+
+    The annotation is used as an exact table key (``str`` is the ``str``
+    entry); these callers pass the very types the table is keyed by.
     """
-    column_class = dialect.column_class_for(annotation, column_type)
-    if column_class is Column:
-        return Column(dialect, column_name, table=table, schema_name=schema_name)
-    return column_class(
-        dialect,
-        column_name,
-        table=table,
-        schema_name=schema_name,
-        value_type=getattr(strip_annotation(annotation), "__name__", None),
+    table = dialect.suggested_column_types()
+    assert annotation in table, (
+        f"{type(dialect).__name__}.suggested_column_types() does not answer "
+        f"for {annotation!r}; every common entry must be answered (see "
+        f"test_protocol_guarantees.py)."
     )
-
-
-@pytest.fixture
-def dialect(json_user_fixture):
-    """The dialect under test, taken from a provider-configured model.
-
-    Read off ``__backend__`` rather than calling ``Model.backend()``: that
-    resolves the *currently active* backend and raises "No backend configured"
-    on a shard with no live connection, which is the situation here — every
-    assertion is on an expression tree or on SQL from a dialect that was never
-    connected. ``__backend__`` is the instance the provider configured and
-    needs no connection.
-
-    The model arrives as a direct argument rather than through
-    ``request.getfixturevalue``, because that cannot be combined with
-    ``@pytest.mark.parametrize``: a parametrised test has no fixture parameter
-    to resolve, and pytest rejects the request.
-    """
-    return json_user_fixture.__backend__.dialect
+    if table[annotation] is None:
+        pytest.skip(f"{type(dialect).__name__} reports no column class for {annotation!r}")
+    return build_column(dialect, column_name, annotation)
 
 
 # ---------------------------------------------------------------------------
@@ -118,22 +104,23 @@ def test_an_explicit_declaration_is_the_same_class_everywhere(dialect, annotatio
     """``UseColumnType(X)`` means ``X`` on every backend, whatever the annotation.
 
     This is the contract that makes a model portable, and it survives the move
-    of inference onto the dialect: naming a class says which operations the value
-    carries, and those are the same on every backend. A backend that answered
-    anything else here would be redefining a column class rather than reporting
-    what it can do -- and the annotation is deliberately *not* the one the class
-    belongs to, so nothing about the dialect's table can leak into the answer.
+    of inference onto the backend's tables: naming a class says which operations
+    the value carries, and those are the same on every backend. A backend that
+    answered anything else here would be redefining a column class rather than
+    reporting what it can do -- and the annotation is deliberately *not* the one
+    the class belongs to, so nothing about the backend's table can leak into the
+    answer.
     """
     declared = UseColumnType(column_class)
     assert type(build_column(dialect, "f", annotation, column_type=declared)) is column_class
 
 
-def test_a_declaration_overrides_an_annotation_the_backend_refuses(dialect):
-    """The escape hatch works from a backend that says ``UNSUPPORTED``.
+def test_a_declaration_overrides_an_annotation_the_backend_cannot_place(dialect):
+    """The escape hatch works even where the backend's own answer is absent.
 
-    Declaring is the only route past a refusal, so it has to reach resolution
-    before the table is consulted -- which is also what makes it usable for a
-    backend that has no native column for the annotation.
+    Declaring is the route past a table answering ``None``, so it has to reach
+    resolution before the table is consulted -- which is also what makes it
+    usable for a backend that has no native column for the annotation.
     """
     declared = UseColumnType(JSONColumn)
     assert type(build_column(dialect, "f", dict, column_type=declared)) is JSONColumn
@@ -168,23 +155,21 @@ def test_inference_matches_this_backends_own_table(dialect, annotation):
     class across all backends was the old contract, and it was wrong: seven
     backends carry ``list`` as a JSON document while PostgreSQL has a real array
     type, and both are correct answers to "what can this value do here". What is
-    *not* negotiable is that the model and the table agree -- otherwise the table
-    is documentation rather than the source of the answer.
+    *not* negotiable is that the selection and the table agree -- otherwise the
+    table is documentation rather than the source of the answer.
     """
-    from rhosocial.activerecord.backend.expression.column_suggestions import (
-        column_type_entry_for,
+    table = dialect.suggested_column_types()
+    assert annotation in table, (
+        f"{type(dialect).__name__}.suggested_column_types() does not answer "
+        f"for {annotation!r}; every common entry must be answered (see "
+        f"test_protocol_guarantees.py)."
     )
 
-    entry = column_type_entry_for(annotation, tuple(dialect.suggested_column_types()))
-    if entry is None:
-        pytest.skip(f"{type(dialect).__name__} has no entry for this annotation")
+    expected = table[annotation]
+    if expected is None:
+        pytest.skip(f"{type(dialect).__name__} reports no column class for {annotation!r}")
 
-    suggested = dialect.suggested_column_types()[entry]
-    if suggested is UNSUPPORTED:
-        pytest.skip(f"{type(dialect).__name__} reports no column class for {entry}")
-
-    assert issubclass(suggested, ColumnBase)
-    assert type(build_column(dialect, "f", annotation)) is suggested
+    assert type(build_column(dialect, "f", annotation)) is expected
 
 
 @pytest.mark.parametrize("annotation", [Optional[str], Optional[dict], Optional[int]])
@@ -201,7 +186,8 @@ def test_optional_is_transparent(dialect, annotation):
         Optional[dict]: dict,
         Optional[int]: int,
     }[annotation]
-    assert type(build_column(dialect, "f", annotation)) is type(build_column(dialect, "f", inner))
+    resolved = _class_or_skip(dialect, inner, "f")
+    assert type(build_column(dialect, "f", annotation)) is type(resolved)
 
 
 @pytest.mark.parametrize(
@@ -248,21 +234,24 @@ def test_the_permissive_column_stays_permissive(dialect):
 def test_narrowing_actually_narrows(dialect):
     """The narrowed classes must not leak operations they cannot support.
 
-    Built through the dialect's own table, so this also says the operations
+    Built through the backend's own table, so this also says the operations
     follow from the class the backend chose rather than from the annotation: a
     backend that suggests ``StringColumn`` for an ``int`` field would offer
-    ``like()`` on it, and that is a fact about the pairing (Phase 3), not about
-    this contract.
+    ``like()`` on it, and that is a fact about the pairing, not about this
+    contract.
     """
-    assert hasattr(build_column(dialect, "s", str), "like")
-    assert not hasattr(build_column(dialect, "s", str), "__add__")
+    string_column = _class_or_skip(dialect, str, "s")
+    assert hasattr(string_column, "like")
+    assert not hasattr(string_column, "__add__")
 
-    assert hasattr(build_column(dialect, "n", int), "__add__")
-    assert not hasattr(build_column(dialect, "n", int), "like")
+    integer_column = _class_or_skip(dialect, int, "n")
+    assert hasattr(integer_column, "__add__")
+    assert not hasattr(integer_column, "like")
 
-    assert hasattr(build_column(dialect, "j", dict), "json_path")
-    assert not hasattr(build_column(dialect, "j", dict), "like")
-    assert not hasattr(build_column(dialect, "j", dict), "__add__")
+    json_column = _class_or_skip(dialect, dict, "j")
+    assert hasattr(json_column, "json_path")
+    assert not hasattr(json_column, "like")
+    assert not hasattr(json_column, "__add__")
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +344,7 @@ def test_json_chaining_does_not_renest_the_path(dialect):
     Re-anchoring would make ``col.json_value("a").json_value("b")`` read
     ``b`` from the document root instead of from ``a``.
     """
-    col = build_column(dialect, "settings", dict)
+    col = _class_or_skip(dialect, dict, "settings")
     chained = col.json_value("a").json_value("b").to_sql()[0]
     assert chained.count("$") == 2
     assert "$." not in chained.replace("$.a", "").replace("$.b", "")
