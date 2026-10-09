@@ -96,6 +96,13 @@ def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
             return _values_source(dialect)
         if raw is str or "str" in text:
             return "x"
+        # A typed value expression wraps the call it renders, so the parameter
+        # wants a FunctionCall and not a bare name. This must be tested before
+        # the str branch above: "FunctionCall" contains no "str", but the
+        # fallback below returns "x" for it, which the wrapper then calls
+        # to_sql() on.
+        if "FunctionCall" in text:
+            return _function_call(dialect)
         if "DataType" in text or "Type" in text.split(".")[-1:]:
             from rhosocial.activerecord.backend.expression.types import IntegerType
 
@@ -125,6 +132,20 @@ def _literal(dialect):
     from rhosocial.activerecord.backend.expression.core import Literal
 
     return Literal(dialect, 1)
+
+
+def _function_call(dialect):
+    """A niladic function call, for a parameter that wraps one.
+
+    The typed value expressions (``BooleanValueExpression`` and its siblings)
+    hold a ``call`` and render it through ``to_sql()``. Handing them a string
+    builds an instance that cannot render, and the failure surfaces as
+    ``'str' object has no attribute 'to_sql'`` from inside the wrapper rather
+    than as a construction problem.
+    """
+    from rhosocial.activerecord.backend.expression.core import FunctionCall
+
+    return FunctionCall(dialect, "FUNC", niladic=True)
 
 
 def _comparison(dialect):
@@ -180,6 +201,28 @@ def special_constructors():
     placeholder values. Keyed by a suffix that matches the class's full
     module.ClassName. Registered by name only — this is a static registry and
     backends may register their own entries for backend-specific expressions.
+
+    **A key that matches no class is dead code, and nothing says so.**
+    :func:`make_instance` dispatches on ``full_name.endswith(key)``, so
+    renaming a class turns its entry into a literal that matches nothing: the
+    class then falls through to :func:`_try_construct`, the source is reported
+    as ``"heuristic"`` instead of ``"special"``, and if the heuristic also
+    fails the class is silently reported as unconstructible rather than as
+    mis-registered. This is how ``"advanced_functions.JSONExpression"`` came to
+    match nothing at all once core split that one class into
+    ``JSONDocumentExpression`` and ``JSONTextExpression``.
+
+    The failure is one-directional, which is what makes it dangerous: renaming
+    the key once breaks the match silently, and a *single* key covering both
+    new names is not expressible, because ``endswith`` compares a suffix. A
+    class that was split needs one entry per resulting class.
+
+    :func:`register_special_constructor` writes to the module-level
+    ``_SPECIAL_REGISTRY``, which is what :func:`make_instance` reads. Note that
+    this function rebuilds its dict on every call, so a registration made
+    elsewhere is **not** visible to a caller that invokes
+    ``special_constructors()`` directly — core's expression-contract test does
+    exactly that, and therefore sees only the literals below.
     """
     return {
         "statements.ddl_table.ColumnDefinition": _column_definition,
@@ -199,7 +242,10 @@ def special_constructors():
         "statements.ddl_schema.DropSchemaExpression": _drop_schema_expr,
         "statements.ddl_database.CreateDatabaseExpression": _create_database_expr,
         "statements.ddl_database.DropDatabaseExpression": _drop_database_expr,
-        "advanced_functions.JSONExpression": _json_expr,
+        # core splits what was one JSONExpression into a document and a text
+        # class, so one key cannot cover both: endswith matches a suffix.
+        "advanced_functions.JSONDocumentExpression": _json_document_expr,
+        "advanced_functions.JSONTextExpression": _json_text_expr,
         "query_parts.JoinClause": _join_expr,
         "statements.ddl_partition.PartitionClause": _partition_clause,
         "statements.dml.OnConflictClause": _on_conflict,
@@ -207,6 +253,7 @@ def special_constructors():
         "statements.dml.InsertExpression": _insert_expr,
         "statements.dml.DeleteExpression": _delete_expr,
         "statements.ddl_alter.AlterTableExpression": _alter_table_expr,
+        "types.array.ArrayType": _array_type,
         "statements.ddl_view.CreateViewExpression": _create_view_expr,
         "graph.GraphVertex": _graph_vertex,
         "graph.GraphEdge": _graph_edge,
@@ -233,11 +280,53 @@ def _column_definition(dialect):
     return ColumnDefinition(dialect, "col", IntegerType(dialect))
 
 
-def _values_source(dialect):
-    """An INSERT's ``VALUES`` source: one row, one literal.
+def _json_document_expr(dialect):
+    """``->``: a JSON *document*, reached by path.
 
-    The generic placeholder cannot build this one -- ``values_list`` must be a
-    non-empty list of equal-length rows -- so it gets an explicit constructor.
+    ``path`` and ``operation`` keep their defaults, so this renders exactly
+    what the pre-split single ``JSONExpression`` factory rendered.
+    """
+    from rhosocial.activerecord.backend.expression.advanced_functions import (
+        JSONDocumentExpression,
+    )
+    from rhosocial.activerecord.backend.expression.core import Literal
+
+    return JSONDocumentExpression(dialect, Literal(dialect, '{"a": 1}'), path="$.a")
+
+
+def _json_text_expr(dialect):
+    """``->>``: the *text* of a JSON path.
+
+    ``JSONTextExpression`` declares no ``__init__`` of its own, so it inherits
+    the document class's -- including ``operation="->"``. The default is
+    therefore inherited too, and this factory has to say ``->>`` explicitly.
+    Leaving it off would hand the contract test a ``JSONTextExpression`` whose
+    ``operation`` says ``->``, which is the one thing the class exists to
+    distinguish.
+
+    The rendered SQL is unaffected either way: the formatters branch on
+    ``expr.operation``, not on the class, and dispatch is on ``format_method``,
+    which both classes share.
+    """
+    from rhosocial.activerecord.backend.expression.advanced_functions import (
+        JSONTextExpression,
+    )
+    from rhosocial.activerecord.backend.expression.core import Literal
+
+    return JSONTextExpression(
+        dialect, Literal(dialect, '{"a": 1}'), path="$.a", operation="->>"
+    )
+
+
+def _values_source(dialect):
+    """A ``VALUES`` clause with one row of one column.
+
+    ``ValuesSource`` rejects an empty ``values_list``, and the heuristic filler
+    returns ``[]`` for any ``list``-origin annotation -- which is why this class
+    needs an explicit constructor at all. ``[]`` would also be the wrong thing
+    to satisfy it with: a ``VALUES`` clause with no rows is not an INSERT
+    source, and the zero-row spelling already has its own class,
+    ``DefaultValuesSource``, sitting next to this one.
     """
     from rhosocial.activerecord.backend.expression.core import Literal
     from rhosocial.activerecord.backend.expression.statements.dml import ValuesSource
@@ -245,11 +334,30 @@ def _values_source(dialect):
     return ValuesSource(dialect, [[Literal(dialect, 1)]])
 
 
-def _json_expr(dialect):
-    from rhosocial.activerecord.backend.expression.advanced_functions import JSONExpression
-    from rhosocial.activerecord.backend.expression.core import Literal
+def _array_type(dialect):
+    """An array of integers -- one dimension.
 
-    return JSONExpression(dialect, Literal(dialect, '{"a": 1}'), path="$.a")
+    ``ArrayType`` requires an ``element_type`` and raises ``TypeError`` without
+    one ("an array with no element type is not a type"). Two things stop the
+    heuristic filler from reaching that requirement, and neither is fixable by
+    giving the parameter a default:
+
+    * the filler skips defaulted parameters, so it calls ``ArrayType(dialect)``
+      with nothing else; and
+    * ``dialect`` must come first and ``element_type`` must follow it, so a
+      *required* ``element_type`` after a defaulted ``dialect`` is not
+      expressible in Python at all.
+
+    Making the parameter required therefore cannot help, and a default of
+    ``None`` is already what core declares. So the element type has to be
+    supplied here, as a concrete ``DataType``.
+    """
+    from rhosocial.activerecord.backend.expression.types import (
+        ArrayType,
+        IntegerType,
+    )
+
+    return ArrayType(dialect, element_type=IntegerType(dialect))
 
 
 def _sequence(dialect):

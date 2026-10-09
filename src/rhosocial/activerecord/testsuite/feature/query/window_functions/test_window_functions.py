@@ -6,10 +6,10 @@ import pytest
 
 from rhosocial.activerecord.testsuite.utils import requires_window_functions
 from rhosocial.activerecord.backend.expression.advanced_functions import (
-    WindowFunctionCall,
     WindowSpecification,
     WindowFrameSpecification,
 )
+from rhosocial.activerecord.backend.expression.core import FunctionCall
 from rhosocial.activerecord.backend.expression.query_parts import OrderByClause
 from rhosocial.activerecord.backend.expression import core
 
@@ -37,7 +37,7 @@ def test_row_number_window_function(order_fixtures):
 
         order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
-        window_func = WindowFunctionCall(
+        window_func = FunctionCall(
             dialect,
             "ROW_NUMBER",
             window_spec=window_spec,
@@ -91,7 +91,7 @@ def test_partition_by_window_function(order_fixtures):
         partition_by = [core.Column(dialect, "status")]
         order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "ASC")])
         window_spec = WindowSpecification(dialect, partition_by=partition_by, order_by=order_by_clause)
-        window_func = WindowFunctionCall(
+        window_func = FunctionCall(
             dialect,
             "ROW_NUMBER",
             window_spec=window_spec,
@@ -136,7 +136,7 @@ def test_aggregate_window_functions(order_fixtures):
 
         order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
-        sum_func = WindowFunctionCall(dialect, "SUM", args=[core.Column(dialect, "total_amount")], window_spec=window_spec, alias="running_sum")
+        sum_func = FunctionCall(dialect, "SUM", core.Column(dialect, "total_amount"), window_spec=window_spec, alias="running_sum")
 
         query = Order.query().select("id", "total_amount", sum_func)
         query.order_by(("total_amount", "DESC"))
@@ -177,7 +177,7 @@ def test_named_window_definitions(order_fixtures):
 
         order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
-        window_func = WindowFunctionCall(
+        window_func = FunctionCall(
             dialect,
             "ROW_NUMBER",
             window_spec=window_spec,
@@ -222,10 +222,10 @@ def test_window_frame_specifications(order_fixtures):
         window_frame = WindowFrameSpecification(dialect, 'ROWS', 'UNBOUNDED PRECEDING', 'CURRENT ROW')
         window_spec = WindowSpecification(dialect, order_by=order_by_clause, frame=window_frame)
 
-        first_value_func = WindowFunctionCall(
+        first_value_func = FunctionCall(
             dialect,
             "FIRST_VALUE",
-            args=[core.Column(dialect, "total_amount")],
+            core.Column(dialect, "total_amount"),
             window_spec=window_spec,
             alias="first_amount"
         )
@@ -268,10 +268,10 @@ def test_unbounded_window_frames(order_fixtures):
         window_frame = WindowFrameSpecification(dialect, 'ROWS', 'UNBOUNDED PRECEDING', 'UNBOUNDED FOLLOWING')
         window_spec = WindowSpecification(dialect, order_by=order_by_clause, frame=window_frame)
 
-        sum_func = WindowFunctionCall(
+        sum_func = FunctionCall(
             dialect,
             "SUM",
-            args=[core.Column(dialect, "total_amount")],
+            core.Column(dialect, "total_amount"),
             window_spec=window_spec,
             alias="total_sum"
         )
