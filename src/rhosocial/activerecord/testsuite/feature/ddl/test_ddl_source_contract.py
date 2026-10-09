@@ -12,6 +12,7 @@ import pytest
 from rhosocial.activerecord.backend.expression import (
     ArrayColumn,
     JSONColumn,
+    NumericColumn,
     StringColumn,
 )
 from rhosocial.activerecord.backend.expression.core import Column
@@ -87,6 +88,8 @@ FIRST_COMMENT = UseComment("first comment")
 SECOND_COMMENT = UseComment("second comment")
 COLUMN_TYPE_PAYLOAD = UseColumnType(JSONColumn)
 COLUMN_TYPE_LABEL = UseColumnType(StringColumn)
+COLUMN_TYPE_STORED = UseColumnType(NumericColumn)
+SQL_TYPE_STORED = UseSqlType(TextType())
 
 
 def first_generated(dialect):
@@ -303,6 +306,7 @@ class ColumnTypeDeclarations:
     record_id: Annotated[int, UseColumn("record_id")]
     payload: Annotated[dict, COLUMN_TYPE_PAYLOAD]
     label: Annotated[str, COLUMN_TYPE_LABEL]
+    stored: Annotated[int, SQL_TYPE_STORED, COLUMN_TYPE_STORED]
     note: Optional[str] = None
 
 
@@ -410,6 +414,41 @@ def test_contract_column_type_presents_the_declaration_as_written(model):
     assert model.column_type("payload").column_class is JSONColumn
     assert model.column_type("label") is COLUMN_TYPE_LABEL
     assert model.column_type("note") is None
+
+
+@pytest.mark.parametrize(
+    "model", [SyncColumnTypeModel, AsyncColumnTypeModel], ids=("sync", "async")
+)
+def test_contract_declaration_accessors_are_independent(model):
+    """Each accessor answers only its own side of a field's declarations.
+
+    ``UseColumnType`` and ``UseSqlType`` are documented as strictly
+    independent -- a field may declare either, both, or neither -- so a
+    storage declaration must not leak into the column-class accessor, a
+    column-class declaration must not answer for storage, and a field that
+    declares both answers both, identity preserved on each side. This is what
+    makes the two checkable independently instead of one being derived from
+    the other.
+    """
+    # Declares the column class only: storage is left unanswered.
+    assert model.column_type("payload") is COLUMN_TYPE_PAYLOAD
+    assert model.column_data_type("payload") is None
+    # Declares both: each side presents its own declaration object.
+    assert model.column_type("stored") is COLUMN_TYPE_STORED
+    assert model.column_data_type("stored") is SQL_TYPE_STORED
+    # Declares neither.
+    assert model.column_type("note") is None
+    assert model.column_data_type("note") is None
+
+
+def test_contract_a_storage_only_field_answers_no_column_class():
+    """``SyncContractModel.status`` declares storage with ``UseSqlType`` only.
+
+    The column-class accessor answers ``None`` for it: inference is the field
+    accessor's route, and the declaration accessor must not invent one.
+    """
+    assert SyncContractModel.column_type("status") is None
+    assert SyncContractModel.column_data_type("status") is SQL_TYPE
 
 
 def test_contract_repeated_column_type_declarations_fail_explicitly():
@@ -562,5 +601,12 @@ def test_contract_unknown_fields_and_unhandled_annotations_fail_explicitly():
     assert SyncContractModel.column_options("missing") is None
     with pytest.raises(KeyError):
         SyncContractModel.field_python_type("missing")
+    # The declaration accessor is model_fields-based like field_python_type,
+    # so an unknown field is a KeyError; the metadata-based accessors above
+    # answer None for one. The split is deliberate: a field that does not
+    # exist is a mistake to name, while a field that exists and declares
+    # nothing is an answer.
+    with pytest.raises(KeyError):
+        SyncContractModel.column_type("missing")
     with pytest.raises(TypeError, match="explicit handler"):
         UnhandledModel.ddl_field_names()
