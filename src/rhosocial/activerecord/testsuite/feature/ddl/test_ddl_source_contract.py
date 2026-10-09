@@ -592,21 +592,30 @@ def test_contract_defaults_are_empty_or_none(model):
 
 
 def test_contract_unknown_fields_and_unhandled_annotations_fail_explicitly():
-    assert SyncContractModel.column_data_type("missing") is None
-    assert SyncContractModel.column_constraints("missing") == []
-    assert SyncContractModel.column_attributes("missing") == []
-    assert SyncContractModel.column_indexes("missing") == []
-    assert SyncContractModel.column_comment("missing") is None
-    assert SyncContractModel.generated_column("missing") is None
-    assert SyncContractModel.column_options("missing") is None
+    """A field the model does not have is a mistake in the call, not an answer.
+
+    ``None`` (or an empty collection) is the answer for a *real* field that
+    declares nothing. A name the model does not carry must not produce the
+    same answer, or a misspelled field would be ignored in silence -- so every
+    accessor refuses it with ``KeyError``, the failure ``field_python_type``
+    has always raised.
+    """
+    for accessor in (
+        "column_type",
+        "column_data_type",
+        "column_constraints",
+        "column_attributes",
+        "column_indexes",
+        "column_comment",
+        "generated_column",
+        "column_options",
+    ):
+        with pytest.raises(KeyError):
+            getattr(SyncContractModel, accessor)("missing")
     with pytest.raises(KeyError):
         SyncContractModel.field_python_type("missing")
-    # The declaration accessor is model_fields-based like field_python_type,
-    # so an unknown field is a KeyError; the metadata-based accessors above
-    # answer None for one. The split is deliberate: a field that does not
-    # exist is a mistake to name, while a field that exists and declares
-    # nothing is an answer.
+    # An explicitly named unknown field fails the batch accessor the same way.
     with pytest.raises(KeyError):
-        SyncContractModel.column_type("missing")
+        SyncContractModel.columns_data_type(["missing"])
     with pytest.raises(TypeError, match="explicit handler"):
         UnhandledModel.ddl_field_names()
