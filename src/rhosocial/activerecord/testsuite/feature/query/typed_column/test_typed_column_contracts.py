@@ -46,6 +46,10 @@ from rhosocial.activerecord.backend.expression import (
     BooleanColumn,
     Column,
     ColumnBase,
+    ComparisonPredicate,
+    InPredicate,
+    IsNullPredicate,
+    Literal,
     TimestampColumn,
     IntegerColumn,
     JSONColumn,
@@ -215,20 +219,54 @@ def test_every_column_class_shares_one_base(dialect, column_class):
     assert isinstance(column_class(dialect, "c"), ColumnBase)
 
 
-def test_the_permissive_column_stays_permissive(dialect):
-    """The hand-built ``Column`` is the escape hatch and must not narrow.
+def test_the_bare_column_offers_no_operation(dialect):
+    """The hand-built ``Column`` is a reference, and it promises nothing.
 
-    Retiring it as the framework's *fallback* did not retire the class: a caller
-    with a bare column name still reaches for it, and it is now reachable through
-    a declaration rather than by accident.
+    Nothing established what it holds, so there is no operation it can offer
+    that the database is guaranteed to accept. The operations live on the typed
+    classes; a caller holding a bare column name builds its predicate
+    explicitly instead -- ``ComparisonPredicate``, ``InPredicate``,
+    ``IsNullPredicate`` -- and those ask the *dialect* for the SQL, so they work
+    on any column.
+
+    The failure this replaces is the reason the contract is stated as an
+    absence. ``==`` is not overridden, so ``Column(...) == 1`` does not raise:
+    it answers Python's identity ``False``, and a query built on that filters on
+    nothing while looking entirely healthy.
     """
     col = Column(dialect, "anything")
-    for operation in ("like", "ilike", "json_path", "__add__", "__mul__"):
+    for operation in ("like", "ilike", "in_", "between", "is_true", "json_path", "__add__", "__mul__"):
+        assert not hasattr(col, operation), f"Column grew {operation}"
+
+    assert (col == Column(dialect, "anything")) is False, "identity comparison, not SQL"
+    assert (col == 1) is False, "identity comparison, not SQL"
+
+    # What it *does* keep is the shared reference surface: naming a column needs
+    # no type, and neither does rendering one.
+    assert Column.__mro__[1] is ColumnBase
+    for operation in ("as_", "is_null", "is_not_null", "cast"):
         assert hasattr(col, operation), f"Column lost {operation}"
 
     # ...and a model that declares it gets it, narrow nothing implied.
     declared = build_column(dialect, "anything", Any, column_type=UseColumnType(Column))
     assert type(declared) is Column
+
+
+def test_a_bare_column_still_takes_an_explicit_predicate(dialect):
+    """The replacement path: the query layer builds the predicate, the column only names it.
+
+    This is what callers of the old ``Column(...) == 1`` sugar write now, and it
+    is why retiring the sugar costs nothing: the predicate needs the dialect,
+    not a capability on the column, so it renders for any column.
+    """
+    col = Column(dialect, "status")
+    ident = dialect.format_identifier("status")
+    assert ComparisonPredicate(dialect, "=", col, Literal(dialect, "active")).to_sql() == (f"{ident} = ?", ("active",))
+    assert InPredicate(dialect, col, Literal(dialect, ("open", "paid"))).to_sql() == (
+        f"{ident} IN (?, ?)",
+        ("open", "paid"),
+    )
+    assert IsNullPredicate(dialect, col).to_sql() == (f"{ident} IS NULL", ())
 
 
 def test_narrowing_actually_narrows(dialect):

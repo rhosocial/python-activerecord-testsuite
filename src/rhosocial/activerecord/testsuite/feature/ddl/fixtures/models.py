@@ -11,7 +11,10 @@ else:
 from typing import ClassVar, Optional
 from uuid import UUID
 
-from rhosocial.activerecord.backend.expression.core import Column
+from rhosocial.activerecord.backend.expression.column_types import (
+    NumericColumn,
+    StringColumn,
+)
 from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     ColumnConstraintType,
     ForeignKeyConstraint,
@@ -65,7 +68,7 @@ class SpecOrder(UUIDMixin, ActiveRecord):
         str,
         UseConstraint(
             ColumnConstraintType.CHECK,
-            check_condition=lambda dialect: Column(dialect, "status").in_(
+            check_condition=lambda dialect: StringColumn(dialect, "status").in_(
                 ["open", "paid", "shipped"]
             ),
             name="ck_spec_orders_status",
@@ -96,7 +99,7 @@ class AsyncSpecOrder(UUIDMixin, AsyncActiveRecord):
         str,
         UseConstraint(
             ColumnConstraintType.CHECK,
-            check_condition=lambda dialect: Column(dialect, "status").in_(
+            check_condition=lambda dialect: StringColumn(dialect, "status").in_(
                 ["open", "paid", "shipped"]
             ),
             name="ck_spec_orders_status",
@@ -132,7 +135,7 @@ class CapabilityPost(ActiveRecord):
         UseGeneratedColumn(
             lambda dialect: GeneratedColumnExpression(
                 dialect,
-                expression=Column(dialect, "views") * 2,
+                expression=NumericColumn(dialect, "views") * 2,
                 storage_type=GeneratedColumnType.STORED,
             )
         ),
@@ -161,7 +164,7 @@ class AsyncCapabilityPost(AsyncActiveRecord):
         UseGeneratedColumn(
             lambda dialect: GeneratedColumnExpression(
                 dialect,
-                expression=Column(dialect, "views") * 2,
+                expression=NumericColumn(dialect, "views") * 2,
                 storage_type=GeneratedColumnType.STORED,
             )
         ),

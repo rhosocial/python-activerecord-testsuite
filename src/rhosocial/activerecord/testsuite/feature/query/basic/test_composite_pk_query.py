@@ -29,19 +29,19 @@ class TestActiveQueryCompositePK:
 
     def test_where_single_column(self, seeded, order_item_class):
         """Filtering by a single composite key column should return matching rows."""
-        backend = order_item_class.backend()
+        dialect = order_item_class.backend().dialect
         results = order_item_class.query().where(
-            Column(backend.dialect, "order_id") == 1
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
         ).all()
         assert len(results) == 2, "Expected 2 rows with order_id == 1"
 
     def test_where_and_condition(self, seeded, order_item_class):
         """Combining multiple where clauses should apply both filters."""
-        backend = order_item_class.backend()
+        dialect = order_item_class.backend().dialect
         results = order_item_class.query().where(
-            Column(backend.dialect, "order_id") == 1
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
         ).where(
-            Column(backend.dialect, "quantity") > 1
+            ComparisonPredicate(dialect, ">", Column(dialect, "quantity"), Literal(dialect, 1))
         ).all()
         assert len(results) == 1, "Expected 1 row matching both conditions"
         assert results[0].product_id == 101, "Expected product_id to be 101"

@@ -29,9 +29,9 @@ class TestAsyncActiveQueryCompositePK:
             async_order_item_class(order_id=2, product_id=101, quantity=5, unit_price=Decimal("15.00")),
         ]
         await async_order_item_class.bulk_create(items)
-        backend = async_order_item_class.backend()
+        dialect = async_order_item_class.backend().dialect
         results = await async_order_item_class.query().where(
-            Column(backend.dialect, "order_id") == 1
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
         ).all()
         assert len(results) == 2, "Expected 2 rows with order_id == 1"
 
@@ -43,11 +43,11 @@ class TestAsyncActiveQueryCompositePK:
             async_order_item_class(order_id=2, product_id=101, quantity=5, unit_price=Decimal("15.00")),
         ]
         await async_order_item_class.bulk_create(items)
-        backend = async_order_item_class.backend()
+        dialect = async_order_item_class.backend().dialect
         results = await async_order_item_class.query().where(
-            Column(backend.dialect, "order_id") == 1
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
         ).where(
-            Column(backend.dialect, "quantity") > 1
+            ComparisonPredicate(dialect, ">", Column(dialect, "quantity"), Literal(dialect, 1))
         ).all()
         assert len(results) == 1, "Expected 1 row matching both conditions"
         assert results[0].product_id == 101, "Expected product_id to be 101"

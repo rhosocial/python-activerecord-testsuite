@@ -16,6 +16,7 @@ from decimal import Decimal
 
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
 from rhosocial.activerecord.backend.expression import statements, core, query_parts
+from rhosocial.activerecord.backend.expression.predicates import ComparisonPredicate
 from rhosocial.activerecord.backend.expression.objects import Table
 from rhosocial.activerecord.backend.expression.sources import NamedRelationRef
 from rhosocial.activerecord.testsuite.utils import requires_cte
@@ -188,7 +189,12 @@ class TestCTEQueryWithQueryExpression:
             dialect,
             select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
             from_=NamedRelationRef(dialect, Table(dialect, Order.table_name())),
-            where=query_parts.WhereClause(dialect, condition=core.Column(dialect, "status") == core.Literal(dialect, 'active'))
+            where=query_parts.WhereClause(
+                dialect,
+                condition=ComparisonPredicate(
+                    dialect, "=", core.Column(dialect, "status"), core.Literal(dialect, "active")
+                ),
+            )
         )
 
         # Create a CTE that uses the QueryExpression as its source
