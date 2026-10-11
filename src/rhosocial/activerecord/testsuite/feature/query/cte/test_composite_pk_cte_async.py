@@ -21,14 +21,14 @@ class TestAsyncCTEQueryCompositePK:
         await async_order_item_class.bulk_create(items)
 
         from rhosocial.activerecord.query import AsyncCTEQuery
-        from rhosocial.activerecord.backend.expression import Column
+        from rhosocial.activerecord.backend.expression import Column, ComparisonPredicate, Literal
 
         base = async_order_item_class.query()
         cte = AsyncCTEQuery(backend)
         cte.with_cte("order_summary", base)
         result = await cte.from_cte("order_summary").select(
             Column(dialect, "order_id")
-        ).where(Column(dialect, "order_id") == 1).aggregate()
+        ).where(ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))).aggregate()
         assert len(result) == 2, "Expected 2 aggregated rows for order_id == 1"
 
     async def test_cte_pk_filter(self, async_order_item_class):

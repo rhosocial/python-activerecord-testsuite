@@ -38,7 +38,7 @@ class TestZeroDeclarationDerivation:
 
 class TestGenericDeclarationDerivation:
     def test_type_and_constraint_declarations(self, spec_order_class):
-        code_type = spec_order_class.column_type("code")
+        code_type = spec_order_class.column_data_type("code")
         assert isinstance(code_type, UseSqlType)
         assert code_type.data_type.name == "varchar"
         assert code_type.data_type.length == 32

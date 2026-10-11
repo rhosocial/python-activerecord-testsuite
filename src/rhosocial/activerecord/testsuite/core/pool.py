@@ -276,12 +276,24 @@ def release_all() -> None:
 
     Called when a test finishes so the freed slots are immediately available to
     the next test on any worker.
-    """
-    import fcntl
 
+    Returns immediately when the worker holds no slot. Slot locks are only ever
+    taken by :func:`_acquire_slot`, which is reachable exclusively through the
+    ``pooled_database_*`` helpers and therefore only while :func:`pooling_active`
+    holds. A serial run (no ``-n``) never opens a lock file, so it must not touch
+    the platform-specific locking module either: ``fcntl`` exists only on POSIX,
+    and importing it unconditionally made ``pytest_sessionfinish`` fail on Windows
+    with ``ModuleNotFoundError: No module named 'fcntl'`` even though no lock was
+    ever held.
+    """
     with _GUARD:
         held = list(_HELD.items())
         _HELD.clear()
+        if not held:
+            return
+
+        import fcntl
+
         for scenario, index in held:
             fh = _OPEN_LOCKS.pop((scenario, index), None)
             if fh is None:
