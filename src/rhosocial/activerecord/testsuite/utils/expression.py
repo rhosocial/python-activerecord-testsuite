@@ -73,6 +73,28 @@ def _empty_container_for(annotation: Any, dialect: Any):
     return None
 
 
+def _mentions_expression_class(annotation: Any, raw: Any) -> bool:
+    """Whether the annotation names an expression node, whatever it is called.
+
+    This used to be a substring test for ``"Expression"``, which is a coupling
+    to the class *names*: renaming ``QueryExpression`` to ``QueryStatement``
+    (规范 4.9: a statement is a statement) silently stopped matching, the
+    parameter fell through to the ``"x"`` fallback, and the failure surfaced
+    later as ``'str' object has no attribute 'to_sql'`` from inside a
+    formatter. The structural question -- does this annotation name a
+    ``BaseExpression`` subclass? -- does not care what the class is called.
+    """
+    from rhosocial.activerecord.backend.expression.bases import BaseExpression
+
+    candidates = [raw]
+    if typing.get_origin(annotation) is not None:
+        candidates.extend(typing.get_args(annotation))
+    for candidate in candidates:
+        if isinstance(candidate, type) and issubclass(candidate, BaseExpression):
+            return True
+    return False
+
+
 def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
     """Return a heuristic construction value for a required parameter."""
     annotation = param.annotation
@@ -113,7 +135,18 @@ def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
             return 1.0
         if raw is bool:
             return True
-        if "Expression" in text or "Subquery" in text:
+        # Asked structurally when the annotation resolves: what a class is
+        # called says nothing about what it is, and a rename must not change
+        # what this heuristic builds. The substring tests beside it remain for
+        # forward references, which introspection cannot resolve -- and they
+        # must list every name the library might grow, which is exactly why
+        # the structural test is the one that leads.
+        if (
+            "Expression" in text
+            or "Subquery" in text
+            or "Statement" in text
+            or (not isinstance(annotation, str) and _mentions_expression_class(annotation, raw))
+        ):
             return _literal(dialect)
 
     name = param.name
@@ -227,21 +260,21 @@ def special_constructors():
     return {
         "statements.ddl_table.ColumnDefinition": _column_definition,
         "statements.dml.ValuesSource": _values_source,
-        "statements.ddl_sequence.CreateSequenceExpression": _create_sequence_expr,
-        "statements.ddl_sequence.DropSequenceExpression": _drop_sequence_expr,
-        "statements.ddl_sequence.AlterSequenceExpression": _alter_sequence_expr,
-        "statements.ddl_type.CreateTypeExpression": _create_type_expr,
-        "statements.ddl_type.AlterTypeExpression": _alter_type_expr,
-        "statements.ddl_type.DropTypeExpression": _drop_type_expr,
-        "statements.ddl_domain.CreateDomainExpression": _create_domain_expr,
-        "statements.ddl_domain.AlterDomainExpression": _alter_domain_expr,
-        "statements.ddl_domain.DropDomainExpression": _drop_domain_expr,
-        "statements.ddl_function.CreateFunctionExpression": _create_function_expr,
-        "statements.ddl_function.DropFunctionExpression": _drop_function_expr,
-        "statements.ddl_schema.CreateSchemaExpression": _create_schema_expr,
-        "statements.ddl_schema.DropSchemaExpression": _drop_schema_expr,
-        "statements.ddl_database.CreateDatabaseExpression": _create_database_expr,
-        "statements.ddl_database.DropDatabaseExpression": _drop_database_expr,
+        "statements.ddl_sequence.CreateSequenceStatement": _create_sequence_expr,
+        "statements.ddl_sequence.DropSequenceStatement": _drop_sequence_expr,
+        "statements.ddl_sequence.AlterSequenceStatement": _alter_sequence_expr,
+        "statements.ddl_type.CreateTypeStatement": _create_type_expr,
+        "statements.ddl_type.AlterTypeStatement": _alter_type_expr,
+        "statements.ddl_type.DropTypeStatement": _drop_type_expr,
+        "statements.ddl_domain.CreateDomainStatement": _create_domain_expr,
+        "statements.ddl_domain.AlterDomainStatement": _alter_domain_expr,
+        "statements.ddl_domain.DropDomainStatement": _drop_domain_expr,
+        "statements.ddl_function.CreateFunctionStatement": _create_function_expr,
+        "statements.ddl_function.DropFunctionStatement": _drop_function_expr,
+        "statements.ddl_schema.CreateSchemaStatement": _create_schema_expr,
+        "statements.ddl_schema.DropSchemaStatement": _drop_schema_expr,
+        "statements.ddl_database.CreateDatabaseStatement": _create_database_expr,
+        "statements.ddl_database.DropDatabaseStatement": _drop_database_expr,
         # core splits what was one JSONExpression into a document and a text
         # class, so one key cannot cover both: endswith matches a suffix.
         "advanced_functions.JSONDocumentExpression": _json_document_expr,
@@ -249,20 +282,20 @@ def special_constructors():
         "query_parts.JoinClause": _join_expr,
         "statements.ddl_partition.PartitionClause": _partition_clause,
         "statements.dml.OnConflictClause": _on_conflict,
-        "statements.dml.UpdateExpression": _update_expr,
-        "statements.dml.InsertExpression": _insert_expr,
-        "statements.dml.DeleteExpression": _delete_expr,
-        "statements.ddl_alter.AlterTableExpression": _alter_table_expr,
+        "statements.dml.UpdateStatement": _update_expr,
+        "statements.dml.InsertStatement": _insert_expr,
+        "statements.dml.DeleteStatement": _delete_expr,
+        "statements.ddl_alter.AlterTableStatement": _alter_table_expr,
         "types.array.ArrayType": _array_type,
-        "statements.ddl_view.CreateViewExpression": _create_view_expr,
+        "statements.ddl_view.CreateViewStatement": _create_view_expr,
         "graph.GraphVertex": _graph_vertex,
         "graph.GraphEdge": _graph_edge,
         "graph.VertexTable": _node_table,
         "graph.EdgeTable": _edge_table,
         "graph.GraphTableExpression": _graph_table_expr,
-        "graph.CreatePropertyGraphExpression": _create_property_graph_expr,
-        "graph.DropPropertyGraphExpression": _drop_property_graph_expr,
-        "graph.AlterPropertyGraphExpression": _alter_property_graph_expr,
+        "graph.CreatePropertyGraphStatement": _create_property_graph_expr,
+        "graph.DropPropertyGraphStatement": _drop_property_graph_expr,
+        "graph.AlterPropertyGraphStatement": _alter_property_graph_expr,
         "datetime.ExtractExpression": _extract_expr,
         "datetime.DatePartExpression": _datepart_expr,
         "datetime.DateTruncExpression": _datetrunc_expr,
@@ -369,37 +402,37 @@ def _sequence(dialect):
 
 def _create_sequence_expr(dialect):
     from rhosocial.activerecord.backend.expression.statements.ddl_sequence import (
-        CreateSequenceExpression,
+        CreateSequenceStatement,
     )
 
-    return CreateSequenceExpression(dialect, _sequence(dialect))
+    return CreateSequenceStatement(dialect, _sequence(dialect))
 
 
 def _drop_sequence_expr(dialect):
     from rhosocial.activerecord.backend.expression.statements.ddl_sequence import (
-        DropSequenceExpression,
+        DropSequenceStatement,
     )
 
-    return DropSequenceExpression(dialect, _sequence(dialect))
+    return DropSequenceStatement(dialect, _sequence(dialect))
 
 
 def _alter_sequence_expr(dialect):
     from rhosocial.activerecord.backend.expression.statements.ddl_sequence import (
-        AlterSequenceExpression,
+        AlterSequenceStatement,
     )
 
-    return AlterSequenceExpression(dialect, _sequence(dialect))
+    return AlterSequenceStatement(dialect, _sequence(dialect))
 
 
 def _create_type_expr(dialect):
     from rhosocial.activerecord.backend.impl.dummy.expression import _DummyTypeDefinition
     from rhosocial.activerecord.backend.expression.objects import Type
     from rhosocial.activerecord.backend.expression.statements.ddl_type import (
-        CreateTypeExpression,
+        CreateTypeStatement,
     )
     from rhosocial.activerecord.backend.expression.types import IntegerType
 
-    return CreateTypeExpression(
+    return CreateTypeStatement(
         dialect, Type(dialect, "t"), _DummyTypeDefinition(dialect, IntegerType(dialect))
     )
 
@@ -408,10 +441,10 @@ def _alter_type_expr(dialect):
     from rhosocial.activerecord.backend.impl.dummy.expression import _DummyTypeAlterAction
     from rhosocial.activerecord.backend.expression.objects import Type
     from rhosocial.activerecord.backend.expression.statements.ddl_type import (
-        AlterTypeExpression,
+        AlterTypeStatement,
     )
 
-    return AlterTypeExpression(
+    return AlterTypeStatement(
         dialect, Type(dialect, "t"), [_DummyTypeAlterAction(dialect, "t2")]
     )
 
@@ -419,31 +452,31 @@ def _alter_type_expr(dialect):
 def _drop_type_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Type
     from rhosocial.activerecord.backend.expression.statements.ddl_type import (
-        DropTypeExpression,
+        DropTypeStatement,
     )
 
-    return DropTypeExpression(dialect, Type(dialect, "t"))
+    return DropTypeStatement(dialect, Type(dialect, "t"))
 
 
 def _create_domain_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Domain
     from rhosocial.activerecord.backend.expression.statements.ddl_domain import (
-        CreateDomainExpression,
+        CreateDomainStatement,
     )
     from rhosocial.activerecord.backend.expression.types import IntegerType
 
-    return CreateDomainExpression(dialect, Domain(dialect, "d"), IntegerType(dialect))
+    return CreateDomainStatement(dialect, Domain(dialect, "d"), IntegerType(dialect))
 
 
 def _alter_domain_expr(dialect):
     from rhosocial.activerecord.backend.expression.core import Literal
     from rhosocial.activerecord.backend.expression.objects import Domain
     from rhosocial.activerecord.backend.expression.statements.ddl_domain import (
-        AlterDomainExpression,
+        AlterDomainStatement,
         SetDomainDefaultAction,
     )
 
-    return AlterDomainExpression(
+    return AlterDomainStatement(
         dialect, Domain(dialect, "d"), [SetDomainDefaultAction(dialect, Literal(dialect, 1))]
     )
 
@@ -451,64 +484,64 @@ def _alter_domain_expr(dialect):
 def _drop_domain_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Domain
     from rhosocial.activerecord.backend.expression.statements.ddl_domain import (
-        DropDomainExpression,
+        DropDomainStatement,
     )
 
-    return DropDomainExpression(dialect, Domain(dialect, "d"))
+    return DropDomainStatement(dialect, Domain(dialect, "d"))
 
 
 def _create_function_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Function
     from rhosocial.activerecord.backend.expression.statements.ddl_function import (
-        CreateFunctionExpression,
+        CreateFunctionStatement,
     )
 
-    return CreateFunctionExpression(dialect, Function(dialect, "f"))
+    return CreateFunctionStatement(dialect, Function(dialect, "f"))
 
 
 def _drop_function_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Function
     from rhosocial.activerecord.backend.expression.statements.ddl_function import (
-        DropFunctionExpression,
+        DropFunctionStatement,
     )
 
-    return DropFunctionExpression(dialect, Function(dialect, "f"))
+    return DropFunctionStatement(dialect, Function(dialect, "f"))
 
 
 def _create_schema_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Schema
     from rhosocial.activerecord.backend.expression.statements.ddl_schema import (
-        CreateSchemaExpression,
+        CreateSchemaStatement,
     )
 
-    return CreateSchemaExpression(dialect, Schema(dialect, "s"))
+    return CreateSchemaStatement(dialect, Schema(dialect, "s"))
 
 
 def _drop_schema_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Schema
     from rhosocial.activerecord.backend.expression.statements.ddl_schema import (
-        DropSchemaExpression,
+        DropSchemaStatement,
     )
 
-    return DropSchemaExpression(dialect, Schema(dialect, "s"))
+    return DropSchemaStatement(dialect, Schema(dialect, "s"))
 
 
 def _create_database_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Database
     from rhosocial.activerecord.backend.expression.statements.ddl_database import (
-        CreateDatabaseExpression,
+        CreateDatabaseStatement,
     )
 
-    return CreateDatabaseExpression(dialect, Database(dialect, "d"))
+    return CreateDatabaseStatement(dialect, Database(dialect, "d"))
 
 
 def _drop_database_expr(dialect):
     from rhosocial.activerecord.backend.expression.objects import Database
     from rhosocial.activerecord.backend.expression.statements.ddl_database import (
-        DropDatabaseExpression,
+        DropDatabaseStatement,
     )
 
-    return DropDatabaseExpression(dialect, Database(dialect, "d"))
+    return DropDatabaseStatement(dialect, Database(dialect, "d"))
 
 
 def _node_table(dialect):
@@ -573,31 +606,31 @@ def _graph_table_expr(dialect):
 
 def _create_property_graph_expr(dialect):
     from rhosocial.activerecord.backend.expression.graph import (
-        CreatePropertyGraphExpression,
+        CreatePropertyGraphStatement,
     )
     from rhosocial.activerecord.backend.expression.objects import PropertyGraph
 
-    return CreatePropertyGraphExpression(
+    return CreatePropertyGraphStatement(
         dialect, PropertyGraph(dialect, "g"), [_node_table(dialect)]
     )
 
 
 def _drop_property_graph_expr(dialect):
     from rhosocial.activerecord.backend.expression.graph import (
-        DropPropertyGraphExpression,
+        DropPropertyGraphStatement,
     )
     from rhosocial.activerecord.backend.expression.objects import PropertyGraph
 
-    return DropPropertyGraphExpression(dialect, PropertyGraph(dialect, "g"))
+    return DropPropertyGraphStatement(dialect, PropertyGraph(dialect, "g"))
 
 
 def _alter_property_graph_expr(dialect):
     from rhosocial.activerecord.backend.expression.graph import (
-        AlterPropertyGraphExpression,
+        AlterPropertyGraphStatement,
     )
     from rhosocial.activerecord.backend.expression.objects import PropertyGraph
 
-    return AlterPropertyGraphExpression(
+    return AlterPropertyGraphStatement(
         dialect,
         PropertyGraph(dialect, "g"),
         "ADD",
@@ -677,36 +710,36 @@ def _on_conflict(dialect):
 def _insert_expr(dialect):
     from rhosocial.activerecord.backend.expression.core import Literal
     from rhosocial.activerecord.backend.expression.statements.dml import (
-        InsertExpression,
+        InsertStatement,
         ValuesSource,
     )
 
-    return InsertExpression(dialect, into=_table(dialect), source=ValuesSource(dialect, [[Literal(dialect, 1)]]))
+    return InsertStatement(dialect, into=_table(dialect), source=ValuesSource(dialect, [[Literal(dialect, 1)]]))
 
 
 def _delete_expr(dialect):
-    from rhosocial.activerecord.backend.expression.statements.dml import DeleteExpression
+    from rhosocial.activerecord.backend.expression.statements.dml import DeleteStatement
 
-    return DeleteExpression(dialect, tables=_table(dialect))
+    return DeleteStatement(dialect, tables=_table(dialect))
 
 
 def _update_expr(dialect):
     from rhosocial.activerecord.backend.expression.core import Literal
-    from rhosocial.activerecord.backend.expression.statements.dml import UpdateExpression
+    from rhosocial.activerecord.backend.expression.statements.dml import UpdateStatement
 
-    return UpdateExpression(dialect, table=_table(dialect), assignments={"a": Literal(dialect, 1)})
+    return UpdateStatement(dialect, table=_table(dialect), assignments={"a": Literal(dialect, 1)})
 
 
 def _alter_table_expr(dialect):
     from rhosocial.activerecord.backend.expression.statements.ddl_alter import (
         AddColumn,
-        AlterTableExpression,
+        AlterTableStatement,
         DropColumn,
     )
     from rhosocial.activerecord.backend.expression.types import IntegerType
 
     column = _column_definition(dialect)
-    return AlterTableExpression(
+    return AlterTableStatement(
         dialect,
         table=_table(dialect, "t"),
         actions=[DropColumn(dialect, "a"), AddColumn(dialect, column=column)],
@@ -716,11 +749,11 @@ def _alter_table_expr(dialect):
 def _create_view_expr(dialect):
     from rhosocial.activerecord.backend.expression.core import Column
     from rhosocial.activerecord.backend.expression.objects import View
-    from rhosocial.activerecord.backend.expression.statements.ddl_view import CreateViewExpression
-    from rhosocial.activerecord.backend.expression.statements.dql import QueryExpression
+    from rhosocial.activerecord.backend.expression.statements.ddl_view import CreateViewStatement
+    from rhosocial.activerecord.backend.expression.statements.dql import QueryStatement
 
-    query = QueryExpression(dialect, select=[Column(dialect, "id")], from_=_source(dialect, "t"))
-    return CreateViewExpression(dialect, view=View(dialect, "v"), query=query)
+    query = QueryStatement(dialect, select=[Column(dialect, "id")], from_=_source(dialect, "t"))
+    return CreateViewStatement(dialect, view=View(dialect, "v"), query=query)
 
 
 def _extract_expr(dialect):

@@ -18,11 +18,11 @@ from rhosocial.activerecord.backend.expression import (
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression.statements import (
     ColumnConstraintType,
-    CreateIndexExpression,
-    CreateTableExpression,
+    CreateIndexStatement,
+    CreateTableStatement,
     CreateTableOptions,
-    DropIndexExpression,
-    DropTableExpression,
+    DropIndexStatement,
+    DropTableStatement,
     IndexDefinition,
     PartitionStrategy,
     StorageOptionsExpression,
@@ -181,19 +181,19 @@ class ContractDeclarations:
 
     @classmethod
     def create_table_statement_classes(cls):
-        return CreateTableExpression
+        return CreateTableStatement
 
     @classmethod
     def drop_table_statement_classes(cls):
-        return DropTableExpression
+        return DropTableStatement
 
     @classmethod
     def create_index_statement_classes(cls):
-        return CreateIndexExpression
+        return CreateIndexStatement
 
     @classmethod
     def drop_index_statement_classes(cls):
-        return DropIndexExpression
+        return DropIndexStatement
 
 
 class SyncContractModel(ContractDeclarations, ActiveRecord):
@@ -480,10 +480,10 @@ def test_contract_table_collection_preserves_overrides_and_copies_sequences():
     assert model.table_partition() is TABLE_PARTITION
     assert model.table_inherits() is TABLE_INHERITS
     assert model.table_tablespace() == TABLE_TABLESPACE
-    assert model.create_table_statement_classes() is CreateTableExpression
-    assert model.drop_table_statement_classes() is DropTableExpression
-    assert model.create_index_statement_classes() is CreateIndexExpression
-    assert model.drop_index_statement_classes() is DropIndexExpression
+    assert model.create_table_statement_classes() is CreateTableStatement
+    assert model.drop_table_statement_classes() is DropTableStatement
+    assert model.create_index_statement_classes() is CreateIndexStatement
+    assert model.drop_index_statement_classes() is DropIndexStatement
     indexes = model.table_indexes()
     assert indexes is not model.__table_indexes__
     assert indexes[0] is TABLE_INDEX

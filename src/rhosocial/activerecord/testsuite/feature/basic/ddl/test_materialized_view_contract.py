@@ -62,16 +62,16 @@ from rhosocial.activerecord.backend.dialect.exceptions import (
 )
 from rhosocial.activerecord.backend.dialect.mixins import ViewMixin
 from rhosocial.activerecord.backend.dialect.protocols import ViewObjectSupport
-from rhosocial.activerecord.backend.expression import Column, QueryExpression
+from rhosocial.activerecord.backend.expression import Column, QueryStatement
 from rhosocial.activerecord.backend.expression.objects import (
     MaterializedView,
     Table,
 )
 from rhosocial.activerecord.backend.expression.sources import NamedRelationRef
 from rhosocial.activerecord.backend.expression.statements.ddl_view import (
-    CreateMaterializedViewExpression,
-    DropMaterializedViewExpression,
-    RefreshMaterializedViewExpression,
+    CreateMaterializedViewStatement,
+    DropMaterializedViewStatement,
+    RefreshMaterializedViewStatement,
 )
 
 
@@ -128,7 +128,7 @@ def _render(expression):
 
 def _source_query(dialect):
     """A minimal SELECT the MV expressions can embed."""
-    return QueryExpression(
+    return QueryStatement(
         dialect=dialect,
         select=[Column(dialect, "id")],
         from_=NamedRelationRef(dialect, Table(dialect, "source_table")),
@@ -193,13 +193,13 @@ class TestMaterializedViewRendering:
     def _render_generic_create(self, dialect):
         """Render the generic CREATE, skipping backends that need their own.
 
-        The generic ``CreateMaterializedViewExpression`` cannot express every
+        The generic ``CreateMaterializedViewStatement`` cannot express every
         backend's MV: ClickHouse requires a ``TO`` target table or an ``ENGINE``
         and has no such fields, so it legitimately refuses. Where the generic
         path *is* supported, the result must be a real CREATE that binds no
         parameters.
         """
-        expression = CreateMaterializedViewExpression(
+        expression = CreateMaterializedViewStatement(
             dialect=dialect,
             view=MaterializedView(dialect, "mv_contract"),
             query=_source_query(dialect),
@@ -230,7 +230,7 @@ class TestMaterializedViewRendering:
         """
         if not _mv_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view support")
-        expression = DropMaterializedViewExpression(
+        expression = DropMaterializedViewStatement(
             dialect=ddl_dialect,
             view=MaterializedView(ddl_dialect, "mv_contract"),
             if_exists=True,
@@ -253,7 +253,7 @@ class TestMaterializedViewRendering:
         """
         if not _mv_refresh_supported(ddl_dialect):
             pytest.skip("backend does not advertise materialized view refresh")
-        expression = RefreshMaterializedViewExpression(
+        expression = RefreshMaterializedViewStatement(
             dialect=ddl_dialect,
             view=MaterializedView(ddl_dialect, "mv_contract"),
         )

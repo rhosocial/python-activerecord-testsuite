@@ -161,12 +161,12 @@ class TestCTEQuerySetOperation:
             assert row.get('status') != 'completed', "Expected EXCEPT rows to not be completed"
 
 class TestCTEQueryWithQueryExpression:
-    """Test CTE queries with QueryExpression as parameters."""
+    """Test CTE queries with QueryStatement as parameters."""
 
     @requires_cte()
     def test_cte_with_query_expression_as_subquery(self, order_fixtures):
         """
-        Test CTE query that uses a QueryExpression as the underlying query.
+        Test CTE query that uses a QueryStatement as the underlying query.
         """
         User, Order, OrderItem = order_fixtures
 
@@ -184,8 +184,8 @@ class TestCTEQueryWithQueryExpression:
         backend = Order.backend()
         dialect = backend.dialect
 
-        # Create a QueryExpression directly (this implements ToSQLProtocol)
-        query_expr = statements.QueryExpression(
+        # Create a QueryStatement directly (this implements ToSQLProtocol)
+        query_expr = statements.QueryStatement(
             dialect,
             select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
             from_=NamedRelationRef(dialect, Table(dialect, Order.table_name())),
@@ -197,7 +197,7 @@ class TestCTEQueryWithQueryExpression:
             )
         )
 
-        # Create a CTE that uses the QueryExpression as its source
+        # Create a CTE that uses the QueryStatement as its source
         cte_query = CTEQuery(backend)
         cte_query.with_cte('query_expr_cte', query_expr)
 
@@ -212,7 +212,7 @@ class TestCTEQueryWithQueryExpression:
     @requires_cte()
     def test_cte_with_query_expression_as_main_query(self, order_fixtures):
         """
-        Test CTE query where the main query is a QueryExpression.
+        Test CTE query where the main query is a QueryStatement.
         """
         User, Order, OrderItem = order_fixtures
 

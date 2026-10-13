@@ -153,7 +153,7 @@ class TestAsyncCTEQueryErrorHandling:
 
         assert "not supported in CTE" in str(exc_info.value), \
             "Expected the error to mention unsupported CTE type"
-        assert "Only str, SQLQueryAndParams, IQuery, and QueryExpression" in str(exc_info.value), \
+        assert "Only str, SQLQueryAndParams, IQuery, and QueryStatement" in str(exc_info.value), \
             "Expected the error to mention the supported query types"
 
     @requires_protocol(CTESupport, "supports_basic_cte")
