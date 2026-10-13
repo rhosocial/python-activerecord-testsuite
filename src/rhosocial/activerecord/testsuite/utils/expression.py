@@ -259,6 +259,13 @@ def special_constructors():
     """
     return {
         "statements.ddl_table.ColumnDefinition": _column_definition,
+        "statements.ddl_table.ColumnConstraint": _column_constraint,
+        "statements.ddl_table.ForeignKeyConstraint": _foreign_key_constraint,
+        "statements.ddl_table.TableConstraint": _table_constraint,
+        "statements.ddl_table.ColumnForeignKeyConstraint": _column_fk_constraint,
+        "statements.ddl_table.TableForeignKeyConstraint": _table_fk_constraint,
+        "statements.ddl_table.TablePrimaryKeyConstraint": _table_primary_key,
+        "statements.ddl_table.TableUniqueConstraint": _table_unique,
         "statements.dml.ValuesSource": _values_source,
         "statements.ddl_sequence.CreateSequenceStatement": _create_sequence_expr,
         "statements.ddl_sequence.DropSequenceStatement": _drop_sequence_expr,
@@ -311,6 +318,82 @@ def _column_definition(dialect):
     from rhosocial.activerecord.backend.expression.types import IntegerType
 
     return ColumnDefinition(dialect, "col", IntegerType(dialect))
+
+
+# ---------------------------------------------------------------- constraint nodes
+# A constraint is a clause plus the branch that says which kind it is, so the
+# two levels need a branch each: the clause cannot be built without saying what
+# it constrains, and the branches whose payload is a relation or a column list
+# need one the heuristic guess has no way to supply.
+
+
+def _column_constraint(dialect):
+    from rhosocial.activerecord.backend.expression.statements import (
+        ColumnConstraint,
+        ColumnNotNullConstraint,
+    )
+
+    return ColumnConstraint(dialect, branch=ColumnNotNullConstraint(dialect))
+
+
+def _foreign_key_constraint(dialect):
+    """The construction sugar over a table-level FOREIGN KEY branch.
+
+    Same reason as the branch itself: what it points at has to be a real
+    ``Table``, which a guessed placeholder cannot be.
+    """
+    from rhosocial.activerecord.backend.expression.objects import Table
+    from rhosocial.activerecord.backend.expression.statements import (
+        ForeignKeyConstraint,
+    )
+
+    return ForeignKeyConstraint(
+        dialect,
+        columns=["col"],
+        foreign_key_table=Table(dialect, "parent"),
+        foreign_key_columns=["id"],
+    )
+
+
+def _table_constraint(dialect):
+    from rhosocial.activerecord.backend.expression.statements import (
+        TableConstraint,
+        TableUniqueConstraint,
+    )
+
+    return TableConstraint(dialect, branch=TableUniqueConstraint(dialect, ["col"]))
+
+
+def _column_fk_constraint(dialect):
+    from rhosocial.activerecord.backend.expression.objects import Table
+    from rhosocial.activerecord.backend.expression.statements import (
+        ColumnForeignKeyConstraint,
+    )
+
+    return ColumnForeignKeyConstraint(dialect, (Table(dialect, "parent"), ["id"]))
+
+
+def _table_fk_constraint(dialect):
+    from rhosocial.activerecord.backend.expression.objects import Table
+    from rhosocial.activerecord.backend.expression.statements import (
+        TableForeignKeyConstraint,
+    )
+
+    return TableForeignKeyConstraint(dialect, ["col"], (Table(dialect, "parent"), ["id"]))
+
+
+def _table_primary_key(dialect):
+    from rhosocial.activerecord.backend.expression.statements import (
+        TablePrimaryKeyConstraint,
+    )
+
+    return TablePrimaryKeyConstraint(dialect, ["col"])
+
+
+def _table_unique(dialect):
+    from rhosocial.activerecord.backend.expression.statements import TableUniqueConstraint
+
+    return TableUniqueConstraint(dialect, ["col"])
 
 
 def _json_document_expr(dialect):
