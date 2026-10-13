@@ -26,7 +26,7 @@ from typing import ClassVar
 import pytest
 
 from rhosocial.activerecord.backend.expression import functions
-from rhosocial.activerecord.backend.expression.core import IntegerValueExpression
+from rhosocial.activerecord.backend.expression.core import IntegerValue
 from rhosocial.activerecord.backend.expression.operators import BinaryArithmeticExpression
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord
@@ -96,7 +96,7 @@ def test_string_to_integer_is_a_number_that_takes_arithmetic(model):
     SQL. The integer result offers arithmetic and comparison instead.
     """
     length = model.c.name.length()
-    assert isinstance(length, IntegerValueExpression)
+    assert isinstance(length, IntegerValue)
     assert _expression(length + 1)
     assert _expression(length * 2)
     assert _expression(length > 3)

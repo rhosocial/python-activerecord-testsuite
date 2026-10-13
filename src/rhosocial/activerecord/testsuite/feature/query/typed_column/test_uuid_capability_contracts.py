@@ -16,7 +16,7 @@ import pytest
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import (
     Literal,
-    UUIDCastExpression,
+    UUIDCastFunction,
     UUIDConstantExpression,
     UUIDGenerationExpression,
 )
@@ -68,7 +68,7 @@ def _supports(dialect, probe: str) -> bool:
     [
         ("supports_uuid_generation", lambda d: UUIDGenerationExpression(d)),
         ("supports_uuid_constant", lambda d: UUIDConstantExpression(d, "nil")),
-        ("supports_uuid_cast", lambda d: UUIDCastExpression(d, Literal(d, "x"))),
+        ("supports_uuid_cast", lambda d: UUIDCastFunction(d, Literal(d, "x"))),
     ],
     ids=["generation", "constant", "cast"],
 )
@@ -86,7 +86,7 @@ def test_supported_uuid_operation_renders(dialect, probe, factory):
     [
         ("supports_uuid_generation", lambda d: UUIDGenerationExpression(d)),
         ("supports_uuid_constant", lambda d: UUIDConstantExpression(d, "nil")),
-        ("supports_uuid_cast", lambda d: UUIDCastExpression(d, Literal(d, "x"))),
+        ("supports_uuid_cast", lambda d: UUIDCastFunction(d, Literal(d, "x"))),
     ],
     ids=["generation", "constant", "cast"],
 )
@@ -192,7 +192,7 @@ def test_cast_keeps_its_parameters(dialect):
     if not _supports(dialect, "supports_uuid_cast"):
         pytest.skip(f"{dialect.name} cannot cast to UUID")
 
-    expr = UUIDCastExpression(dialect, Literal(dialect, "not-a-uuid"))
+    expr = UUIDCastFunction(dialect, Literal(dialect, "not-a-uuid"))
     sql, params = expr.to_sql()
     assert params == ("not-a-uuid",)
     assert "not-a-uuid" not in sql, f"{dialect.name} inlined the operand: {sql!r}"

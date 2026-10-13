@@ -25,8 +25,8 @@ import pytest
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.backend.expression import (
     Column,
-    JSONDocumentExpression,
-    JSONTextExpression,
+    JSONDocumentValue,
+    JSONTextValue,
 )
 
 
@@ -84,13 +84,13 @@ _FOREIGN_FUNCTION_NAMES = (
 def _document_sql(dialect, mode, path="a"):
     """Render the document access ``->`` under ``mode``."""
     col = Column(dialect, "j", table="t")
-    return JSONDocumentExpression(dialect, col, path, mode=mode).to_sql()
+    return JSONDocumentValue(dialect, col, path, mode=mode).to_sql()
 
 
 def _text_sql(dialect, mode, path="a"):
     """Render the text access ``->>`` under ``mode``."""
     col = Column(dialect, "j", table="t")
-    return JSONTextExpression(dialect, col, path, operation="->>", mode=mode).to_sql()
+    return JSONTextValue(dialect, col, path, operation="->>", mode=mode).to_sql()
 
 
 # ---------------------------------------------------------------------------

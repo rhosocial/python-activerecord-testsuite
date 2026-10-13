@@ -170,7 +170,7 @@ def _literal(dialect):
 def _function_call(dialect):
     """A niladic function call, for a parameter that wraps one.
 
-    The typed value expressions (``BooleanValueExpression`` and its siblings)
+    The typed value expressions (``BooleanValue`` and its siblings)
     hold a ``call`` and render it through ``to_sql()``. Handing them a string
     builds an instance that cannot render, and the failure surfaces as
     ``'str' object has no attribute 'to_sql'`` from inside the wrapper rather
@@ -243,7 +243,7 @@ def special_constructors():
     fails the class is silently reported as unconstructible rather than as
     mis-registered. This is how ``"advanced_functions.JSONExpression"`` came to
     match nothing at all once core split that one class into
-    ``JSONDocumentExpression`` and ``JSONTextExpression``.
+    ``JSONDocumentValue`` and ``JSONTextValue``.
 
     The failure is one-directional, which is what makes it dangerous: renaming
     the key once breaks the match silently, and a *single* key covering both
@@ -284,8 +284,8 @@ def special_constructors():
         "statements.ddl_database.DropDatabaseStatement": _drop_database_expr,
         # core splits what was one JSONExpression into a document and a text
         # class, so one key cannot cover both: endswith matches a suffix.
-        "advanced_functions.JSONDocumentExpression": _json_document_expr,
-        "advanced_functions.JSONTextExpression": _json_text_expr,
+        "advanced_functions.JSONDocumentValue": _json_document_expr,
+        "advanced_functions.JSONTextValue": _json_text_expr,
         "query_parts.JoinClause": _join_expr,
         "statements.ddl_partition.PartitionClause": _partition_clause,
         "statements.dml.OnConflictClause": _on_conflict,
@@ -403,20 +403,20 @@ def _json_document_expr(dialect):
     what the pre-split single ``JSONExpression`` factory rendered.
     """
     from rhosocial.activerecord.backend.expression.advanced_functions import (
-        JSONDocumentExpression,
+        JSONDocumentValue,
     )
     from rhosocial.activerecord.backend.expression.core import Literal
 
-    return JSONDocumentExpression(dialect, Literal(dialect, '{"a": 1}'), path="$.a")
+    return JSONDocumentValue(dialect, Literal(dialect, '{"a": 1}'), path="$.a")
 
 
 def _json_text_expr(dialect):
     """``->>``: the *text* of a JSON path.
 
-    ``JSONTextExpression`` declares no ``__init__`` of its own, so it inherits
+    ``JSONTextValue`` declares no ``__init__`` of its own, so it inherits
     the document class's -- including ``operation="->"``. The default is
     therefore inherited too, and this factory has to say ``->>`` explicitly.
-    Leaving it off would hand the contract test a ``JSONTextExpression`` whose
+    Leaving it off would hand the contract test a ``JSONTextValue`` whose
     ``operation`` says ``->``, which is the one thing the class exists to
     distinguish.
 
@@ -425,11 +425,11 @@ def _json_text_expr(dialect):
     which both classes share.
     """
     from rhosocial.activerecord.backend.expression.advanced_functions import (
-        JSONTextExpression,
+        JSONTextValue,
     )
     from rhosocial.activerecord.backend.expression.core import Literal
 
-    return JSONTextExpression(
+    return JSONTextValue(
         dialect, Literal(dialect, '{"a": 1}'), path="$.a", operation="->>"
     )
 
