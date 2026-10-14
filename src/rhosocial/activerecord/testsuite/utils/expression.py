@@ -95,6 +95,21 @@ def _mentions_expression_class(annotation: Any, raw: Any) -> bool:
     return False
 
 
+def _is_predicate_class(annotation: Any, raw: Any) -> bool:
+    """Whether the annotation names a predicate node, whatever it is called.
+
+    Same structural question as :func:`_mentions_expression_class` answers for
+    expressions, asked of the predicate family: a rename inside the family must
+    not change what this heuristic builds either.
+    """
+    from rhosocial.activerecord.backend.expression.bases import SQLPredicate
+
+    for candidate in (raw, annotation):
+        if isinstance(candidate, type) and issubclass(candidate, SQLPredicate):
+            return True
+    return False
+
+
 def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
     """Return a heuristic construction value for a required parameter."""
     annotation = param.annotation
@@ -135,6 +150,17 @@ def _placeholder_for(param: inspect.Parameter, dialect: Any = None):
             return 1.0
         if raw is bool:
             return True
+        # A predicate slot wants a predicate, not a value. SQLPredicate is a
+        # BaseExpression subclass like the values are, so the structural
+        # expression branch below hands it a Literal -- and the constructors
+        # that type a parameter as a predicate refuse a Literal on their
+        # isinstance check (core's DomainCheckConstraint.condition is the one
+        # in the matrix today). Asked structurally when the annotation
+        # resolves; the name test beside it covers forward references.
+        if (not isinstance(annotation, str) and _is_predicate_class(annotation, raw)) or (
+            "Predicate" in text
+        ):
+            return _comparison(dialect)
         # Asked structurally when the annotation resolves: what a class is
         # called says nothing about what it is, and a rename must not change
         # what this heuristic builds. The substring tests beside it remain for
