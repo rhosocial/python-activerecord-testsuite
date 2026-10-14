@@ -9,7 +9,7 @@ mis-registered, and nothing raises. That is not hypothetical here — two of the
 entries in that dict were dead when these tests were written.
 
 * ``"advanced_functions.JSONExpression"`` stopped matching the moment core
-  split that one class into ``JSONDocumentExpression`` and ``JSONTextExpression``.
+  split that one class into ``JSONDocumentValue`` and ``JSONTextValue``.
 * ``"query_parts.JoinExpression"`` named a class core renamed to
   ``JoinClause``.
 
@@ -28,8 +28,8 @@ import inspect
 import pytest
 
 from rhosocial.activerecord.backend.expression.advanced_functions import (
-    JSONDocumentExpression,
-    JSONTextExpression,
+    JSONDocumentValue,
+    JSONTextValue,
 )
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression.serialization import ExpressionRegistry
@@ -68,7 +68,7 @@ class TestTheSplitJSONClassesEachDispatchToTheirOwnConstructor:
 
     @pytest.mark.parametrize(
         "cls, operation",
-        [(JSONDocumentExpression, "->"), (JSONTextExpression, "->>")],
+        [(JSONDocumentValue, "->"), (JSONTextValue, "->>")],
         ids=["document", "text"],
     )
     def test_the_registry_entry_builds_that_class_asking_for_that_operator(
@@ -88,12 +88,12 @@ class TestTheSplitJSONClassesEachDispatchToTheirOwnConstructor:
         assert instance.operation == operation, (
             f"{cls.__name__} was built with operation={instance.operation!r}. "
             f"The class exists to say which operator it is, and "
-            f"JSONTextExpression inherits operation='->' from its parent, so "
+            f"JSONTextValue inherits operation='->' from its parent, so "
             f"the factory has to state it."
         )
 
     @pytest.mark.parametrize(
-        "cls", [JSONDocumentExpression, JSONTextExpression], ids=["document", "text"]
+        "cls", [JSONDocumentValue, JSONTextValue], ids=["document", "text"]
     )
     def test_make_instance_reports_special_rather_than_heuristic(self, dialect, cls):
         """``source`` is the only observable difference between matched and not.
@@ -112,7 +112,7 @@ class TestTheSplitJSONClassesEachDispatchToTheirOwnConstructor:
     def test_each_class_matches_its_own_entry_and_neither_others(self):
         """Two keys, not one — asserted so a future merge cannot pass quietly."""
         specials = special_constructors()
-        for cls in (JSONDocumentExpression, JSONTextExpression):
+        for cls in (JSONDocumentValue, JSONTextValue):
             matched = [
                 key for key in specials
                 if f"{cls.__module__}.{cls.__name__}".endswith(key)
@@ -141,8 +141,8 @@ class TestTheSplitJSONClassesEachDispatchToTheirOwnConstructor:
 
         rendered = {}
         for operation in ("->", "->>"):
-            as_document = render(JSONDocumentExpression, operation)
-            as_text = render(JSONTextExpression, operation)
+            as_document = render(JSONDocumentValue, operation)
+            as_text = render(JSONTextValue, operation)
             assert as_document == as_text, (
                 f"operation={operation!r} renders differently depending on the "
                 f"class: {as_document!r} vs {as_text!r}"
@@ -168,12 +168,12 @@ class TestTheSplitJSONClassesEachDispatchToTheirOwnConstructor:
         col = Column(dialect, "j", table="t")
         for operation in ("->", "->>"):
             assert (
-                JSONDocumentExpression(dialect, col, "a", operation=operation)
+                JSONDocumentValue(dialect, col, "a", operation=operation)
                 .format_method
                 == "format_json_expression"
             )
             assert (
-                JSONTextExpression(dialect, col, "a", operation=operation)
+                JSONTextValue(dialect, col, "a", operation=operation)
                 .format_method
                 == "format_json_expression"
             )
