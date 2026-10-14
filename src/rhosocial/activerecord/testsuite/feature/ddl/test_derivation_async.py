@@ -2,15 +2,23 @@
 """Backend-independent asynchronous DDLSource declaration tests."""
 
 from rhosocial.activerecord.backend.expression.statements.ddl_table import (
-    ColumnConstraintType,
+    ColumnCheckConstraint,
+    ColumnNotNullConstraint,
+    ColumnPrimaryKeyConstraint,
     ForeignKeyConstraint,
-    TableConstraintType,
+    TableUniqueConstraint,
 )
 from rhosocial.activerecord.base import DDLSource, UseSqlType
 
 
-def _constraint_types(model, field):
-    return {constraint.constraint_type for constraint in model.column_constraints(field)}
+def _constraint_branches(model, field):
+    """The branch classes the field's constraint clauses state.
+
+    The kind is the branch node's class since the two-level split, so this
+    reads what each clause states rather than a tag the node no longer
+    carries.
+    """
+    return {type(constraint.branch) for constraint in model.column_constraints(field)}
 
 
 class TestZeroDeclarationDerivationAsync:
@@ -27,13 +35,13 @@ class TestZeroDeclarationDerivationAsync:
         )
 
     async def test_primary_key_and_nullability_declarations(self, async_bare_class):
-        assert ColumnConstraintType.PRIMARY_KEY in _constraint_types(
+        assert ColumnPrimaryKeyConstraint in _constraint_branches(
             async_bare_class, "id"
         )
-        assert ColumnConstraintType.NOT_NULL in _constraint_types(
+        assert ColumnNotNullConstraint in _constraint_branches(
             async_bare_class, "name"
         )
-        assert ColumnConstraintType.NOT_NULL not in _constraint_types(
+        assert ColumnNotNullConstraint not in _constraint_branches(
             async_bare_class, "note"
         )
 
@@ -44,16 +52,16 @@ class TestGenericDeclarationDerivationAsync:
         assert isinstance(code_type, UseSqlType)
         assert code_type.data_type.name == "varchar"
         assert code_type.data_type.length == 32
-        assert ColumnConstraintType.CHECK in _constraint_types(
+        assert ColumnCheckConstraint in _constraint_branches(
             async_spec_order_class, "status"
         )
 
         unique = next(
             constraint
             for constraint in async_spec_order_class.table_constraints()
-            if constraint.constraint_type == TableConstraintType.UNIQUE
+            if isinstance(constraint.branch, TableUniqueConstraint)
         )
-        assert unique.columns == ["code", "status"]
+        assert unique.branch.columns == ["code", "status"]
 
     async def test_table_index_declarations(self, async_spec_order_class):
         index = async_spec_order_class.table_indexes()[0]

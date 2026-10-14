@@ -17,7 +17,11 @@ from rhosocial.activerecord.backend.expression import (
 )
 from rhosocial.activerecord.backend.expression.core import Column
 from rhosocial.activerecord.backend.expression.statements import (
-    ColumnConstraintType,
+    ColumnDefaultConstraint,
+    ColumnNotNullConstraint,
+    ColumnNullableConstraint,
+    ColumnPrimaryKeyConstraint,
+    ColumnUniqueConstraint,
     CreateIndexStatement,
     CreateTableStatement,
     CreateTableOptions,
@@ -27,7 +31,8 @@ from rhosocial.activerecord.backend.expression.statements import (
     PartitionStrategy,
     StorageOptionsExpression,
     TableConstraint,
-    TableConstraintType,
+    TablePrimaryKeyConstraint,
+    TableUniqueConstraint,
 )
 from rhosocial.activerecord.backend.expression.statements.ddl_partition import PartitionClause
 from rhosocial.activerecord.backend.expression.types import JsonType, TextType
@@ -71,8 +76,8 @@ class BackendOption(ColumnOptions):
 BACKEND_OPTION = BackendOption()
 SQL_TYPE = UseSqlType(JsonType(), JsonType(), TextType())
 PAYLOAD_TYPE = UseSqlType(JsonType(), TextType())
-DEFAULT_CONSTRAINT = UseConstraint(ColumnConstraintType.DEFAULT, default_value=7)
-UNIQUE_CONSTRAINT = UseConstraint(ColumnConstraintType.UNIQUE, name="uq_payload")
+DEFAULT_CONSTRAINT = UseConstraint(ColumnDefaultConstraint, value=7)
+UNIQUE_CONSTRAINT = UseConstraint(ColumnUniqueConstraint, name="uq_payload")
 FIRST_INDEX = UseIndex(
     "idx_payload",
     unique=True,
@@ -111,9 +116,8 @@ FIRST_ATTRIBUTES = UseColumnAttributes(
 SECOND_ATTRIBUTES = UseColumnAttributes(CharacterSetAttribute(name="UTF8"))
 TABLE_CONSTRAINT = TableConstraint(
     None,
-    TableConstraintType.UNIQUE,
+    branch=TableUniqueConstraint(None, ["record_id", "status"]),
     name="uq_record_status",
-    columns=["record_id", "status"],
 )
 TABLE_INDEX = IndexDefinition(
     None,
@@ -222,8 +226,7 @@ class AsyncDerivedModel(DerivedDeclarations, AsyncActiveRecord):
 
 COMPOSITE_PRIMARY_KEY = TableConstraint(
     None,
-    TableConstraintType.PRIMARY_KEY,
-    columns=["left_id", "right_id"],
+    branch=TablePrimaryKeyConstraint(None, ["left_id", "right_id"]),
 )
 
 
@@ -246,8 +249,7 @@ class AsyncCompositeModel(CompositeDeclarations, AsyncActiveRecord):
 
 MISMATCHED_PRIMARY_KEY = TableConstraint(
     None,
-    TableConstraintType.PRIMARY_KEY,
-    columns=["right_id", "left_id"],
+    branch=TablePrimaryKeyConstraint(None, ["right_id", "left_id"]),
 )
 
 
@@ -268,7 +270,7 @@ class NullablePrimaryKeyDeclarations:
     __table_name__ = "ddl_contract_nullable_primary_key"
     __primary_key__ = "id"
 
-    id: Annotated[Optional[int], UseConstraint(ColumnConstraintType.NULL)] = None
+    id: Annotated[Optional[int], UseConstraint(ColumnNullableConstraint)] = None
 
 
 class NullablePrimaryKeyModel(NullablePrimaryKeyDeclarations, ActiveRecord):
@@ -279,7 +281,7 @@ class NotNullPrimaryKeyDeclarations:
     __table_name__ = "ddl_contract_not_null_primary_key"
     __primary_key__ = "id"
 
-    id: Annotated[int, UseConstraint(ColumnConstraintType.NOT_NULL)]
+    id: Annotated[int, UseConstraint(ColumnNotNullConstraint)]
 
 
 class NotNullPrimaryKeyModel(NotNullPrimaryKeyDeclarations, ActiveRecord):
@@ -370,10 +372,10 @@ def test_contract_field_collection_preserves_order_and_first_singular_marker():
     assert isinstance(sql_type.data_types[0], JsonType)
     assert isinstance(sql_type.data_types[1], TextType)
     constraints = model.column_constraints("status")
-    assert [item.constraint_type for item in constraints] == [
-        ColumnConstraintType.DEFAULT,
-        ColumnConstraintType.UNIQUE,
-        ColumnConstraintType.NOT_NULL,
+    assert [type(item.branch) for item in constraints] == [
+        ColumnDefaultConstraint,
+        ColumnUniqueConstraint,
+        ColumnNotNullConstraint,
     ]
     assert constraints[0] is DEFAULT_CONSTRAINT.constraint
     assert constraints[1] is UNIQUE_CONSTRAINT.constraint
@@ -538,10 +540,10 @@ def test_contract_composite_primary_key_does_not_duplicate_explicit_constraint(m
     primary_keys = [
         constraint
         for constraint in constraints
-        if constraint.constraint_type == TableConstraintType.PRIMARY_KEY
+        if isinstance(constraint.branch, TablePrimaryKeyConstraint)
     ]
     assert len(primary_keys) == 1
-    assert primary_keys[0].columns == ["left_id", "right_id"]
+    assert primary_keys[0].branch.columns == ["left_id", "right_id"]
 
 
 def test_contract_mismatched_composite_primary_key_fails_explicitly():
@@ -551,20 +553,20 @@ def test_contract_mismatched_composite_primary_key_fails_explicitly():
 
 def test_contract_primary_key_nullability_overrides_follow_source_rules():
     nullable_types = [
-        constraint.constraint_type
+        type(constraint.branch)
         for constraint in NullablePrimaryKeyModel.column_constraints("id")
     ]
     not_null_types = [
-        constraint.constraint_type
+        type(constraint.branch)
         for constraint in NotNullPrimaryKeyModel.column_constraints("id")
     ]
     assert nullable_types == [
-        ColumnConstraintType.PRIMARY_KEY,
-        ColumnConstraintType.NOT_NULL,
+        ColumnPrimaryKeyConstraint,
+        ColumnNotNullConstraint,
     ]
     assert not_null_types == [
-        ColumnConstraintType.NOT_NULL,
-        ColumnConstraintType.PRIMARY_KEY,
+        ColumnNotNullConstraint,
+        ColumnPrimaryKeyConstraint,
     ]
 
 

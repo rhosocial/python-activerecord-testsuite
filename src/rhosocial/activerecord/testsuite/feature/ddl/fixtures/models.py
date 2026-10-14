@@ -16,14 +16,15 @@ from rhosocial.activerecord.backend.expression.column_types import (
     StringColumn,
 )
 from rhosocial.activerecord.backend.expression.statements.ddl_table import (
-    ColumnConstraintType,
+    ColumnCheckConstraint,
+    ColumnGeneratedConstraint,
+    ColumnNotNullConstraint,
     ForeignKeyConstraint,
-    GeneratedColumnExpression,
     GeneratedColumnType,
     IndexDefinition,
     ReferentialAction,
     TableConstraint,
-    TableConstraintType,
+    TableUniqueConstraint,
 )
 from rhosocial.activerecord.backend.expression.types import JsonType, VarCharType
 from rhosocial.activerecord.base import (
@@ -67,22 +68,21 @@ class SpecOrder(UUIDMixin, ActiveRecord):
     status: Annotated[
         str,
         UseConstraint(
-            ColumnConstraintType.CHECK,
-            check_condition=lambda dialect: StringColumn(dialect, "status").in_(
+            ColumnCheckConstraint,
+            condition=lambda dialect: StringColumn(dialect, "status").in_(
                 ["open", "paid", "shipped"]
             ),
             name="ck_spec_orders_status",
         ),
     ]
-    quantity: Annotated[int, UseConstraint(ColumnConstraintType.NOT_NULL)] = 1
+    quantity: Annotated[int, UseConstraint(ColumnNotNullConstraint)] = 1
     total: float = 0.0
 
     __table_constraints__ = [
         TableConstraint(
             None,
-            TableConstraintType.UNIQUE,
+            branch=TableUniqueConstraint(None, ["code", "status"]),
             name="uq_ddl_spec_orders_code_status",
-            columns=["code", "status"],
         )
     ]
     __table_indexes__ = [
@@ -98,22 +98,21 @@ class AsyncSpecOrder(UUIDMixin, AsyncActiveRecord):
     status: Annotated[
         str,
         UseConstraint(
-            ColumnConstraintType.CHECK,
-            check_condition=lambda dialect: StringColumn(dialect, "status").in_(
+            ColumnCheckConstraint,
+            condition=lambda dialect: StringColumn(dialect, "status").in_(
                 ["open", "paid", "shipped"]
             ),
             name="ck_spec_orders_status",
         ),
     ]
-    quantity: Annotated[int, UseConstraint(ColumnConstraintType.NOT_NULL)] = 1
+    quantity: Annotated[int, UseConstraint(ColumnNotNullConstraint)] = 1
     total: float = 0.0
 
     __table_constraints__ = [
         TableConstraint(
             None,
-            TableConstraintType.UNIQUE,
+            branch=TableUniqueConstraint(None, ["code", "status"]),
             name="uq_ddl_spec_orders_code_status",
-            columns=["code", "status"],
         )
     ]
     __table_indexes__ = [
@@ -133,7 +132,7 @@ class CapabilityPost(ActiveRecord):
     double_views: Annotated[
         int,
         UseGeneratedColumn(
-            lambda dialect: GeneratedColumnExpression(
+            lambda dialect: ColumnGeneratedConstraint(
                 dialect,
                 expression=NumericColumn(dialect, "views") * 2,
                 storage_type=GeneratedColumnType.STORED,
@@ -162,7 +161,7 @@ class AsyncCapabilityPost(AsyncActiveRecord):
     double_views: Annotated[
         int,
         UseGeneratedColumn(
-            lambda dialect: GeneratedColumnExpression(
+            lambda dialect: ColumnGeneratedConstraint(
                 dialect,
                 expression=NumericColumn(dialect, "views") * 2,
                 storage_type=GeneratedColumnType.STORED,
