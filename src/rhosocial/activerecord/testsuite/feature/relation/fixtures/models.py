@@ -159,7 +159,7 @@ class Post(ActiveRecord):
 
     # DerivedField: hotness score
     hotness: ClassVar[Annotated[int, DerivedField(
-        lambda d: ArithmeticOperation(d, "+", Column(d, "view_count"), Literal(d, 1)),
+        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Literal(d, 1)),
     )]]
 
     # DerivedField (JSON): first tag from metadata
@@ -254,7 +254,7 @@ class AsyncPost(AsyncActiveRecord):
     )]]
 
     hotness: ClassVar[Annotated[int, DerivedField(
-        lambda d: ArithmeticOperation(d, "+", Column(d, "view_count"), Literal(d, 1)),
+        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Literal(d, 1)),
     )]]
 
     first_tag: ClassVar[Annotated[str, DerivedField(
