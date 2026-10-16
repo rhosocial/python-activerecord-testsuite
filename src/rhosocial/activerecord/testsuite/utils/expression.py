@@ -977,10 +977,16 @@ def collect_expression_classes(package_path: str) -> Dict[str, Type[BaseExpressi
 
 
 def register_all(classes: Dict[str, Type[BaseExpression]]) -> None:
-    from rhosocial.activerecord.backend.expression.serialization import ExpressionRegistry
+    """Hand the collected classes to the serialization class index.
+
+    Serialization resolves a node to its class through its own index, not
+    through the ``(dialect, kind)`` render registry — the two are separate
+    mechanisms and only the former names expression classes.
+    """
+    from rhosocial.activerecord.backend.expression.serialization import register_expression_class
 
     for cls in classes.values():
-        ExpressionRegistry.register(cls)
+        register_expression_class(cls)
 
 
 def assert_params_equal(a: Any, b: Any, path: str = "params") -> None:

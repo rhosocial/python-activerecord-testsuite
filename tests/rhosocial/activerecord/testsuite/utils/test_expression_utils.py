@@ -32,7 +32,10 @@ from rhosocial.activerecord.backend.expression.advanced_functions import (
     JSONTextValue,
 )
 from rhosocial.activerecord.backend.expression.core import Column
-from rhosocial.activerecord.backend.expression.serialization import ExpressionRegistry
+from rhosocial.activerecord.backend.expression.serialization import (
+    auto_register_builtins,
+    registered_expression_classes,
+)
 from rhosocial.activerecord.backend.expression.statements.dml import ValuesSource
 from rhosocial.activerecord.backend.expression.types.array import ArrayType
 from rhosocial.activerecord.backend.expression.types import IntegerType
@@ -275,8 +278,8 @@ class TestNoEntrySilentlyStopsMatching:
     """
 
     def _core_registry(self):
-        ExpressionRegistry._auto_register_builtins()
-        return {f"{cls.__module__}.{cls.__name__}" for cls in ExpressionRegistry._registry.values()}
+        auto_register_builtins()
+        return {fqn for fqn in registered_expression_classes()}
 
     def test_every_entry_naming_a_live_core_class_matches_it(self):
         registry = self._core_registry()

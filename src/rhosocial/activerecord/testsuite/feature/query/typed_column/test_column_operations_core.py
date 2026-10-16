@@ -27,7 +27,7 @@ import pytest
 
 from rhosocial.activerecord.backend.expression import functions
 from rhosocial.activerecord.backend.expression.core import IntegerValue
-from rhosocial.activerecord.backend.expression.operators import BinaryArithmeticExpression
+from rhosocial.activerecord.backend.expression.operators import ArithmeticOperation
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord
 
@@ -125,8 +125,8 @@ def test_temporal_operations_and_interval_arithmetic(model, dialect):
     assert _expression(model.c.created.date_add(1, "day"))
     one_day = functions.interval(dialect, 1, "day")
     shifted = model.c.created + one_day
-    assert isinstance(shifted, BinaryArithmeticExpression)
-    assert isinstance(model.c.created - model.c.created, BinaryArithmeticExpression)
+    assert isinstance(shifted, ArithmeticOperation)
+    assert isinstance(model.c.created - model.c.created, ArithmeticOperation)
 
 
 def test_boolean_operations(model):
