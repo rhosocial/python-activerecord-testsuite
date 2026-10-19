@@ -273,7 +273,7 @@ class TestSyncActiveQueryBasic:
 
         # The message names the wire words, which are lower case; the SQL keyword is
         # written by the formatter and never appears here (expression-dialect §11.4).
-        with pytest.raises(ValueError, match="Must be 'asc' or 'desc'"):
+        with pytest.raises(ValueError, match="Must be 'asc', 'desc', or null"):
             query.order_by(("name", "INVALID"))
 
     def test_order_by_invalid_clause_type(self, order_fixtures):

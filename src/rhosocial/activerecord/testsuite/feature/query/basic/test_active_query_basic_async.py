@@ -274,7 +274,7 @@ class TestAsyncActiveQueryBasic:
 
         # The message names the wire words, which are lower case; the SQL keyword is
         # written by the formatter and never appears here (expression-dialect §11.4).
-        with pytest.raises(ValueError, match="Must be 'asc' or 'desc'"):
+        with pytest.raises(ValueError, match="Must be 'asc', 'desc', or null"):
             query.order_by(("name", "INVALID"))
 
     async def test_order_by_invalid_clause_type(self, async_order_fixtures):
