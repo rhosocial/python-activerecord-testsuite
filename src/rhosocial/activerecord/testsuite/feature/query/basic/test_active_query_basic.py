@@ -271,7 +271,9 @@ class TestSyncActiveQueryBasic:
 
         query = Order.query()
 
-        with pytest.raises(ValueError, match="Order direction must be 'ASC' or 'DESC'"):
+        # The message names the wire words, which are lower case; the SQL keyword is
+        # written by the formatter and never appears here (expression-dialect §11.4).
+        with pytest.raises(ValueError, match="Must be 'asc' or 'desc'"):
             query.order_by(("name", "INVALID"))
 
     def test_order_by_invalid_clause_type(self, order_fixtures):
