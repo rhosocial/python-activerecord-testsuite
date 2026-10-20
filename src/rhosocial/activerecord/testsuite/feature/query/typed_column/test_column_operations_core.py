@@ -168,13 +168,16 @@ def test_a_number_result_carries_no_string_operations(model):
 
 
 def test_arithmetic_a_string_never_declared_is_a_type_error(model):
-    """String carries no arithmetic at all, so the interpreter refuses first.
+    """String arithmetic is refused at construction, and the refusal speaks.
 
     A family whose refusal is *declared* on the class raises
-    ``AttributeError`` with a message (the temporal case above); a family
-    that simply has no operator is refused by Python, which reports
-    ``TypeError``. Both are construction-time refusals; the difference is
-    which layer owns the message, and that is what the two tests pin.
+    ``AttributeError`` with a message naming the operator (the temporal case
+    above); a family that simply has no operator is refused by Python, which
+    reports ``TypeError``. Both are construction-time refusals, and either
+    is acceptable here: what the contract forbids is a *node* that carries
+    arithmetic for a string, not one particular exception type. Pinning
+    ``TypeError`` alone would forbid the backend-neutral refusal that
+    ``NotANumberMixin`` exists to provide, which is the better message.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, AttributeError)):
         model.c.name + 1

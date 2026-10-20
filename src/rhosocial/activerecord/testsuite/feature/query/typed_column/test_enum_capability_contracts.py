@@ -56,7 +56,7 @@ def test_an_advertised_enum_really_renders(dialect):
     """``supports_data_types`` is read as a promise about DDL generation."""
     if "enum" not in _renderable(dialect):
         pytest.skip(f"{dialect.name} does not advertise the generic enum type")
-    sql, _ = dialect.format_data_type(EnumType(dialect, ["a", "b"]))
+    sql, _ = dialect.format_data_type(EnumType(dialect, values=["a", "b"]))
     assert sql, f"{dialect.name} advertised enum and rendered nothing"
 
 
@@ -64,7 +64,7 @@ def test_an_advertised_enum_lists_its_values(dialect):
     """The values are the whole point; a bare ENUM() has lost them."""
     if "enum" not in _renderable(dialect):
         pytest.skip(f"{dialect.name} does not advertise the generic enum type")
-    sql, _ = dialect.format_data_type(EnumType(dialect, ["draft", "live"]))
+    sql, _ = dialect.format_data_type(EnumType(dialect, values=["draft", "live"]))
     assert "draft" in sql and "live" in sql, sql
 
 
@@ -110,7 +110,7 @@ def test_refusing_an_enum_names_the_substitute(dialect):
     if substitute is None or "enum" in _renderable(dialect):
         pytest.skip(f"{dialect.name} does not refuse the generic enum type")
     with pytest.raises(TypeError) as excinfo:
-        dialect.format_data_type(EnumType(dialect, ["a"]))
+        dialect.format_data_type(EnumType(dialect, values=["a"]))
     assert substitute.__name__ in str(excinfo.value), (
         f"{dialect.name} refuses enum without naming {substitute.__name__}: "
         f"{excinfo.value}"

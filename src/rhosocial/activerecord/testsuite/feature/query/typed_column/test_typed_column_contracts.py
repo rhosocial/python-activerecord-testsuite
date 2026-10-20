@@ -87,6 +87,29 @@ def _class_or_skip(dialect, annotation, column_name):
     return build_column(dialect, column_name, annotation)
 
 
+def _offers(column, apply):
+    """Whether *apply* produces a node rather than refusing.
+
+    A refusal reaches the caller two ways and both are legitimate: the
+    package declares it (``NotANumberMixin`` owns ``__add__`` only to raise an
+    ``AttributeError`` naming the operator) or the interpreter raises
+    ``TypeError`` because the type never had the operator. Neither produces a
+    value, which is what "does not offer this" means.
+    """
+    try:
+        apply(column)
+    except (AttributeError, TypeError):
+        return False
+    return True
+
+
+def _assert_refused(column, label, apply):
+    """Assert *column* does not offer *label*, naming what it did instead."""
+    assert not _offers(column, apply), (
+        f"{type(column).__name__} offered {label!r}, which its type does not support"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Contract 1: an explicit declaration is backend-independent
 # ---------------------------------------------------------------------------
@@ -277,19 +300,27 @@ def test_narrowing_actually_narrows(dialect):
     backend that suggests ``StringColumn`` for an ``int`` field would offer
     ``like()`` on it, and that is a fact about the pairing, not about this
     contract.
+
+    The refusal is asserted by *performing* the operation, not by asking
+    ``hasattr``: a family that declares its refusal (``NotANumberMixin``
+    exists to say "+" does not apply) owns an ``__add__`` that raises, so
+    ``hasattr`` answers True for a class that refuses arithmetic. What the
+    caller can rely on is that the operation does not produce a node --
+    either the package raises ``AttributeError`` with a message or the
+    interpreter raises ``TypeError`` itself.
     """
     string_column = _class_or_skip(dialect, str, "s")
     assert hasattr(string_column, "like")
-    assert not hasattr(string_column, "__add__")
+    _assert_refused(string_column, "+", lambda c: c + 1)
 
     integer_column = _class_or_skip(dialect, int, "n")
-    assert hasattr(integer_column, "__add__")
-    assert not hasattr(integer_column, "like")
+    assert _offers(integer_column, lambda c: c + 1)
+    _assert_refused(integer_column, "like", lambda c: c.like("%a%"))
 
     json_column = _class_or_skip(dialect, dict, "j")
     assert hasattr(json_column, "json_path")
-    assert not hasattr(json_column, "like")
-    assert not hasattr(json_column, "__add__")
+    _assert_refused(json_column, "like", lambda c: c.like("%a%"))
+    _assert_refused(json_column, "+", lambda c: c + 1)
 
 
 # ---------------------------------------------------------------------------
