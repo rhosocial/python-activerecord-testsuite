@@ -26,7 +26,7 @@ from typing import ClassVar
 import pytest
 
 from rhosocial.activerecord.backend.expression import functions
-from rhosocial.activerecord.backend.expression.core import IntegerValue
+from rhosocial.activerecord.backend.expression.mixins import NumericValueMixin
 from rhosocial.activerecord.backend.expression.operators import ArithmeticOperation
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord
@@ -89,14 +89,19 @@ def test_string_operations(model):
 
 
 def test_string_to_integer_is_a_number_that_takes_arithmetic(model):
-    """``length`` reads a string and gives a number; the number is an integer.
+    """``length`` reads a string and gives a number; the number is not a string.
 
     And a number is not a string: this is where the old duplicated surface
     produced ``LENGTH(LENGTH(name))``, which constructed and failed only in
-    SQL. The integer result offers arithmetic and comparison instead.
+    SQL. The result carries the numeric surface -- arithmetic and comparison --
+    and not the string one, so ``length().upper()`` is refused at construction
+    rather than sent to the server. The numeric surface is asserted by what the
+    node offers, not by a class name: ``IntegerValue`` named a duplicated value
+    type that the literal architecture removed.
     """
     length = model.c.name.length()
-    assert isinstance(length, IntegerValue)
+    assert isinstance(length, NumericValueMixin)
+    assert not hasattr(length, "upper"), "a length is a number, not a string"
     assert _expression(length + 1)
     assert _expression(length * 2)
     assert _expression(length > 3)
