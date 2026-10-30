@@ -39,6 +39,12 @@ dependencies = [
     "pytest",
 ]
 
+[project.entry-points.pytest11]
+# Loaded by every pytest run that has this package installed, so the shims for
+# pytest-benchmark and pytest-xdist reach the backends without each one having
+# to add a `-p` flag. See rhosocial/activerecord/testsuite/pytest_compat.py.
+rhosocial_activerecord_pytest_compat = "rhosocial.activerecord.testsuite.pytest_compat"
+
 [project.optional-dependencies]
 # Development dependencies
 test = [
