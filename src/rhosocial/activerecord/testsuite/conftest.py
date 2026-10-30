@@ -331,6 +331,31 @@ def pytest_sessionstart(session):
         warnings.warn(f"Could not check capability support at session start: {e}", UserWarning)
 
 
+def pytest_collection_finish(session):
+    """Give pytest-benchmark back the private ``node._nodeid`` it still reads.
+
+    pytest 9.2 moved a node's identifier into a structured ``NodeId`` and
+    stopped populating the old ``_nodeid`` slot, while ``pytest-benchmark``
+    5.3.0 -- the newest release -- reads ``node._nodeid`` when it builds its
+    fixture. Every benchmark test therefore errored at setup with
+    ``'Function' object has no attribute '_nodeid'`` (upstream: pytest-benchmark
+    issue #321).
+
+    The public ``nodeid`` is unchanged and remains fully supported, so copying
+    it into the old slot satisfies the plugin without touching any identifier,
+    any report, or any test selection. The ``hasattr`` guard makes this a no-op
+    on pytest < 9.2, where the slot is already set, and it becomes a no-op again
+    on the day pytest-benchmark reads ``nodeid`` -- at that point the loop below
+    simply stops finding anything to fill, and the function can be deleted.
+    """
+    for item in session.items:
+        if not hasattr(item, "_nodeid"):
+            try:
+                item._nodeid = item.nodeid
+            except AttributeError:  # a node class that refuses the attribute
+                pass
+
+
 def pytest_sessionfinish(session, exitstatus):
     """Reset the database pool state.
 
