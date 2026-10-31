@@ -351,7 +351,11 @@ class TestAsyncSetOperations:
 
     async def test_set_operation_with_invalid_operation_type(self, async_order_fixtures):
         """
-        Test AsyncSetOperationQuery handles invalid operation types
+        Test AsyncSetOperationQuery rejects invalid operation types at construction.
+
+        规范 4.6：参数不符契约必须显式失败。未知词形（且不是 SQL 符号拼写）
+        在构造边界即拒绝，不延迟到渲染——延迟失败正是 9.9 禁止的"静默接受、
+        事后出错"形态。
         """
         AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
 
@@ -363,11 +367,11 @@ class TestAsyncSetOperations:
         query1 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
         query2 = AsyncOrder.query().where(AsyncOrder.c.user_id == user.id)
 
-        # Create AsyncSetOperationQuery with an invalid operation type
-        # This should work but might cause issues later when generating SQL
-        async_set_op_query = AsyncSetOperationQuery(query1, query2, "INVALID_OP")
-        assert async_set_op_query is not None, "expected async_set_op_query to be created"
-        assert async_set_op_query.operation == "INVALID_OP", "expected operation to be INVALID_OP"
+        # An unknown word (and not a SQL symbol spelling) is refused at the
+        # boundary: the node only accepts union / union_all / intersect /
+        # except (or their SQL symbol spellings).
+        with pytest.raises(ValueError, match="operation"):
+            AsyncSetOperationQuery(query1, query2, "INVALID_OP")
 
     async def test_active_query_union_method(self, async_order_fixtures):
         """

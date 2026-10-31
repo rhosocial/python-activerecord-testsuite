@@ -26,8 +26,8 @@ from typing import ClassVar
 import pytest
 
 from rhosocial.activerecord.backend.expression import functions
-from rhosocial.activerecord.backend.expression.core import IntegerValueExpression
-from rhosocial.activerecord.backend.expression.operators import BinaryArithmeticExpression
+from rhosocial.activerecord.backend.expression.mixins import NumericValueMixin
+from rhosocial.activerecord.backend.expression.operators import ArithmeticOperation
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord
 
@@ -89,14 +89,19 @@ def test_string_operations(model):
 
 
 def test_string_to_integer_is_a_number_that_takes_arithmetic(model):
-    """``length`` reads a string and gives a number; the number is an integer.
+    """``length`` reads a string and gives a number; the number is not a string.
 
     And a number is not a string: this is where the old duplicated surface
     produced ``LENGTH(LENGTH(name))``, which constructed and failed only in
-    SQL. The integer result offers arithmetic and comparison instead.
+    SQL. The result carries the numeric surface -- arithmetic and comparison --
+    and not the string one, so ``length().upper()`` is refused at construction
+    rather than sent to the server. The numeric surface is asserted by what the
+    node offers, not by a class name: ``IntegerValue`` named a duplicated value
+    type that the literal architecture removed.
     """
     length = model.c.name.length()
-    assert isinstance(length, IntegerValueExpression)
+    assert isinstance(length, NumericValueMixin)
+    assert not hasattr(length, "upper"), "a length is a number, not a string"
     assert _expression(length + 1)
     assert _expression(length * 2)
     assert _expression(length > 3)
@@ -125,8 +130,8 @@ def test_temporal_operations_and_interval_arithmetic(model, dialect):
     assert _expression(model.c.created.date_add(1, "day"))
     one_day = functions.interval(dialect, 1, "day")
     shifted = model.c.created + one_day
-    assert isinstance(shifted, BinaryArithmeticExpression)
-    assert isinstance(model.c.created - model.c.created, BinaryArithmeticExpression)
+    assert isinstance(shifted, ArithmeticOperation)
+    assert isinstance(model.c.created - model.c.created, ArithmeticOperation)
 
 
 def test_boolean_operations(model):
@@ -163,13 +168,16 @@ def test_a_number_result_carries_no_string_operations(model):
 
 
 def test_arithmetic_a_string_never_declared_is_a_type_error(model):
-    """String carries no arithmetic at all, so the interpreter refuses first.
+    """String arithmetic is refused at construction, and the refusal speaks.
 
     A family whose refusal is *declared* on the class raises
-    ``AttributeError`` with a message (the temporal case above); a family
-    that simply has no operator is refused by Python, which reports
-    ``TypeError``. Both are construction-time refusals; the difference is
-    which layer owns the message, and that is what the two tests pin.
+    ``AttributeError`` with a message naming the operator (the temporal case
+    above); a family that simply has no operator is refused by Python, which
+    reports ``TypeError``. Both are construction-time refusals, and either
+    is acceptable here: what the contract forbids is a *node* that carries
+    arithmetic for a string, not one particular exception type. Pinning
+    ``TypeError`` alone would forbid the backend-neutral refusal that
+    ``NotANumberMixin`` exists to provide, which is the better message.
     """
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, AttributeError)):
         model.c.name + 1

@@ -164,7 +164,7 @@ class TestAsyncCTEQuerySetOperation:
             assert row.get('status') != 'completed', "Expected EXCEPT rows to not be completed"
 
 class TestAsyncCTEQueryWithQueryExpression:
-    """Test Async CTE queries with QueryExpression as parameters."""
+    """Test Async CTE queries with QueryStatement as parameters."""
 
     @requires_cte()
     async def test_cte_with_query_expression_as_subquery(self, async_order_fixtures):
@@ -187,8 +187,8 @@ class TestAsyncCTEQueryWithQueryExpression:
         backend = AsyncOrder.backend()
         dialect = backend.dialect
 
-        # Create a QueryExpression directly (this implements ToSQLProtocol)
-        query_expr = statements.QueryExpression(
+        # Create a QueryStatement directly (this implements ToSQLProtocol)
+        query_expr = statements.QueryStatement(
             dialect,
             select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
             from_=NamedRelationRef(dialect, Table(dialect, AsyncOrder.table_name())),
@@ -200,7 +200,7 @@ class TestAsyncCTEQueryWithQueryExpression:
             )
         )
 
-        # Create a CTE that uses the QueryExpression as its source
+        # Create a CTE that uses the QueryStatement as its source
         cte_query = AsyncCTEQuery(backend)
         cte_query.with_cte('query_expr_cte', query_expr)
 

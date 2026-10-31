@@ -3,7 +3,7 @@
 Cross-backend ALTER TABLE IF [NOT] EXISTS tests (sync).
 
 These tests exercise the optional ``if_not_exists`` / ``if_exists`` fields on
-``AddColumn`` / ``DropColumn`` / ``DropTableConstraint``. They are a generic
+``AddColumnAction`` / ``DropColumnAction`` / ``DropTableConstraintAction``. They are a generic
 *expression/dialect* contract: no live database connection is involved, the
 provider hands over a dialect instance and the assertions run purely on SQL
 rendering.
@@ -24,9 +24,9 @@ from rhosocial.activerecord.backend.dialect.protocols import (
 )
 from rhosocial.activerecord.backend.expression.statements import ColumnDefinition
 from rhosocial.activerecord.backend.expression.statements.ddl_alter import (
-    AddColumn,
-    DropColumn,
-    DropTableConstraint,
+    AddColumnAction,
+    DropColumnAction,
+    DropTableConstraintAction,
 )
 from rhosocial.activerecord.backend.expression.types import TextType
 from rhosocial.activerecord.testsuite.utils import requires_protocol
@@ -43,7 +43,11 @@ class TestDdlAddColumn:
     @requires_protocol(AlterTableModifierSupport, "supports_add_column_if_not_exists")
     def test_add_column_if_not_exists(self, ddl_dialect):
         """ALTER TABLE ADD COLUMN IF NOT EXISTS should render the IF NOT EXISTS qualifier."""
-        action = AddColumn(ddl_dialect, ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)), if_not_exists=True)
+        action = AddColumnAction(
+            ddl_dialect,
+            ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)),
+            if_not_exists=True,
+        )
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" in sql, \
             "Expected the rendered SQL to contain the IF NOT EXISTS qualifier"
@@ -51,7 +55,7 @@ class TestDdlAddColumn:
 
     def test_add_column_plain_form(self, ddl_dialect):
         """ALTER TABLE ADD COLUMN without if_not_exists should omit the qualifier."""
-        action = AddColumn(ddl_dialect, ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)))
+        action = AddColumnAction(ddl_dialect, ColumnDefinition(ddl_dialect, "content", TextType(ddl_dialect)))
         sql, params = action.to_sql()
         assert "IF NOT EXISTS" not in sql, \
             "Expected the rendered SQL to omit the IF NOT EXISTS qualifier"
@@ -66,7 +70,7 @@ class TestDdlDropColumn:
     @requires_protocol(AlterTableModifierSupport, "supports_drop_column_if_exists")
     def test_drop_column_if_exists(self, ddl_dialect):
         """ALTER TABLE DROP COLUMN IF EXISTS should render the IF EXISTS qualifier."""
-        action = DropColumn(ddl_dialect, column_name="content", if_exists=True)
+        action = DropColumnAction(ddl_dialect, column_name="content", if_exists=True)
         sql, params = action.to_sql()
         assert "IF EXISTS" in sql, \
             "Expected the rendered SQL to contain the IF EXISTS qualifier"
@@ -74,7 +78,7 @@ class TestDdlDropColumn:
 
     def test_drop_column_plain_form(self, ddl_dialect):
         """ALTER TABLE DROP COLUMN without if_exists should omit the qualifier."""
-        action = DropColumn(ddl_dialect, column_name="content")
+        action = DropColumnAction(ddl_dialect, column_name="content")
         sql, params = action.to_sql()
         assert "IF EXISTS" not in sql, \
             "Expected the rendered SQL to omit the IF EXISTS qualifier"
@@ -89,7 +93,7 @@ class TestDdlDropConstraint:
     @requires_protocol(AlterTableModifierSupport, "supports_drop_constraint_if_exists")
     def test_drop_constraint_if_exists(self, ddl_dialect):
         """ALTER TABLE DROP CONSTRAINT IF EXISTS should render the IF EXISTS qualifier."""
-        action = DropTableConstraint(
+        action = DropTableConstraintAction(
             ddl_dialect, constraint_name="uq_snapshot_content", if_exists=True
         )
         sql, params = action.to_sql()
@@ -100,7 +104,7 @@ class TestDdlDropConstraint:
     @requires_protocol(ConstraintSupport, "supports_drop_constraint")
     def test_drop_constraint_plain_form(self, ddl_dialect):
         """ALTER TABLE DROP CONSTRAINT without if_exists should omit the qualifier."""
-        action = DropTableConstraint(
+        action = DropTableConstraintAction(
             ddl_dialect, constraint_name="uq_snapshot_content"
         )
         sql, params = action.to_sql()

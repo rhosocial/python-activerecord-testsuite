@@ -3,8 +3,8 @@
 Pytest configuration for the ALTER TABLE ``IF [NOT] EXISTS`` subtopic of the
 ``basic`` feature group.
 
-These tests are an *expression/dialect* contract: they build `AddColumn` /
-`DropColumn` / `DropTableConstraint` actions and assert the emitted SQL
+These tests are an *expression/dialect* contract: they build `AddColumnAction` /
+`DropColumnAction` / `DropTableConstraintAction` actions and assert the emitted SQL
 (sync & async). No live database connection is required, so the providers
 hand over a bare dialect instance via ``get_dialect()``.
 
