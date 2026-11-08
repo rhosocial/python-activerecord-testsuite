@@ -10,6 +10,7 @@ features.
 |-------------|---------|
 | `base/` | Core relation descriptor functionality — initialization, loading, reference resolution, relationship registration, inheritance; `IRelationManagement` interface tests |
 | `descriptors/` | Descriptor type tests — `BelongsTo`/`HasOne`/`HasMany` initialization, loader config, cache config, type validation; sync/async compatibility (invalid cross-use raises `TypeError`) |
+| `ordering/` | Optional `HasMany(..., order_by=...)` ordering — field-name normalization, direct access, `{relation}_query()`, top-level and nested eager loading, modifier precedence, cache, primary-key tie-breakers, and `order_by=None` plain behavior |
 | `eager_loading/` | `with_()` method and `RelationConfig`; deep nested relationship chains (e.g. Author → Book → Chapter); bidirectional consistency; custom loader caching with TTL |
 | `cache/` | Cache infrastructure — `CacheConfig`, `GlobalCacheConfig`, `CacheEntry` (expiry/TTL), `RelationCache` (set/get/delete/clear, LRU eviction, disabled mode); cache clearing on `del instance.relation` |
 | `modifiers/` | Modifier targeting (leaf-only), override semantics, application on nested paths; warning logging on modifier override |
