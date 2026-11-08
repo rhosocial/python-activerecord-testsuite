@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from rhosocial.activerecord.backend.errors import DatabaseError
+from rhosocial.activerecord.backend.errors import StaleRecordError
 from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
 
 
@@ -24,7 +24,8 @@ def test_combined_update(combined_article_model):
 
     # Verify updated state
     assert article.version == 2  # Version number increments
-    assert_datetime_equal(article.created_at, original_updated_at)  # Creation time remains unchanged
+    # Creation time remains unchanged
+    assert_datetime_equal(article.created_at, original_updated_at)
     assert article.updated_at > original_updated_at  # Update time changes
 
 
@@ -67,7 +68,9 @@ def test_combined_concurrent_update(combined_article_model):
 
     # Second update fails
     concurrent_article.content = "Updated by second"
-    with pytest.raises(DatabaseError, match="Record was updated by another process"):
+    with pytest.raises(
+        StaleRecordError, match="Record was updated by another process"
+    ):
         concurrent_article.save()
 
     # Verify final state
