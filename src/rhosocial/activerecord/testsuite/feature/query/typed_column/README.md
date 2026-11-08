@@ -18,6 +18,10 @@ This directory holds the cross-backend contracts of the typed-column work:
   completeness contract holds each backend to.
 * ``test_enum_capability_contracts.py`` / ``test_uuid_capability_contracts.py``
   — the concept-specific capability contracts (enum storage, UUID storage).
+* ``test_seconds_between_contract.py`` — the shared ``seconds_between`` surface:
+  a timestamp column and its factory build the same numeric node, the operands
+  keep the caller's order, and an alias survives. The SQL spelling is the
+  dialect's own and is pinned in each backend repository.
 
 A backend satisfies these through the dialect's own declarations, not by
 editing anything here. The rules below are the discipline the nine backends
