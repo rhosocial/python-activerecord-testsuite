@@ -167,3 +167,31 @@ class TestReadonlyReadsStillWork:
 
     def test_where_works(self, readonly_models):
         assert isinstance(ReadOnlyUser.query().where(ReadOnlyUser.c.id == 1).all(), list)
+
+
+class TestReadonlyFindOneOrCreate:
+    """``find_one_or_create`` keeps the read path but refuses creation."""
+
+    _EXISTING_USERNAME = "__readonly_find_one_or_create_existing__"
+    _EXISTING_EMAIL = "readonly-find-one-or-create@example.com"
+    _MISSING_USERNAME = "__readonly_find_one_or_create_missing__"
+
+    def test_existing_row_is_returned_without_writing(self, readonly_models):
+        seed = readonly_models(
+            username=self._EXISTING_USERNAME,
+            email=self._EXISTING_EMAIL,
+            age=25,
+        )
+        seed.save()
+        record, created = ReadOnlyUser.find_one_or_create(
+            username=self._EXISTING_USERNAME
+        )
+        assert created is False
+        assert record is not None
+        assert record.id == seed.id
+
+    def test_missing_row_refuses_creation(self, readonly_models):
+        with pytest.raises(
+            ReadOnlyError, match="save is not allowed on read-only model"
+        ):
+            ReadOnlyUser.find_one_or_create(username=self._MISSING_USERNAME)

@@ -160,3 +160,35 @@ class TestAsyncReadonlyReadsStillWork:
 
     async def test_where_works(self, async_readonly_models):
         assert isinstance(await AsyncReadOnlyUser.query().where(AsyncReadOnlyUser.c.id == 1).all(), list)
+
+
+class TestAsyncReadonlyFindOneOrCreate:
+    """``find_one_or_create`` keeps the read path but refuses creation."""
+
+    _EXISTING_USERNAME = "__readonly_find_one_or_create_existing__"
+    _EXISTING_EMAIL = "readonly-find-one-or-create@example.com"
+    _MISSING_USERNAME = "__readonly_find_one_or_create_missing__"
+
+    async def test_existing_row_is_returned_without_writing(
+        self, async_readonly_models
+    ):
+        seed = async_readonly_models(
+            username=self._EXISTING_USERNAME,
+            email=self._EXISTING_EMAIL,
+            age=25,
+        )
+        await seed.save()
+        record, created = await AsyncReadOnlyUser.find_one_or_create(
+            username=self._EXISTING_USERNAME
+        )
+        assert created is False
+        assert record is not None
+        assert record.id == seed.id
+
+    async def test_missing_row_refuses_creation(self, async_readonly_models):
+        with pytest.raises(
+            ReadOnlyError, match="save is not allowed on read-only model"
+        ):
+            await AsyncReadOnlyUser.find_one_or_create(
+                username=self._MISSING_USERNAME
+            )
