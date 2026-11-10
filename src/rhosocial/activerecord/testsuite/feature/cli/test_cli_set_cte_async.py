@@ -3,6 +3,9 @@
 
 import json
 
+from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+from rhosocial.activerecord.testsuite.utils import requires_protocol
+
 from .utils import run_cli_async
 
 
@@ -44,6 +47,7 @@ class TestAsyncCLISetCte:
         assert code == 0, err
         assert {row["age"] for row in json.loads(out)} == {20, 40}
 
+    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_run(self, async_cli_models):
         await _create(async_cli_models, "async_cte_one", 20)
         await _create(async_cli_models, "async_cte_two", 40)
