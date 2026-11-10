@@ -3,10 +3,9 @@
 
 import json
 
-from rhosocial.activerecord.backend.dialect.protocols import CTESupport
-from rhosocial.activerecord.testsuite.utils import requires_protocol
+import pytest
 
-from .utils import run_cli_async
+from .utils import run_cli_async, supports_basic_cte
 
 
 async def _create(models, username, age):
@@ -47,8 +46,9 @@ class TestAsyncCLISetCte:
         assert code == 0, err
         assert {row["age"] for row in json.loads(out)} == {20, 40}
 
-    @requires_protocol(CTESupport, "supports_basic_cte")
     async def test_cte_run(self, async_cli_models):
+        if not supports_basic_cte(async_cli_models.module.User):
+            pytest.skip("dialect does not support basic CTEs")
         await _create(async_cli_models, "async_cte_one", 20)
         await _create(async_cli_models, "async_cte_two", 40)
         code, out, err = await run_cli_async(

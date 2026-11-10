@@ -5,7 +5,19 @@ import asyncio
 import io
 from contextlib import redirect_stderr, redirect_stdout
 
+from rhosocial.activerecord.backend.dialect.protocols import CTESupport
 from rhosocial.activerecord.cli import main
+
+
+def supports_basic_cte(model) -> bool:
+    """Whether the configured model's dialect supports basic CTEs.
+
+    CLI contract tests cannot use the ``requires_protocol`` marker: its
+    fixture lives under ``feature/query`` and looks only at query fixtures,
+    not at ``cli_models``.
+    """
+    dialect = model.backend().dialect
+    return isinstance(dialect, CTESupport) and dialect.supports_basic_cte()
 
 
 def run_cli(argv):

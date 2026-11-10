@@ -3,10 +3,9 @@
 
 import json
 
-from rhosocial.activerecord.backend.dialect.protocols import CTESupport
-from rhosocial.activerecord.testsuite.utils import requires_protocol
+import pytest
 
-from .utils import run_cli
+from .utils import run_cli, supports_basic_cte
 
 
 def _create(models, username, age):
@@ -67,8 +66,9 @@ class TestCLISetCte:
         assert code == 0, err
         assert {row["age"] for row in json.loads(out)} == {20, 40}
 
-    @requires_protocol(CTESupport, "supports_basic_cte")
     def test_cte_run(self, cli_models):
+        if not supports_basic_cte(cli_models.module.User):
+            pytest.skip("dialect does not support basic CTEs")
         _create(cli_models, "cte_one", 20)
         _create(cli_models, "cte_two", 40)
         code, out, err = run_cli(
