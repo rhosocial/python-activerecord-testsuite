@@ -69,7 +69,7 @@ def test_combined_concurrent_update(combined_article_model):
     # Second update fails
     concurrent_article.content = "Updated by second"
     with pytest.raises(
-        StaleRecordError, match="Record was updated by another process"
+        StaleRecordError, match="Record version does not match"
     ):
         concurrent_article.save()
 

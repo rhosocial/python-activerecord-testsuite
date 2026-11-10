@@ -36,7 +36,7 @@ def test_optimistic_lock(versioned_product_model):
     # Original record update should now fail
     product.price = 25.0  # product.version is still 2 here
     with pytest.raises(
-        StaleRecordError, match="Record was updated by another process"
+        StaleRecordError, match="Record version does not match"
     ) as exc_info:
         product.save()
 
@@ -63,7 +63,7 @@ def test_stale_record_error_is_database_error(versioned_product_model):
 
     product.price = 25.0
     with pytest.raises(
-        DatabaseError, match="Record was updated by another process"
+        DatabaseError, match="Record version does not match"
     ) as exc_info:
         product.save()
 

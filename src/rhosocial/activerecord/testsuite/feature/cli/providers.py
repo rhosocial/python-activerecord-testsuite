@@ -4,13 +4,13 @@
 import sys
 import types
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from rhosocial.activerecord.query import AsyncCTEQuery, CTEQuery
 from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
 
 from .fixtures import AsyncCLIReadOnlyUser, CLIReadOnlyUser
-from .interfaces import CLIProviderBase, ICLIAsyncProvider, ICLISyncProvider
+from .interfaces import ICLIAsyncProvider, ICLISyncProvider
 
 BASIC_SYNC = "feature.basic.IBasicSyncProvider"
 BASIC_ASYNC = "feature.basic.IBasicAsyncProvider"
@@ -48,12 +48,13 @@ def _add_query_functions(module, user, cte_class) -> None:
     module.user_cte = user_cte
 
 
-def _build_module(name, user, bulk, read_only, soft, cte_class):
+def _build_module(name, user, bulk, read_only, soft, cte_class, validated):
     module = types.ModuleType(name)
     module.User = user
     module.BulkUser = bulk
     module.ReadOnlyUser = read_only
     module.SoftDeleteTask = soft
+    module.ValidatedUser = validated
     _add_query_functions(module, user, cte_class)
     sys.modules[name] = module
     return module
@@ -91,6 +92,7 @@ class GenericSyncCLIProvider(ICLISyncProvider):
         basic = self._basic_provider()
         user = basic.setup_user_model(scenario_name)
         bulk = basic.setup_bulk_user_model(scenario_name)
+        validated = basic.setup_validated_user_model(scenario_name)
         mixins = self._mixins_provider()
         soft = None
         if mixins is not None:
@@ -107,12 +109,14 @@ class GenericSyncCLIProvider(ICLISyncProvider):
             CLIReadOnlyUser,
             soft,
             CTEQuery,
+            validated,
         )
         prefix = module.__name__
         return types.SimpleNamespace(
             module=module,
             model=f"{prefix}:User",
             bulk_model=f"{prefix}:BulkUser",
+            validated_model=f"{prefix}:ValidatedUser",
             read_only_model=f"{prefix}:ReadOnlyUser",
             soft_delete_model=(
                 f"{prefix}:SoftDeleteTask" if soft is not None else None
@@ -161,6 +165,7 @@ class GenericAsyncCLIProvider(ICLIAsyncProvider):
         basic = self._basic_provider()
         user = await basic.setup_user_model(scenario_name)
         bulk = await basic.setup_bulk_user_model(scenario_name)
+        validated = await basic.setup_validated_user_model(scenario_name)
         mixins = self._mixins_provider()
         soft = None
         if mixins is not None:
@@ -177,12 +182,14 @@ class GenericAsyncCLIProvider(ICLIAsyncProvider):
             AsyncCLIReadOnlyUser,
             soft,
             AsyncCTEQuery,
+            validated,
         )
         prefix = module.__name__
         return types.SimpleNamespace(
             module=module,
             model=f"{prefix}:User",
             bulk_model=f"{prefix}:BulkUser",
+            validated_model=f"{prefix}:ValidatedUser",
             read_only_model=f"{prefix}:ReadOnlyUser",
             soft_delete_model=(
                 f"{prefix}:SoftDeleteTask" if soft is not None else None
