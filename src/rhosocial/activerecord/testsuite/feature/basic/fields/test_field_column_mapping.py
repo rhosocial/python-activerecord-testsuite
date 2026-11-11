@@ -203,7 +203,10 @@ class TestInvalidCases:
         """Verify that using multiple UseColumn annotations raises an error."""
         with pytest.raises(TypeError) as excinfo:
             class InvalidModel(ActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 # This field has two UseColumn annotations, which is invalid.
                 name: Annotated[str, UseColumn("col1"), UseColumn("col2")]
 
@@ -218,7 +221,10 @@ class TestInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class InvalidModel(ActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 # This field has two UseAdapter annotations, which is invalid.
                 data: Annotated[
                     str,
@@ -233,7 +239,10 @@ class TestInvalidCases:
         """Verify that UseColumn expects a string argument."""
         with pytest.raises(TypeError) as excinfo:
             class InvalidModel(ActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 # UseColumn is given an integer, but it expects a string.
                 name: Annotated[str, UseColumn(123)]
 
@@ -247,7 +256,10 @@ class TestInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class InvalidModel(ActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 # UseAdapter is given an object that is not a BaseSQLTypeAdapter.
                 data: Annotated[str, UseAdapter(NotAnAdapter(), str)]
 
@@ -258,7 +270,9 @@ class TestInvalidCases:
         """Verify that two fields mapping to the same column raises an error."""
         with pytest.raises(ValueError) as excinfo:
             class InvalidModelWithDuplicates(ActiveRecord):
-                __table_name__ = "invalid_duplicates"
+                @classmethod
+                def table_name(cls):
+                    return "invalid_duplicates"
 
                 field_a: Annotated[str, UseColumn("shared_column")]
                 field_b: Annotated[int, UseColumn("shared_column")]

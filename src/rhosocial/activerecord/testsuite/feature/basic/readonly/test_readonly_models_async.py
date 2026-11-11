@@ -19,36 +19,53 @@ from rhosocial.activerecord.model import AsyncActiveRecord
 
 
 class AsyncReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncWritableUser(AsyncActiveRecord):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncOptedOutUser(AsyncActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
-    __read_only__ = False
+    @classmethod
+    def read_only(cls):
+        return False
 
 
 class AsyncImplementsButWritable(AsyncActiveRecord, IReadOnlyBehavior):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncReadOnlyView(AsyncActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""

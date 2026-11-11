@@ -10,7 +10,10 @@ from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 
 class BenchmarkUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
-    __table_name__ = "benchmark_users"
+    @classmethod
+    def table_name(cls):
+        return "benchmark_users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -23,7 +26,10 @@ class BenchmarkUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
 
 class AsyncBenchmarkUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
-    __table_name__ = "benchmark_users"
+    @classmethod
+    def table_name(cls):
+        return "benchmark_users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None

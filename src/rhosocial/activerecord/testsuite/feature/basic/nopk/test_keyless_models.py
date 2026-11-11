@@ -24,30 +24,48 @@ from rhosocial.activerecord.model import ActiveRecord
 
 class KeylessUser(ActiveRecord):
     """Mapped onto a keyless projection of the users table."""
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
-    __primary_key__ = None
+    @classmethod
+    def primary_key(cls):
+        return None
+
     id: Optional[int] = None
     username: str = ""
 
 
 class KeylessReadOnlyUser(ActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
-    __primary_key__ = None
+    @classmethod
+    def primary_key(cls):
+        return None
+
     id: Optional[int] = None
     username: str = ""
 
 
 class ReadOnlyWithKeyUser(ActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class NormalUser(ActiveRecord):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""

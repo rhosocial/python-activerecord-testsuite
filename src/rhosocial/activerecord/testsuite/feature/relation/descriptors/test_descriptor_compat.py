@@ -21,7 +21,10 @@ class TestSyncDescriptorOnAsyncModel:
 
         with pytest.raises(TypeError, match="Sync relation descriptor.*async model"):
             class AsyncB(AsyncActiveRecord):
-                __table_name__ = "compat_b"
+                @classmethod
+                def table_name(cls):
+                    return "compat_b"
+
                 id: Optional[int] = None
                 ref_id: int
                 a: ClassVar[BelongsTo["AsyncA"]] = BelongsTo(
@@ -35,7 +38,10 @@ class TestSyncDescriptorOnAsyncModel:
 
         with pytest.raises(TypeError, match="Sync relation descriptor.*async model"):
             class AsyncP(AsyncActiveRecord):
-                __table_name__ = "compat_p"
+                @classmethod
+                def table_name(cls):
+                    return "compat_p"
+
                 id: Optional[int] = None
                 items: ClassVar[HasMany["AsyncC"]] = HasMany(
                     foreign_key="parent_id", inverse_of=None
@@ -48,7 +54,10 @@ class TestSyncDescriptorOnAsyncModel:
 
         with pytest.raises(TypeError, match="Sync relation descriptor.*async model"):
             class AsyncU(AsyncActiveRecord):
-                __table_name__ = "compat_u"
+                @classmethod
+                def table_name(cls):
+                    return "compat_u"
+
                 id: Optional[int] = None
                 profile: ClassVar[HasOne["AsyncPr"]] = HasOne(
                     foreign_key="user_id", inverse_of=None
@@ -65,7 +74,10 @@ class TestAsyncDescriptorOnSyncModel:
 
         with pytest.raises(TypeError, match="Async relation descriptor.*sync model"):
             class SyncB(ActiveRecord):
-                __table_name__ = "compat_sb"
+                @classmethod
+                def table_name(cls):
+                    return "compat_sb"
+
                 id: Optional[int] = None
                 ref_id: int
                 a: ClassVar[AsyncBelongsTo["SyncA"]] = AsyncBelongsTo(
@@ -79,7 +91,10 @@ class TestAsyncDescriptorOnSyncModel:
 
         with pytest.raises(TypeError, match="Async relation descriptor.*sync model"):
             class SyncP(ActiveRecord):
-                __table_name__ = "compat_sp"
+                @classmethod
+                def table_name(cls):
+                    return "compat_sp"
+
                 id: Optional[int] = None
                 items: ClassVar[AsyncHasMany["SyncC"]] = AsyncHasMany(
                     foreign_key="parent_id", inverse_of=None
@@ -92,7 +107,10 @@ class TestAsyncDescriptorOnSyncModel:
 
         with pytest.raises(TypeError, match="Async relation descriptor.*sync model"):
             class SyncU(ActiveRecord):
-                __table_name__ = "compat_su"
+                @classmethod
+                def table_name(cls):
+                    return "compat_su"
+
                 id: Optional[int] = None
                 profile: ClassVar[AsyncHasOne["SyncPr"]] = AsyncHasOne(
                     foreign_key="user_id", inverse_of=None
@@ -108,7 +126,10 @@ class TestCorrectUsageNoError:
         from rhosocial.activerecord.relation.descriptors import BelongsTo
 
         class SyncB(ActiveRecord):
-            __table_name__ = "compat_nw_sb"
+            @classmethod
+            def table_name(cls):
+                return "compat_nw_sb"
+
             id: Optional[int] = None
             ref_id: int
             a: ClassVar[BelongsTo["SyncA"]] = BelongsTo(
@@ -121,7 +142,10 @@ class TestCorrectUsageNoError:
         from rhosocial.activerecord.relation.async_descriptors import AsyncBelongsTo
 
         class AsyncB(AsyncActiveRecord):
-            __table_name__ = "compat_nw_ab"
+            @classmethod
+            def table_name(cls):
+                return "compat_nw_ab"
+
             id: Optional[int] = None
             ref_id: int
             a: ClassVar[AsyncBelongsTo["AsyncA"]] = AsyncBelongsTo(

@@ -26,7 +26,9 @@ from .annotated_adapter_models import ListToStringAdapter
 class AsyncSearchableItem(IntegerPKMixin, AsyncActiveRecord):
     """Async SearchableItem model for testing Annotated type adapters in queries."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "searchable_items"
+    @classmethod
+    def table_name(cls):
+        return "searchable_items"
 
     id: Optional[int] = None
     name: str = ""

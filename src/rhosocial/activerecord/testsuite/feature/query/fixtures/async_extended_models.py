@@ -15,7 +15,9 @@ from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo
 class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     id: Optional[int] = None
     username: str
@@ -30,7 +32,9 @@ class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 class AsyncExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async ExtendedOrder model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "extended_orders"
+    @classmethod
+    def table_name(cls):
+        return "extended_orders"
 
     id: Optional[int] = None
     user_id: int
@@ -52,7 +56,9 @@ class AsyncExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecor
 class AsyncExtendedOrderItem(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async ExtendedOrderItem model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "extended_order_items"
+    @classmethod
+    def table_name(cls):
+        return "extended_order_items"
 
     id: Optional[int] = None
     order_id: int

@@ -53,7 +53,10 @@ def test_relation_inheritance(order_fixtures):
 
     # Define base class with relation
     class BaseOrder(ActiveRecord):
-        __table_name__ = 'orders'
+        @classmethod
+        def table_name(cls):
+            return 'orders'
+
         __backend__ = Order.__backend__
         user: ClassVar[BelongsTo['User']] = BelongsTo(
             foreign_key='user_id'
@@ -88,13 +91,19 @@ def test_relation_registration():
     """Test basic relation registration functionality."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -111,13 +120,19 @@ def test_relation_cache_management():
     """Test relation cache management."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -143,13 +158,19 @@ def test_relation_descriptor_initialization():
     """Test RelationDescriptor initialization and configuration."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -171,13 +192,19 @@ def test_belongs_to_relation():
     """Test BelongsTo relation functionality."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -193,13 +220,19 @@ def test_has_many_relation():
     """Test HasMany relation functionality."""
 
     class Comment(ActiveRecord):
-        __table_name__ = "comments"
+        @classmethod
+        def table_name(cls):
+            return "comments"
+
         id: Optional[int] = None
         post_id: int
         content: str
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         title: str
 
@@ -214,13 +247,19 @@ def test_has_one_relation():
     """Test HasOne relation functionality."""
 
     class Profile(ActiveRecord):
-        __table_name__ = "profiles"
+        @classmethod
+        def table_name(cls):
+            return "profiles"
+
         id: Optional[int] = None
         user_id: int
         bio: str
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
@@ -235,18 +274,27 @@ def test_multiple_relations_on_model():
     """Test multiple relations on a single model."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
     class Comment(ActiveRecord):
-        __table_name__ = "comments"
+        @classmethod
+        def table_name(cls):
+            return "comments"
+
         id: Optional[int] = None
         post_id: int
         content: str
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -266,7 +314,10 @@ def test_relation_inverse_of():
     """Test inverse_of relation configuration."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
@@ -276,7 +327,10 @@ def test_relation_inverse_of():
         )
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -297,12 +351,18 @@ def test_relation_query_method():
     """Test relation query method generation."""
 
     class User(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
     class Post(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str

@@ -26,29 +26,43 @@ from rhosocial.activerecord.model import ActiveRecord
 
 
 class ReadOnlyUser(ActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class WritableUser(ActiveRecord):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class OptedOutUser(ActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
-    __read_only__ = False
+    @classmethod
+    def read_only(cls):
+        return False
 
 
 class ImplementsButWritable(ActiveRecord, IReadOnlyBehavior):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
@@ -57,7 +71,10 @@ class ImplementsButWritable(ActiveRecord, IReadOnlyBehavior):
 class ReadOnlyView(ActiveRecord, ReadOnlyMixin):
     """A read-only model that declares it maps a view."""
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""

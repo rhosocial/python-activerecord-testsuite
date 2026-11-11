@@ -21,30 +21,48 @@ from rhosocial.activerecord.model import AsyncActiveRecord
 
 
 class AsyncKeylessUser(AsyncActiveRecord):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
-    __primary_key__ = None
+    @classmethod
+    def primary_key(cls):
+        return None
+
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncKeylessReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
-    __primary_key__ = None
+    @classmethod
+    def primary_key(cls):
+        return None
+
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncReadOnlyWithKeyUser(AsyncActiveRecord, ReadOnlyMixin):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""
 
 
 class AsyncNormalUser(AsyncActiveRecord):
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
     id: Optional[int] = None
     username: str = ""

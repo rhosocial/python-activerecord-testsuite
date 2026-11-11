@@ -133,7 +133,10 @@ class TestAsyncRelationshipValidator:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncRelated(AsyncActiveRecord):
-            __table_name__ = "v_abhm_rel"
+            @classmethod
+            def table_name(cls):
+                return "v_abhm_rel"
+
             id: Optional[int] = None
             owner_id: int
             owner: ClassVar[AsyncBelongsTo["AsyncOwner"]] = AsyncBelongsTo(
@@ -141,7 +144,10 @@ class TestAsyncRelationshipValidator:
             )
 
         class AsyncOwner(AsyncActiveRecord):
-            __table_name__ = "v_abhm_own"
+            @classmethod
+            def table_name(cls):
+                return "v_abhm_own"
+
             id: Optional[int] = None
             items: ClassVar[AsyncHasMany["AsyncRelated"]] = AsyncHasMany(
                 foreign_key="owner_id", inverse_of="owner"
@@ -156,7 +162,10 @@ class TestAsyncRelationshipValidator:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncProfile(AsyncActiveRecord):
-            __table_name__ = "v_abho_pro"
+            @classmethod
+            def table_name(cls):
+                return "v_abho_pro"
+
             id: Optional[int] = None
             user_id: int
             user: ClassVar[AsyncBelongsTo["AsyncUser"]] = AsyncBelongsTo(
@@ -164,7 +173,10 @@ class TestAsyncRelationshipValidator:
             )
 
         class AsyncUser(AsyncActiveRecord):
-            __table_name__ = "v_abho_usr"
+            @classmethod
+            def table_name(cls):
+                return "v_abho_usr"
+
             id: Optional[int] = None
             profile: ClassVar[AsyncHasOne["AsyncProfile"]] = AsyncHasOne(
                 foreign_key="user_id", inverse_of="user"
@@ -179,7 +191,10 @@ class TestAsyncRelationshipValidator:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncOther(AsyncActiveRecord):
-            __table_name__ = "v_ip_oth"
+            @classmethod
+            def table_name(cls):
+                return "v_ip_oth"
+
             id: Optional[int] = None
             ref_id: int
             item: ClassVar[AsyncBelongsTo["AsyncItem"]] = AsyncBelongsTo(
@@ -187,7 +202,10 @@ class TestAsyncRelationshipValidator:
             )
 
         class AsyncItem(AsyncActiveRecord):
-            __table_name__ = "v_ip_itm"
+            @classmethod
+            def table_name(cls):
+                return "v_ip_itm"
+
             id: Optional[int] = None
             other_id: int
             other: ClassVar[AsyncBelongsTo["AsyncOther"]] = AsyncBelongsTo(
@@ -203,12 +221,18 @@ class TestAsyncRelationshipValidator:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncRelated(AsyncActiveRecord):
-            __table_name__ = "v_mi_rel"
+            @classmethod
+            def table_name(cls):
+                return "v_mi_rel"
+
             id: Optional[int] = None
             owner_id: int
 
         class AsyncOwner(AsyncActiveRecord):
-            __table_name__ = "v_mi_own"
+            @classmethod
+            def table_name(cls):
+                return "v_mi_own"
+
             id: Optional[int] = None
             items: ClassVar[AsyncHasMany["AsyncRelated"]] = AsyncHasMany(
                 foreign_key="owner_id", inverse_of="nonexistent"
@@ -223,7 +247,10 @@ class TestAsyncRelationshipValidator:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncRelated(AsyncActiveRecord):
-            __table_name__ = "v_asi_rel"
+            @classmethod
+            def table_name(cls):
+                return "v_asi_rel"
+
             id: Optional[int] = None
             owner_id: int
             owner: ClassVar[AsyncBelongsTo["AsyncOwner"]] = AsyncBelongsTo(
@@ -231,7 +258,10 @@ class TestAsyncRelationshipValidator:
             )
 
         class AsyncOwner(AsyncActiveRecord):
-            __table_name__ = "v_asi_own"
+            @classmethod
+            def table_name(cls):
+                return "v_asi_own"
+
             id: Optional[int] = None
             items: ClassVar[AsyncHasMany["AsyncRelated"]] = AsyncHasMany(
                 foreign_key="owner_id", inverse_of="owner"

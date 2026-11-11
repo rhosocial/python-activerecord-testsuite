@@ -15,7 +15,9 @@ from rhosocial.activerecord.relation import HasMany, BelongsTo
 class Node(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Node model for tree structure tests (recursive CTEs)."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "nodes"
+    @classmethod
+    def table_name(cls):
+        return "nodes"
 
     id: Optional[int] = None
     name: str

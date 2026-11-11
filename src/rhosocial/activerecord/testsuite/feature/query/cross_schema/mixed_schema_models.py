@@ -16,10 +16,14 @@ from rhosocial.activerecord.testsuite.feature.query.fixtures.schema_models impor
 class MixedSchemaOrder(Order):
     """Base ``orders`` fixture living in a non-default schema."""
 
-    __schema_name__ = SCHEMA_A
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_A
 
 
 class AsyncMixedSchemaOrder(AsyncOrder):
     """Async variant of ``MixedSchemaOrder``."""
 
-    __schema_name__ = SCHEMA_A
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_A

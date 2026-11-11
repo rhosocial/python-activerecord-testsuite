@@ -58,7 +58,10 @@ class ListToStringAdapter(BaseSQLTypeAdapter):
 class SearchableItem(IntegerPKMixin, ActiveRecord):
     """Model for testing Annotated Type Adapters."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = 'searchable_items'
+    @classmethod
+    def table_name(cls):
+        return 'searchable_items'
+
     id: Optional[int] = None
     name: str
     tags: Annotated[Optional[List[str]], UseAdapter(ListToStringAdapter(), str)] = None

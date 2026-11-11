@@ -14,7 +14,10 @@ from rhosocial.activerecord.relation import AsyncHasMany, AsyncBelongsTo, AsyncH
 
 class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model with basic relations."""
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -36,7 +39,10 @@ class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 
 class AsyncOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Order model with basic relations."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -51,7 +57,10 @@ class AsyncOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 
 class AsyncOrderItem(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Order item model with basic relations."""
-    __table_name__ = "order_items"
+    @classmethod
+    def table_name(cls):
+        return "order_items"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -70,7 +79,10 @@ class AsyncProfile(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     Mirrors sync Profile for sync/async parity.
     Used for testing HasOne batch loading via with_().
     """
-    __table_name__ = "profiles"
+    @classmethod
+    def table_name(cls):
+        return "profiles"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -87,7 +99,9 @@ class AsyncProfile(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 class AsyncPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Post model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     id: Optional[int] = None
     user_id: int
@@ -102,7 +116,9 @@ class AsyncPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 class AsyncComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Comment model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     id: Optional[int] = None
     user_id: int
