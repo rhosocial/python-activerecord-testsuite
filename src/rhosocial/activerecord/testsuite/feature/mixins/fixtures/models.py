@@ -18,7 +18,9 @@ from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin, 
 
 class TimestampedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Blog post model with timestamps"""
-    __table_name__ = "timestamped_posts"
+    @classmethod
+    def table_name(cls):
+        return "timestamped_posts"
 
     id: Optional[int] = None
     title: str
@@ -27,7 +29,9 @@ class TimestampedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
 class VersionedProduct(IntegerPKMixin, DefaultOptimisticLockMixin, ActiveRecord):
     """Product model with optimistic locking"""
-    __table_name__ = "versioned_products"
+    @classmethod
+    def table_name(cls):
+        return "versioned_products"
 
     id: Optional[int] = None
     name: str
@@ -36,7 +40,9 @@ class VersionedProduct(IntegerPKMixin, DefaultOptimisticLockMixin, ActiveRecord)
 
 class Task(IntegerPKMixin, DefaultSoftDeleteMixin, ActiveRecord):
     """Task model supporting soft deletion"""
-    __table_name__ = "tasks"
+    @classmethod
+    def table_name(cls):
+        return "tasks"
 
     id: Optional[int] = None
     title: str
@@ -45,7 +51,9 @@ class Task(IntegerPKMixin, DefaultSoftDeleteMixin, ActiveRecord):
 
 class CombinedArticle(IntegerPKMixin, DefaultTimestampMixin, DefaultOptimisticLockMixin, DefaultSoftDeleteMixin, ActiveRecord):
     """Article model combining all mixins"""
-    __table_name__ = "combined_articles"
+    @classmethod
+    def table_name(cls):
+        return "combined_articles"
 
     id: Optional[int] = None
     title: str
@@ -55,7 +63,9 @@ class CombinedArticle(IntegerPKMixin, DefaultTimestampMixin, DefaultOptimisticLo
 
 class AsyncTimestampedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Blog post model with timestamps (async version)"""
-    __table_name__ = "timestamped_posts"
+    @classmethod
+    def table_name(cls):
+        return "timestamped_posts"
 
     id: Optional[int] = None
     title: str
@@ -64,7 +74,9 @@ class AsyncTimestampedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRec
 
 class AsyncVersionedProduct(IntegerPKMixin, DefaultOptimisticLockMixin, AsyncActiveRecord):
     """Product model with optimistic locking (async version)"""
-    __table_name__ = "versioned_products"
+    @classmethod
+    def table_name(cls):
+        return "versioned_products"
 
     id: Optional[int] = None
     name: str
@@ -73,7 +85,9 @@ class AsyncVersionedProduct(IntegerPKMixin, DefaultOptimisticLockMixin, AsyncAct
 
 class AsyncTask(IntegerPKMixin, DefaultAsyncSoftDeleteMixin, AsyncActiveRecord):
     """Task model supporting soft deletion (async version)"""
-    __table_name__ = "tasks"
+    @classmethod
+    def table_name(cls):
+        return "tasks"
 
     id: Optional[int] = None
     title: str
@@ -82,7 +96,9 @@ class AsyncTask(IntegerPKMixin, DefaultAsyncSoftDeleteMixin, AsyncActiveRecord):
 
 class AsyncCombinedArticle(IntegerPKMixin, DefaultTimestampMixin, DefaultOptimisticLockMixin, DefaultAsyncSoftDeleteMixin, AsyncActiveRecord):
     """Article model combining all mixins (async version)"""
-    __table_name__ = "combined_articles"
+    @classmethod
+    def table_name(cls):
+        return "combined_articles"
 
     id: Optional[int] = None
     title: str

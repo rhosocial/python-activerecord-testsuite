@@ -13,7 +13,9 @@ from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 class AsyncJsonUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async User model specialized for JSON testing."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "json_users"
+    @classmethod
+    def table_name(cls):
+        return "json_users"
 
     id: Optional[int] = None
     username: str

@@ -56,7 +56,10 @@ class TestAsyncRelationDescriptors:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncPost(AsyncActiveRecord):
-            __table_name__ = "desc_ab_post"
+            @classmethod
+            def table_name(cls):
+                return "desc_ab_post"
+
             id: Optional[int] = None
             user_id: int
             user: ClassVar[AsyncBelongsTo["AsyncUser"]] = AsyncBelongsTo(
@@ -72,7 +75,10 @@ class TestAsyncRelationDescriptors:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncUser(AsyncActiveRecord):
-            __table_name__ = "desc_hm_user"
+            @classmethod
+            def table_name(cls):
+                return "desc_hm_user"
+
             id: Optional[int] = None
             posts: ClassVar[AsyncHasMany["AsyncPost"]] = AsyncHasMany(
                 foreign_key="user_id", inverse_of=None
@@ -87,7 +93,10 @@ class TestAsyncRelationDescriptors:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncUser(AsyncActiveRecord):
-            __table_name__ = "desc_ho_user"
+            @classmethod
+            def table_name(cls):
+                return "desc_ho_user"
+
             id: Optional[int] = None
             profile: ClassVar[AsyncHasOne["AsyncProfile"]] = AsyncHasOne(
                 foreign_key="user_id", inverse_of=None
@@ -102,7 +111,10 @@ class TestAsyncRelationDescriptors:
         from rhosocial.activerecord.model import AsyncActiveRecord
 
         class AsyncUser(AsyncActiveRecord):
-            __table_name__ = "desc_qm_user"
+            @classmethod
+            def table_name(cls):
+                return "desc_qm_user"
+
             id: Optional[int] = None
             posts: ClassVar[AsyncHasMany["AsyncPost"]] = AsyncHasMany(
                 foreign_key="user_id", inverse_of=None

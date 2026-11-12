@@ -24,7 +24,9 @@ from rhosocial.activerecord.base.fields import UseColumn
 class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     id: Optional[int] = None  # Primary key, null for new records
     username: str  # Required field
@@ -52,7 +54,9 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class JsonUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model specialized for JSON testing."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "json_users"
+    @classmethod
+    def table_name(cls):
+        return "json_users"
 
     id: Optional[int] = None
     username: str
@@ -72,7 +76,9 @@ class JsonUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     id: Optional[int] = None
     user_id: int
@@ -87,7 +93,9 @@ class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Order item model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "order_items"
+    @classmethod
+    def table_name(cls):
+        return "order_items"
 
     id: Optional[int] = None
     order_id: int
@@ -101,7 +109,9 @@ class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
 class OrderWithCustomCache(Order):
     """Order model with custom TTL cache configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -111,7 +121,9 @@ class OrderWithCustomCache(Order):
 
 class OrderWithLimitedCache(Order):
     """Order model with limited cache size configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -121,7 +133,9 @@ class OrderWithLimitedCache(Order):
 
 class OrderWithComplexCache(Order):
     """Order model with complex cache configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -137,7 +151,9 @@ class OrderWithComplexCache(Order):
 class Post(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with user and comments relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     id: Optional[int] = None
     user_id: int
@@ -158,7 +174,9 @@ class Post(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class Comment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with user and post relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     id: Optional[int] = None
     user_id: int
@@ -182,7 +200,9 @@ class Profile(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Used for testing HasOne batch loading via with_().
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "profiles"
+    @classmethod
+    def table_name(cls):
+        return "profiles"
 
     id: Optional[int] = None
     user_id: int
@@ -201,7 +221,9 @@ class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     user_id: Annotated[Optional[int], UseColumn("id")] = None
     user_name: Annotated[str, UseColumn("username")]
@@ -222,7 +244,9 @@ class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Post model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     post_id: Annotated[Optional[int], UseColumn("id")] = None
     author_id: Annotated[int, UseColumn("author")]
@@ -245,7 +269,9 @@ class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Comment model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     comment_id: Annotated[Optional[int], UseColumn("id")] = None
     post_id: Annotated[int, UseColumn("post_ref")]
@@ -272,7 +298,9 @@ class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     user_id: Annotated[Optional[int], UseColumn("id")] = None
     user_name: Annotated[str, UseColumn("username")]
@@ -293,7 +321,9 @@ class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """Async Post model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     post_id: Annotated[Optional[int], UseColumn("id")] = None
     author_id: Annotated[int, UseColumn("author")]
@@ -316,7 +346,9 @@ class AsyncMappedComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecor
     """Async Comment model with custom column name mappings for testing in query feature."""
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     comment_id: Annotated[Optional[int], UseColumn("id")] = None
     post_id: Annotated[int, UseColumn("post_ref")]

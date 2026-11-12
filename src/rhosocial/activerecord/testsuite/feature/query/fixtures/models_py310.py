@@ -31,7 +31,9 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     id: int | None = None  # Primary key, null for new records
     username: str  # Required field
@@ -62,7 +64,9 @@ class Profile(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "profiles"
+    @classmethod
+    def table_name(cls):
+        return "profiles"
 
     id: int | None = None
     user_id: int
@@ -81,7 +85,9 @@ class JsonUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "json_users"
+    @classmethod
+    def table_name(cls):
+        return "json_users"
 
     id: int | None = None
     username: str
@@ -104,7 +110,9 @@ class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     id: int | None = None
     user_id: int
@@ -122,7 +130,9 @@ class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "order_items"
+    @classmethod
+    def table_name(cls):
+        return "order_items"
 
     id: int | None = None
     order_id: int
@@ -136,7 +146,9 @@ class OrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
 class OrderWithCustomCache(Order):
     """Order model with custom TTL cache configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -146,7 +158,9 @@ class OrderWithCustomCache(Order):
 
 class OrderWithLimitedCache(Order):
     """Order model with limited cache size configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -156,7 +170,9 @@ class OrderWithLimitedCache(Order):
 
 class OrderWithComplexCache(Order):
     """Order model with complex cache configuration."""
-    __table_name__ = "orders"
+    @classmethod
+    def table_name(cls):
+        return "orders"
 
     user: ClassVar[BelongsTo['User']] = BelongsTo(
         foreign_key='user_id',
@@ -175,7 +191,9 @@ class Post(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     id: int | None = None
     user_id: int
@@ -199,7 +217,9 @@ class Comment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     Python 3.10+ version using | syntax instead of Optional.
     """
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     id: int | None = None
     user_id: int
@@ -226,7 +246,9 @@ class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     user_id: Annotated[int | None, UseColumn("id")] = None
     user_name: Annotated[str, UseColumn("username")]
@@ -250,7 +272,9 @@ class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "posts"
+    @classmethod
+    def table_name(cls):
+        return "posts"
 
     post_id: Annotated[int | None, UseColumn("id")] = None
     author_id: Annotated[int, UseColumn("author")]
@@ -276,7 +300,9 @@ class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __table_name__ = "comments"
+    @classmethod
+    def table_name(cls):
+        return "comments"
 
     comment_id: Annotated[int | None, UseColumn("id")] = None
     post_id: Annotated[int, UseColumn("post_ref")]

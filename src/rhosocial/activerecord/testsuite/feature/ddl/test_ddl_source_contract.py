@@ -137,9 +137,18 @@ TABLE_TABLESPACE = "record_space"
 
 
 class ContractDeclarations:
-    __table_name__ = "ddl_contract_records"
-    __schema_name__ = "app"
-    __primary_key__ = "record_id"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_records"
+
+    @classmethod
+    def schema_name(cls):
+        return "app"
+
+    @classmethod
+    def primary_key(cls):
+        return "record_id"
+
     __table_constraints__ = [TABLE_CONSTRAINT]
     __table_indexes__ = [TABLE_INDEX]
     _feature_handlers = [DDLAnnotationHandler, BackendOptionHandler]
@@ -209,7 +218,9 @@ class AsyncContractModel(ContractDeclarations, AsyncActiveRecord):
 
 
 class DerivedDeclarations:
-    __table_name__ = "ddl_contract_derived"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_derived"
 
     id: int
     value: int
@@ -231,8 +242,14 @@ COMPOSITE_PRIMARY_KEY = TableConstraint(
 
 
 class CompositeDeclarations:
-    __table_name__ = "ddl_contract_composite"
-    __primary_key__ = ("left_id", "right_id")
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_composite"
+
+    @classmethod
+    def primary_key(cls):
+        return ("left_id", "right_id")
+
     __table_constraints__ = [COMPOSITE_PRIMARY_KEY]
 
     left_id: Annotated[int, UseColumn("left_id")]
@@ -254,8 +271,14 @@ MISMATCHED_PRIMARY_KEY = TableConstraint(
 
 
 class MismatchedCompositeDeclarations:
-    __table_name__ = "ddl_contract_mismatched_composite"
-    __primary_key__ = ("left_id", "right_id")
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_mismatched_composite"
+
+    @classmethod
+    def primary_key(cls):
+        return ("left_id", "right_id")
+
     __table_constraints__ = [MISMATCHED_PRIMARY_KEY]
 
     left_id: int
@@ -267,8 +290,13 @@ class MismatchedCompositeModel(MismatchedCompositeDeclarations, ActiveRecord):
 
 
 class NullablePrimaryKeyDeclarations:
-    __table_name__ = "ddl_contract_nullable_primary_key"
-    __primary_key__ = "id"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_nullable_primary_key"
+
+    @classmethod
+    def primary_key(cls):
+        return "id"
 
     id: Annotated[Optional[int], UseConstraint(ColumnNullableConstraint)] = None
 
@@ -278,8 +306,13 @@ class NullablePrimaryKeyModel(NullablePrimaryKeyDeclarations, ActiveRecord):
 
 
 class NotNullPrimaryKeyDeclarations:
-    __table_name__ = "ddl_contract_not_null_primary_key"
-    __primary_key__ = "id"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_not_null_primary_key"
+
+    @classmethod
+    def primary_key(cls):
+        return "id"
 
     id: Annotated[int, UseConstraint(ColumnNotNullConstraint)]
 
@@ -289,21 +322,27 @@ class NotNullPrimaryKeyModel(NotNullPrimaryKeyDeclarations, ActiveRecord):
 
 
 class PlainModel(ActiveRecord):
-    __table_name__ = "ddl_contract_plain"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_plain"
 
     id: int
     note: Optional[str] = None
 
 
 class AsyncPlainModel(AsyncActiveRecord):
-    __table_name__ = "ddl_contract_plain_async"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_plain_async"
 
     id: int
     note: Optional[str] = None
 
 
 class ColumnTypeDeclarations:
-    __table_name__ = "ddl_contract_column_types"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_column_types"
 
     record_id: Annotated[int, UseColumn("record_id")]
     payload: Annotated[dict, COLUMN_TYPE_PAYLOAD]
@@ -325,7 +364,9 @@ class UnhandledAnnotation(DDLAnnotation):
 
 
 class UnhandledModel(ActiveRecord):
-    __table_name__ = "ddl_contract_unhandled"
+    @classmethod
+    def table_name(cls):
+        return "ddl_contract_unhandled"
 
     id: int
     value: Annotated[str, UnhandledAnnotation()]
@@ -463,7 +504,9 @@ def test_contract_repeated_column_type_declarations_fail_explicitly():
     """
 
     class DoubleDeclared:
-        __table_name__ = "ddl_contract_double_column_types"
+        @classmethod
+        def table_name(cls):
+            return "ddl_contract_double_column_types"
 
         record_id: Annotated[int, UseColumn("record_id")]
         payload: Annotated[dict, UseColumnType(JSONColumn), UseColumnType(ArrayColumn)]

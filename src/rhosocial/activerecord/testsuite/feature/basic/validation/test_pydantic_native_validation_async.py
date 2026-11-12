@@ -21,7 +21,9 @@ except ImportError:
 class MutableDefaultModel(ActiveRecord):
     """Model for Pydantic mutable default isolation tests."""
 
-    __table_name__ = "mutable_default_models"
+    @classmethod
+    def table_name(cls):
+        return "mutable_default_models"
 
     tags: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -29,7 +31,9 @@ class MutableDefaultModel(ActiveRecord):
 class AsyncMutableDefaultModel(AsyncActiveRecord):
     """Async model for Pydantic mutable default isolation tests."""
 
-    __table_name__ = "mutable_default_models"
+    @classmethod
+    def table_name(cls):
+        return "mutable_default_models"
 
     tags: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -37,7 +41,9 @@ class AsyncMutableDefaultModel(AsyncActiveRecord):
 class LifecycleModel(ActiveRecord):
     """Model for Pydantic lifecycle and unset/None tests."""
 
-    __table_name__ = "lifecycle_models"
+    @classmethod
+    def table_name(cls):
+        return "lifecycle_models"
 
     required_name: str
     optional_note: Optional[str] = None
@@ -60,7 +66,9 @@ class LifecycleModel(ActiveRecord):
 class AsyncLifecycleModel(AsyncActiveRecord):
     """Async model for Pydantic lifecycle and unset/None tests."""
 
-    __table_name__ = "lifecycle_models"
+    @classmethod
+    def table_name(cls):
+        return "lifecycle_models"
 
     required_name: str
     optional_note: Optional[str] = None
@@ -83,7 +91,9 @@ class AsyncLifecycleModel(AsyncActiveRecord):
 class PydanticV2BoundaryModel(ActiveRecord):
     """Model for Pydantic v2 serialization and Annotated metadata boundary tests."""
 
-    __table_name__ = "pydantic_v2_boundary_models"
+    @classmethod
+    def table_name(cls):
+        return "pydantic_v2_boundary_models"
 
     first_name: str
     last_name: str
@@ -102,7 +112,9 @@ class PydanticV2BoundaryModel(ActiveRecord):
 class AsyncPydanticV2BoundaryModel(AsyncActiveRecord):
     """Async model for Pydantic v2 serialization and Annotated metadata boundary tests."""
 
-    __table_name__ = "pydantic_v2_boundary_models"
+    @classmethod
+    def table_name(cls):
+        return "pydantic_v2_boundary_models"
 
     first_name: str
     last_name: str
@@ -128,17 +140,24 @@ class AliasBoundaryFieldsMixin:
 class AliasBoundaryModel(AliasBoundaryFieldsMixin, ActiveRecord):
     """Model for alias and UseColumn boundary tests."""
 
-    __table_name__ = "alias_boundary_models"
+    @classmethod
+    def table_name(cls):
+        return "alias_boundary_models"
 
 class AsyncAliasBoundaryModel(AliasBoundaryFieldsMixin, AsyncActiveRecord):
     """Async model for alias and UseColumn boundary tests."""
 
-    __table_name__ = "alias_boundary_models"
+    @classmethod
+    def table_name(cls):
+        return "alias_boundary_models"
 
 class ExtraForbidModel(ActiveRecord):
     """Model that rejects unknown Pydantic input fields."""
 
-    __table_name__ = "extra_forbid_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_forbid_models"
+
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -146,7 +165,10 @@ class ExtraForbidModel(ActiveRecord):
 class AsyncExtraForbidModel(AsyncActiveRecord):
     """Async model that rejects unknown Pydantic input fields."""
 
-    __table_name__ = "extra_forbid_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_forbid_models"
+
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -154,7 +176,10 @@ class AsyncExtraForbidModel(AsyncActiveRecord):
 class ExtraIgnoreModel(ActiveRecord):
     """Model that ignores unknown Pydantic input fields."""
 
-    __table_name__ = "extra_ignore_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_ignore_models"
+
     model_config = ConfigDict(extra="ignore")
 
     name: str
@@ -162,7 +187,10 @@ class ExtraIgnoreModel(ActiveRecord):
 class AsyncExtraIgnoreModel(AsyncActiveRecord):
     """Async model that ignores unknown Pydantic input fields."""
 
-    __table_name__ = "extra_ignore_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_ignore_models"
+
     model_config = ConfigDict(extra="ignore")
 
     name: str
@@ -170,7 +198,10 @@ class AsyncExtraIgnoreModel(AsyncActiveRecord):
 class ExtraAllowModel(ActiveRecord):
     """Model that keeps unknown Pydantic input fields as model extras."""
 
-    __table_name__ = "extra_allow_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_allow_models"
+
     model_config = ConfigDict(extra="allow")
 
     name: str
@@ -178,7 +209,10 @@ class ExtraAllowModel(ActiveRecord):
 class AsyncExtraAllowModel(AsyncActiveRecord):
     """Async model that keeps unknown Pydantic input fields as model extras."""
 
-    __table_name__ = "extra_allow_models"
+    @classmethod
+    def table_name(cls):
+        return "extra_allow_models"
+
     model_config = ConfigDict(extra="allow")
 
     name: str
@@ -190,12 +224,16 @@ class StrictFieldsMixin:
 class StrictModel(StrictFieldsMixin, ActiveRecord):
     """Model for strict Pydantic validation tests."""
 
-    __table_name__ = "strict_models"
+    @classmethod
+    def table_name(cls):
+        return "strict_models"
 
 class AsyncStrictModel(StrictFieldsMixin, AsyncActiveRecord):
     """Async model for strict Pydantic validation tests."""
 
-    __table_name__ = "strict_models"
+    @classmethod
+    def table_name(cls):
+        return "strict_models"
 
 class ValidateDefaultFieldsMixin:
     positive_count: int = Field(default=0, gt=0, validate_default=True)
@@ -203,12 +241,16 @@ class ValidateDefaultFieldsMixin:
 class ValidateDefaultModel(ValidateDefaultFieldsMixin, ActiveRecord):
     """Model for validate_default pipeline tests."""
 
-    __table_name__ = "validate_default_models"
+    @classmethod
+    def table_name(cls):
+        return "validate_default_models"
 
 class AsyncValidateDefaultModel(ValidateDefaultFieldsMixin, AsyncActiveRecord):
     """Async model for validate_default pipeline tests."""
 
-    __table_name__ = "validate_default_models"
+    @classmethod
+    def table_name(cls):
+        return "validate_default_models"
 
 class ValidatorModesFieldsMixin:
     raw_code: str
@@ -238,12 +280,16 @@ class ValidatorModesFieldsMixin:
 class ValidatorModesModel(ValidatorModesFieldsMixin, ActiveRecord):
     """Model for Pydantic validator pipeline mode tests."""
 
-    __table_name__ = "validator_modes_models"
+    @classmethod
+    def table_name(cls):
+        return "validator_modes_models"
 
 class AsyncValidatorModesModel(ValidatorModesFieldsMixin, AsyncActiveRecord):
     """Async model for Pydantic validator pipeline mode tests."""
 
-    __table_name__ = "validator_modes_models"
+    @classmethod
+    def table_name(cls):
+        return "validator_modes_models"
 
 class RecordStatus(str, Enum):
     draft = "draft"
@@ -263,12 +309,16 @@ class JsonContainerNestedFieldsMixin:
 class JsonContainerNestedModel(JsonContainerNestedFieldsMixin, ActiveRecord):
     """Model for JSON dump, enum, container, and nested model tests."""
 
-    __table_name__ = "json_container_nested_models"
+    @classmethod
+    def table_name(cls):
+        return "json_container_nested_models"
 
 class AsyncJsonContainerNestedModel(JsonContainerNestedFieldsMixin, AsyncActiveRecord):
     """Async model for JSON dump, enum, container, and nested model tests."""
 
-    __table_name__ = "json_container_nested_models"
+    @classmethod
+    def table_name(cls):
+        return "json_container_nested_models"
 
 class FromAttributesFieldsMixin:
     model_config = ConfigDict(from_attributes=True)
@@ -279,12 +329,16 @@ class FromAttributesFieldsMixin:
 class FromAttributesModel(FromAttributesFieldsMixin, ActiveRecord):
     """Model for from_attributes construction tests."""
 
-    __table_name__ = "from_attributes_models"
+    @classmethod
+    def table_name(cls):
+        return "from_attributes_models"
 
 class AsyncFromAttributesModel(FromAttributesFieldsMixin, AsyncActiveRecord):
     """Async model for from_attributes construction tests."""
 
-    __table_name__ = "from_attributes_models"
+    @classmethod
+    def table_name(cls):
+        return "from_attributes_models"
 
 class AnnotatedMetadataOrderFieldsMixin:
     field_first: Annotated[str, Field(min_length=2), UseColumn("field_first_col")]
@@ -293,12 +347,16 @@ class AnnotatedMetadataOrderFieldsMixin:
 class AnnotatedMetadataOrderModel(AnnotatedMetadataOrderFieldsMixin, ActiveRecord):
     """Model for Annotated metadata ordering tests."""
 
-    __table_name__ = "annotated_metadata_order_models"
+    @classmethod
+    def table_name(cls):
+        return "annotated_metadata_order_models"
 
 class AsyncAnnotatedMetadataOrderModel(AnnotatedMetadataOrderFieldsMixin, AsyncActiveRecord):
     """Async model for Annotated metadata ordering tests."""
 
-    __table_name__ = "annotated_metadata_order_models"
+    @classmethod
+    def table_name(cls):
+        return "annotated_metadata_order_models"
 
 class AliasUseColumnConflictFieldsMixin:
     model_config = ConfigDict(populate_by_name=True)
@@ -310,12 +368,16 @@ class AliasUseColumnConflictFieldsMixin:
 class AliasUseColumnConflictModel(AliasUseColumnConflictFieldsMixin, ActiveRecord):
     """Model for alias and UseColumn conflict boundary tests."""
 
-    __table_name__ = "alias_use_column_conflict_models"
+    @classmethod
+    def table_name(cls):
+        return "alias_use_column_conflict_models"
 
 class AsyncAliasUseColumnConflictModel(AliasUseColumnConflictFieldsMixin, AsyncActiveRecord):
     """Async model for alias and UseColumn conflict boundary tests."""
 
-    __table_name__ = "alias_use_column_conflict_models"
+    @classmethod
+    def table_name(cls):
+        return "alias_use_column_conflict_models"
 
 class AssignmentValidationFieldsMixin:
     model_config = ConfigDict(validate_assignment=True)
@@ -326,12 +388,16 @@ class AssignmentValidationFieldsMixin:
 class AssignmentValidationModel(AssignmentValidationFieldsMixin, ActiveRecord):
     """Model for assignment validation and dirty tracking tests."""
 
-    __table_name__ = "assignment_validation_models"
+    @classmethod
+    def table_name(cls):
+        return "assignment_validation_models"
 
 class AsyncAssignmentValidationModel(AssignmentValidationFieldsMixin, AsyncActiveRecord):
     """Async model for assignment validation and dirty tracking tests."""
 
-    __table_name__ = "assignment_validation_models"
+    @classmethod
+    def table_name(cls):
+        return "assignment_validation_models"
 
 def valid_pydantic_data():
     start_at = datetime(2024, 1, 1, 10, 0, 0)

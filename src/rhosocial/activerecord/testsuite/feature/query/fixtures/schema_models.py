@@ -20,8 +20,14 @@ SCHEMA_B = "ar_shop"   # orders live here
 
 
 class SchemaCustomer(ActiveRecord):
-    __table_name__ = "customers"
-    __schema_name__ = SCHEMA_A
+    @classmethod
+    def table_name(cls):
+        return "customers"
+
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_A
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -29,8 +35,14 @@ class SchemaCustomer(ActiveRecord):
 
 
 class SchemaOrder(ActiveRecord):
-    __table_name__ = "orders"
-    __schema_name__ = SCHEMA_B
+    @classmethod
+    def table_name(cls):
+        return "orders"
+
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_B
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -39,8 +51,14 @@ class SchemaOrder(ActiveRecord):
 
 
 class AsyncSchemaCustomer(AsyncActiveRecord):
-    __table_name__ = "customers"
-    __schema_name__ = SCHEMA_A
+    @classmethod
+    def table_name(cls):
+        return "customers"
+
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_A
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -48,8 +66,14 @@ class AsyncSchemaCustomer(AsyncActiveRecord):
 
 
 class AsyncSchemaOrder(AsyncActiveRecord):
-    __table_name__ = "orders"
-    __schema_name__ = SCHEMA_B
+    @classmethod
+    def table_name(cls):
+        return "orders"
+
+    @classmethod
+    def schema_name(cls):
+        return SCHEMA_B
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None

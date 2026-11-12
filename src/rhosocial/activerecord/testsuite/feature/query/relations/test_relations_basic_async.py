@@ -53,7 +53,10 @@ async def test_relation_inheritance(async_order_fixtures):
 
     # Define base class with relation
     class BaseOrder(ActiveRecord):
-        __table_name__ = 'orders'
+        @classmethod
+        def table_name(cls):
+            return 'orders'
+
         __backend__ = AsyncOrder.__backend__
         user: ClassVar[BelongsTo['AsyncUser']] = BelongsTo(
             foreign_key='user_id'
@@ -88,13 +91,19 @@ async def test_relation_registration():
     """Test basic relation registration functionality."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -111,13 +120,19 @@ async def test_relation_cache_management():
     """Test relation cache management."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -143,13 +158,19 @@ async def test_relation_descriptor_initialization():
     """Test RelationDescriptor initialization and configuration."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -171,13 +192,19 @@ async def test_belongs_to_relation():
     """Test BelongsTo relation functionality."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
         email: EmailStr
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -193,13 +220,19 @@ async def test_has_many_relation():
     """Test HasMany relation functionality."""
 
     class AsyncComment(ActiveRecord):
-        __table_name__ = "comments"
+        @classmethod
+        def table_name(cls):
+            return "comments"
+
         id: Optional[int] = None
         post_id: int
         content: str
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         title: str
 
@@ -214,13 +247,19 @@ async def test_has_one_relation():
     """Test HasOne relation functionality."""
 
     class AsyncProfile(ActiveRecord):
-        __table_name__ = "profiles"
+        @classmethod
+        def table_name(cls):
+            return "profiles"
+
         id: Optional[int] = None
         user_id: int
         bio: str
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
@@ -235,18 +274,27 @@ async def test_multiple_relations_on_model():
     """Test multiple relations on a single model."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
     class AsyncComment(ActiveRecord):
-        __table_name__ = "comments"
+        @classmethod
+        def table_name(cls):
+            return "comments"
+
         id: Optional[int] = None
         post_id: int
         content: str
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -266,7 +314,10 @@ async def test_relation_inverse_of():
     """Test inverse_of relation configuration."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
@@ -276,7 +327,10 @@ async def test_relation_inverse_of():
         )
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str
@@ -297,12 +351,18 @@ async def test_relation_query_method():
     """Test relation query method generation."""
 
     class AsyncUser(ActiveRecord):
-        __table_name__ = "users"
+        @classmethod
+        def table_name(cls):
+            return "users"
+
         id: Optional[int] = None
         username: str
 
     class AsyncPost(ActiveRecord):
-        __table_name__ = "posts"
+        @classmethod
+        def table_name(cls):
+            return "posts"
+
         id: Optional[int] = None
         user_id: int
         title: str

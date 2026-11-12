@@ -205,7 +205,10 @@ class TestAsyncInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class AsyncInvalidModel(AsyncActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 name: Annotated[str, UseColumn("col1"), UseColumn("col2")]
 
         assert "A field can have at most one UseColumn specified" in str(excinfo.value), \
@@ -220,7 +223,10 @@ class TestAsyncInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class AsyncInvalidModel(AsyncActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 data: Annotated[
                     str,
                     UseAdapter(DummyAdapter(), str),
@@ -236,7 +242,10 @@ class TestAsyncInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class AsyncInvalidModel(AsyncActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 name: Annotated[str, UseColumn(123)]
 
         assert "Invalid type for column_name. Expected str, but received type int." in str(excinfo.value), \
@@ -250,7 +259,10 @@ class TestAsyncInvalidCases:
 
         with pytest.raises(TypeError) as excinfo:
             class AsyncInvalidModel(AsyncActiveRecord):
-                __table_name__ = "invalid"
+                @classmethod
+                def table_name(cls):
+                    return "invalid"
+
                 data: Annotated[str, UseAdapter(NotAnAdapter(), str)]
 
         assert "Invalid type for adapter. Expected an instance of SQLTypeAdapter, but received type NotAnAdapter." in str(excinfo.value), \
@@ -262,7 +274,9 @@ class TestAsyncInvalidCases:
 
         with pytest.raises(ValueError) as excinfo:
             class AsyncInvalidModelWithDuplicates(AsyncActiveRecord):
-                __table_name__ = "invalid_duplicates"
+                @classmethod
+                def table_name(cls):
+                    return "invalid_duplicates"
 
                 field_a: Annotated[str, UseColumn("shared_column")]
                 field_b: Annotated[int, UseColumn("shared_column")]

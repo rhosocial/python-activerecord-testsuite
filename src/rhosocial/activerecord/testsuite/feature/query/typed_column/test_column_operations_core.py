@@ -41,8 +41,14 @@ def model(dialect):
     """
 
     class Operations(ActiveRecord):
-        __table_name__ = "core_column_operations"
-        __primary_key__: ClassVar[str] = "id"
+        @classmethod
+        def table_name(cls):
+            return "core_column_operations"
+
+        @classmethod
+        def primary_key(cls):
+            return "id"
+
         c: ClassVar[FieldProxy] = FieldProxy()
 
         id: int

@@ -15,7 +15,9 @@ from rhosocial.activerecord.relation import HasMany, BelongsTo
 class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """User model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
 
     id: Optional[int] = None
     username: str
@@ -30,7 +32,9 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class ExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Extended Order model with additional fields for advanced grouping tests."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "extended_orders"
+    @classmethod
+    def table_name(cls):
+        return "extended_orders"
 
     id: Optional[int] = None
     user_id: int
@@ -54,7 +58,9 @@ class ExtendedOrder(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 class ExtendedOrderItem(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """Extended Order item model with basic relations."""
     c: ClassVar[FieldProxy] = FieldProxy()
-    __table_name__ = "extended_order_items"
+    @classmethod
+    def table_name(cls):
+        return "extended_order_items"
 
     id: Optional[int] = None
     order_id: int

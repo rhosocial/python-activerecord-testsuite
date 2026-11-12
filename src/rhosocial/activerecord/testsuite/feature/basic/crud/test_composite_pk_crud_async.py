@@ -39,7 +39,7 @@ class TestAsyncCompositePKMeta:
 
     async def test_pk_auto_generated(self, async_order_item_class):
         """Composite keys should not be auto-generated."""
-        assert async_order_item_class.__pk_auto_generated__ is False, \
+        assert async_order_item_class.pk_auto_generated() is False, \
             "Expected composite key to not be auto-generated"
 
 class TestAsyncCompositePKInsert:
@@ -271,7 +271,7 @@ class TestAsyncCompositePKWithColumnMapping:
 
     async def test_meta_pk_auto_generated(self, async_mapped_order_item_class):
         """Mapped composite keys should not be auto-generated."""
-        assert async_mapped_order_item_class.__pk_auto_generated__ is False, \
+        assert async_mapped_order_item_class.pk_auto_generated() is False, \
             "Expected the key to not be auto-generated"
 
     async def test_insert_and_is_new_record(self, async_mapped_order_item_class):

@@ -39,7 +39,10 @@ from rhosocial.activerecord.backend.expression.objects import Table
 
 
 class BareItem(ActiveRecord):
-    __table_name__ = "ddl_bare_items"
+    @classmethod
+    def table_name(cls):
+        return "ddl_bare_items"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -50,7 +53,10 @@ class BareItem(ActiveRecord):
 
 
 class AsyncBareItem(AsyncActiveRecord):
-    __table_name__ = "ddl_bare_items"
+    @classmethod
+    def table_name(cls):
+        return "ddl_bare_items"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -61,7 +67,10 @@ class AsyncBareItem(AsyncActiveRecord):
 
 
 class SpecOrder(UUIDMixin, ActiveRecord):
-    __table_name__ = "ddl_spec_orders"
+    @classmethod
+    def table_name(cls):
+        return "ddl_spec_orders"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     code: Annotated[str, UseSqlType(VarCharType(length=32))]
@@ -91,7 +100,10 @@ class SpecOrder(UUIDMixin, ActiveRecord):
 
 
 class AsyncSpecOrder(UUIDMixin, AsyncActiveRecord):
-    __table_name__ = "ddl_spec_orders"
+    @classmethod
+    def table_name(cls):
+        return "ddl_spec_orders"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     code: Annotated[str, UseSqlType(VarCharType(length=32))]
@@ -121,7 +133,10 @@ class AsyncSpecOrder(UUIDMixin, AsyncActiveRecord):
 
 
 class CapabilityPost(ActiveRecord):
-    __table_name__ = "ddl_capability_posts"
+    @classmethod
+    def table_name(cls):
+        return "ddl_capability_posts"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -150,7 +165,10 @@ class CapabilityPost(ActiveRecord):
 
 
 class AsyncCapabilityPost(AsyncActiveRecord):
-    __table_name__ = "ddl_capability_posts"
+    @classmethod
+    def table_name(cls):
+        return "ddl_capability_posts"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Optional[int] = None
@@ -179,11 +197,19 @@ class AsyncCapabilityPost(AsyncActiveRecord):
 
 
 class SpecComment(ActiveRecord):
-    __table_name__ = "ddl_spec_comments"
+    @classmethod
+    def table_name(cls):
+        return "ddl_spec_comments"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __primary_key__ = "comment_id"
-    __pk_auto_generated__ = False
+    @classmethod
+    def primary_key(cls):
+        return "comment_id"
+
+    @classmethod
+    def pk_auto_generated(cls):
+        return False
 
     comment_id: int
     order_id: UUID
@@ -202,11 +228,19 @@ class SpecComment(ActiveRecord):
 
 
 class AsyncSpecComment(AsyncActiveRecord):
-    __table_name__ = "ddl_spec_comments"
+    @classmethod
+    def table_name(cls):
+        return "ddl_spec_comments"
+
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    __primary_key__ = "comment_id"
-    __pk_auto_generated__ = False
+    @classmethod
+    def primary_key(cls):
+        return "comment_id"
+
+    @classmethod
+    def pk_auto_generated(cls):
+        return False
 
     comment_id: int
     order_id: UUID

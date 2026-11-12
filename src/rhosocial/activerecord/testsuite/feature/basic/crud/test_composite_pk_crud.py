@@ -37,7 +37,7 @@ class TestCompositePKMeta:
 
     def test_pk_auto_generated(self, order_item_class):
         """Composite keys should not be auto-generated."""
-        assert order_item_class.__pk_auto_generated__ is False, \
+        assert order_item_class.pk_auto_generated() is False, \
             "Expected composite key to not be auto-generated"
 
 
@@ -273,7 +273,7 @@ class TestCompositePKWithColumnMapping:
 
     def test_meta_pk_auto_generated(self, mapped_order_item_class):
         """Mapped composite keys should not be auto-generated."""
-        assert mapped_order_item_class.__pk_auto_generated__ is False, \
+        assert mapped_order_item_class.pk_auto_generated() is False, \
             "Expected the key to not be auto-generated"
 
     def test_insert_and_is_new_record(self, mapped_order_item_class):

@@ -10,7 +10,10 @@ from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 class CLIReadOnlyUser(ActiveRecord, ReadOnlyMixin):
     """Read-only view of the standard ``users`` table."""
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     id: Optional[int] = None
     username: str = ""
 
@@ -18,6 +21,9 @@ class CLIReadOnlyUser(ActiveRecord, ReadOnlyMixin):
 class AsyncCLIReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
     """Async read-only view of the standard ``users`` table."""
 
-    __table_name__ = "users"
+    @classmethod
+    def table_name(cls):
+        return "users"
+
     id: Optional[int] = None
     username: str = ""

@@ -19,7 +19,9 @@ from rhosocial.activerecord.field import IntegerPKMixin, DefaultTimestampMixin
 
 class EventTestModel(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     """A model class for testing event mechanisms"""
-    __table_name__ = "event_tests"
+    @classmethod
+    def table_name(cls):
+        return "event_tests"
 
     id: Optional[int] = None
     name: str
@@ -46,7 +48,9 @@ class EventTestModel(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
 class AsyncEventTestModel(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     """An async model class for testing event mechanisms"""
-    __table_name__ = "event_tests"
+    @classmethod
+    def table_name(cls):
+        return "event_tests"
 
     id: Optional[int] = None
     name: str
@@ -73,7 +77,9 @@ class AsyncEventTestModel(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveReco
 
 class EventTrackingModel(IntegerPKMixin, ActiveRecord):
     """A model for testing event tracking functionality."""
-    __table_name__ = "event_tracking_models"
+    @classmethod
+    def table_name(cls):
+        return "event_tracking_models"
 
     title: str
     content: str
