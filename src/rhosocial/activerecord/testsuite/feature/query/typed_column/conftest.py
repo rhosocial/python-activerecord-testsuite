@@ -12,9 +12,28 @@ The local definitions in the existing contract files are left alone — pytest
 lets a module-level fixture shadow a conftest one, so nothing changes for them —
 and new contract files get this one without repeating the reasoning.
 """
-
-# src/rhosocial/activerecord/testsuite/feature/query/typed_column/conftest.py
 import pytest
+
+from rhosocial.activerecord.testsuite.feature.query.fixtures import tables
+
+GROUP_TABLES = ("json_users",)
+
+
+def ensure_database(environment):
+    """Create the directory's database, or clear it when it already exists."""
+    environment.reset_database()
+
+
+def prepare(environment):
+    """Create the group's tables before every test."""
+    for name in GROUP_TABLES:
+        environment.execute(tables.QUERY_TABLES[name](environment.dialect))
+
+
+def teardown(environment):
+    """Drop the group's tables after every test."""
+    for name in reversed(GROUP_TABLES):
+        environment.execute(tables.drop_table(environment.dialect, name))
 
 
 @pytest.fixture

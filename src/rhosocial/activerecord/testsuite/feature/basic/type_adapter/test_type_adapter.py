@@ -57,7 +57,13 @@ class TestTypeAdapter:
         found_rec1 = TypeAdapterTest.find_one(rec1.id)
         assert isinstance(found_rec1.last_login, datetime), \
             "Expected last_login to be loaded as datetime"
-        assert found_rec1.last_login == now, \
+        # A backend whose native timestamp type stores no zone hands the
+        # value back naive; the instant, not the representation, is the
+        # cross-backend contract here.
+        stored = found_rec1.last_login
+        if stored.tzinfo is None:
+            stored = stored.replace(tzinfo=timezone.utc)
+        assert stored == now, \
             "Expected last_login to round-trip the stored value"
 
         # Test with None

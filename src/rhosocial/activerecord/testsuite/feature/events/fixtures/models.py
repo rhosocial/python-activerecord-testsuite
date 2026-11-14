@@ -85,3 +85,15 @@ class EventTrackingModel(IntegerPKMixin, ActiveRecord):
     content: str
     view_count: int = 0
     last_viewed_at: Optional[datetime] = None
+
+
+class AsyncEventTrackingModel(IntegerPKMixin, AsyncActiveRecord):
+    """An async model for testing event tracking functionality."""
+    @classmethod
+    def table_name(cls):
+        return "event_tracking_models"
+
+    title: str
+    content: str
+    view_count: int = 0
+    last_viewed_at: Optional[datetime] = None

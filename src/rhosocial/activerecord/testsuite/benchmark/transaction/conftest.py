@@ -1,5 +1,4 @@
 """Pytest fixtures for transaction benchmark scenarios."""
-
 import asyncio
 
 import pytest
@@ -7,66 +6,61 @@ import pytest
 from rhosocial.activerecord.testsuite.benchmark.transaction.interfaces import (
     UnsupportedBenchmarkScenario,
 )
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+from rhosocial.activerecord.testsuite.benchmark.registry import benchmarks
 
-PROVIDER_KEY = "benchmark.transaction.ITransactionBenchmarkProvider"
-
-
-def _get_provider_class():
-    provider_registry = get_provider_registry()
-    return provider_registry.get_provider(PROVIDER_KEY)
+FEATURE = "transaction"
 
 
-def _get_scenarios():
-    provider_class = _get_provider_class()
-    if not provider_class:
+def _scenarios():
+    implementation = benchmarks.get(FEATURE)
+    if implementation is None:
         return []
-    return provider_class().get_benchmark_scenarios()
+    return implementation.scenarios()
 
 
-SCENARIO_PARAMS = _get_scenarios() or [
+SCENARIO_PARAMS = _scenarios() or [
     pytest.param(
         "default",
-        marks=pytest.mark.skip(reason="No transaction benchmark provider found"),
+        marks=pytest.mark.skip(
+            reason="No transaction benchmark implementation registered"
+        ),
     )
 ]
 
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def transaction_sync_context(request, benchmark_size):
-    provider_class = _get_provider_class()
-    if not provider_class:
-        pytest.skip("No transaction benchmark provider found")
-    provider = provider_class()
+    implementation = benchmarks.get(FEATURE)
+    if implementation is None:
+        pytest.skip("No transaction benchmark implementation registered")
     scenario = request.param
     try:
-        context = provider.setup_benchmark_sync(scenario, benchmark_size)
+        context = implementation.sync_setup(scenario, benchmark_size)
     except UnsupportedBenchmarkScenario as exc:
         pytest.skip(str(exc))
     if context is None:
         pytest.skip(f"Transaction sync benchmark is not supported for scenario {scenario!r}")
     yield context
-    provider.teardown_benchmark_sync(scenario, context)
+    implementation.sync_teardown(scenario, context)
 
 
 @pytest.fixture(scope="function", params=SCENARIO_PARAMS)
 def transaction_async_context(request, benchmark_size):
-    provider_class = _get_provider_class()
-    if not provider_class:
-        pytest.skip("No transaction benchmark provider found")
-    provider = provider_class()
+    implementation = benchmarks.get(FEATURE)
+    if implementation is None:
+        pytest.skip("No transaction benchmark implementation registered")
     scenario = request.param
     loop = asyncio.new_event_loop()
     try:
         try:
             context = loop.run_until_complete(
-                provider.setup_benchmark_async(scenario, benchmark_size)
+                implementation.async_setup(scenario, benchmark_size)
             )
         except UnsupportedBenchmarkScenario as exc:
             pytest.skip(str(exc))
         if context is None:
             pytest.skip(f"Transaction async benchmark is not supported for scenario {scenario!r}")
         yield context, loop.run_until_complete
-        loop.run_until_complete(provider.teardown_benchmark_async(scenario, context))
+        loop.run_until_complete(implementation.async_teardown(scenario, context))
     finally:
         loop.close()

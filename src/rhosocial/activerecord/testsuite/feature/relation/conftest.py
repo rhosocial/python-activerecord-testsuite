@@ -1,19 +1,10 @@
 # src/rhosocial/activerecord/testsuite/feature/relation/conftest.py
-"""
-Pytest configuration for relation tests.
+"""Fixtures shared by the relation topic.
 
-This file provides the memory-based model fixtures for relation tests.
-These fixtures are backend-agnostic and do not require database access.
-
-For backend implementations that want to run these tests, they should
-create their own conftest.py file and import this one:
-
-```python
-# In backend conftest.py
-from rhosocial.activerecord.testsuite.feature.relation.conftest import *
-```
-
-Or copy the fixtures they need to properly configure their models.
+The memory models below stand in for records that never touch a database; the
+database-backed fixtures configure their model against the directory's
+environment.  Which versioned model file supplies a database class is decided
+here, so tests only see fixture names.
 """
 from typing import ClassVar, Any, Optional, List, Dict
 import pytest
@@ -24,6 +15,8 @@ from rhosocial.activerecord.relation.cache import CacheConfig
 from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasOne
 from rhosocial.activerecord.relation.async_descriptors import AsyncBelongsTo, AsyncHasMany, AsyncHasOne
 from rhosocial.activerecord.relation.interfaces import IRelationLoader, IAsyncRelationLoader
+
+from .fixtures import resolve, tables
 
 
 class Employee(RelationManagementMixin, BaseModel):
@@ -344,226 +337,262 @@ def async_profile():
     return AsyncProfile(id=1, bio="Test Bio", author_id=1)
 
 
-# ── Provider-based fixtures for query tests ──────────────
+# ── Database-backed fixtures ─────────────────────────────
+#
+# The class a fixture delivers is selected here, not by the test; the fixture
+# only configures it against the directory's database and disconnects after.
 
-PROVIDER_KEY_SYNC = "feature.relation.IRelationSyncProvider"
-PROVIDER_KEY_ASYNC = "feature.relation.IRelationAsyncProvider"
+DbEmployee = resolve("Employee")
+DbDepartment = resolve("Department")
+DbAuthor = resolve("Author")
+DbBook = resolve("Book")
+DbChapter = resolve("Chapter")
+DbProfile = resolve("Profile")
+User = resolve("User")
+AsyncUser = resolve("AsyncUser")
+Post = resolve("Post")
+AsyncPost = resolve("AsyncPost")
+Comment = resolve("Comment")
+AsyncComment = resolve("AsyncComment")
+BoundaryOwner = resolve("BoundaryOwner")
+BoundaryProfile = resolve("BoundaryProfile")
+BoundaryPost = resolve("BoundaryPost")
+AsyncBoundaryOwner = resolve("AsyncBoundaryOwner")
+AsyncBoundaryProfile = resolve("AsyncBoundaryProfile")
+AsyncBoundaryPost = resolve("AsyncBoundaryPost")
 
-
-def get_scenarios_sync():
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
-
-
-def get_scenarios_async():
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
-
-
-_scenarios_sync = get_scenarios_sync()
-_scenarios_async = get_scenarios_async()
-
-SCENARIO_PARAMS_SYNC = _scenarios_sync if _scenarios_sync else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No sync relation testsuite scenarios found"))
-]
-SCENARIO_PARAMS_ASYNC = _scenarios_async if _scenarios_async else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No async relation testsuite scenarios found"))
-]
+GROUP_TABLES = ("users", "posts", "comments")
 
 
-@pytest.fixture(scope="function", autouse=True)
-def check_relation_capability_requirements(request):
-    """Auto-use fixture: skips tests that require unsupported backend capabilities.
-
-    For each test, checks whether it needs a specific protocol or function support
-    (via @requires_protocol / @requires_functions markers). If the model's backend
-    doesn't support the required capability, the test is skipped automatically.
-    """
-    model_to_check = None
-    fixture_options = [
-        "user_class",
-        "post_class",
-        "comment_class",
-        "user_post_comment_classes",
-        "async_user_class",
-        "async_post_class",
-        "async_comment_class",
-        "async_user_post_comment_classes",
-    ]
-
-    for fixture_name in fixture_options:
-        if fixture_name not in request.fixturenames:
-            continue
-        try:
-            fixture_value = request.getfixturevalue(fixture_name)
-        except Exception:
-            continue
-
-        values = fixture_value if isinstance(fixture_value, tuple) else (fixture_value,)
-        for value in values:
-            if hasattr(value, "backend") or hasattr(value, "__backend__"):
-                model_to_check = value
-                break
-        if model_to_check is not None:
-            break
-
-    if model_to_check is None:
-        return
-
-    protocol_marker = request.node.get_closest_marker("requires_protocol")
-    if protocol_marker:
-        from rhosocial.activerecord.testsuite.utils import skip_test_if_protocol_unsupported
-        protocol_class, method_name = protocol_marker.args[0]
-        skip_test_if_protocol_unsupported(model_to_check, protocol_class, method_name)
-
-    functions_marker = request.node.get_closest_marker("requires_functions")
-    if functions_marker:
-        from rhosocial.activerecord.testsuite.utils import skip_test_if_functions_unsupported
-        skip_test_if_functions_unsupported(model_to_check, functions_marker.args[0])
+def ensure_database(environment):
+    """Create the topic directory's database, or clear it when it exists."""
+    environment.reset_database()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def user_class(request):
-    """Provider-backed User model class (ActiveRecord) for sync relation tests.
+def prepare(environment):
+    """Create the tables the tests in this directory share."""
+    for name in GROUP_TABLES:
+        environment.execute(tables.RELATION_TABLES[name](environment.dialect))
 
-    Each scenario from provider.get_test_scenarios() yields a differently-configured
-    User model (e.g., different database or table name). The provider cleans up
-    after each test.
-    """
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-    model = provider.setup_user_model(scenario)
+
+def teardown(environment):
+    """Drop the tables the tests in this directory share."""
+    for name in reversed(GROUP_TABLES):
+        environment.execute(tables.drop_table(environment.dialect, name))
+
+
+def _disconnect(model) -> None:
+    backend = getattr(model, "__backend__", None)
+    if backend is not None:
+        backend.disconnect()
+
+
+async def _disconnect_async(model) -> None:
+    backend = getattr(model, "__backend__", None)
+    if backend is not None:
+        await backend.disconnect()
+
+
+class BoundaryDataset:
+    """The rows the relation boundary tests read."""
+
+    def __init__(self, owner, profile, post):
+        self.owner = owner
+        self.profile = profile
+        self.post = post
+
+    def load_relation_boundary_dataset(self, scenario, name):
+        if name == "owner_without_children":
+            record = self.owner(name="owner")
+            record.save()
+            return {"owner_id": record.id}
+        if name == "null_foreign_key":
+            record = self.owner(name="owner")
+            record.save()
+            profile = self.profile(bio="bio", owner_id=None)
+            profile.save()
+            post = self.post(title="post", owner_id=record.id)
+            post.save()
+            return {"owner_id": record.id, "profile_id": profile.id, "post_id": post.id}
+        if name == "orphan_foreign_key":
+            record = self.owner(name="owner")
+            record.save()
+            profile = self.profile(bio="bio", owner_id=987654)
+            profile.save()
+            post = self.post(title="post", owner_id=987654)
+            post.save()
+            return {
+                "owner_id": record.id,
+                "profile_id": profile.id,
+                "post_id": post.id,
+                "missing_owner_id": 987654,
+            }
+        if name == "multiple_has_one_matches":
+            record = self.owner(name="owner")
+            record.save()
+            first = self.profile(bio="first", owner_id=record.id)
+            first.save()
+            second = self.profile(bio="second", owner_id=record.id)
+            second.save()
+            return {
+                "owner_id": record.id,
+                "first_profile_id": first.id,
+                "second_profile_id": second.id,
+            }
+        raise KeyError(f"unknown boundary dataset {name!r}")
+
+
+class AsyncBoundaryDataset:
+    """Async counterpart of :class:`BoundaryDataset`."""
+
+    def __init__(self, owner, profile, post):
+        self.owner = owner
+        self.profile = profile
+        self.post = post
+
+    async def load_relation_boundary_dataset(self, scenario, name):
+        if name == "owner_without_children":
+            record = self.owner(name="owner")
+            await record.save()
+            return {"owner_id": record.id}
+        if name == "null_foreign_key":
+            record = self.owner(name="owner")
+            await record.save()
+            profile = self.profile(bio="bio", owner_id=None)
+            await profile.save()
+            post = self.post(title="post", owner_id=record.id)
+            await post.save()
+            return {"owner_id": record.id, "profile_id": profile.id, "post_id": post.id}
+        if name == "orphan_foreign_key":
+            record = self.owner(name="owner")
+            await record.save()
+            profile = self.profile(bio="bio", owner_id=987654)
+            await profile.save()
+            post = self.post(title="post", owner_id=987654)
+            await post.save()
+            return {
+                "owner_id": record.id,
+                "profile_id": profile.id,
+                "post_id": post.id,
+                "missing_owner_id": 987654,
+            }
+        if name == "multiple_has_one_matches":
+            record = self.owner(name="owner")
+            await record.save()
+            first = self.profile(bio="first", owner_id=record.id)
+            await first.save()
+            second = self.profile(bio="second", owner_id=record.id)
+            await second.save()
+            return {
+                "owner_id": record.id,
+                "first_profile_id": first.id,
+                "second_profile_id": second.id,
+            }
+        raise KeyError(f"unknown boundary dataset {name!r}")
+
+
+@pytest.fixture(name="user_class")
+def user_class(environment):
+    model = environment.configure(User)
     yield model
-    provider.cleanup_after_test(scenario)
+    _disconnect(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def post_class(request):
-    """Provider-backed Post model class (ActiveRecord) for sync relation tests."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-    model = provider.setup_post_model(scenario)
+@pytest.fixture(name="async_user_class")
+async def async_user_class(environment):
+    model = await environment.configure_async(AsyncUser)
     yield model
-    provider.cleanup_after_test(scenario)
+    await _disconnect_async(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def comment_class(request):
-    """Provider-backed Comment model class (ActiveRecord) for sync relation tests."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-    model = provider.setup_comment_model(scenario)
+@pytest.fixture(name="post_class")
+def post_class(environment):
+    model = environment.configure(Post)
     yield model
-    provider.cleanup_after_test(scenario)
+    _disconnect(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def user_post_comment_classes(request):
-    """Combined fixture that provides User, Post, Comment classes sharing the same backend."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-    user = provider.setup_user_model(scenario)
-    post = provider.setup_post_model(scenario)
-    comment = provider.setup_comment_model(scenario)
-    yield user, post, comment
-    provider.cleanup_after_test(scenario)
-
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_user_class(request):
-    """Provider-backed async User model class (AsyncActiveRecord) for async relation tests."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    model = await provider.setup_user_model(scenario)
+@pytest.fixture(name="async_post_class")
+async def async_post_class(environment):
+    model = await environment.configure_async(AsyncPost)
     yield model
-    await provider.cleanup_after_test(scenario)
+    await _disconnect_async(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_post_class(request):
-    """Provider-backed async Post model class (AsyncActiveRecord) for async relation tests."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    model = await provider.setup_post_model(scenario)
+@pytest.fixture(name="comment_class")
+def comment_class(environment):
+    model = environment.configure(Comment)
     yield model
-    await provider.cleanup_after_test(scenario)
+    _disconnect(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_comment_class(request):
-    """Provider-backed async Comment model class (AsyncActiveRecord) for async relation tests."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    model = await provider.setup_comment_model(scenario)
+@pytest.fixture(name="async_comment_class")
+async def async_comment_class(environment):
+    model = await environment.configure_async(AsyncComment)
     yield model
-    await provider.cleanup_after_test(scenario)
+    await _disconnect_async(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_user_post_comment_classes(request):
-    """Combined fixture that provides async User, Post, Comment classes sharing the same backend."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    user = await provider.setup_user_model(scenario)
-    post = await provider.setup_post_model(scenario)
-    comment = await provider.setup_comment_model(scenario)
-    yield user, post, comment
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(name="user_post_comment_classes")
+def user_post_comment_classes(environment):
+    models = tuple(
+        environment.configure(model) for model in (User, Post, Comment)
+    )
+    yield models
+    for model in models:
+        _disconnect(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def relation_boundary_context(request):
-    """Provides relation boundary models, provider, and scenario."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-    owner, profile, post = provider.setup_relation_boundary_fixtures(scenario)
-    yield provider, scenario, owner, profile, post
-    provider.cleanup_after_test(scenario)
+@pytest.fixture(name="async_user_post_comment_classes")
+async def async_user_post_comment_classes(environment):
+    models = []
+    for model in (AsyncUser, AsyncPost, AsyncComment):
+        models.append(await environment.configure_async(model))
+    yield tuple(models)
+    for model in models:
+        await _disconnect_async(model)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_relation_boundary_context(request):
-    """Provides async relation boundary models, provider, and scenario."""
-    from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    owner, profile, post = await provider.setup_relation_boundary_fixtures(scenario)
-    yield provider, scenario, owner, profile, post
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(name="employee_department_fixtures")
+def employee_department_fixtures(environment):
+    models = tuple(
+        environment.configure(model) for model in (DbEmployee, DbDepartment)
+    )
+    yield models
+    for model in models:
+        _disconnect(model)
+
+
+@pytest.fixture(name="author_book_fixtures")
+def author_book_fixtures(environment):
+    models = tuple(
+        environment.configure(model)
+        for model in (DbAuthor, DbBook, DbChapter, DbProfile)
+    )
+    yield models
+    for model in models:
+        _disconnect(model)
+
+
+@pytest.fixture(name="relation_boundary_context")
+def relation_boundary_context(environment):
+    owner = environment.configure(BoundaryOwner)
+    profile = environment.configure(BoundaryProfile)
+    post = environment.configure(BoundaryPost)
+    dataset = BoundaryDataset(owner, profile, post)
+    yield dataset, environment.scenario, owner, profile, post
+    _disconnect(owner)
+    _disconnect(profile)
+    _disconnect(post)
+
+
+@pytest.fixture(name="async_relation_boundary_context")
+async def async_relation_boundary_context(environment):
+    owner = await environment.configure_async(AsyncBoundaryOwner)
+    profile = await environment.configure_async(AsyncBoundaryProfile)
+    post = await environment.configure_async(AsyncBoundaryPost)
+    dataset = AsyncBoundaryDataset(owner, profile, post)
+    yield dataset, environment.scenario, owner, profile, post
+    await _disconnect_async(owner)
+    await _disconnect_async(profile)
+    await _disconnect_async(post)

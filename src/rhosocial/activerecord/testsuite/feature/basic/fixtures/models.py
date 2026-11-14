@@ -636,6 +636,9 @@ class ListToStringAdapter(BaseSQLTypeAdapter):
             else:
                 return []
 
+        # A backend with a native array column returns a list/tuple as-is.
+        if isinstance(value, (list, tuple)):
+            return list(value)
         # If value is not a string, return as is (though this shouldn't happen with proper DB integration)
         return [value] if value is not None else []
 

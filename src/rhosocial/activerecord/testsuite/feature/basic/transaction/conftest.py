@@ -1,62 +1,31 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/transaction/conftest.py
+"""The ``basic/transaction`` minimal test set.
+
+The transaction tests use the same pool and model shape as the connection
+tests, so this module reuses that fixture declaration and prepares the same
+table group.
 """
-Pytest fixtures for transaction API black-box tests.
+from rhosocial.activerecord.testsuite.feature.basic.connection.conftest import (  # noqa: F401
+    async_pool_and_model,
+    sync_pool_and_model,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures import tables
 
-Reuses IBasicConnectionProvider when available to keep provider surface
-minimal. Backend providers that need different setup can implement
-ITransactionBasicProvider instead; this conftest prefers the dedicated
-provider and falls back to BasicConnectionProvider.
-"""
-import logging
-import pytest
-
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-
-PROVIDER_KEY = "feature.basic.transaction.ITransactionBasicProvider"
-FALLBACK_KEY = "feature.basic.connection.IBasicConnectionProvider"
-
-logger = logging.getLogger(__name__)
+GROUP_TABLES = ("test_users",)
 
 
-def _resolve_provider():
-    registry = get_provider_registry()
-    provider_class = registry.get_provider(PROVIDER_KEY)
-    if provider_class:
-        return provider_class, "dedicated"
-    fallback_class = registry.get_provider(FALLBACK_KEY)
-    if fallback_class:
-        return fallback_class, "fallback"
-    return None, None
+def ensure_database(environment):
+    """Create the directory's database, or clear it when it already exists."""
+    environment.reset_database()
 
 
-def get_scenarios():
-    provider_class, _ = _resolve_provider()
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
+def prepare(environment):
+    """Create the group's tables before every test."""
+    for name in GROUP_TABLES:
+        environment.execute(tables.BASIC_TABLES[name](environment.dialect))
 
 
-scenarios = get_scenarios()
-SCENARIO_PARAMS = scenarios if scenarios else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No transaction basic provider found"))
-]
-
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def sync_pool_and_model(request):
-    provider_class, kind = _resolve_provider()
-    provider = provider_class()
-    scenario = request.param
-    pool, model = provider.setup_sync_pool_and_model(scenario)
-    yield pool, model
-    provider.cleanup_sync(scenario, pool)
-
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-async def async_pool_and_model(request):
-    provider_class, _ = _resolve_provider()
-    provider = provider_class()
-    scenario = request.param
-    pool, model = await provider.setup_async_pool_and_model(scenario)
-    yield pool, model
-    await provider.cleanup_async(scenario, pool)
+def teardown(environment):
+    """Drop the group's tables after every test."""
+    for name in reversed(GROUP_TABLES):
+        environment.execute(tables.drop_table(environment.dialect, name))
