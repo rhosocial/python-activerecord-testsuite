@@ -9,8 +9,12 @@ server's dialect (or in that backend's own tests), never in the shared suite.
 
 Column policy -- one concept per role:
 
-* :func:`short_text` -- ``VARCHAR(2000)``: identity-like text that is compared,
-  sorted or grouped (equality, ``ORDER BY``, ``GROUP BY``, ``DISTINCT``).
+* :func:`short_text` -- ``VARCHAR(255)``: the comparable-text concept used for
+  identity-like columns (equality, ``ORDER BY``, ``GROUP BY``, ``DISTINCT``).
+  It is a bounded string on purpose: an unbounded text type is not universally
+  comparable, and the suite does not silently fall back to one. The dialect
+  answers whether it renders ``varchar`` (:func:`require_data_type`); a dialect
+  that does not answer is skipped.
 * :func:`long_text` -- ``TEXT``: payload text that tests never compare.
 * :func:`json_text` -- ``TEXT``: the shared suite carries JSON as text; native
   ``JSON``/``JSONB`` columns are backend-specific topics.
@@ -19,10 +23,10 @@ Column policy -- one concept per role:
   temporal types.  No time-zone variant is used here: time-zone semantics are
   backend-specific topics.
 
-``VARCHAR(2000)`` is chosen because it is renderable by every backend the suite
-runs on and fits the smallest row-size limits (Oracle ``VARCHAR2`` caps at 4000
-bytes, Firebird rows at 32 KB).  It is a property of the *fixture*, not of any
-server.
+``VARCHAR(255)`` is chosen because a column tests compare must be a bounded
+string on every backend the suite runs on, and ten such columns stay inside the
+tightest row-width limit the suite meets (MySQL's 65535 bytes at four bytes per
+character). The bound belongs to the concept, not to any one server.
 """
 
 from rhosocial.activerecord.backend.expression import (
@@ -54,7 +58,35 @@ from rhosocial.activerecord.backend.expression.types import (
     VarCharType,
 )
 
-SHORT_TEXT_LENGTH = 2000
+#: Bounded length for comparable text. 255 is chosen because every backend in
+#: the suite renders a bounded VARCHAR of that width, and ten such columns stay
+#: inside the smallest row-width limit the suite meets (MySQL's 65535 bytes is
+#: the tightest at four bytes per character under utf8mb4). The bound is a
+#: property of the shared concept, not of any one server.
+SHORT_TEXT_LENGTH = 255
+
+
+def require_data_type(dialect, concept: str) -> None:
+    """Ask the dialect whether it supports a generic type concept.
+
+    A dialect declares its supported type concepts through
+    ``supports_data_types()`` (a formatter is the declaration of support).
+    The shared suite renders only concepts the dialect answers for; a dialect
+    that does not answer is skipped with a reason instead of building a column
+    the server cannot honour. No backend name is consulted.
+    """
+    probe = getattr(dialect, "supports_data_types", None)
+    if not callable(probe):
+        return
+    supported = probe() or {}
+    if concept not in supported:
+        import pytest
+
+        pytest.skip(
+            f"{getattr(dialect, 'name', 'this dialect')} does not support "
+            f"the generic data type {concept!r}"
+        )
+
 
 #: Portable non-empty text used when a fixture column must have a DEFAULT.
 #: The empty string is not portable (some servers store ``''`` as NULL),
@@ -63,7 +95,16 @@ PLACEHOLDER_TEXT = "-"
 
 
 def short_text(dialect):
-    """Comparable, bounded text: identity-like columns."""
+    """Comparable text for identity-like columns.
+
+    The concept is "a bounded string with equality and order" -- the only
+    spelling every backend can honour for a column that tests compare, sort or
+    group. An unbounded text type is *not* that concept: Oracle's CLOB and
+    Firebird's BLOB have no value comparison, and silently substituting them
+    would hide that gap. The dialect answers whether it renders ``varchar``
+    (:func:`require_data_type`); a dialect that does not answer is skipped.
+    """
+    require_data_type(dialect, "varchar")
     return VarCharType(dialect, SHORT_TEXT_LENGTH)
 
 
