@@ -145,10 +145,10 @@ def test_sync_function_dry_run_renders_create_table(ddl_dialect):
     assert "ddl_contract_function_users" in sql
 
 
-async def test_async_function_dry_run_renders_create_table(async_ddl_dialect):
+async def test_async_function_dry_run_renders_create_table(ddl_dialect):
     runner = AsyncProcedureRunner(procedure_class=_async_procedure())
     result = await runner.run(
-        _AsyncDummyBackend(async_ddl_dialect),
+        _AsyncDummyBackend(ddl_dialect),
         transaction_mode=TransactionMode.AUTO,
         dry_run=True,
         context_factory=lambda **kwargs: AsyncMigrationContext(

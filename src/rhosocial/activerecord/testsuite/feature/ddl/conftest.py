@@ -23,13 +23,11 @@ from .fixtures.models import (
 
 @pytest.fixture(name="ddl_dialect")
 def ddl_dialect(backend_scenario):
-    """Provide a backend dialect instance for statement rendering."""
-    return dialect_for(backend_scenario)
+    """Provide a backend dialect instance for statement rendering.
 
-
-@pytest.fixture(name="async_ddl_dialect")
-def async_ddl_dialect(backend_scenario):
-    """Provide the same dialect for statements derived from async models."""
+    A dialect is not sync/async; only the backend is.  Async models render with
+    this same dialect instance.
+    """
     return dialect_for(backend_scenario)
 
 

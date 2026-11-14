@@ -1,48 +1,78 @@
 # src/rhosocial/activerecord/testsuite/feature/query/connection/conftest.py
-"""Fixtures for the query connection-pool context tests.
+"""L2 environment fixtures for ``query/connection``.
 
-The pool is built from the environment's own configuration, so it always
-points at the directory's database; the model is configured the same way.
+- ``database`` / ``schema``: the directory's database and its ``users`` table;
+- the pools are built from this directory's scenario and configuration, so they
+  always point at the directory's database; the model is configured the same
+  way.
 """
+
 import logging
+from pathlib import Path
 
 import pytest
 
-from rhosocial.activerecord.testsuite.feature.query.fixtures import tables
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.connection.pool import AsyncBackendPool, BackendPool
+from rhosocial.activerecord.connection.pool.config import PoolConfig
 from rhosocial.activerecord.testsuite.feature.query.fixtures.async_models import (
     AsyncUser,
 )
-from rhosocial.activerecord.testsuite.feature.query.fixtures.models import (
-    User,
+from rhosocial.activerecord.testsuite.feature.query.fixtures.definitions import (
+    UsersDefinition,
 )
+from rhosocial.activerecord.testsuite.feature.query.fixtures.models import User
 
-GROUP_TABLES = ("users",)
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
+
+DEFINITIONS = (UsersDefinition,)
 
 logger = logging.getLogger(__name__)
 
 
-def ensure_database(environment):
-    """Create the directory's database, or clear it when it already exists."""
-    environment.reset_database()
+def _database_name() -> str:
+    """Database name from this directory's namespace (below ``feature``)."""
+    parts = Path(__file__).parent.parts
+    start = parts.index("feature") + 1
+    return "test_" + "_".join(parts[start:])
 
 
-def prepare(environment):
-    """Create the group's tables before every test."""
-    for name in GROUP_TABLES:
-        environment.execute(tables.QUERY_TABLES[name](environment.dialect))
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the directory database name."""
+    name = _database_name()
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def teardown(environment):
-    """Drop the group's tables after every test."""
-    for name in reversed(GROUP_TABLES):
-        environment.execute(tables.drop_table(environment.dialect, name))
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-def log_pool_stats(pool, scenario: str, test_name: str, pool_type: str) -> None:
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate the table this directory uses, before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+
+
+def log_pool_stats(pool, scenario_name: str, test_name: str, pool_type: str) -> None:
     try:
         stats = pool.get_stats()
         logger.info(
-            f"[{scenario}] {test_name} ({pool_type}) - Pool stats: "
+            f"[{scenario_name}] {test_name} ({pool_type}) - Pool stats: "
             f"created={stats.total_created}, destroyed={stats.total_destroyed}, "
             f"acquired={stats.total_acquired}, released={stats.total_released}, "
             f"available={stats.current_available}, in_use={stats.current_in_use}, "
@@ -53,34 +83,24 @@ def log_pool_stats(pool, scenario: str, test_name: str, pool_type: str) -> None:
         logger.warning(f"Failed to get pool stats: {error}")
 
 
-def sync_pool(environment):
+def sync_pool(scenario, config):
     """Create a sync pool bound to the directory's database."""
-    from rhosocial.activerecord.connection.pool import BackendPool
-    from rhosocial.activerecord.connection.pool.config import PoolConfig
-
-    config = environment.make_config()
-    backend_class = environment.scenario.backend_class
     return BackendPool.create(
         PoolConfig(
             min_size=1,
             max_size=5,
-            backend_factory=lambda: backend_class(connection_config=config),
+            backend_factory=lambda: scenario.backend_class(connection_config=config),
         )
     )
 
 
-async def async_pool(environment):
+async def async_pool(scenario, config):
     """Create an async pool bound to the directory's database."""
-    from rhosocial.activerecord.connection.pool import AsyncBackendPool
-    from rhosocial.activerecord.connection.pool.config import PoolConfig
-
-    config = environment.make_config()
-    backend_class = environment.scenario.async_backend_class
     return await AsyncBackendPool.create(
         PoolConfig(
             min_size=1,
             max_size=5,
-            backend_factory=lambda: backend_class(connection_config=config),
+            backend_factory=lambda: scenario.async_backend_class(connection_config=config),
         )
     )
 
@@ -101,33 +121,23 @@ async def close_async_pool(pool) -> None:
         pass
 
 
-def disconnect(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        backend.disconnect()
-
-
-async def disconnect_async(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        await backend.disconnect()
-
-
 @pytest.fixture(name="sync_pool_and_model")
-def sync_pool_and_model(environment, request):
-    pool = sync_pool(environment)
-    model = environment.configure(User)
-    yield pool, model
-    log_pool_stats(pool, environment.scenario.name, request.node.name, "sync")
+def sync_pool_and_model(database_config, request):
+    scenario, config, _name = database_config
+    pool = sync_pool(scenario, config)
+    User.configure(config, scenario.backend_class)
+    yield pool, User
+    log_pool_stats(pool, scenario.name, request.node.name, "sync")
     close_sync_pool(pool)
-    disconnect(model)
+    User.backend().disconnect()
 
 
 @pytest.fixture(name="async_pool_and_model")
-async def async_pool_and_model(environment, request):
-    pool = await async_pool(environment)
-    model = await environment.configure_async(AsyncUser)
-    yield pool, model
-    log_pool_stats(pool, environment.scenario.name, request.node.name, "async")
+async def async_pool_and_model(database_config, request):
+    scenario, config, _name = database_config
+    pool = await async_pool(scenario, config)
+    await AsyncUser.configure(config, scenario.async_backend_class)
+    yield pool, AsyncUser
+    log_pool_stats(pool, scenario.name, request.node.name, "async")
     await close_async_pool(pool)
-    await disconnect_async(model)
+    await AsyncUser.backend().disconnect()

@@ -56,7 +56,7 @@ class Department(ActiveRecord):
 
     id: int | None = None
     name: str
-    description: str = ""
+    description: str | None = None
 
     # Define the relation to employees
     employees: ClassVar[HasMany["Employee"]] = HasMany(

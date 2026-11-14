@@ -1,15 +1,22 @@
 # src/rhosocial/activerecord/testsuite/feature/query/conftest.py
-"""Fixtures for the query topic.
+"""L2 model fixtures for the query topic.
 
-Each fixture names its model directly; the testsuite environment configures it
-against the directory's database.  Which versioned model file supplies the
-class is decided here, so tests only see fixture names.
+Each fixture names its model directly and configures it against the database
+whose ``database_config`` the current directory's conftest defines.  Which
+versioned model file supplies the sync class is decided here, so tests only see
+fixture names.
+
+A fixture group is one unit of work: tests count queries on one model's
+backend and expect the relation queries of the rest to go through that same
+connection, so the group shares one backend instance (``BackendGroup``).
 """
+
 import importlib
 import sys
 
 import pytest
 
+from rhosocial.activerecord.connection import AsyncBackendGroup, BackendGroup
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
     AsyncOrderItem as AsyncBasicOrderItem,
 )
@@ -92,81 +99,6 @@ MappedPost = resolve("MappedPost")
 MappedComment = resolve("MappedComment")
 
 
-def _disconnect(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        backend.disconnect()
-
-
-async def _disconnect_async(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        await backend.disconnect()
-
-
-def _share_first_backend(models):
-    """Let every model in a group use the first model's backend instance.
-
-    A group is one unit of work: the tests count queries on one model's backend
-    and expect the relation queries of the rest to go through that same
-    connection.  The extra backends the environment configured are not used
-    once their model points at the first one, so they are closed here.
-    """
-    first = models[0]
-    for model in models[1:]:
-        previous = getattr(model, "__backend__", None)
-        model.__backend__ = first.__backend__
-        model.__connection_config__ = first.__connection_config__
-        model.__backend_class__ = first.__backend_class__
-        if previous is not None and previous is not first.__backend__:
-            previous.disconnect()
-
-
-async def _share_first_backend_async(models):
-    """Let every async model in a group share the first model's backend."""
-    first = models[0]
-    for model in models[1:]:
-        previous = getattr(model, "__backend__", None)
-        model.__backend__ = first.__backend__
-        model.__connection_config__ = first.__connection_config__
-        model.__backend_class__ = first.__backend_class__
-        if previous is not None and previous is not first.__backend__:
-            await previous.disconnect()
-
-
-def _configure(environment, models):
-    configured = tuple(environment.configure(model) for model in models)
-    _share_first_backend(configured)
-    return configured
-
-
-async def _configure_async(environment, models):
-    configured = tuple([await environment.configure_async(model) for model in models])
-    await _share_first_backend_async(configured)
-    return configured
-
-
-def _disconnect_group(models) -> None:
-    """Disconnect the group's backends once, however many models point at it."""
-    seen = set()
-    for model in models:
-        backend = getattr(model, "__backend__", None)
-        if backend is None or id(backend) in seen:
-            continue
-        seen.add(id(backend))
-        backend.disconnect()
-
-
-async def _disconnect_group_async(models) -> None:
-    seen = set()
-    for model in models:
-        backend = getattr(model, "__backend__", None)
-        if backend is None or id(backend) in seen:
-            continue
-        seen.add(id(backend))
-        await backend.disconnect()
-
-
 # --- the order group -------------------------------------------------------
 
 ORDER_MODELS = (User, Order, OrderItem)
@@ -174,17 +106,33 @@ ASYNC_ORDER_MODELS = (AsyncUser, AsyncOrder, AsyncOrderItem)
 
 
 @pytest.fixture(name="order_fixtures")
-def order_fixtures(environment):
-    models = _configure(environment, ORDER_MODELS)
-    yield models
-    _disconnect_group(models)
+def order_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_order",
+        models=list(ORDER_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield ORDER_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_order_fixtures")
-async def async_order_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_ORDER_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_order_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_order",
+        models=list(ASYNC_ORDER_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_ORDER_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- the blog group --------------------------------------------------------
@@ -194,51 +142,71 @@ ASYNC_BLOG_MODELS = (AsyncUser, AsyncPost, AsyncComment)
 
 
 @pytest.fixture(name="blog_fixtures")
-def blog_fixtures(environment):
-    models = _configure(environment, BLOG_MODELS)
-    yield models
-    _disconnect_group(models)
+def blog_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_blog",
+        models=list(BLOG_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield BLOG_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_blog_fixtures")
-async def async_blog_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_BLOG_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_blog_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_blog",
+        models=list(ASYNC_BLOG_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_BLOG_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- the JSON user ---------------------------------------------------------
 
 
 @pytest.fixture(name="json_user_fixture")
-def json_user_fixture(environment):
-    model = environment.configure(JsonUser)
-    yield model
-    _disconnect(model)
+def json_user_fixture(database_config):
+    scenario, config, _name = database_config
+    JsonUser.configure(config, scenario.backend_class)
+    yield JsonUser
+    JsonUser.backend().disconnect()
 
 
 @pytest.fixture(name="async_json_user_fixture")
-async def async_json_user_fixture(environment):
-    model = await environment.configure_async(AsyncJsonUser)
-    yield model
-    await _disconnect_async(model)
+async def async_json_user_fixture(database_config):
+    scenario, config, _name = database_config
+    await AsyncJsonUser.configure(config, scenario.async_backend_class)
+    yield AsyncJsonUser
+    await AsyncJsonUser.backend().disconnect()
 
 
 # --- the tree group --------------------------------------------------------
 
 
 @pytest.fixture(name="tree_fixtures")
-def tree_fixtures(environment):
-    models = _configure(environment, (Node,))
-    yield models
-    _disconnect_group(models)
+def tree_fixtures(database_config):
+    scenario, config, _name = database_config
+    Node.configure(config, scenario.backend_class)
+    yield (Node,)
+    Node.backend().disconnect()
 
 
 @pytest.fixture(name="async_tree_fixtures")
-async def async_tree_fixtures(environment):
-    models = await _configure_async(environment, (AsyncNode,))
-    yield models
-    await _disconnect_group_async(models)
+async def async_tree_fixtures(database_config):
+    scenario, config, _name = database_config
+    await AsyncNode.configure(config, scenario.async_backend_class)
+    yield (AsyncNode,)
+    await AsyncNode.backend().disconnect()
 
 
 # --- everything the combined queries need ----------------------------------
@@ -248,17 +216,33 @@ ASYNC_COMBINED_MODELS = (AsyncUser, AsyncOrder, AsyncOrderItem, AsyncPost, Async
 
 
 @pytest.fixture(name="combined_fixtures")
-def combined_fixtures(environment):
-    models = _configure(environment, COMBINED_MODELS)
-    yield models
-    _disconnect_group(models)
+def combined_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_combined",
+        models=list(COMBINED_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield COMBINED_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_combined_fixtures")
-async def async_combined_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_COMBINED_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_combined_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_combined",
+        models=list(ASYNC_COMBINED_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_COMBINED_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- the extended order group ---------------------------------------------
@@ -272,34 +256,52 @@ ASYNC_EXTENDED_ORDER_MODELS = (
 
 
 @pytest.fixture(name="extended_order_fixtures")
-def extended_order_fixtures(environment):
-    models = _configure(environment, EXTENDED_ORDER_MODELS)
-    yield models
-    _disconnect_group(models)
+def extended_order_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_extended_order",
+        models=list(EXTENDED_ORDER_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield EXTENDED_ORDER_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_extended_order_fixtures")
-async def async_extended_order_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_EXTENDED_ORDER_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_extended_order_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_extended_order",
+        models=list(ASYNC_EXTENDED_ORDER_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_EXTENDED_ORDER_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- full-text search ------------------------------------------------------
 
 
 @pytest.fixture(name="annotated_query_fixtures")
-def annotated_query_fixtures(environment):
-    model = environment.configure(SearchableItem)
-    yield model
-    _disconnect(model)
+def annotated_query_fixtures(database_config):
+    scenario, config, _name = database_config
+    SearchableItem.configure(config, scenario.backend_class)
+    yield SearchableItem
+    SearchableItem.backend().disconnect()
 
 
 @pytest.fixture(name="async_annotated_query_fixtures")
-async def async_annotated_query_fixtures(environment):
-    model = await environment.configure_async(AsyncSearchableItem)
-    yield model
-    await _disconnect_async(model)
+async def async_annotated_query_fixtures(database_config):
+    scenario, config, _name = database_config
+    await AsyncSearchableItem.configure(config, scenario.async_backend_class)
+    yield AsyncSearchableItem
+    await AsyncSearchableItem.backend().disconnect()
 
 
 # --- mapped column names ---------------------------------------------------
@@ -309,17 +311,33 @@ ASYNC_MAPPED_MODELS = (AsyncMappedUser, AsyncMappedPost, AsyncMappedComment)
 
 
 @pytest.fixture(name="mapped_models_fixtures")
-def mapped_models_fixtures(environment):
-    models = _configure(environment, MAPPED_MODELS)
-    yield models
-    _disconnect_group(models)
+def mapped_models_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_mapped",
+        models=list(MAPPED_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield MAPPED_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_mapped_models_fixtures")
-async def async_mapped_models_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_MAPPED_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_mapped_models_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_mapped",
+        models=list(ASYNC_MAPPED_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_MAPPED_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- the profile group -----------------------------------------------------
@@ -329,31 +347,49 @@ ASYNC_PROFILE_MODELS = (AsyncUser, AsyncProfile)
 
 
 @pytest.fixture(name="profile_fixtures")
-def profile_fixtures(environment):
-    models = _configure(environment, PROFILE_MODELS)
-    yield models
-    _disconnect_group(models)
+def profile_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = BackendGroup(
+        name="query_profile",
+        models=list(PROFILE_MODELS),
+        config=config,
+        backend_class=scenario.backend_class,
+    )
+    group.configure()
+    group.get_backend().introspect_and_adapt()
+    yield PROFILE_MODELS
+    group.get_backend().disconnect()
 
 
 @pytest.fixture(name="async_profile_fixtures")
-async def async_profile_fixtures(environment):
-    models = await _configure_async(environment, ASYNC_PROFILE_MODELS)
-    yield models
-    await _disconnect_group_async(models)
+async def async_profile_fixtures(database_config):
+    scenario, config, _name = database_config
+    group = AsyncBackendGroup(
+        name="query_profile",
+        models=list(ASYNC_PROFILE_MODELS),
+        config=config,
+        backend_class=scenario.async_backend_class,
+    )
+    await group.configure()
+    await group.get_backend().introspect_and_adapt()
+    yield ASYNC_PROFILE_MODELS
+    await group.get_backend().disconnect()
 
 
 # --- the basic composite-key order item ------------------------------------
 
 
 @pytest.fixture(name="order_item_class")
-def order_item_class(environment):
-    model = environment.configure(BasicOrderItem)
-    yield model
-    _disconnect(model)
+def order_item_class(database_config):
+    scenario, config, _name = database_config
+    BasicOrderItem.configure(config, scenario.backend_class)
+    yield BasicOrderItem
+    BasicOrderItem.backend().disconnect()
 
 
 @pytest.fixture(name="async_order_item_class")
-async def async_order_item_class(environment):
-    model = await environment.configure_async(AsyncBasicOrderItem)
-    yield model
-    await _disconnect_async(model)
+async def async_order_item_class(database_config):
+    scenario, config, _name = database_config
+    await AsyncBasicOrderItem.configure(config, scenario.async_backend_class)
+    yield AsyncBasicOrderItem
+    await AsyncBasicOrderItem.backend().disconnect()

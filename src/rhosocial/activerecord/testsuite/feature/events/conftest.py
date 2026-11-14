@@ -1,81 +1,104 @@
 # src/rhosocial/activerecord/testsuite/feature/events/conftest.py
-"""Fixtures for the events topic.
+"""L2 environment and model fixtures for the events topic.
 
-Each fixture names its model directly; the testsuite environment configures it
-against the directory's database.  Which versioned model file supplies the
-class is decided here, so tests only see fixture names.
+- ``database``: one database per directory (session scope, emptied at start);
+- ``schema``: both event tables, dropped and recreated for every test
+  (function scope), so each test starts from empty tables;
+- ``database_config``: the scenario, its connection configuration, and the
+  directory database name, which the model fixtures configure against.
 
-The directory owns one database and one fixture group: every test prepares both
-event tables, even when it only uses one of the models.
+The directory owns one fixture group: every test prepares both event tables,
+even when it only uses one of the models.  Which versioned model file supplies
+the class is decided here, so tests only see fixture names.
 """
+
+from pathlib import Path
+
 import pytest
 
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.testsuite.feature.events.fixtures.definitions import (
+    EventTestDefinition,
+    EventTrackingDefinition,
+)
+
 from .fixtures import resolve
-from .fixtures import tables
 
 EventTestModel = resolve("EventTestModel")
 AsyncEventTestModel = resolve("AsyncEventTestModel")
 EventTrackingModel = resolve("EventTrackingModel")
 AsyncEventTrackingModel = resolve("AsyncEventTrackingModel")
 
-GROUP_TABLES = (
-    "event_tests",
-    "event_tracking_models",
-)
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
+
+DEFINITIONS = (EventTestDefinition, EventTrackingDefinition)
 
 
-def _disconnect(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        backend.disconnect()
+def _database_name() -> str:
+    """Database name from this conftest's namespace (below ``feature``)."""
+    parts = Path(__file__).parent.parts
+    start = parts.index("feature") + 1
+    return "test_" + "_".join(parts[start:])
 
 
-async def _disconnect_async(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        await backend.disconnect()
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the directory database name."""
+    name = _database_name()
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def ensure_database(environment):
-    """Create the directory's database, or clear it when it already exists."""
-    environment.reset_database()
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-def prepare(environment):
-    """Create the group's tables before every test."""
-    for name in GROUP_TABLES:
-        environment.execute(tables.EVENTS_TABLES[name](environment.dialect))
-
-
-def teardown(environment):
-    """Drop the group's tables after every test."""
-    for name in reversed(GROUP_TABLES):
-        environment.execute(tables.drop_table(environment.dialect, name))
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate the tables this directory uses, before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
 
 
 @pytest.fixture(name="event_model")
-def event_model(environment):
-    model = environment.configure(EventTestModel)
-    yield model
-    _disconnect(model)
+def event_model(database_config):
+    scenario, config, _name = database_config
+    EventTestModel.configure(config, scenario.backend_class)
+    yield EventTestModel
+    EventTestModel.backend().disconnect()
 
 
 @pytest.fixture(name="async_event_model")
-async def async_event_model(environment):
-    model = await environment.configure_async(AsyncEventTestModel)
-    yield model
-    await _disconnect_async(model)
+async def async_event_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncEventTestModel.configure(config, scenario.async_backend_class)
+    yield AsyncEventTestModel
+    await AsyncEventTestModel.backend().disconnect()
 
 
 @pytest.fixture(name="event_tracking_model")
-def event_tracking_model(environment):
-    model = environment.configure(EventTrackingModel)
-    yield model
-    _disconnect(model)
+def event_tracking_model(database_config):
+    scenario, config, _name = database_config
+    EventTrackingModel.configure(config, scenario.backend_class)
+    yield EventTrackingModel
+    EventTrackingModel.backend().disconnect()
 
 
 @pytest.fixture(name="async_event_tracking_model")
-async def async_event_tracking_model(environment):
-    model = await environment.configure_async(AsyncEventTrackingModel)
-    yield model
-    await _disconnect_async(model)
+async def async_event_tracking_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncEventTrackingModel.configure(config, scenario.async_backend_class)
+    yield AsyncEventTrackingModel
+    await AsyncEventTrackingModel.backend().disconnect()

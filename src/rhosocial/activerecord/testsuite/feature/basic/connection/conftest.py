@@ -1,128 +1,133 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/connection/conftest.py
-"""The ``basic/connection`` minimal test set.
+"""L2 environment fixtures for ``basic/connection``.
 
-The directory owns one database (named after its path) and one fixture group.
-The pool fixtures hand a pool and a model configured against the same database,
-so the pool-context tests can compare the class backend with the context backend.
+The directory owns one database; pool fixtures build pools against it and
+configure the model classes through ``ActiveRecord.configure``.
 """
 import pytest
 
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
 from rhosocial.activerecord.connection.pool import AsyncBackendPool, BackendPool
 from rhosocial.activerecord.connection.pool.config import PoolConfig
-
 from rhosocial.activerecord.testsuite.feature.basic.connection.fixtures import (
     AsyncTestUser,
     TestUser,
 )
-from rhosocial.activerecord.testsuite.feature.basic.fixtures import tables
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import TestUserDefinition
 
-GROUP_TABLES = ("test_users",)
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-
-def ensure_database(environment):
-    """Create the directory's database, or clear it when it already exists."""
-    environment.reset_database()
-
-
-def prepare(environment):
-    """Create the group's tables before every test."""
-    for name in GROUP_TABLES:
-        environment.execute(tables.BASIC_TABLES[name](environment.dialect))
+DEFINITIONS = (
+    TestUserDefinition,
+)
 
 
-def teardown(environment):
-    """Drop the group's tables after every test."""
-    for name in reversed(GROUP_TABLES):
-        environment.execute(tables.drop_table(environment.dialect, name))
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """Scenario, connection configuration, and the directory database name."""
+    name = "test_basic_connection"
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def sync_pool(environment):
-    """Create a sync connection pool bound to this directory's database."""
-    config = environment.make_config()
-    return BackendPool.create(
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate this directory's tables before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+
+
+@pytest.fixture(name="sync_pool_and_model")
+def sync_pool_and_model(database_config):
+    scenario, config, _name = database_config
+    pool = BackendPool.create(
         PoolConfig(
             min_size=1,
             max_size=5,
-            backend_factory=lambda: environment.scenario.backend_class(
-                connection_config=config
-            ),
+            backend_factory=lambda: scenario.backend_class(connection_config=config),
         )
     )
-
-
-async def async_pool(environment):
-    """Create an async connection pool bound to this directory's database."""
-    config = environment.make_config()
-    return await AsyncBackendPool.create(
-        PoolConfig(
-            min_size=1,
-            max_size=5,
-            backend_factory=lambda: environment.scenario.async_backend_class(
-                connection_config=config
-            ),
-        )
-    )
-
-
-def close_pool(pool) -> None:
-    """Close a sync pool, forcing it when a connection is still held."""
+    TestUser.configure(config, scenario.backend_class)
+    yield pool, TestUser
     try:
         pool.close(timeout=1.0, force=True)
     except Exception:
         pass
+    TestUser.backend().disconnect()
 
 
-async def close_async_pool(pool) -> None:
-    """Close an async pool, forcing it when a connection is still held."""
+@pytest.fixture(name="async_pool_and_model")
+async def async_pool_and_model(database_config):
+    scenario, config, _name = database_config
+    pool = await AsyncBackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.async_backend_class(
+                connection_config=config
+            ),
+        )
+    )
+    await AsyncTestUser.configure(config, scenario.async_backend_class)
+    yield pool, AsyncTestUser
     try:
         await pool.close(timeout=1.0, force=True)
     except Exception:
         pass
-
-
-def _disconnect(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        backend.disconnect()
-
-
-async def _disconnect_async(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        await backend.disconnect()
-
-
-@pytest.fixture(name="sync_pool_and_model")
-def sync_pool_and_model(environment):
-    pool = sync_pool(environment)
-    model = environment.configure(TestUser)
-    yield pool, model
-    close_pool(pool)
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_pool_and_model")
-async def async_pool_and_model(environment):
-    pool = await async_pool(environment)
-    model = await environment.configure_async(AsyncTestUser)
-    yield pool, model
-    await close_async_pool(pool)
-    await _disconnect_async(model)
+    await AsyncTestUser.backend().disconnect()
 
 
 @pytest.fixture(name="sync_pool_for_crud")
-def sync_pool_for_crud(environment):
-    pool = sync_pool(environment)
-    model = environment.configure(TestUser)
-    yield pool, model
-    close_pool(pool)
-    _disconnect(model)
+def sync_pool_for_crud(database_config):
+    scenario, config, _name = database_config
+    pool = BackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.backend_class(connection_config=config),
+        )
+    )
+    TestUser.configure(config, scenario.backend_class)
+    yield pool, TestUser
+    try:
+        pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    TestUser.backend().disconnect()
 
 
 @pytest.fixture(name="async_pool_for_crud")
-async def async_pool_for_crud(environment):
-    pool = await async_pool(environment)
-    model = await environment.configure_async(AsyncTestUser)
-    yield pool, model
-    await close_async_pool(pool)
-    await _disconnect_async(model)
+async def async_pool_for_crud(database_config):
+    scenario, config, _name = database_config
+    pool = await AsyncBackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.async_backend_class(
+                connection_config=config
+            ),
+        )
+    )
+    await AsyncTestUser.configure(config, scenario.async_backend_class)
+    yield pool, AsyncTestUser
+    try:
+        await pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    await AsyncTestUser.backend().disconnect()

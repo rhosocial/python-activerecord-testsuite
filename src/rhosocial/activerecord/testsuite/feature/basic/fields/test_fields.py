@@ -4,15 +4,16 @@
 This module tests the basic field processing functionality of the ActiveRecord class.
 """
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-import pytest
-
 # Fixtures are now injected by the conftest.py in this package
 
-from rhosocial.activerecord.testsuite.utils import requires_json_operations
+from rhosocial.activerecord.testsuite.utils import (
+    assert_datetime_equal,
+    requires_json_operations,
+)
 class TestSyncFields:
     """Synchronous tests for field processing functionality."""
 
@@ -100,9 +101,12 @@ class TestSyncFields:
         assert saved_model.bool_field is False, "Expected bool_field to be False after toggle"
 
     def test_datetime_field(self, type_test_model):
-        """Test datetime field processing"""
-        from datetime import timedelta
-        test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456, tzinfo=timezone.utc)
+        """Test datetime field processing.
+
+        The shared contract is a naive timestamp: time-zone storage is a
+        backend-specific topic, so the value carries no zone here.
+        """
+        test_datetime = datetime(2024, 1, 1, 12, 30, 45, 123456)
         if not type_test_model.backend().dialect.supports_microsecond_timestamp():
             # Backends such as Firebird store TIMESTAMP with 1/10000 s
             # precision; the value round-trips with truncated microseconds.
@@ -111,11 +115,8 @@ class TestSyncFields:
         model.save()
 
         saved_model = type_test_model.find_one(model.id)
-        assert saved_model.datetime_field == test_datetime, "Expected datetime_field to round-trip"
         assert isinstance(saved_model.datetime_field, datetime), "Expected datetime_field to be a datetime"
-        utc_plus_8 = timezone(timedelta(hours=8))
-        assert saved_model.datetime_field.astimezone(utc_plus_8).isoformat() == test_datetime.astimezone(utc_plus_8).isoformat(), \
-            "Expected datetime_field to round-trip with timezone conversion"
+        assert_datetime_equal(saved_model.datetime_field, test_datetime, tolerance=timedelta(0))
 
     @requires_json_operations()
     def test_json_field(self, type_test_model):

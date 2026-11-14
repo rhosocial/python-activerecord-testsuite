@@ -17,6 +17,7 @@ What it does:
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import pytest
@@ -86,24 +87,37 @@ def _contract(item):
     return contract_for_path(item.config.pluginmanager, item.path)
 
 
+_DATABASE_FIXTURES = ("database", "database_config", "environment")
+
+
+def _uses_database(item) -> bool:
+    """Whether this test's fixture closure asks for a directory database."""
+    names = set(getattr(item, "fixturenames", ()) or ())
+    info = getattr(item, "_fixtureinfo", None)
+    if info is not None:
+        names.update(getattr(info, "names_closure", ()) or ())
+    return any(name in names for name in _DATABASE_FIXTURES)
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
-    """Pin each directory's tests to one worker.
+    """Pin database-backed directories **per scenario** to one worker each.
 
-    The logical database is owned by the directory, so every test below it --
-    including backend-local tests that resolve their own scenario fixture --
-    has to land on the same worker.  A per-scenario key would split them when
-    scenario resolution differs between items, and two workers resetting the
-    directory's database concurrently is exactly the table-vanishes race seen
-    under ``--dist=loadgroup``.
+    A directory owns one database *per scenario*; different scenarios are
+    different databases (different server, or a scenario-suffixed name), so
+    their variants can run in parallel.  Within one directory and scenario the
+    tests stay on a single worker.  Directories without a ``database`` fixture
+    are left ungrouped and free to run in parallel.
     """
     for item in items:
-        contract = _contract(item)
-        if contract is None:
+        path = getattr(item, "path", None)
+        if path is None or not _uses_database(item):
             continue
-        item._testsuite_contract = contract
+        scenario = scenario_of(item)
+        scenario_name = getattr(scenario, "name", None) or "default"
+        directory = os.path.dirname(str(path))
         item.add_marker(
-            pytest.mark.xdist_group(f"testsuite::{contract.directory}")
+            pytest.mark.xdist_group(f"testsuite::{directory}::{scenario_name}")
         )
 
 

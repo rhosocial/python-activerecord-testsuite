@@ -859,7 +859,7 @@ class BulkUser(IntegerPKMixin, ActiveRecord):
     id: int | None = None
     name: str
     age: int = 0
-    email: str = ""
+    email: Optional[str] = None
 
 
 class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
@@ -872,4 +872,4 @@ class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
     id: int | None = None
     name: str
     age: int = 0
-    email: str = ""
+    email: Optional[str] = None

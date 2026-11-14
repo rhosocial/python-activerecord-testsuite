@@ -45,7 +45,7 @@ class Department(ActiveRecord):
 
     id: Optional[int] = None
     name: str
-    description: str = ""
+    description: Optional[str] = None
 
     employees: ClassVar[HasMany["Employee"]] = HasMany(
         foreign_key="department_id",

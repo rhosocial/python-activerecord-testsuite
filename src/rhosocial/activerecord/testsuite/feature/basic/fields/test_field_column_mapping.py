@@ -213,27 +213,37 @@ class TestInvalidCases:
         assert "A field can have at most one UseColumn specified" in str(excinfo.value), \
             "Expected the duplicate UseColumn error message"
 
-    def test_multiple_use_adapter_raises_error(self):
-        """Verify that using multiple UseAdapter annotations raises an error."""
-        class DummyAdapter(BaseSQLTypeAdapter):
+    def test_multiple_use_adapter_declarations_are_collected(self):
+        """Verify that a field may declare one UseAdapter per backend.
+
+        The declarations are collected in order: the first one available in a
+        backend's adapter inventory wins, so the same model can target several
+        backends without changing the field.
+        """
+        class FirstAdapter(BaseSQLTypeAdapter):
             def _do_to_database(self, value, **kwargs): return value
             def _do_from_database(self, value, **kwargs): return value
 
-        with pytest.raises(TypeError) as excinfo:
-            class InvalidModel(ActiveRecord):
-                @classmethod
-                def table_name(cls):
-                    return "invalid"
+        class SecondAdapter(BaseSQLTypeAdapter):
+            def _do_to_database(self, value, **kwargs): return value
+            def _do_from_database(self, value, **kwargs): return value
 
-                # This field has two UseAdapter annotations, which is invalid.
-                data: Annotated[
-                    str,
-                    UseAdapter(DummyAdapter(), str),
-                    UseAdapter(DummyAdapter(), str)
-                ]
+        class MultiAdapterModel(ActiveRecord):
+            @classmethod
+            def table_name(cls):
+                return "multi_adapter"
 
-        assert "A field can have at most one UseAdapter specified" in str(excinfo.value), \
-            "Expected the duplicate UseAdapter error message"
+            data: Annotated[
+                str,
+                UseAdapter(FirstAdapter(), str),
+                UseAdapter(SecondAdapter(), int)
+            ]
+
+        declared = MultiAdapterModel.__field_adapters__["data"]
+        assert [type(adapter).__name__ for adapter, _ in declared] == ["FirstAdapter", "SecondAdapter"], \
+            "Expected both declarations to be collected in order"
+        assert [target for _, target in declared] == [str, int], \
+            "Expected each declaration to keep its own target type"
 
     def test_use_column_with_invalid_type_raises_error(self):
         """Verify that UseColumn expects a string argument."""

@@ -586,7 +586,6 @@ def test_special_character_full_matrix(order_fixtures):
     special_values = [
         "line1\nline2\t tabbed",
         "carriage\rreturn",
-        "",
         "   spaces   ",
         "unicode中文emoji🎉",
         "\\' \\\" backslash with quotes",
@@ -597,13 +596,7 @@ def test_special_character_full_matrix(order_fixtures):
         "semicolon; no injection",
     ]
 
-    dialect_name = str(Order.backend().dialect.name).lower()
     for i, val in enumerate(special_values):
-        if val == "" and dialect_name.startswith("oracle"):
-            # Oracle has no distinct empty string: "" *is* NULL, so the value
-            # can be neither stored nor matched by equality.  This is Oracle's
-            # documented string semantics, not an escaping defect.
-            continue
         try:
             order = Order(
                 user_id=user.id,

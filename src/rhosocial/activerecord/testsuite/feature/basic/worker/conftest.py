@@ -1,83 +1,97 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/worker/conftest.py
-"""The ``basic/worker`` minimal test set.
+"""L2 environment fixtures for ``basic/worker``.
 
-Worker processes need serializable connection information: the module and
-class names plus the configuration kwargs.  The environment builds it from
-the scenario, so no backend declaration has to be written down here.
+Worker processes need serializable connection information; the definition
+class below turns the scenario/config pair into that payload.
 """
 import pytest
 
-from rhosocial.activerecord.testsuite.feature.basic.fixtures import resolve, tables
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import UserDefinition
+from rhosocial.activerecord.testsuite.feature.basic.fixtures import resolve
+
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
+
+DEFINITIONS = (
+    UserDefinition,
+)
 
 User = resolve("User")
 AsyncUser = resolve("AsyncUser")
 
-GROUP_TABLES = ("users",)
+
+class WorkerConnection:
+    """Serializable connection payload for a worker process."""
+
+    def __init__(self, scenario, config):
+        self.scenario = scenario
+        self.config = config
+
+    def params(self, is_async=False):
+        backend_class = (
+            self.scenario.async_backend_class if is_async else self.scenario.backend_class
+        )
+        return {
+            "backend_module": backend_class.__module__,
+            "backend_class_name": backend_class.__name__,
+            "config_class_module": type(self.config).__module__,
+            "config_class_name": type(self.config).__name__,
+            "config_kwargs": self.config.to_dict(),
+            "schema_sql": "",
+        }
 
 
-def ensure_database(environment):
-    """Create the directory's database, or clear it when it already exists."""
-    environment.reset_database()
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """Scenario, connection configuration, and the directory database name."""
+    name = "test_basic_worker"
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def prepare(environment):
-    """Create the group's tables before every test."""
-    for name in GROUP_TABLES:
-        environment.execute(tables.BASIC_TABLES[name](environment.dialect))
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-def teardown(environment):
-    """Drop the group's tables after every test."""
-    for name in reversed(GROUP_TABLES):
-        environment.execute(tables.drop_table(environment.dialect, name))
-
-
-def connection_parameters(environment, is_async=False):
-    """Return serializable connection information for a Worker process."""
-    config = environment.make_config()
-    backend_class = (
-        environment.scenario.async_backend_class
-        if is_async
-        else environment.scenario.backend_class
-    )
-    return {
-        "backend_module": backend_class.__module__,
-        "backend_class_name": backend_class.__name__,
-        "config_class_module": type(config).__module__,
-        "config_class_name": type(config).__name__,
-        "config_kwargs": config.to_dict(),
-        "schema_sql": "",
-    }
-
-
-def _disconnect(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        backend.disconnect()
-
-
-async def _disconnect_async(model) -> None:
-    backend = getattr(model, "__backend__", None)
-    if backend is not None:
-        await backend.disconnect()
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate this directory's tables before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
 
 
 @pytest.fixture(name="worker_connection_params")
-def worker_connection_params(environment):
-    yield connection_parameters(environment)
+def worker_connection_params(database_config):
+    scenario, config, _name = database_config
+    yield WorkerConnection(scenario, config).params()
 
 
 @pytest.fixture(name="user_class_for_worker")
-def user_class_for_worker(environment):
-    model = environment.configure(User)
-    params = connection_parameters(environment)
-    yield {"model": model, "conn_params": params}
-    _disconnect(model)
+def user_class_for_worker(database_config):
+    scenario, config, _name = database_config
+    User.configure(config, scenario.backend_class)
+    yield {"model": User, "conn_params": WorkerConnection(scenario, config).params()}
+    User.backend().disconnect()
 
 
 @pytest.fixture(name="async_user_class_for_worker")
-async def async_user_class_for_worker(environment):
-    model = await environment.configure_async(AsyncUser)
-    params = connection_parameters(environment, is_async=True)
-    yield {"model": model, "conn_params": params}
-    await _disconnect_async(model)
+async def async_user_class_for_worker(database_config):
+    scenario, config, _name = database_config
+    await AsyncUser.configure(config, scenario.async_backend_class)
+    yield {
+        "model": AsyncUser,
+        "conn_params": WorkerConnection(scenario, config).params(is_async=True),
+    }
+    await AsyncUser.backend().disconnect()

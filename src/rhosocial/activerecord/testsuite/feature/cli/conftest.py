@@ -1,25 +1,25 @@
 # src/rhosocial/activerecord/testsuite/feature/cli/conftest.py
-"""Fixtures for the CLI feature.
+"""L2 backend fixtures for the CLI feature.
 
 The CLI tests address models by ``module:attribute`` strings, so the fixture
 builds a throw-away module whose attributes are the models configured for the
-directory's database.  The directory owns one fixture group: every test
-prepares the tables of the basic and mixins models the CLI exercises.
+directory's database.  The directory owns one fixture group: the basic tables
+and the mixins ``tasks`` table the CLI exercises.
 """
 import sys
 import types
 import uuid
 
 import pytest
-from rhosocial.activerecord.query import AsyncCTEQuery, CTEQuery
 
-from rhosocial.activerecord.testsuite.feature.basic.fixtures import (
-    tables as basic_tables,
-)
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.query import AsyncCTEQuery, CTEQuery
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
     AsyncBulkUser,
     AsyncUser,
     AsyncValidatedUser,
+    BASIC_DEFINITIONS,
     BulkUser,
     User,
     ValidatedUser,
@@ -28,51 +28,52 @@ from rhosocial.activerecord.testsuite.feature.cli.fixtures import (
     AsyncCLIReadOnlyUser,
     CLIReadOnlyUser,
 )
-from rhosocial.activerecord.testsuite.feature.mixins.fixtures import (
-    tables as mixins_tables,
+from rhosocial.activerecord.testsuite.feature.mixins.fixtures.definitions import (
+    TaskDefinition,
 )
 from rhosocial.activerecord.testsuite.feature.mixins.fixtures.models import (
     AsyncTask,
     Task,
 )
 
-BACKEND_ATTRIBUTES = (
-    "__backend__",
-    "__connection_config__",
-    "__backend_class__",
-    "__logging_config__",
-)
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-GROUP_TABLES = (
-    ("users", basic_tables.BASIC_TABLES["users"]),
-    ("bulk_users", basic_tables.BASIC_TABLES["bulk_users"]),
-    ("validated_users", basic_tables.BASIC_TABLES["validated_users"]),
-    ("tasks", mixins_tables.MIXINS_TABLES["tasks"]),
+DEFINITIONS = (
+    BASIC_DEFINITIONS["users"],
+    BASIC_DEFINITIONS["bulk_users"],
+    BASIC_DEFINITIONS["validated_users"],
+    TaskDefinition,
 )
 
 
-def ensure_database(environment):
-    """Create the directory's database, or clear it when it already exists."""
-    environment.reset_database()
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the database name."""
+    name = "test_cli"
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def prepare(environment):
-    """Create the group's tables before every test."""
-    for _, builder in GROUP_TABLES:
-        environment.execute(builder(environment.dialect))
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-def teardown(environment):
-    """Drop the group's tables after every test."""
-    for name, _ in reversed(GROUP_TABLES):
-        environment.execute(basic_tables.drop_table(environment.dialect, name))
-
-
-def assign_backend(target, source) -> None:
-    """Give a view model the backend configured on another model."""
-    for attribute in BACKEND_ATTRIBUTES:
-        if hasattr(source, attribute):
-            setattr(target, attribute, getattr(source, attribute))
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate this directory's tables before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
 
 
 def add_query_functions(module, user, cte_class) -> None:
@@ -128,42 +129,48 @@ def model_namespace(module, soft) -> types.SimpleNamespace:
 
 
 @pytest.fixture(name="cli_models")
-def cli_models(environment):
-    user = environment.configure(User)
-    bulk = environment.configure(BulkUser)
-    validated = environment.configure(ValidatedUser)
-    soft = environment.configure(Task)
-    assign_backend(CLIReadOnlyUser, user)
+def cli_models(database_config):
+    scenario, config, _name = database_config
+    models = (User, BulkUser, ValidatedUser, Task, CLIReadOnlyUser)
+    for model in models:
+        model.configure(config, scenario.backend_class)
+    user, bulk, validated, soft, read_only = models
     module = build_module(
         "cli_sync_" + uuid.uuid4().hex,
         user,
         bulk,
-        CLIReadOnlyUser,
+        read_only,
         soft,
         validated,
         CTEQuery,
     )
     yield model_namespace(module, soft)
-    for model in (user, bulk, validated, soft):
-        model.__backend__.disconnect()
+    for model in models:
+        model.backend().disconnect()
 
 
 @pytest.fixture(name="async_cli_models")
-async def async_cli_models(environment):
-    user = await environment.configure_async(AsyncUser)
-    bulk = await environment.configure_async(AsyncBulkUser)
-    validated = await environment.configure_async(AsyncValidatedUser)
-    soft = await environment.configure_async(AsyncTask)
-    assign_backend(AsyncCLIReadOnlyUser, user)
+async def async_cli_models(database_config):
+    scenario, config, _name = database_config
+    models = (
+        AsyncUser,
+        AsyncBulkUser,
+        AsyncValidatedUser,
+        AsyncTask,
+        AsyncCLIReadOnlyUser,
+    )
+    for model in models:
+        await model.configure(config, scenario.async_backend_class)
+    user, bulk, validated, soft, read_only = models
     module = build_module(
         "cli_async_" + uuid.uuid4().hex,
         user,
         bulk,
-        AsyncCLIReadOnlyUser,
+        read_only,
         soft,
         validated,
         AsyncCTEQuery,
     )
     yield model_namespace(module, soft)
-    for model in (user, bulk, validated, soft):
-        await model.__backend__.disconnect()
+    for model in models:
+        await model.backend().disconnect()

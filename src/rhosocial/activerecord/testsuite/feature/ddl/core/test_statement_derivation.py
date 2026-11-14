@@ -100,8 +100,10 @@ def test_drop_table_statement_names_the_table(ddl_dialect):
     assert "ddl_derivation_items" in sql
 
 
-def test_async_model_derives_the_same_statements(async_ddl_dialect):
-    sql = _create_sql(AsyncDerivationItem, async_ddl_dialect)
+def test_async_model_derives_the_same_statements(ddl_dialect):
+    # A dialect is not sync/async; only the backend is.  The async model derives
+    # its statements with the same dialect instance.
+    sql = _create_sql(AsyncDerivationItem, ddl_dialect)
     assert "ddl_derivation_items" in sql
-    indexes = build_create_index_statements(AsyncDerivationItem, async_ddl_dialect)
+    indexes = build_create_index_statements(AsyncDerivationItem, ddl_dialect)
     assert len(indexes) == 1
