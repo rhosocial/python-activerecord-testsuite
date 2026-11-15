@@ -32,7 +32,7 @@ from rhosocial.activerecord.backend.expression.types import (
     IntegerType as Int,
     VarCharType as VarChar,
 )
-from rhosocial.activerecord.testsuite.core.fixture_types import (
+from rhosocial.activerecord.testsuite.fixture_types import (
     PLACEHOLDER_TEXT,
     long_text,
     short_text,

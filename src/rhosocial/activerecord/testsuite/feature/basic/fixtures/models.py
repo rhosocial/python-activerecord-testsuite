@@ -57,7 +57,7 @@ from rhosocial.activerecord.backend.expression.types import (
     TinyIntType as TinyInt,
     VarCharType as VarChar,
 )
-from rhosocial.activerecord.testsuite.core.fixture_types import (
+from rhosocial.activerecord.testsuite.fixture_types import (
     array_type,
     date_type,
     json_text,

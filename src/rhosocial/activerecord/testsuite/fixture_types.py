@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/core/fixture_types.py
+# src/rhosocial/activerecord/testsuite/fixture_types.py
 """Generic column types for shared fixture tables.
 
 The shared suite declares only *generic* type concepts and lets each backend's

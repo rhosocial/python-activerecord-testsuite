@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/adapters/test_neutral_types.py
 """Shared contract: neutral types format and round-trip through generic carriers.
 
-Only generic column types are involved (see ``testsuite.core.fixture_types``).
+Only generic column types are involved (see ``testsuite.fixture_types``).
 The suite asserts three kinds of consistency:
 
 * **S1** -- a Python value written and read back is the same value;

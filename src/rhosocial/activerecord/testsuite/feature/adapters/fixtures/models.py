@@ -33,7 +33,7 @@ from rhosocial.activerecord.backend.expression.types import (
     TextType as Text,
 )
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
-from rhosocial.activerecord.testsuite.core.fixture_types import (
+from rhosocial.activerecord.testsuite.fixture_types import (
     array_type,
     long_text,
     short_text,

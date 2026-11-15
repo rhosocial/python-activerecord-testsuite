@@ -7,6 +7,10 @@ name is derived from the directory path, so no conftest has to write it down:
 
     tests/.../feature/basic/crud  ->  test_basic_crud
 
+The derivation itself lives in ``pytest_plugin.declarations``, beside the scope
+declaration that the migrated directories use; this module keeps the legacy
+contract probe that ``plugin.py`` still consults.
+
 The category directories ``feature`` and ``benchmark`` are not part of the
 name; derivation starts one level below them.
 """
@@ -16,9 +20,7 @@ import os
 from dataclasses import dataclass
 from typing import List, Optional
 
-CATEGORY_DIRECTORIES = ("feature", "benchmark")
-
-DATABASE_PREFIX = "test_"
+from ..pytest_plugin.declarations import database_name
 
 PREPARE_NAME = "prepare"
 TEARDOWN_NAME = "teardown"
@@ -74,25 +76,6 @@ def conftest_map(pluginmanager) -> dict:
         )
         mapping[directory] = module
     return mapping
-
-
-def database_name(directory) -> str:
-    """Derive a logical database name from a test directory path.
-
-    The name starts below ``feature`` / ``benchmark``; when neither appears
-    in the path, the last directory name is used.
-    """
-    parts = list(os.path.normpath(os.path.abspath(os.fspath(directory))).split(os.sep))
-    lowered = [part.lower() for part in parts]
-    start = 0
-    for category in CATEGORY_DIRECTORIES:
-        if category in lowered:
-            start = len(lowered) - lowered[::-1].index(category)
-            break
-    else:
-        start = len(parts) - 1
-    names = [part for part in parts[start:] if part]
-    return DATABASE_PREFIX + "_".join(names)
 
 
 def contract_for_path(pluginmanager, path) -> Optional[DirectoryContract]:

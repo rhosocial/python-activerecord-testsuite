@@ -26,7 +26,7 @@ from rhosocial.activerecord.backend.expression.statements import (
 from rhosocial.activerecord.backend.expression.types import (
     IntegerType as Int,
 )
-from rhosocial.activerecord.testsuite.core.fixture_types import (
+from rhosocial.activerecord.testsuite.fixture_types import (
     long_text,
     short_text,
     timestamp_type,

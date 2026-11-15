@@ -29,7 +29,7 @@ from rhosocial.activerecord.backend.expression.types import (
     FloatType as Float,
     IntegerType as Int,
 )
-from rhosocial.activerecord.testsuite.core.fixture_types import (
+from rhosocial.activerecord.testsuite.fixture_types import (
     long_text,
     short_text,
     timestamp_type,

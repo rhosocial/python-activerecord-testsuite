@@ -23,6 +23,12 @@ from typing import Dict, Optional, Tuple
 
 from .requirements import Entry, Requirement, requirement_list
 
+#: Directories whose name is a category rather than part of a database name.
+CATEGORY_DIRECTORIES = ("feature", "benchmark")
+
+#: Prefix every directory-owned database carries.
+DATABASE_PREFIX = "test_"
+
 #: Module attribute a ``conftest.py`` uses to declare its scope.
 DECLARATION_ATTRIBUTE = "DECLARATION"
 
@@ -102,10 +108,33 @@ def entries_of(declaration: Optional[Declaration]) -> Tuple[Entry, ...]:
     return tuple(declaration.requires)
 
 
+def database_name(directory) -> str:
+    """Derive a logical database name from a test directory path.
+
+    The name starts below ``feature`` / ``benchmark``; when neither appears
+    in the path, the last directory name is used.
+    """
+    parts = list(os.path.normpath(os.path.abspath(os.fspath(directory))).split(os.sep))
+    lowered = [part.lower() for part in parts]
+    start = 0
+    for category in CATEGORY_DIRECTORIES:
+        if category in lowered:
+            start = len(lowered) - lowered[::-1].index(category)
+            break
+    else:
+        start = len(parts) - 1
+    names = [part for part in parts[start:] if part]
+    return DATABASE_PREFIX + "_".join(names)
+
+
+
 __all__ = [
+    "CATEGORY_DIRECTORIES",
+    "DATABASE_PREFIX",
     "DECLARATION_ATTRIBUTE",
     "Declaration",
     "conftest_map",
+    "database_name",
     "declaration_for",
     "entries_of",
 ]
