@@ -1,4 +1,4 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/crud/test_composite_pk_crud.py
+# src/rhosocial/activerecord/testsuite/feature/basic/crud_composite_pk/test_composite_pk_crud.py
 """Tests for CRUD operations on models with composite primary keys."""
 
 from decimal import Decimal

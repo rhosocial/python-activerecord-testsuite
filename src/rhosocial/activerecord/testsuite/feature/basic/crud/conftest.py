@@ -20,8 +20,6 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
     UserDefinition,
     TypeCaseDefinition,
     ValidatedFieldUserDefinition,
-    OrderDefinition,
-    OrderItemDefinition,
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
@@ -30,8 +28,6 @@ DEFINITIONS = (
     UserDefinition,
     TypeCaseDefinition,
     ValidatedFieldUserDefinition,
-    OrderDefinition,
-    OrderItemDefinition,
 )
 
 

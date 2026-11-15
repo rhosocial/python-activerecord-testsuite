@@ -35,12 +35,6 @@ MixedAnnotationModel = resolve("MixedAnnotationModel")
 AsyncMixedAnnotationModel = resolve("AsyncMixedAnnotationModel")
 BulkUser = resolve("BulkUser")
 AsyncBulkUser = resolve("AsyncBulkUser")
-OrderItem = resolve("OrderItem")
-AsyncOrderItem = resolve("AsyncOrderItem")
-Order = resolve("Order")
-AsyncOrder = resolve("AsyncOrder")
-MappedOrderItem = resolve("MappedOrderItem")
-AsyncMappedOrderItem = resolve("AsyncMappedOrderItem")
 Product = resolve("Product")
 AsyncProduct = resolve("AsyncProduct")
 ProductFormA = resolve("ProductFormA")
@@ -253,60 +247,6 @@ async def async_bulk_user_class(database_config):
     scenario, config, _name = database_config
     await AsyncBulkUser.configure(config, scenario.async_backend_class)
     model = AsyncBulkUser
-    yield model
-    await _disconnect_async(model)
-
-
-@pytest.fixture(name="order_item_class")
-def order_item_class(database_config):
-    scenario, config, _name = database_config
-    OrderItem.configure(config, scenario.backend_class)
-    model = OrderItem
-    yield model
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_order_item_class")
-async def async_order_item_class(database_config):
-    scenario, config, _name = database_config
-    await AsyncOrderItem.configure(config, scenario.async_backend_class)
-    model = AsyncOrderItem
-    yield model
-    await _disconnect_async(model)
-
-
-@pytest.fixture(name="order_class")
-def order_class(database_config):
-    scenario, config, _name = database_config
-    Order.configure(config, scenario.backend_class)
-    model = Order
-    yield model
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_order_class")
-async def async_order_class(database_config):
-    scenario, config, _name = database_config
-    await AsyncOrder.configure(config, scenario.async_backend_class)
-    model = AsyncOrder
-    yield model
-    await _disconnect_async(model)
-
-
-@pytest.fixture(name="mapped_order_item_class")
-def mapped_order_item_class(database_config):
-    scenario, config, _name = database_config
-    MappedOrderItem.configure(config, scenario.backend_class)
-    model = MappedOrderItem
-    yield model
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_mapped_order_item_class")
-async def async_mapped_order_item_class(database_config):
-    scenario, config, _name = database_config
-    await AsyncMappedOrderItem.configure(config, scenario.async_backend_class)
-    model = AsyncMappedOrderItem
     yield model
     await _disconnect_async(model)
 
