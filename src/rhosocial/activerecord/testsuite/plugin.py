@@ -34,9 +34,7 @@ SCENARIO_FIXTURE_NAME = "backend_scenario"
 _RESET_DATABASES = set()
 
 _EXTRA_MARKERS = (
-    "requires_protocol: skip when the backend dialect lacks the protocol/switch",
-    "requires_switch: skip when the named dialect switch does not answer yes",
-    "absent_switch: skip when the named dialect switch does not answer no",
+    "requires_protocol: skip when the backend dialect lacks the protocol or its answer",
     "requires_functions: skip when the dialect reports the functions unsupported",
     "requires_inner_join: skip when the dialect cannot render an inner join",
     "requires_json_operations: skip when the dialect lacks JSON operations",
@@ -121,7 +119,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_call(item):
-    """Apply a case's switch markers against the dialect its environment opened.
+    """Apply a case's requirement markers against the dialect its environment opened.
 
     This runs at ``call`` rather than ``setup`` because the dialect exists
     only once the environment fixture has prepared the directory's backend.

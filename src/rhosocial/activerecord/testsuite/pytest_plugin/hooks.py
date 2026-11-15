@@ -9,7 +9,7 @@ Three moments:
 * **collection** -- a declared parallel directory is pinned to one worker per
   scenario, and the text a test carries (its purpose, what a pass or a failure
   means) is attached to the item so it reaches the report;
-* **call** -- the switches a case declares are evaluated against the dialect
+* **call** -- the requirements a case declares are evaluated against the dialect
   the directory's environment opened, and an unmet one skips the case by name;
   this is ``call`` and not ``setup`` because the dialect exists only once the
   environment fixture has run;
@@ -24,11 +24,9 @@ from typing import Dict, List, Optional, Tuple
 
 import pytest
 
-from .declarations import DirectoryDeclaration, declaration_for
-from .switches import MissingSwitchError, reason
+from .declarations import Declaration, declaration_for
+from .requirements import MissingRequirementError, reason
 
-REQUIRES_SWITCH = "requires_switch"
-ABSENT_SWITCH = "absent_switch"
 REQUIRES_PROTOCOL = "requires_protocol"
 SCENARIO_FIXTURE = "backend_scenario"
 
@@ -112,9 +110,9 @@ def _protocol_reason(dialect, marker, owner: str) -> Optional[str]:
     """Why a ``requires_protocol`` marker is unmet, or ``None``."""
     info = marker.args[0] if marker.args else (None, None)
     if isinstance(info, (tuple, list)) and len(info) == 2:
-        protocol_class, switch = info
+        protocol_class, method = info
     else:
-        protocol_class, switch = info, None
+        protocol_class, method = info, None
     if protocol_class is None:
         return None
     if isinstance(protocol_class, str):
@@ -126,31 +124,25 @@ def _protocol_reason(dialect, marker, owner: str) -> Optional[str]:
         return "{} needs {} but the dialect does not implement it".format(
             owner, protocol_class.__name__
         )
-    if not switch:
+    if not method:
         return None
-    return reason(dialect, (switch,), owner)
+    return reason(dialect, (method,), owner)
 
 
 def declared_requirements(item) -> List[Tuple[object, str]]:
-    """Every switch requirement the item carries, in declaration order.
+    """Every requirement the item carries, in declaration order.
 
     ``iter_markers`` is used on purpose: ``get_closest_marker`` would return
     only the nearest declaration and silently drop the class or module one.
     """
     found: List[Tuple[object, str]] = []
-    for marker in item.iter_markers(name=REQUIRES_SWITCH):
-        for entry in marker.args:
-            found.append((entry, REQUIRES_SWITCH))
-    for marker in item.iter_markers(name=ABSENT_SWITCH):
-        for entry in marker.args:
-            found.append(((entry, False) if isinstance(entry, str) else entry, ABSENT_SWITCH))
     for marker in item.iter_markers(name=REQUIRES_PROTOCOL):
         found.append((marker, REQUIRES_PROTOCOL))
     return found
 
 
 def evaluate(item) -> None:
-    """Skip the item when a switch it declares does not hold.
+    """Skip the item when a requirement it declares does not hold.
 
     A declared switch is answered by the dialect the directory's environment
     opened. Two situations are distinguished:
@@ -174,23 +166,19 @@ def evaluate(item) -> None:
         if dialect is None:
             if not is_database_backed(item):
                 return
-            raise MissingSwitchError(
+            raise MissingRequirementError(
                 "the directory opened no dialect though the test is "
                 "database-backed, so the switch it declares cannot be answered"
             )
         for entry, marker_name in entries:
             owner = "{} ({})".format(getattr(item, "name", item.nodeid), marker_name)
-            why = (
-                _protocol_reason(dialect, entry, owner)
-                if marker_name == REQUIRES_PROTOCOL
-                else reason(dialect, (entry,), owner)
-            )
+            why = _protocol_reason(dialect, entry, owner)
             if why is not None:
                 pytest.skip("[{}] {}".format(scenario_name(item), why))
-    except MissingSwitchError as error:
+    except MissingRequirementError as error:
         pytest.fail("{}: {}".format(item.nodeid, error), pytrace=False)
 
-def attach_text(item, declaration: Optional[DirectoryDeclaration]) -> None:
+def attach_text(item, declaration: Optional[Declaration]) -> None:
     """Attach the text a test carries to its item, for the report.
 
     Specificity decides: the case's own text wins over its class, which wins
@@ -265,9 +253,7 @@ def logreport(report) -> None:
 
 
 __all__ = [
-    "ABSENT_SWITCH",
     "REQUIRES_PROTOCOL",
-    "REQUIRES_SWITCH",
     "attach_text",
     "collection_modifyitems",
     "declared_requirements",

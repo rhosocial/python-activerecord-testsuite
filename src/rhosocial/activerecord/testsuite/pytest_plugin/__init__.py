@@ -1,14 +1,14 @@
 # src/rhosocial/activerecord/testsuite/pytest_plugin/__init__.py
-"""The suite's pytest mechanism: declarations, switch evaluation, reporting.
+"""The suite's pytest mechanism: declarations, requirements, reporting.
 
 This package replaces the previous ``testsuite/core`` layer, whose capability
 module was deleted as a negative example.  Nothing here names a backend, a
-server version, or a mechanism: a declaration names dialect switches, and the
-dialect is the only thing that answers them.
+server version, or a mechanism: a declaration states what it requires the
+dialect to answer yes to, and the dialect is the only thing that answers.
 """
-from .declarations import DirectoryDeclaration, declaration_for
-from .switches import (
-    MissingSwitchError,
+from .declarations import Declaration, declaration_for
+from .requirements import (
+    MissingRequirementError,
     Requirement,
     answer,
     reason,
@@ -18,8 +18,8 @@ from .switches import (
 )
 
 __all__ = [
-    "DirectoryDeclaration",
-    "MissingSwitchError",
+    "Declaration",
+    "MissingRequirementError",
     "Requirement",
     "answer",
     "declaration_for",

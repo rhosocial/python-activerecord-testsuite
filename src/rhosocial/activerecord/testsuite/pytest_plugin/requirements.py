@@ -1,19 +1,20 @@
-# src/rhosocial/activerecord/testsuite/pytest_plugin/switches.py
-"""Evaluate the dialect support switches a declaration requires.
+# src/rhosocial/activerecord/testsuite/pytest_plugin/requirements.py
+"""Evaluate the dialect requirements a declaration states.
 
-Both channels -- a fixture definition's declaration and a concrete case's
-marker -- go through :func:`reason`, so the two cannot drift apart.
+A declaration says what it needs the dialect to answer yes to. It does not
+say, and must not say, how a backend provides it: the mechanism is the dialect's
+own business. Both channels -- a fixture definition's declaration and a concrete
+case's marker -- go through :func:`reason`, so the two cannot drift apart.
 
 The evaluation is deliberately strict:
 
-* a switch the dialect does not implement is a *gap in the dialect*, not an
+* a method the dialect does not implement is a *gap in the dialect*, not an
   "unsupported feature": it raises instead of answering ``False``, because a
-  silent negative would skip a whole suite the moment a dialect loses a
-  method;
-* a probe that raises, or answers with something that is not a boolean, is
+  silent negative would skip a whole suite the moment a dialect loses a method;
+* a method that raises, or answers with something that is not a boolean, is
   likewise an error rather than a negative answer;
-* only a genuine "no" produces a skip, and the reason names the switch and
-  the owner that asked for it.
+* only a genuine "no" produces a skip, and the reason names the method and the
+  owner that required it.
 """
 from __future__ import annotations
 
@@ -24,25 +25,25 @@ from typing import Iterable, Optional, Sequence, Tuple, Union
 import pytest
 
 
-class MissingSwitchError(RuntimeError):
-    """A dialect does not implement a switch that was declared.
+class MissingRequirementError(RuntimeError):
+    """A dialect does not implement a method a declaration required.
 
-    This is a dialect gap, not a negative capability answer: the caller
-    declared a switch by name, so a dialect without that method cannot be
-    judged unsupported -- it has not answered the question at all.
+    This is a dialect gap, not a negative answer: the caller named a method,
+    so a dialect without it cannot be judged unsupported -- it has not answered
+    the question at all.
     """
 
 
 @dataclass(frozen=True)
 class Requirement:
-    """One switch requirement, with the polarity it must hold in."""
+    """One requirement: a dialect method name and the answer it must give."""
 
-    switch: str
+    method: str
     must: bool = True
-    """``True``: the switch must answer yes. ``False``: it must answer no."""
+    """``True``: the method must answer yes. ``False``: it must answer no."""
 
     def describe(self) -> str:
-        return "{} {}".format(self.switch, "(must be on)" if self.must else "(must be off)")
+        return "{} (must answer {})".format(self.method, "yes" if self.must else "no")
 
     def satisfied_by(self, answered: bool) -> bool:
         return answered is self.must
@@ -54,8 +55,8 @@ Entry = Union[str, Requirement, Tuple[str, bool]]
 def requirement_of(entry: Entry) -> Requirement:
     """Normalise a declared entry into a :class:`Requirement`.
 
-    A bare string means "this switch must answer yes"; a ``(name, must)``
-    tuple carries the polarity when it is "off".
+    A bare string means "this method must answer yes"; a ``(name, must)`` tuple
+    carries the polarity when it is "no".
     """
     if isinstance(entry, Requirement):
         return entry
@@ -63,7 +64,7 @@ def requirement_of(entry: Entry) -> Requirement:
         return Requirement(entry, True)
     if isinstance(entry, tuple) and len(entry) == 2:
         return Requirement(entry[0], bool(entry[1]))
-    raise TypeError("not a switch requirement: {!r}".format(entry))
+    raise TypeError("not a requirement: {!r}".format(entry))
 
 
 def requirement_list(entries: Iterable[Entry]) -> Tuple[Requirement, ...]:
@@ -71,22 +72,22 @@ def requirement_list(entries: Iterable[Entry]) -> Tuple[Requirement, ...]:
 
 
 def answer(dialect, name: str) -> bool:
-    """Ask the dialect one switch, strictly.
+    """Ask the dialect one method, strictly.
 
     Raises:
-        MissingSwitchError: the dialect has no such switch, or the probe
-            raised, or it answered with a non-boolean.
+        MissingRequirementError: the dialect has no such method, or it raised,
+            or it answered with a non-boolean.
     """
     dialect_name = getattr(dialect, "name", type(dialect).__name__)
-    probe = getattr(dialect, name, None)
-    if probe is None or not callable(probe):
-        raise MissingSwitchError(
+    method = getattr(dialect, name, None)
+    if method is None or not callable(method):
+        raise MissingRequirementError(
             "{}.{}() is not implemented: the dialect never declared this "
-            "switch".format(dialect_name, name)
+            "answer".format(dialect_name, name)
         )
     try:
-        signature = inspect.signature(probe)
-    except (TypeError, ValueError):  # pragma: no cover - builtins and C probes
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):  # pragma: no cover - builtins and C methods
         signature = None
     if signature is not None:
         required = [
@@ -97,23 +98,23 @@ def answer(dialect, name: str) -> bool:
             in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
         ]
         if required:
-            raise MissingSwitchError(
-                "{}.{}() takes {}: a declared switch must answer without an "
-                "argument. Name the zero-argument capability instead, or drop "
-                "the switch from the declaration".format(
+            raise MissingRequirementError(
+                "{}.{}() takes {}: a requirement must be answered without an "
+                "argument. Name the zero-argument method instead, or drop it "
+                "from the declaration".format(
                     dialect_name, name, ", ".join(required)
                 )
             )
     try:
-        answered = probe()
+        answered = method()
     except Exception as error:  # noqa: BLE001 - reported as a dialect fault
-        raise MissingSwitchError(
+        raise MissingRequirementError(
             "{}.{}() raised {}: {}".format(
                 dialect_name, name, type(error).__name__, error
             )
         ) from error
     if not isinstance(answered, bool):
-        raise MissingSwitchError(
+        raise MissingRequirementError(
             "{}.{}() answered {!r} instead of a boolean".format(
                 dialect_name, name, answered
             )
@@ -128,22 +129,22 @@ def reason(
 ) -> Optional[str]:
     """Return why the requirements are not met, or ``None`` when they are.
 
-    Every requirement must hold: this is a conjunction, so the first unmet
-    one names the reason.
+    Every requirement must hold: this is a conjunction, so the first unmet one
+    names the reason.
 
     Raises:
-        MissingSwitchError: forwarded from :func:`answer`.
+        MissingRequirementError: forwarded from :func:`answer`.
     """
     for entry in requirements:
         requirement = requirement_of(entry)
-        answered = answer(dialect, requirement.switch)
+        answered = answer(dialect, requirement.method)
         if not requirement.satisfied_by(answered):
             dialect_name = getattr(dialect, "name", type(dialect).__name__)
             return "{} requires {} but {}.{}() answered {}".format(
                 owner,
                 requirement.describe(),
                 dialect_name,
-                requirement.switch,
+                requirement.method,
                 answered,
             )
     return None
@@ -162,7 +163,7 @@ def require(
 
 __all__ = [
     "Entry",
-    "MissingSwitchError",
+    "MissingRequirementError",
     "Requirement",
     "answer",
     "reason",

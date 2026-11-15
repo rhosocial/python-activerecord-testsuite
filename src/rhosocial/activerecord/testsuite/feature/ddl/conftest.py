@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from rhosocial.activerecord.testsuite.pytest_plugin import DirectoryDeclaration
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 from .fixtures.models import (
     AsyncBareItem,
@@ -26,7 +26,7 @@ from .fixtures.models import (
     SpecOrder,
 )
 
-DECLARATION = DirectoryDeclaration(
+DECLARATION = Declaration(
     parallel=True,
     purpose="DDLSource contracts: what a declaration may say and how it renders.",
     passes_means="the declaration surface renders and refuses as documented",
