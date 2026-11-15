@@ -17,6 +17,7 @@ The evaluation is deliberately strict:
 """
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from typing import Iterable, Optional, Sequence, Tuple, Union
 
@@ -83,6 +84,26 @@ def answer(dialect, name: str) -> bool:
             "{}.{}() is not implemented: the dialect never declared this "
             "switch".format(dialect_name, name)
         )
+    try:
+        signature = inspect.signature(probe)
+    except (TypeError, ValueError):  # pragma: no cover - builtins and C probes
+        signature = None
+    if signature is not None:
+        required = [
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.default is inspect.Parameter.empty
+            and parameter.kind
+            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        if required:
+            raise MissingSwitchError(
+                "{}.{}() takes {}: a declared switch must answer without an "
+                "argument. Name the zero-argument capability instead, or drop "
+                "the switch from the declaration".format(
+                    dialect_name, name, ", ".join(required)
+                )
+            )
     try:
         answered = probe()
     except Exception as error:  # noqa: BLE001 - reported as a dialect fault
