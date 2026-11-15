@@ -22,11 +22,7 @@ import sys
 
 import pytest
 
-from rhosocial.activerecord.testsuite.core.capabilities import (
-    dialect_for,
-    scenario_of,
-    skip_if_unsupported,
-)
+from rhosocial.activerecord.testsuite.pytest_plugin import hooks
 from rhosocial.activerecord.testsuite.core.declarations import (
     DeclarationError,
     contract_for_path,
@@ -39,6 +35,8 @@ _RESET_DATABASES = set()
 
 _EXTRA_MARKERS = (
     "requires_protocol: skip when the backend dialect lacks the protocol/switch",
+    "requires_switch: skip when the named dialect switch does not answer yes",
+    "absent_switch: skip when the named dialect switch does not answer no",
     "requires_functions: skip when the dialect reports the functions unsupported",
     "requires_inner_join: skip when the dialect cannot render an inner join",
     "requires_json_operations: skip when the dialect lacks JSON operations",
@@ -113,20 +111,27 @@ def pytest_collection_modifyitems(config, items):
         path = getattr(item, "path", None)
         if path is None or not _uses_database(item):
             continue
-        scenario = scenario_of(item)
-        scenario_name = getattr(scenario, "name", None) or "default"
+        scenario = hooks.scenario_name(item)
         directory = os.path.dirname(str(path))
         item.add_marker(
-            pytest.mark.xdist_group(f"testsuite::{directory}::{scenario_name}")
+            pytest.mark.xdist_group(f"testsuite::{directory}::{scenario}")
         )
+    hooks.collection_modifyitems(config, items)
 
 
-def pytest_runtest_setup(item):
-    """Apply capability markers before any fixture is set up."""
-    scenario = scenario_of(item)
-    if scenario is None:
-        return
-    skip_if_unsupported(item, scenario, dialect_for(scenario))
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_call(item):
+    """Apply a case's switch markers against the dialect its environment opened.
+
+    This runs at ``call`` rather than ``setup`` because the dialect exists
+    only once the environment fixture has prepared the directory's backend.
+    """
+    hooks.runtest_call(item)
+
+
+def pytest_runtest_logreport(report):
+    """Say what a failure means, where the failure is reported."""
+    hooks.logreport(report)
 
 
 @pytest.fixture(scope="function")
