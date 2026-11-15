@@ -36,6 +36,9 @@ SCENARIO_FIXTURE = "backend_scenario"
 #: ``environment`` is the legacy fixture kept for directories not yet migrated.
 _DIALECT_FIXTURES = ("ddl_dialect", "database", "environment")
 
+#: Fixtures that say a test talks to a database at all.
+_DATABASE_FIXTURES = frozenset(("database", "database_config", "environment"))
+
 _SECTION = re.compile(r"^(purpose|passes|fails):\s*(.*)$", re.IGNORECASE)
 
 
@@ -76,14 +79,33 @@ def scenario_name(item) -> str:
 
 
 def dialect_of(item):
-    """The dialect the directory's environment opened, or ``None``."""
+    """The dialect the directory's environment opened, or ``None``.
+
+    The named fixtures are the ones the suite's environment fixtures provide.
+    Beyond them, any argument that carries a ``.dialect`` is used: a directory
+    that exposes its dialect under its own fixture name is still answering the
+    same question, and a hard-coded list of every such name would rot.
+    """
     funcargs = getattr(item, "funcargs", None) or {}
     for name in _DIALECT_FIXTURES:
         holder = funcargs.get(name)
         dialect = getattr(holder, "dialect", None) if holder is not None else None
         if dialect is not None:
             return dialect
+    for holder in funcargs.values():
+        dialect = getattr(holder, "dialect", None)
+        if dialect is not None:
+            return dialect
     return None
+
+
+def is_database_backed(item) -> bool:
+    """Whether the item's fixtures say it talks to a database."""
+    names = set(getattr(item, "fixturenames", ()) or ())
+    info = getattr(item, "_fixtureinfo", None)
+    if info is not None:
+        names.update(getattr(info, "names_closure", ()) or ())
+    return bool(names & _DATABASE_FIXTURES)
 
 
 def _protocol_reason(dialect, marker, owner: str) -> Optional[str]:
@@ -130,9 +152,19 @@ def declared_requirements(item) -> List[Tuple[object, str]]:
 def evaluate(item) -> None:
     """Skip the item when a switch it declares does not hold.
 
+    A declared switch is answered by the dialect the directory's environment
+    opened. Two situations are distinguished:
+
+    * the item is database-backed but no dialect surfaced -- a defect in the
+      directory's fixtures or in a fixture name, so it fails rather than
+      skipping;
+    * the item never touches a database (a unit test of the marker mechanism
+      itself, for example).  There is no dialect to ask and no dialect question
+      being asked, so the marker has no effect -- which is what it had before.
+
     A dialect that never implemented a declared switch is a gap, not an
-    "unsupported" answer, so it fails the item with a one-line message
-    instead of a negative skip or a traceback.
+    "unsupported" answer: it fails with a one-line message rather than a
+    negative skip.
     """
     entries = declared_requirements(item)
     if not entries:
@@ -140,10 +172,11 @@ def evaluate(item) -> None:
     try:
         dialect = dialect_of(item)
         if dialect is None:
+            if not is_database_backed(item):
+                return
             raise MissingSwitchError(
-                "the directory opened no dialect, so the switch a case declares "
-                "cannot be answered; a case marker belongs on a "
-                "database-backed test"
+                "the directory opened no dialect though the test is "
+                "database-backed, so the switch it declares cannot be answered"
             )
         for entry, marker_name in entries:
             owner = "{} ({})".format(getattr(item, "name", item.nodeid), marker_name)
