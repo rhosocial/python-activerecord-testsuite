@@ -40,7 +40,7 @@ def _renderable(dialect) -> set:
 
 
 def _suggested(dialect) -> dict:
-    return dialect.suggested_data_types() or {}
+    return dialect.substitute_data_types() or {}
 
 
 def test_supported_and_suggested_are_disjoint(dialect):
