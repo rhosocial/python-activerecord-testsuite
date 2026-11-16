@@ -1,13 +1,16 @@
 # Basic 夹具目录：重设计计划
 
 - 日期：2026-11-16
-- 状态：**设计已定，待排实施**（按 §10 分阶段）
+- 状态：**待审定**（审定前不写实现；按 §10 分阶段）
 - 范围：`src/rhosocial/activerecord/testsuite/feature/basic/fixtures/` 及其服务的
   `basic/*` 测试目录
 - 依据：
   - `python-activerecord-testsuite/.claude/plan/2026-11-15/plugin-redesign.md`（铁律 R1–R9）
   - `python-activerecord/.claude/add_new_testcase.md`（新增用例规范）
+  - `python-activerecord/.claude/plan/2026-11-16/README.md`（索引与审定清单）
+  - `python-activerecord/.claude/plan/2026-11-16/complex-value-types.md`（三层通盘、24 键）
   - `python-activerecord/.claude/plan/2026-11-16/minimal-definition.md`（零注记建表）
+  - `python-activerecord/.claude/plan/2026-11-16/backends-plan.md`（十个后端逐仓计划）
   - `python-activerecord/.claude/plan/2026-11-16/ddl-source-capabilities.md`（能力声明）
   - `python-activerecord/.claude/plan/2026-11-16/type-capacity-and-precision.md`
     （内容类型容量、毫秒默认与微秒开关）
@@ -76,8 +79,8 @@
 | F9 | 能力回答有两条**互不重叠**的通道：零参布尔方法 与 `supports_data_types()` 字典；`Requirement` 只接前者 | `pytest_plugin/requirements.py:74`、实跑 §1.3 |
 | F10 | `resolve()` 已支持「新版模块只覆盖它定义的名字」，未定义的回落到 `models.py` | `fixtures/__init__.py` |
 | F11 | **identity 是派生的，不是声明的**：字段在 `__primary_key__` 里且列属性含 `IdentityAttribute` 才算库生成主键；否则调用方必须提供主键值 | `interface/model.py:264` |
-| F12 | **`suggested_column_types()` 是成文契约**：18 个 `COMMON_TYPES` 键，每键必答 —— 列类，或 `None`（确实无承载），**漏键 = 硬失败**。实测 10 个方言全部答满 18/18；MySQL/MariaDB 的 `dict`、PostgreSQL 的 `timedelta` 答 `None`，是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`tests/.../query/column_helpers.py:38` |
-| F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `suggested_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
+| F12 | **`suggested_column_types()` 是成文契约**：`COMMON_TYPES` 键**每键必答** —— 列类，或 `None`（确实无承载），**漏键 = 硬失败**。本轮把键集从 18 扩到 **24**（+ `Geometry`/`Vector`/`BitString`/`Range`/`Multirange`/`MacAddress`）；实测 10 个方言当前都答满 18/18，MySQL/MariaDB 的 `dict`、PostgreSQL 的 `timedelta` 答 `None`，是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`tests/.../query/column_helpers.py:38` |
+| F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `substitute_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
 
 ### 1.2 注解 → 三方言（实测输出）
 
@@ -261,12 +264,13 @@ class AsyncUser(UserFields, IntegerPKMixin, AsyncActiveRecord): ...
 | `crud_composite_pk/` | `order_items`、`store_inventory`、`orders` | `OrderItem`、`StoreInventory`（零注记，复合键天然不是 identity） | `MappedOrderItem`（`UseColumn` + 复合 PK） | 否 → 同表 | 复合 PK |
 | `types/`（新） | `typed_users`、`typed_users_annotated` | ✓ | ✓ | 是 → 两表 | 标量类型概念 |
 | `types/`（新，补充） | `microsecond_rows` | —（只有 2 列，不设 bare） | ✓ | — | `supports_timestamp_microseconds` |
-| `types_complex/`（新） | `complex_rows_default`、`complex_rows_annotated` | ✓（受限，见 §5） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum） |
+| `types_complex/`（新） | `complex_rows_default`、`complex_rows_annotated` | ✓（含 `MacAddress` / `Point` 等后端建议表里有的业务类；`Vector`/`Range` 除外） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum）+ 业务类（geometry / mac） |
 | `types_long_content/`（新） | `long_rows` | **无** | ✓ | — | text / blob / json / xml 的概念与容量 |
 | `fields/` | 复用 `users` | `User` | `ColumnMappingModel`（`UseColumn`+`UseAdapter`）、派生字段 | 否 → 同表 | — |
 | `type_adapter/` | `adapter_rows` | `AdapterRow` | `AdapterRowAnnotated`（`UseAdapter`+`UseColumnType`） | 否 → 同表 | — |
 | `validation/` | `validated_rows` | —（无语义） | `ValidatedRow`（pydantic 校验） | 否 → 同表 | — |
 | `bulk_crud/` | `bulk_users` | `BulkUser` | — | — | — |
+| `expressions/`（新） | **无**（复用上述表） | — | — | — | 列类（B 层 24 键） |
 
 结构组（`nopk/`、`readonly/`、`transaction/`、`worker/`、`connection/`）**不按
 bare/annotated 重划**：它们的对照点是行为声明（无主键、只读、连接生命周期），
@@ -350,9 +354,14 @@ bare 变体整列只写 Python 类型，**框架推断出什么就是什么**—
 
 ## 5. 类型组二：`types_complex/`（复杂类型）
 
-bare 变体有硬边界：**只有「Python 类型存在、且推断得到存储类型、且方言能承载」的字段
-可以 bare**。`XML` 没有对应的 Python 类型，所以 XML 列只出现在 annotated 变体里 ——
-这正好把两组分开：
+bare 变体的边界由**后端的答案**决定，而不是由「是不是内建类型」决定：字段只写 Python
+类型，后端在建议表里答得出就能 bare —— 框架建模的类型（18 个常见类型 + 6 个复杂族）查
+**主表**（该组用到的键必答），后端自有类型查**extras**；答 `None` 就是「这个类不足以定
+存储，必须注记」。
+
+因此本组的列分三类：**常见类型**（bare 与 annotated 都有）、**类本身能定存储的业务类**
+（`MacAddress`、`Point`，bare 与 annotated 都有）、**参数属列属性的业务类与 XML**
+（`Vector`、`Range`、`BitString`、XML，只有 annotated）：
 
 | 列 | Python 类型 | bare | annotated |
 |---|---|---|---|
@@ -363,9 +372,21 @@ bare 变体有硬边界：**只有「Python 类型存在、且推断得到存储
 | `elapsed` | `timedelta` | ✓ | `+ IntervalType()` |
 | `kind` | `Enum` | ✓ | `+ EnumType(...)` |
 | `raw` | `bytes` | ✓ | `+ UseColumnType(BinaryColumn)`（显式钉死列类） |
-| `markup` | `str` | **不可 bare** | `+ XmlType() + UseColumnType(XMLColumn)` |
+| `nic` | `MacAddress`（core 业务类） | ✓（后端 extras 答得出时） | `+ UseAdapter(...)`（钉死适配器） |
+| `location` | `Point`（core 业务类） | ✓（得到**通用** `GEOMETRY` 列） | `+ UseSqlType(<子类型/SRID>)` 精确列 |
+| `heading` | `Vector`（core 业务类） | **不可 bare**：维度是列属性 | `+ UseSqlType(<vector(n)>)` |
+| `markup` | `str` | **不可 bare**：无 Python 类型可推 | `+ XmlType() + UseColumnType(XMLColumn)` |
 
-两条硬约束来自 §1.3 的实测：
+三组边界各有来由：
+
+- `MacAddress` / `Point` 的存储**由类本身决定**（无参数 / 通用几何），所以 bare 成立；
+  几何子类型与 SRID 是「更精确的声明」，不是「必须的声明」。
+- `Vector` / `Range` / `BitString` 的尺寸/元素类型是**列属性**，类里没有
+  （`Vector` 源码原话：「dimension is not constrained here: a column's DDL decides it」），
+  硬给默认值会让列在用户不知情时限制维度，所以答 `None` 并要求注记。
+- `markup` 是 XML，没有对应 Python 类型，只有 annotated 变体。
+
+两个硬约束来自 §1.3 的实测：
 
 - **Oracle 的 `JsonType()` 只有 `VARCHAR2(4000)`**。`payload` 的内容必须按 4 000 字节
   设计，否则在 Oracle 上是「容量不足」而不是「不支持 json」。容量前提要进 §8 的操作登记，
@@ -532,6 +553,7 @@ class TableFixture:
 | 4 | `types_complex/` 两变体 | 上述 + Oracle/SQLServer/ClickHouse |
 | 5 | `types_long_content/`（annotated only，依赖 2b 的 `length`） | 全部后端，重点看 MySQL `TEXT`、Oracle `CLOB` |
 | 6 | `fields/`、`type_adapter/`、`validation/` 按 bare/annotated 重排；`pydantic_native_models.py` 消重复 | 各仓 CI 全绿 |
+| 6b | 新增 `expressions/` 组（§12）：X1–X6；复用既有表，不新增 DDL | 各后端：X1 通过、X2/X3 按能力跳过并指名 |
 | 7 | 版本文件只留探针：新增 `models_py39.py` / `models_py314.py`，`VERSION_MODULES` 加两级；删 3.10/3.11/3.12 的存量副本 | 3.8–3.14 矩阵跑通；3.13/3.15 断言落在正确版本 |
 | 8 | 删 `fixture_types.py`、17 个 `Definition`、`TypeCase`/`TypeTestModel` 旧表 | `rg Definition`、`rg auto_pk`、`rg fixture_types` 均无残留 |
 
@@ -564,6 +586,9 @@ class TableFixture:
    微秒夹具是独立的 `microsecond_rows`（2 列），由 `supports_timestamp_microseconds()`
    决定是否跳过（Firebird 答 False，跳过并指名）。
 6. **`Mapped*` 按 P2 归入 annotated 变体**，不再独立成组。
+7. **C 层的表统一称「建议存储类型表」**（`suggested_storage_types()`）：它只在字段未声明
+   `UseSqlType` 时提供默认，显式声明永远优先，用户可完全不使用；建议渲染失败时**报错
+   指名表与列**，不静默降级。
 
 **待探索（已另立计划）**：
 
@@ -573,6 +598,36 @@ class TableFixture:
   `dialect.supports(concept)` 的统一通道。
 - `type-capacity-and-precision.md`：五个内容类型的 `length`、档位映射与 4 B/字符换算、
   毫秒默认与微秒开关、Firebird precision ≤ 4。
+
+---
+
+## 12. 字段表达式组：`expressions/`（DML / DDL / 表达式三面齐）
+
+前三个类型组管的是「值怎么存、怎么往返」。还差一面：**`Model.c.<field>` 拿到的是哪种列类、
+能做哪些运算**。这一组补上它，于是本目录服务的测试覆盖 DML（读写）、DDL（建表）与
+字段表达式（查询构造）三面。
+
+**不新增表，不新增模型**：本组复用 `users` / `typed_users` / `complex_rows` 等既有表，
+只断言它们的列表达式，因此**没有自己的 DDL/DML 操作**，`TableFixture.source` 全为 `None`。
+
+| 断言 | 内容 | 依赖 |
+|---|---|---|
+| X1 列类来自声明 | `Model.c.<field>` 的类 == 该方言 `suggested_column_types()[<Python 类型>]` | 主表 24 键 |
+| X2 正向运算 | 每个值族一个必须能渲染的运算：`IntegerColumn` 的算术、`StringColumn.like`、`TimestampColumn` 比较、`JSONColumn.json_path`、`ArrayColumn` 元素、几何/向量族各自的首个运算 | 列类存在 |
+| X3 负向运算 | 不该有的运算必须**不存在**（`JSONColumn` 没有 `like`、`XMLColumn` 不可比较），不是「运行时数据库报错」 | 列类存在 |
+| X4 列名映射 | `UseColumn` 改名的字段在表达式中用**列名**而不是字段名 | 既有 |
+| X5 同步/异步同源 | 同表两模型的 `c.<field>` 解析到同一个类 | P4 |
+| X6 后端差异**显式** | 某族在 B 层答 `None` 时，X2 的该条**跳过并指名**「`<方言>` 对 `<值族>` 没有运算类」；方言漏答是失败，不是跳过 | §9 |
+
+要点：
+
+- **X1 是「列类不是硬编码」的验收**：断言的是「模型声明 → 方言答案」这条路，
+  所以换后端时期望值随之变化，测试体不变。
+- **X2/X3 是「运算集」的验收**：只断 SQL 文本与可调用性，不执行（DB-free，走 `dialect` 夹具），
+  因此本组不占数据库、可与其它目录并行。
+- 复杂族在 B 层答 `None` 时（SQLite/Oracle 等），X2 跳过、`Model.c.x` 本身**照旧报错** ——
+  这正是「存得下但算不了」的显式形态（E-2）。
+- 迁移阶段：随 §10 的 6 号阶段一起做（列类先于表达式测试落地）。
 
 ---
 
