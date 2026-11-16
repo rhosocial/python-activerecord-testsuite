@@ -21,9 +21,12 @@ import pytest
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 from rhosocial.activerecord.testsuite.feature.basic.fixtures import resolve
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
-    OrderDefinition,
-    OrderItemDefinition,
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.composite_pk_models import (
+    COMPOSITE_PK_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
 )
 
 OrderItem = resolve("OrderItem")
@@ -34,11 +37,6 @@ MappedOrderItem = resolve("MappedOrderItem")
 AsyncMappedOrderItem = resolve("AsyncMappedOrderItem")
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
-
-DEFINITIONS = (
-    OrderDefinition,
-    OrderItemDefinition,
-)
 
 
 def _database_name() -> str:
@@ -82,12 +80,9 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate the tables this directory uses, before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, COMPOSITE_PK_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, COMPOSITE_PK_FIXTURES)
 
 
 @pytest.fixture(name="order_item_class")
