@@ -18,14 +18,37 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from rhosocial.activerecord.testsuite.core.bridges import (  # noqa: E402
-    bridge_target,
-    expected_bridges,
-    missing_bridges,
-    testsuite_modules,
+SUITE_SRC = (
+    Path(__file__).resolve().parent.parent / "src" / "rhosocial" / "activerecord" / "testsuite"
 )
+FEATURE_ROOT = SUITE_SRC / "feature"
+
+
+def testsuite_modules() -> list:
+    """Feature-relative module paths the backend must mirror, ``a/b/test_x.py``."""
+    modules = []
+    for path in sorted(FEATURE_ROOT.rglob("test_*.py")):
+        if "__pycache__" in path.parts:
+            continue
+        if any(part.startswith((".", "_")) for part in path.relative_to(FEATURE_ROOT).parts):
+            continue
+        modules.append(path.relative_to(FEATURE_ROOT).as_posix())
+    return modules
+
+
+def bridge_target(relative_module: str) -> str:
+    """The importable target a bridge re-exports, ``suite.feature.a.b.test_x``."""
+    return "rhosocial.activerecord.testsuite." + relative_module[:-3].replace("/", ".")
+
+
+def expected_bridges() -> list:
+    """Every bridge path a complete backend tree has."""
+    return testsuite_modules()
+
+
+def missing_bridges(feature_root: Path) -> list:
+    """Expected bridge paths that do not exist under ``feature_root``."""
+    return [module for module in expected_bridges() if not (feature_root / module).exists()]
 
 HEADER = """# {path}
 # Generated bridge: do not add test logic here. Capability differences belong in

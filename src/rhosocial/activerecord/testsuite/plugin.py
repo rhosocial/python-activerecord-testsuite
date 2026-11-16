@@ -6,32 +6,22 @@ backend only has to install ``rhosocial-activerecord-testsuite`` to get it.
 
 What it does:
 
-* provides the ``environment`` fixture every testsuite fixture depends on;
-* before each test it runs the directory's ``prepare`` and afterwards its
-  ``teardown`` (the directory conftest owns both);
-* once per directory and scenario, before that directory's first test, it
-  runs the directory's ``ensure_database``;
-* pins a directory's tests per scenario for xdist, so tests that share a
-  database never run on two workers;
-* applies the ``requires_protocol`` / ``requires_functions`` markers.
+* pins a directory's database-backed tests per scenario for xdist, so tests
+  that share a database never run on two workers;
+* applies the ``requires_*`` markers and reports what a failure means.
+
+A directory's tables, fixtures and database belong to that directory's
+``conftest.py``; this plugin owns neither, and keeps no environment of its own.
 """
 from __future__ import annotations
 
 import os
-import sys
 
 import pytest
 
 from rhosocial.activerecord.testsuite.pytest_plugin import hooks
-from rhosocial.activerecord.testsuite.core.declarations import (
-    DeclarationError,
-    contract_for_path,
-)
-from rhosocial.activerecord.testsuite.core.environment import Environment
 
 SCENARIO_FIXTURE_NAME = "backend_scenario"
-
-_RESET_DATABASES = set()
 
 _EXTRA_MARKERS = (
     "requires_protocol: skip when the backend dialect lacks the protocol or its answer",
@@ -79,11 +69,8 @@ def _assert_loadgroup(config) -> None:
         )
 
 
-def _contract(item):
-    return contract_for_path(item.config.pluginmanager, item.path)
-
-
-_DATABASE_FIXTURES = ("database", "database_config", "environment")
+#: Fixtures whose presence means the test runs against a directory's database.
+_DATABASE_FIXTURES = ("database", "database_config")
 
 
 def _uses_database(item) -> bool:
@@ -119,10 +106,10 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_call(item):
-    """Apply a case's requirement markers against the dialect its environment opened.
+    """Apply a case's requirement markers against the dialect the test opened.
 
-    This runs at ``call`` rather than ``setup`` because the dialect exists
-    only once the environment fixture has prepared the directory's backend.
+    This runs at ``call`` rather than ``setup`` because the dialect exists only
+    once the directory's own fixtures have prepared the backend.
     """
     hooks.runtest_call(item)
 
@@ -130,37 +117,3 @@ def pytest_runtest_call(item):
 def pytest_runtest_logreport(report):
     """Say what a failure means, where the failure is reported."""
     hooks.logreport(report)
-
-
-@pytest.fixture(scope="function")
-def environment(request, backend_scenario):
-    """Prepare one test's directory fixtures and tear them down afterwards."""
-    contract = getattr(request.node, "_testsuite_contract", None) or _contract(
-        request.node
-    )
-    if contract is None:
-        raise DeclarationError(
-            f"No directory contract above {request.node.path}: its conftest must "
-            "define prepare(environment) and teardown(environment)"
-        )
-
-    env = Environment(backend_scenario, contract.database, contract.directory)
-    key = (contract.directory, getattr(backend_scenario, "name", "default"))
-    try:
-        if key not in _RESET_DATABASES:
-            contract.ensure_database(env)
-            _RESET_DATABASES.add(key)
-        contract.prepare(env)
-        yield env
-    finally:
-        # Drops are idempotent, so clean up even when preparation failed halfway;
-        # a teardown error must not mask an error already in flight.
-        failed = sys.exc_info()[1] is not None
-        try:
-            contract.teardown(env)
-        except Exception:
-            if not failed:
-                raise
-        finally:
-            env.disconnect()
-            Environment.active = None

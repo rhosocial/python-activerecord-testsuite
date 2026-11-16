@@ -10,9 +10,9 @@ Three moments:
   scenario, and the text a test carries (its purpose, what a pass or a failure
   means) is attached to the item so it reaches the report;
 * **call** -- the requirements a case declares are evaluated against the dialect
-  the directory's environment opened, and an unmet one skips the case by name;
-  this is ``call`` and not ``setup`` because the dialect exists only once the
-  environment fixture has run;
+  the directory's fixtures opened, and an unmet one skips the case by name;
+  this is ``call`` and not ``setup`` because the dialect exists only once those
+  fixtures have run;
 * **report** -- a failure prints what it means, because ``-v`` does not show
   docstrings and a bare assertion message says nothing about the system.
 """
@@ -31,11 +31,12 @@ REQUIRES_PROTOCOL = "requires_protocol"
 SCENARIO_FIXTURE = "backend_scenario"
 
 #: Fixtures through which an already adapted dialect is reachable at call time.
-#: ``environment`` is the legacy fixture kept for directories not yet migrated.
-_DIALECT_FIXTURES = ("ddl_dialect", "database", "environment")
+#: A directory that opens no database of its own answers through ``dialect``
+#: directly; nothing else declares a dialect for it.
+_DIALECT_FIXTURES = ("ddl_dialect", "database")
 
 #: Fixtures that say a test talks to a database at all.
-_DATABASE_FIXTURES = frozenset(("database", "database_config", "environment"))
+_DATABASE_FIXTURES = frozenset(("database", "database_config"))
 
 _SECTION = re.compile(r"^(purpose|passes|fails):\s*(.*)$", re.IGNORECASE)
 
@@ -77,9 +78,9 @@ def scenario_name(item) -> str:
 
 
 def dialect_of(item):
-    """The dialect the directory's environment opened, or ``None``.
+    """The dialect the directory's fixtures opened, or ``None``.
 
-    The named fixtures are the ones the suite's environment fixtures provide.
+    The named fixtures are the ones the suite's directory fixtures provide.
     Beyond them, any argument that carries a ``.dialect`` is used: a directory
     that exposes its dialect under its own fixture name is still answering the
     same question, and a hard-coded list of every such name would rot.
@@ -144,7 +145,7 @@ def declared_requirements(item) -> List[Tuple[object, str]]:
 def evaluate(item) -> None:
     """Skip the item when a requirement it declares does not hold.
 
-    A declared switch is answered by the dialect the directory's environment
+    A declared switch is answered by the dialect the directory's fixtures
     opened. Two situations are distinguished:
 
     * the item is database-backed but no dialect surfaced -- a defect in the
