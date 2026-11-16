@@ -41,9 +41,9 @@
 1. 本目录的公开名字（模型类名、表来源清单）带有**跨 feature 契约**属性。
    改名、删除、改变语义必须同批更新 `feature/query`、`feature/cli` 的
    `conftest.py`，并在提交说明里点名影响面。
-2. `BASIC_DEFINITIONS`（`{表名: Definition}`）随 P1 消失，替换为
-   `BASIC_TABLES`（模型类元组，建表来源）。`cli/conftest.py` 的
-   `BASIC_DEFINITIONS["users"]` 等三处取值随之改为按表名查模型。
+2. `BASIC_DEFINITIONS`（`{表名: Definition}`）已随 P1 消失，替换为
+   `BASIC_TABLES`（模型类元组，建表来源，见 `user_models.py`）。
+   `cli/conftest.py` 已改用 `BASIC_FIXTURES` 派生这三张表。
 
 ---
 
@@ -547,7 +547,7 @@ class TableFixture:
 | 阶段 | 内容 | 验收 |
 |---|---|---|
 | 0 | core 两处收口：`_resolve_type` 只捕能力异常；本目录落地 §8.1 的临时能力元数据 | **已完成**（2026-11-17） |
-| 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py`；`crud` / `crud_composite_pk` / `connection` / `nopk` / `readonly` 改为派生建表（先用 annotated），删掉对应 `Definition`；`BASIC_DEFINITIONS` → `BASIC_TABLES`，同批更新 `query`/`cli` 的 conftest | core 本地跑 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` |
+| 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py` + `composite_pk_models.py`；五组 conftest 改为派生建表；`BASIC_DEFINITIONS` → `BASIC_TABLES`，`cli/conftest.py` 同步 | **已完成**（2026-11-17）：core 的 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` 与 `cli` 全绿 |
 | 2a | core `minimal-definition` P0（标量推断）落地：24 键、每键必答，与 `suggested_column_types()` 同一套纪律 | **已完成**（2026-11-17）：`suggested_data_types()` 24 键全答，bare 可建表 |
 | 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_timestamp_microseconds()` 进协议并由各后端回答 | core 档位快照；Firebird 毫秒往返；微秒探针在 Firebird 答 False |
 | 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | 本地 + MySQL/PG/Firebird 定向 |

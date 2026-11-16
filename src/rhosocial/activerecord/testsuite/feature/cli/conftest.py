@@ -6,6 +6,7 @@ builds a throw-away module whose attributes are the models configured for the
 directory's database.  The directory owns one fixture group: the basic tables
 and the mixins ``tasks`` table the CLI exercises.
 """
+
 import sys
 import types
 import uuid
@@ -15,11 +16,17 @@ import pytest
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 from rhosocial.activerecord.query import AsyncCTEQuery, CTEQuery
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
+    BASIC_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
     AsyncBulkUser,
     AsyncUser,
     AsyncValidatedUser,
-    BASIC_DEFINITIONS,
     BulkUser,
     User,
     ValidatedUser,
@@ -38,12 +45,7 @@ from rhosocial.activerecord.testsuite.feature.mixins.fixtures.models import (
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-DEFINITIONS = (
-    BASIC_DEFINITIONS["users"],
-    BASIC_DEFINITIONS["bulk_users"],
-    BASIC_DEFINITIONS["validated_users"],
-    TaskDefinition,
-)
+DEFINITIONS = (TaskDefinition,)
 
 
 @pytest.fixture(scope="session")
@@ -68,12 +70,14 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate this directory's tables before every test."""
+    create_schema(database, BASIC_FIXTURES)
     fixtures = [definition(database.dialect) for definition in DEFINITIONS]
     for fixture in fixtures:
         database.execute(*fixture.create_table.to_sql(), options=DDL)
     yield
     for fixture in reversed(fixtures):
         database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, BASIC_FIXTURES)
 
 
 def add_query_functions(module, user, cte_class) -> None:
@@ -84,9 +88,7 @@ def add_query_functions(module, user, cte_class) -> None:
         return user.query().where(user.c.age >= 18)
 
     def user_union():
-        return user.query().where(user.c.age == 20).union(
-            user.query().where(user.c.age == 40)
-        )
+        return user.query().where(user.c.age == 20).union(user.query().where(user.c.age == 40))
 
     def user_cte():
         cte = cte_class(user.backend())

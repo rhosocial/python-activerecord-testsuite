@@ -1482,23 +1482,3 @@ class TestUserDefinition(Definition):
             self.text("email"),
         ]
 
-
-BASIC_DEFINITIONS = {
-    "users": UserDefinition,
-    "test_users": TestUserDefinition,
-    "type_cases": TypeCaseDefinition,
-    "type_tests": TypeTestDefinition,
-    "validated_field_users": ValidatedFieldUserDefinition,
-    "validated_users": ValidatedUserDefinition,
-    "pydantic_validated_models": PydanticValidatedModelDefinition,
-    "type_adapter_tests": TypeAdapterTestDefinition,
-    "posts": PostDefinition,
-    "comments": CommentDefinition,
-    "column_mapping_items": ColumnMappingItemDefinition,
-    "mixed_annotation_items": MixedAnnotationItemDefinition,
-    "bulk_users": BulkUserDefinition,
-    "orders": OrderDefinition,
-    "order_items": OrderItemDefinition,
-    "product": ProductDefinition,
-    "store_inventory": StoreInventoryDefinition,
-}
