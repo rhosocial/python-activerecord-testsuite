@@ -79,7 +79,7 @@
 | F9 | 能力回答有两条**互不重叠**的通道：零参布尔方法 与 `supports_data_types()` 字典；`Requirement` 只接前者 | `pytest_plugin/requirements.py:74`、实跑 §1.3 |
 | F10 | `resolve()` 已支持「新版模块只覆盖它定义的名字」，未定义的回落到 `models.py` | `fixtures/__init__.py` |
 | F11 | **identity 是派生的，不是声明的**：字段在 `__primary_key__` 里且列属性含 `IdentityAttribute` 才算库生成主键；否则调用方必须提供主键值 | `interface/model.py:264` |
-| F12 | **`suggested_column_types()` 是成文契约**：`COMMON_TYPES` 键**每键必答** —— 列类，或 `None`（确实无承载），**漏键 = 硬失败**。本轮把键集从 18 扩到 **24**（+ `Geometry`/`Vector`/`BitString`/`Range`/`Multirange`/`MacAddress`）；实测 10 个方言当前都答满 18/18，MySQL/MariaDB 的 `dict`、PostgreSQL 的 `timedelta` 答 `None`，是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`tests/.../query/column_helpers.py:38` |
+| F12 | **`suggested_column_types()` 是成文契约**：`FRAMEWORK_PYTHON_TYPES` 的 **24 键每键必答**，漏键 = 硬失败。2026-11-17 已补齐：六族有 core 列类、`timedelta` 答 `IntervalColumn`；十方言全答满，唯一 `None` 是 Firebird 的 `dict` + 四个容器（无 JSON 读取函数、无原生数组），是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`base/framework_types.py` |
 | F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `substitute_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
 
 ### 1.2 注解 → 三方言（实测输出）
@@ -180,8 +180,8 @@ for source in TABLE_SOURCES:
 - **bare 只差 DDL 侧的推断**（F3）：DML 侧早已按 Python 类型选列类，而且是**成文契约**
   —— `suggested_column_types()` 的 18 个键每键必答，漏键硬失败（F12，实测 10 个方言
   全部答满）。缺的是同一件事的存储类型版本：`column_data_type()` 只读显式 `UseSqlType`。
-  所以 bare 变体随 core 的 `minimal-definition` 一起启用，且新推断表要照抄既有纪律
-  （18 键、每键必答、漏键硬失败），而不是另发明一套。
+  所以 bare 变体随 core 的 `minimal-definition` 一起启用；推断表已落地为
+  `suggested_data_types()`（24 键、每键必答、无 `None`），与列类表同纪律。
 - **「零注解」只约束模型自己写的字段**。从 mixin 继承的声明（`DefaultTimestampMixin`
   给的 `created_at`/`updated_at`）照旧 —— 那是框架给的，不是用户写的；它们的精度随
   mixin 的默认值走（毫秒，见 §4）。同理，主键约定若最终由 mixin 提供，也算框架声明。
@@ -327,7 +327,8 @@ bare/annotated 重划**：它们的对照点是行为声明（无主键、只读
 bare 变体整列只写 Python 类型，**框架推断出什么就是什么**——这正是这一组的价值：
 它把 `minimal-definition.md` 里 D1–D4 四个默认值（`str` 长度、`int` 宽度、
 主键 identity、`Decimal` 精度）钉成可执行断言。默认值若改，这组测试必须跟着改，
-这正是我们要的灵敏度。推断表要照抄 F12 的形状（18 键、每键必答）。
+这正是我们要的灵敏度。推断表现在已经存在：`suggested_data_types()` 的 24 键表，
+与列类表同纪律（每键必答、无 `None`），bare 已可建表。
 
 `TinyIntType`/`SmallIntType`/`BigIntType` **不进共享套件**：整数宽度是后端话题，
 写进来就违反 R1。
@@ -381,9 +382,10 @@ bare 变体的边界由**后端的答案**决定，而不是由「是不是内�
 
 - `MacAddress` / `Point` 的存储**由类本身决定**（无参数 / 通用几何），所以 bare 成立；
   几何子类型与 SRID 是「更精确的声明」，不是「必须的声明」。
-- `Vector` / `Range` / `BitString` 的尺寸/元素类型是**列属性**，类里没有
-  （`Vector` 源码原话：「dimension is not constrained here: a column's DDL decides it」），
-  硬给默认值会让列在用户不知情时限制维度，所以答 `None` 并要求注记。
+- `Vector` / `Range` / `BitString` 的尺寸/元素类型仍是**列属性**，类里没有
+  （`Vector` 源码原话：「dimension is not constrained here: a column's DDL decides it」）。
+  2026-11-17 后 core 已给它们列类、后端已给文本/JSON 载体，所以 bare **可以建表**；
+  但要原生语义（维度、元素类型、位宽）仍须 `UseSqlType(...) + UseColumnType(...)`。
 - `markup` 是 XML，没有对应 Python 类型，只有 annotated 变体。
 
 两个硬约束来自 §1.3 的实测：
@@ -395,13 +397,12 @@ bare 变体的边界由**后端的答案**决定，而不是由「是不是内�
   （SQLite、MySQL、SQL Server 各自缺 formatter）。这不是缺陷，是能力：方言明确拒绝
   语义不成立的类型，而不是静默降级。bare 组在缺少这些概念的方言上按 §8 的开关跳过。
 
-还有一条**只有 bare 会踩到**的边界（实测 F12）：DML 那张 18 键表允许答 `None`
-表示「确实没有列类」，而 **MySQL / MariaDB 对 `dict` 答 `None`、PostgreSQL 对 `timedelta`
-答 `None`**。所以 bare 的 `payload`(dict) 在 MySQL/MariaDB 上、`elapsed`(timedelta)
-在 PostgreSQL 上，连 DML 侧的列类都不存在 —— 不是 DDL 推断能解决的。bare 组因此要按
-**逐列**登记能力（§8.1 的 `Operation` 支持按列细分的登记），在这些方言上跳过并指名
-`dict` / `timedelta`；annotated 组则用 `UseSqlType(JsonType()) + UseColumnType(...)`
-显式承担，不受该限制。
+还有一条**只有 bare 会踩到**的边界（2026-11-17 复核）：24 键表现在全答，
+MySQL/MariaDB 的 `dict` 与 PostgreSQL 的 `timedelta` 已有列类与建议存储类型，
+不再需要按方言跳过。唯一仍拒绝的是 **Firebird 的 `dict` + 四个容器**（无 JSON 读取
+函数、无原生数组）；bare 组按**逐列**登记能力（§8.1 的 `Operation.column`），
+只在 Firebird 跳过并指名这些列；annotated 组用
+`UseSqlType(JsonType()) + UseColumnType(...)` 显式承担，不受该限制。
 
 bare 组的测试断言**只做值往返（写入=读出）**，不断言列类：列类由方言推断（F4），
 断它等于把后端实现钉进共享套件。annotated 组可以用 `UseColumnType` 钉死列类，
@@ -545,9 +546,9 @@ class TableFixture:
 
 | 阶段 | 内容 | 验收 |
 |---|---|---|
-| 0 | core 两处收口：`_resolve_type` 只捕能力异常（`UnsupportedFeatureError` / `ProtocolNotImplementedError`）；本目录落地 §8.1 的临时能力元数据 | core 单测 + 元数据单测 |
+| 0 | core 两处收口：`_resolve_type` 只捕能力异常；本目录落地 §8.1 的临时能力元数据 | **已完成**（2026-11-17） |
 | 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py`；`crud` / `crud_composite_pk` / `connection` / `nopk` / `readonly` 改为派生建表（先用 annotated），删掉对应 `Definition`；`BASIC_DEFINITIONS` → `BASIC_TABLES`，同批更新 `query`/`cli` 的 conftest | core 本地跑 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` |
-| 2a | core `minimal-definition` P0（标量推断）落地：18 键、每键必答，与 `suggested_column_types()` 同一套纪律 | core 单测；零注记模型三方言建表 |
+| 2a | core `minimal-definition` P0（标量推断）落地：24 键、每键必答，与 `suggested_column_types()` 同一套纪律 | **已完成**（2026-11-17）：`suggested_data_types()` 24 键全答，bare 可建表 |
 | 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_timestamp_microseconds()` 进协议并由各后端回答 | core 档位快照；Firebird 毫秒往返；微秒探针在 Firebird 答 False |
 | 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | 本地 + MySQL/PG/Firebird 定向 |
 | 4 | `types_complex/` 两变体 | 上述 + Oracle/SQLServer/ClickHouse |
@@ -571,9 +572,9 @@ class TableFixture:
 **已定**：
 
 1. **bare = 字面零注记**（§2 P2）。它是「写个类就能建表」这一产品承诺的验收夹具，
-   承诺最终写进项目 README。当前受阻于 core 的存储类型推断
-   （`minimal-definition.md`），不退回「只给 `UseSqlType`」的中间形态。推断表照抄
-   F12 的纪律（18 键、每键必答、漏键硬失败），不另发明一套。
+   承诺最终写进项目 README。2026-11-17：core 的存储类型推断已落地
+   （`suggested_data_types()` 24 键全答、无 `None`），因此 bare 不再受阻；
+   本条从「待实现」改为「已具备、待阶段 3 接入」。
 2. **不额外加「零注记必须报错」的契约测试**：既然承诺是「能建表」，断言就必须是
    「能建表且与等价注记逐字相同」，而不是断言旧的失败行为。
 3. **类型概念的能力检查走临时元数据类**（§8.1），core 接口落地后再删壳
