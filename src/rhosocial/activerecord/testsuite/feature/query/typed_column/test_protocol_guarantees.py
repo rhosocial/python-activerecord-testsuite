@@ -163,6 +163,61 @@ def test_every_answered_class_is_constructible(dialect):
 
 
 # ---------------------------------------------------------------------------
+# 2b. The extras table: the backend's own value classes
+# ---------------------------------------------------------------------------
+
+
+def test_every_extra_answer_is_a_column_class(dialect):
+    """The second table has no ``None`` state: an absent entry is the whole no.
+
+    Unlike the common table -- where a ``None`` records a value family the
+    backend genuinely cannot carry -- the extras table is opt-in. A backend
+    that has nothing of its own returns ``{}``; a backend that has a value
+    class names the column class a bare field gets. Anything that is not a
+    ``ColumnBase`` subclass would be read as a column class and fail later.
+    """
+    extra = dialect.suggested_extra_column_types()
+    for entry, value in extra.items():
+        assert isinstance(value, type) and issubclass(value, ColumnBase), (
+            f"{type(dialect).__name__} answers {value!r} in its extra table for "
+            f"{_name(entry)}, which is not a column class"
+        )
+
+
+def test_the_extra_table_does_not_shadow_the_common_entries(dialect):
+    """A type answered twice would make the second answer meaningless.
+
+    The protocol keeps the two tables apart so "the framework has an answer"
+    stays distinguishable from "this backend has one of its own"; a key that
+    falls in both would blur the distinction at the first lookup.
+    """
+    common = set(dialect.suggested_column_types())
+    extra = set(dialect.suggested_extra_column_types())
+    assert not (common & extra), (
+        f"{type(dialect).__name__} answers {sorted(_name(e) for e in common & extra)} "
+        f"in both tables"
+    )
+
+
+def test_every_extra_class_is_constructible(dialect):
+    """Every extra answer builds a column that renders, like the common ones."""
+    for entry, value in dialect.suggested_extra_column_types().items():
+        column = value(dialect, "c")
+        assert isinstance(column, ColumnBase), (
+            f"{type(dialect).__name__} answers {value!r} in its extra table for "
+            f"{_name(entry)}, which does not build a column"
+        )
+        assert column.to_sql(), f"{value!r} renders nothing for {_name(entry)}"
+
+
+def test_the_extra_table_is_a_copy(dialect):
+    """Mutating the answer must not reach the table a later lookup reads."""
+    first = dialect.suggested_extra_column_types()
+    first.clear()
+    assert dialect.suggested_extra_column_types() == dialect.suggested_extra_column_types()
+
+
+# ---------------------------------------------------------------------------
 # 3. Orthogonality: the DDL type cannot reach the expression
 # ---------------------------------------------------------------------------
 
