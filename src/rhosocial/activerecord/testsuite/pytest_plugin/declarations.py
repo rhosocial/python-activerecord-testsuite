@@ -52,8 +52,10 @@ class Declaration:
     requires: Tuple[Requirement, ...] = field(default_factory=tuple)
     """Dialect answers this scope's fixtures require.
 
-    Evaluated by the environment fixture, which is the first place the concrete
-    backend -- and therefore the dialect -- is known.
+    Evaluated at call time by ``hooks.evaluate``, the first moment the directory
+    has opened its fixtures and therefore knows which dialect it is talking to.
+    A requirement this scope declares but no dialect answers fails the item: a
+    dialect gap is not an "unsupported" answer.
     """
 
     def __post_init__(self) -> None:

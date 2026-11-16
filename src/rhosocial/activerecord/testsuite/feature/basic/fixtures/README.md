@@ -1,166 +1,592 @@
-# Basic Feature Test Fixtures
+# Basic 夹具目录：重设计计划
 
-This directory contains fixture model classes for testing basic ActiveRecord functionality across Python 3.8–3.12.
+- 日期：2026-11-16
+- 状态：**设计已定，待排实施**（按 §10 分阶段）
+- 范围：`src/rhosocial/activerecord/testsuite/feature/basic/fixtures/` 及其服务的
+  `basic/*` 测试目录
+- 依据：
+  - `python-activerecord-testsuite/.claude/plan/2026-11-15/plugin-redesign.md`（铁律 R1–R9）
+  - `python-activerecord/.claude/add_new_testcase.md`（新增用例规范）
+  - `python-activerecord/.claude/plan/2026-11-16/minimal-definition.md`（零注记建表）
+  - `python-activerecord/.claude/plan/2026-11-16/ddl-source-capabilities.md`（能力声明）
+  - `python-activerecord/.claude/plan/2026-11-16/type-capacity-and-precision.md`
+    （内容类型容量、毫秒默认与微秒开关）
 
-## Sync/Async Parity
+---
 
-Every model class has both a synchronous (`ActiveRecord`) and an asynchronous (`AsyncActiveRecord`) variant. The two variants define identical fields, validators, and annotations, ensuring test coverage mirrors across sync/async backends.
+## 0. 一句话
 
-## Files Overview
+**模型即定义。** 一张表由一个模型类的注解声明，DDL 由
+`base/derivation.py` 从注解派生，不再有手写的 `Definition` 列清单；每个声明集合
+配一份同目录的 DDL/DML 操作；夹具按「组」组织，每组 = 一个测试目录 = 一个库。
 
-| File | Python Version | Key Features |
-|------|---------------|--------------|
-| `models.py` | 3.8+ | Base version using `Optional[T]` and `Union[T, U]` |
-| `models_py310.py` | 3.10+ | `X \| Y` union type syntax |
-| `models_py311.py` | 3.11+ | `Self` type for chainable methods |
-| `models_py312.py` | 3.12+ | `@override` decorator, type parameter syntax |
+### 0.1 适用范围与所有权
 
-## Version-Specific Syntax Features
+本目录是 **`basic` 范围内唯一的夹具定义处**，两个方向相反的规则：
 
-### Python 3.8+ (`models.py`)
+- **向内收**：`basic/` 下所有测试目录（`crud`、`types*`、`nopk`、`readonly`、
+  `validation`、`connection`、`worker`、`transaction`、`bulk_crud`）**不再私自定义
+  夹具** —— 模型、适配器、DDL/DML 操作一律取自本目录。测试目录里只保留
+  `pytest` 夹具函数与断言；`conftest.py` 只做「挑表 → 建表 → 交给用例」。
+- **向外借**：**其他 feature 允许使用本目录的夹具**（现状已有：`feature/query`
+  用 `OrderItem`/`AsyncOrderItem`，`feature/cli` 用 `User`、`ValidatedUser`、
+  `BulkUser` 与 `BASIC_DEFINITIONS`）。这条是单向的：本目录**不反向依赖**任何
+  feature，也不从别的 feature 借模型。
 
-The base version uses traditional typing module syntax:
+由此产生两条硬约束：
 
-```python
-from typing import Optional, Union
+1. 本目录的公开名字（模型类名、表来源清单）带有**跨 feature 契约**属性。
+   改名、删除、改变语义必须同批更新 `feature/query`、`feature/cli` 的
+   `conftest.py`，并在提交说明里点名影响面。
+2. `BASIC_DEFINITIONS`（`{表名: Definition}`）随 P1 消失，替换为
+   `BASIC_TABLES`（模型类元组，建表来源）。`cli/conftest.py` 的
+   `BASIC_DEFINITIONS["users"]` 等三处取值随之改为按表名查模型。
 
-class User(ActiveRecord):
-    id: Optional[int] = None
-    username: str
-    email: Optional[EmailStr] = None
-```
+---
 
-### Python 3.10+ (`models_py310.py`)
+## 1. 现状盘点（本目录）
 
-Uses the new union type syntax (`X | Y`):
+当前 `models.py` 有 **66 个类**（33 组同步/异步对）＋ **17 个手写 `Definition`**，
+`models_py310/311/312.py` 是其中约 35 个类的手抄副本（各 667–693 行）。
 
-```python
-class User(ActiveRecord):
-    id: int | None = None
-    username: str
-    email: EmailStr | None = None
-```
+| 现状 | 数量 | 问题 |
+|---|---|---|
+| 模型类 | 66 | 字段只写 Python 类型，无 DDL 声明 |
+| `Definition` 类 | 17 | 把同一张表的列清单再手写一遍（`UserDefinition.columns()` vs `User`） |
+| 版本副本 | 3 份 | 手抄，必然漂移（`User.email` 在 `models.py` 是 `EmailStr`，在 3.10+ 是 `str`） |
+| 共用同表名的模型 | 6 张表 | `users` 被 `User`/`MappedUser` 共用，`order_items` 被 `OrderItem`/`MappedOrderItem` 共用，`product` 被 4 个模型共用 |
+| 有 DDL 声明的字段 | ≈2 | 只有 `DefaultTimestampMixin` 的 `created_at`/`updated_at` |
+| `basic/` 下私有模型 | 4 处 / ≈40 类 | 见 §3.1，模型定义散在测试目录里 |
 
-### Python 3.11+ (`models_py311.py`)
+实跑 `build_create_table_statement(User, SQLiteDialect())` 的直接结果：
+`ValueError: users.id declares no SQL type` —— 66 个类里没有一个能派生自己的表。
 
-Adds the `Self` type for methods that return instances of the same class:
+### 1.1 已核实的机制事实（决定设计边界）
 
-```python
-from typing import Self
+| # | 事实 | 位置 |
+|---|---|---|
+| F1 | 注解 → DDL 已经可用：`UseSqlType` / `UseColumnAttributes(IdentityAttribute())` / `UseConstraint` / `UseIndex` / `UseComment` / `UseColumnType` / `UseColumn` / `UseAdapter`，派生入口 `build_create_table_statement(source, dialect)` | `python-activerecord/base/ddl.py`、`base/derivation.py` |
+| F2 | 声明期不需要方言：`PromptRow` 同一份注解在 sqlite / mysql / postgres 分别派生出 `INTEGER PRIMARY KEY AUTOINCREMENT` / `INT PRIMARY KEY AUTO_INCREMENT` / `SERIAL` | 实跑，见 §1.2 |
+| F3 | **DDL 存储类型没有推断**：`column_data_type()` 只返回显式 `UseSqlType`，Python 类型不参与 | `base/ddl.py:892` |
+| F4 | **DML 列类有推断**：无 `UseColumnType` 时，方言按 Python 类型答 `suggested_column_types()` | `base/field_proxy.py:249`、`impl/sqlite/mixins/column_type.py` |
+| F5 | 列类与存储类型**刻意互不读取** | `backend/expression/column_types.py:26` |
+| F6 | 派生会按 `Optional` 自动加 `NOT NULL`；显式 `UseConstraint(ColumnNullableConstraint)` 可以推翻 | `base/ddl.py:966` |
+| F7 | `TextType()` **没有长度参数**；`TimestampType(precision=...)` 各家行为差异极大 | 见 §1.3 |
+| F8 | 能力探针的答案依赖服务器版本，`introspect_and_adapt()` 之前可能全部为 False | `impl/oracle/mixins/features.py:201` |
+| F9 | 能力回答有两条**互不重叠**的通道：零参布尔方法 与 `supports_data_types()` 字典；`Requirement` 只接前者 | `pytest_plugin/requirements.py:74`、实跑 §1.3 |
+| F10 | `resolve()` 已支持「新版模块只覆盖它定义的名字」，未定义的回落到 `models.py` | `fixtures/__init__.py` |
+| F11 | **identity 是派生的，不是声明的**：字段在 `__primary_key__` 里且列属性含 `IdentityAttribute` 才算库生成主键；否则调用方必须提供主键值 | `interface/model.py:264` |
+| F12 | **`suggested_column_types()` 是成文契约**：18 个 `COMMON_TYPES` 键，每键必答 —— 列类，或 `None`（确实无承载），**漏键 = 硬失败**。实测 10 个方言全部答满 18/18；MySQL/MariaDB 的 `dict`、PostgreSQL 的 `timedelta` 答 `None`，是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`tests/.../query/column_helpers.py:38` |
+| F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `suggested_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
 
-class User(ActiveRecord):
-    def activate(self) -> Self:
-        """Activate user and return self for chaining."""
-        self.is_active = True
-        return self
-
-    def with_balance(self, new_balance: float) -> Self:
-        """Return a new instance with updated balance."""
-        new_user = self.clone()
-        new_user.balance = new_balance
-        return new_user
-
-# Usage: chainable method calls
-user = User(username="test", email="test@example.com")
-user.activate().with_balance(100.0)
-```
-
-### Python 3.12+ (`models_py312.py`)
-
-Adds the `@override` decorator for inheritance safety:
-
-```python
-from typing import override
-
-class ValidatedUser(ActiveRecord):
-    @field_validator('username')
-    @override
-    def validate_username(cls, v: str) -> str:
-        # Ensures this method correctly overrides parent
-        ...
-```
-
-Also includes examples of the new type parameter syntax (PEP 695):
-
-```python
-# Before (Python 3.8+)
-from typing import Generic, TypeVar
-T = TypeVar('T')
-class Container(Generic[T]): ...
-
-# After (Python 3.12+)
-class Container[T]: ...
-```
-
-## Usage with Fixture Selector
-
-Use the `select_fixture()` function to automatically select the most appropriate version for your Python environment:
+### 1.2 注解 → 三方言（实测输出）
 
 ```python
-from rhosocial.activerecord.testsuite.utils import select_fixture
+class PromptRow(ActiveRecord):
+    @classmethod
+    def table_name(cls): return "prompt_rows"
 
-# Import all versions
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import User as UserBase
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models_py310 import User as User310
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models_py311 import User as User311
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models_py312 import User as User312
-
-# Select the best version for current environment
-User = select_fixture(User312, User311, User310, UserBase)
+    id: Annotated[Optional[int], UseSqlType(IntegerType()),
+                  UseColumnAttributes(IdentityAttribute())] = None
+    label: Annotated[str, UseSqlType(VarCharType(length=64)),
+                     UseConstraint(ColumnUniqueConstraint)]
+    amount: Annotated[Optional[Decimal], UseSqlType(DecimalType(precision=10, scale=2))] = None
+    seen_at: Annotated[Optional[object], UseSqlType(TimestampType(precision=6))] = None
 ```
 
-The `select_fixture()` function:
-1. Checks each candidate in order (highest version first)
-2. Returns the first class whose `__requires_python__` requirement is satisfied
-3. Falls back to the last candidate if no match is found
+```
+sqlite    CREATE TABLE "prompt_rows" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+          "label" TEXT UNIQUE NOT NULL, "amount" NUMERIC, "seen_at" NUMERIC)
+mysql     CREATE TABLE `prompt_rows` (`id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+          `label` VARCHAR(64) UNIQUE NOT NULL, `amount` DECIMAL(10, 2), `seen_at` TIMESTAMP(6))
+postgres  CREATE TABLE "prompt_rows" (`id` SERIAL NOT NULL,
+          `label` VARCHAR(64) UNIQUE NOT NULL, `amount` DECIMAL(10,2), `seen_at` TIMESTAMP(6))
+```
 
-## Requirement Declaration
+同一份模型在 sqlite 上还跑通了 `create_table → save → find_one → drop_table`
+（`Decimal` 往返无损）。
 
-Each version-specific file declares its Python requirement:
+### 1.3 类型渲染矩阵（实测，决定 §4–§6 的取舍）
+
+对每个可用方言调 `dialect.format_data_type(...)`，不连库：
+
+| 类型 | sqlite | mysql/mariadb | postgres | sqlserver | oracle | clickhouse | firebird |
+|---|---|---|---|---|---|---|---|
+| `TextType()` | TEXT | TEXT | TEXT | NVARCHAR(MAX) | **CLOB** | String | BLOB SUB_TYPE TEXT |
+| `VarCharType(64)` | TEXT | VARCHAR(64) | VARCHAR(64) | VARCHAR(64) | VARCHAR2(64) | String | VARCHAR(64) |
+| `TimestampType()` | NUMERIC | TIMESTAMP | TIMESTAMP | DATETIME2 | TIMESTAMP | **DateTime（秒）** | TIMESTAMP |
+| `TimestampType(6)` | NUMERIC | TIMESTAMP(6) | TIMESTAMP(6) | DATETIME2(6) | TIMESTAMP(6) | DateTime64(6) | **硬报错** |
+| `JsonType()` | TEXT | JSON | JSON | NVARCHAR(MAX) | **VARCHAR2(4000)** | String | 硬报错（建议 TextType） |
+| `BlobType()` | BLOB | BLOB | BYTEA | VARBINARY(MAX) | BLOB | String | BLOB |
+| `UUIDType()` | 硬报错 | 硬报错 | UUID | 硬报错 | 硬报错 | UUID | CHAR(16) OCTETS |
+
+值得记住的三个后果：
+
+1. **`TextType()` 今天无法表达容量**（F7 没有 `length`），只能表达「这一类」。
+   裁决见 `type-capacity-and-precision.md`：五个内容类型（`TextType` / `BlobType` /
+   `JsonType` / `JsonBType` / `XmlType`）补 `length`，语义是「至少装下 N 个字符」，
+   方言**向上取档**、按最坏 4 字节/字符换算（Oracle 的 4 000 是字节、SQL Server 的
+   4 000 是字符）。没有它，长内容这条轴在共享套件里只能靠「后端名 + 后端类型」表达。
+2. **Oracle 的 `JsonType()` 是 `VARCHAR2(4000)`** —— 4 000 字节上限，长 JSON 装不下；
+   这不是「不支持 json」，是容量问题，必须由夹具按容量选内容。
+3. **`TimestampType(6)` 在 Firebird 上是硬报错**（它存储固定 1/10000 秒，拒绝声明一个
+   服务器无法兑现的精度）。裁决：**默认毫秒（`precision=3`）**，Firebird 接受
+   precision ≤ 4 并渲染 `TIMESTAMP`；微秒是补充能力
+   （`supports_timestamp_microseconds()`，Firebird 答 False），不进共享默认值。
+
+MySQL 侧还有两个实测行为（`clic_ts_precision.py`，MySQL 5.7.44）：
+
+```
+TIMESTAMP    10:00:00.123456 -> 10:00:00       （截断）
+TIMESTAMP    10:00:00.600000 -> 10:00:01       （**进位到下一秒**）
+TIMESTAMP(6) 10:00:00.123456 -> 10:00:00.123456
+```
+
+进位比截断更糟：写进去的 `updated_at` 会比真实时间**晚**，甚至可能超过 `now()`。
+
+---
+
+## 2. 设计原则
+
+在 R1–R9 之上，本目录新增四条：
+
+### P1 模型即定义，`Definition` 消失
+
+一张表只有一个声明来源：模型类。L2 从它派生：
 
 ```python
-# models_py310.py
-__requires_python__ = (3, 10)
-
-# models_py311.py
-__requires_python__ = (3, 11)
-
-# models_py312.py
-__requires_python__ = (3, 12)
+for source in TABLE_SOURCES:
+    backend.execute(*build_create_table_statement(source, backend.dialect).to_sql(), options=DDL)
 ```
 
-## When to Use Which Version
+`Definition`、`auto_pk()`、`fixture_types.py` 的 `short_text`/`long_text`/`timestamp_type`
+一并删除。同一张表被多个模型声明时，**只指定一个来源**建表，其余模型只绑定不派生。
 
-| Scenario | Recommended File |
-|----------|------------------|
-| Maximum compatibility | `models.py` (Python 3.8+) |
-| Cleaner syntax | `models_py310.py` (Python 3.10+) |
-| Chainable methods | `models_py311.py` (Python 3.11+) |
-| Override safety | `models_py312.py` (Python 3.12+) |
+### P2 默认 / 注记 两变体对照
 
-## Model Classes Included
+| 变体 | 声明内容 | 用来回答 |
+|---|---|---|
+| **bare（完全默认）** | **模型自己写的字段只有 Python 类型注解，没有任何 `Annotated` 标记** | 「什么都不说时，框架给什么？」 |
+| **annotated（完全注记）** | 同一批 Python 类型 + 覆盖全部注记轴（类型/长度/精度、identity、约束、索引、注释） | 「注记改变了什么？」 |
 
-All versions define the same set of model classes:
+三点必须说清楚：
 
-- **TypeCase** - Model with various data types
-- **User** - Standard user model for CRUD testing
-- **ValidatedUser** - Model with custom validators
-- **TypeAdapterTest** - Model for type adapter testing
-- **MappedUser** - Model with custom column mappings
-- **MappedPost** - Post model with column mappings
-- **MappedComment** - Comment model with column mappings
-- **MixedAnnotationModel** - Model combining various annotations
+- **bare 是字面意义的「光秃秃」**，不是「少写几个标记」。它对应产品承诺
+  「写个类就能建表」（`minimal-definition.md`），也对应本项目 README 里要写的
+  「最简定义」。因此 bare 组是**该承诺的验收夹具**，不是可选装饰。
+- **bare 只差 DDL 侧的推断**（F3）：DML 侧早已按 Python 类型选列类，而且是**成文契约**
+  —— `suggested_column_types()` 的 18 个键每键必答，漏键硬失败（F12，实测 10 个方言
+  全部答满）。缺的是同一件事的存储类型版本：`column_data_type()` 只读显式 `UseSqlType`。
+  所以 bare 变体随 core 的 `minimal-definition` 一起启用，且新推断表要照抄既有纪律
+  （18 键、每键必答、漏键硬失败），而不是另发明一套。
+- **「零注解」只约束模型自己写的字段**。从 mixin 继承的声明（`DefaultTimestampMixin`
+  给的 `created_at`/`updated_at`）照旧 —— 那是框架给的，不是用户写的；它们的精度随
+  mixin 的默认值走（毫秒，见 §4）。同理，主键约定若最终由 mixin 提供，也算框架声明。
 
+注记分两类，这决定了它们是**两张表**还是**一张表**：
 
-## IDE Type Checking
+- **改变存储的注记**（存储类型/长度/精度、identity、约束、索引、注释）→
+  两张表，对照的是「表定义差异」。
+- **不改变存储的注记**（`UseColumn` 改列名、`UseAdapter` 改值适配、pydantic 校验）
+  → **共用一张表**，对照的是「同一存储下的行为差异」。
 
-When viewing these files in an IDE, you may see syntax errors for version-specific features. This is expected because:
+### P3 版本轴：3.8 为基线，只按「注解语法 / 注解求值语义」分界
 
-1. The project supports Python 3.8+ as the minimum version
-2. These files are only imported in compatible Python environments
-3. The `select_fixture()` mechanism ensures runtime safety
+支持范围 **3.8–3.15**（`requires-python = ">=3.8"`，core CI 覆盖 3.8–3.13 + 3.14 + 3.15
++ free-threaded 3.13t/3.14t）。跨版本要验证的是「同一批注记在不同拼写下行为一致」，
+不是「把 35 个类抄 N 遍」。利用 F10：矩阵只在基线写一次；每个版本文件只定义该版本
+**独有的语法**探针，未定义的名字回落到基线。
 
-To suppress these warnings in your IDE, you can:
-- Configure the IDE to use a specific Python version for type checking
-- Add `# type: ignore` comments for specific lines
-- Use `# pyright: reportInvalidTypeForm=false` at the file level
+现状 `VERSION_MODULES = (("312", (3, 12)), ("311", (3, 11)), ("310", (3, 10)))` ——
+3.8/3.9 用基线，3.10+ 逐级覆盖。按「注解 → DDL」这条轴逐一核对 3.9–3.15：
+
+| 版本 | 影响模型声明的变化 | 是否单独建文件 | 理由 |
+|---|---|---|---|
+| 3.8 | 基线：`typing.List/Dict/Optional/Union` | `models.py` | 语法下界 |
+| 3.9 | PEP 585：`list[str]`、`dict[str, int]` 运行期可下标 | **新增 `models_py39.py`** | 3.8 上直接 `TypeError` 的唯一语法分界；验证内建泛型注解派生的 DDL 与基线逐字相同 |
+| 3.10 | PEP 604：`X \| Y` | `models_py310.py`（已有） | 注解语法的第二次分界 |
+| 3.11 | `typing.Self`、`LiteralString`、PEP 646/655 | `models_py311.py`（已有） | `Self` 只出现在方法返回注解（不进列）；`LiteralString` 进列，验证它仍被当作 `str` |
+| 3.12 | PEP 695 `type Alias = ...`、`class C[T]`；`typing.override` | `models_py312.py`（已有） | 用 `type` 语句做列类型别名 + `@override` 修饰 `table_name()`；**不**用 PEP 695 泛型模型（泛型 AR 模型不在本套件范围） |
+| 3.13 | PEP 696 类型参数默认值、`typing.ReadOnly`、`TypeIs` | **不建文件** | 三者都作用于 TypedDict / 泛型参数，不改变列声明；`resolve()` 落到 3.12 文件 |
+| 3.14 | **PEP 649/749 惰性注解求值**（`__annotate__`） | **新增 `models_py314.py`** | 唯一**改变语义**而非语法的变化：注解不再在类创建时求值。框架若依赖立即求值，会在 3.14 上失效 |
+| 3.15 | 无影响本轴的已知变更 | **不建文件** | 落到 3.14 文件；一旦出现注解语义变更再加 |
+
+`VERSION_MODULES` 按新方案改为
+`(("314", (3, 14)), ("312", (3, 12)), ("311", (3, 11)), ("310", (3, 10)), ("39", (3, 9)))`。
+
+`models_py314.py` 探针要点（PEP 649）—— 三条都是**风险点，不是已核实的结论**，
+实施阶段 6 之前先在 3.8 与 3.14 上各跑一遍确认现状：
+
+1. `Annotated[..., UseSqlType(...)]` 的元数据在惰性求值下仍可读出；
+2. 指向**其后才定义**的名字的前向引用仍能派生（失败会推迟到读取时）；
+3. 读 `cls.__annotations__` 与读 `__annotate__` 得到同一份注记，且其中某个名字解析失败
+   时能指名到列，而不是整张表崩掉。
+
+探针的取用方式：**不走 `resolve()`** —— 它会回落到基线，拿到的是错版本的类。
+探针用 `available_probes()` 收集「当前解释器可导入且确实定义了」的那些，
+再由 DB-free 契约测试断言：所有可用探针派生的 `CREATE TABLE` 与基线探针逐字相同。
+不建文件的 3.13 / 3.15 仍有覆盖：契约测试顺带断言「当前解释器上解析到的探针属于哪个
+版本」，避免回落链写错后静默测了别的版本。
+
+### P4 同步异步同源
+
+字段声明放进一个普通 mixin（既有做法，`PydanticValidatedFieldsMixin` 就是这样），
+两个孪生类只声明 `table_name()` / `primary_key()`：
+
+```python
+class UserFields:                      # 唯一的字段声明
+    id: Annotated[Optional[int], SQL_INT_PK, IDENTITY] = None
+    username: Annotated[str, SQL_TEXT_255]
+
+class User(UserFields, IntegerPKMixin, ActiveRecord): ...
+class AsyncUser(UserFields, IntegerPKMixin, AsyncActiveRecord): ...
+```
+
+再加一条 DB-free 契约：**同表的同步/异步孪生模型派生出的 CREATE/DROP 必须逐字相同**，
+抓住任何一处单边漂移。bare 组同样适用；裸模型孪生派生结果一致，也顺带验证了推断
+不依赖 sync/async 类层次。
+
+---
+
+## 3. 夹具组划分
+
+组 = 一个测试目录 = 一个库 = 一个声明集合 = 一套操作。
+`Mapped*` / `ColumnMapping*` / `TypeAdapter*` 不再独立成组，按 P2 归入各自组的
+**annotated 变体**（它们不改变存储，所以与 bare 共用一张表）。
+
+| 组（目录） | 表 | bare | annotated | 注解是否改存储 | 能力前提 |
+|---|---|---|---|---|---|
+| `crud/` | `users` | `User`（零注记） | `UserAnnotated`（identity、唯一、索引） | 是 → 两表 | identity 列 |
+| `crud/` | `users`（映射对照） | `User` | `MappedUser`（`UseColumn`） | 否 → 同表 | — |
+| `crud_composite_pk/` | `order_items`、`store_inventory`、`orders` | `OrderItem`、`StoreInventory`（零注记，复合键天然不是 identity） | `MappedOrderItem`（`UseColumn` + 复合 PK） | 否 → 同表 | 复合 PK |
+| `types/`（新） | `typed_users`、`typed_users_annotated` | ✓ | ✓ | 是 → 两表 | 标量类型概念 |
+| `types/`（新，补充） | `microsecond_rows` | —（只有 2 列，不设 bare） | ✓ | — | `supports_timestamp_microseconds` |
+| `types_complex/`（新） | `complex_rows_default`、`complex_rows_annotated` | ✓（受限，见 §5） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum） |
+| `types_long_content/`（新） | `long_rows` | **无** | ✓ | — | text / blob / json / xml 的概念与容量 |
+| `fields/` | 复用 `users` | `User` | `ColumnMappingModel`（`UseColumn`+`UseAdapter`）、派生字段 | 否 → 同表 | — |
+| `type_adapter/` | `adapter_rows` | `AdapterRow` | `AdapterRowAnnotated`（`UseAdapter`+`UseColumnType`） | 否 → 同表 | — |
+| `validation/` | `validated_rows` | —（无语义） | `ValidatedRow`（pydantic 校验） | 否 → 同表 | — |
+| `bulk_crud/` | `bulk_users` | `BulkUser` | — | — | — |
+
+结构组（`nopk/`、`readonly/`、`transaction/`、`worker/`、`connection/`）**不按
+bare/annotated 重划**：它们的对照点是行为声明（无主键、只读、连接生命周期），
+不是类型覆盖，硬套两变体只会得到一批没人读的孪生类。但按 §0.1，**它们的模型定义
+同样收归本目录**（§3.1）—— 它们大多是 `users` / `test_users` 的投影，不需要自己的 DDL。
+
+**拆分判据**（沿用 R4）：声明集合不同 / 能力前提不同 / 失败后果不同。
+三个类型组之所以分开，是**能力前提不同**：标量组任何后端都能用普通列承载；
+复杂组依赖具体类型概念；长内容组依赖容量，失败后果是「装不下」而不是「不支持类型」。
+
+### 3.1 basic 范围内的私有夹具：全部收归本目录
+
+按 §0.1 清点，`basic/` 下还有四处在测试目录里私自定义模型：
+
+| 现状位置 | 私有声明 | 绑定的表 | 迁移后文件 | 自带 DDL |
+|---|---|---|---|---|
+| `connection/fixtures.py` | `TestUser`/`AsyncTestUser` | `test_users` | `connection_models.py` | 否 —— 建表一直靠 `models.py` 里的 `TestUserDefinition`，模型与定义分居两处正是要修的地方 |
+| `nopk/test_keyless_models{,_async}.py` | 各 4 个（`KeylessUser`、`KeylessReadOnlyUser`、`ReadOnlyWithKeyUser`、`NormalUser`） | `users` | `user_models.py` | 否（投影） |
+| `readonly/test_readonly_models{,_async}.py` | 各 5 个（`ReadOnlyUser`、`WritableUser`、`OptedOutUser`、`ImplementsButWritable`、`ReadOnlyView`） | `users` | `user_models.py` | 否（投影） |
+| `validation/test_pydantic_native_validation{,_async}.py` | 各 15 对同步/异步模型（30 个类）+ `RecordStatus`、`AddressPayload`；两个文件的模型块（前 400 行）除文件头注释外**逐字相同** | 无（DB-free 契约） | `pydantic_native_models.py` | 否 |
+
+要点：
+
+- **`user_models.py` 收 `users` 表的全部声明**：`crud`/`fields` 的读写模型、
+  `nopk` 的无主键投影、`readonly` 的只读投影。它们的**声明集合不同**（§3 的拆分判据），
+  所以仍是不同的测试组；但**一张表只在一个文件里声明**。
+- **`pydantic_native_models.py` 是纯 DB-free 契约**：不需要 DDL；顺带用 P4 的 mixin
+  做法消掉两个文件里那 400 行重复。
+- **`connection` 组**过去把「模型」和「建表定义」拆在两处；迁移后由 `TestUser`
+  自己的注解派生，两者合一。
+- `worker/`、`transaction/` 目前没有私有模型，迁移只涉及 `conftest.py` 里挑表的方式。
+- 结构组的模型迁移**不改变测试内容**，只是把定义挪进来并接上派生 DDL。
+
+---
+
+## 4. 类型组一：`types/`（简单/标量）
+
+表 `typed_users` 与 `typed_users_annotated`，同一批 Python 类型（用户指定的名字：
+两类 `typed_user` —— 一颗完全默认、一颗完全注记）。
+
+| 列 | Python 类型 | annotated 追加（bare 只有 Python 类型） |
+|---|---|---|
+| `id` | `Optional[int]` | `+ UseSqlType(IntegerType()) + IdentityAttribute()` |
+| `flag` | `bool` | `+ BooleanType() + ColumnDefaultConstraint(False)` |
+| `count` | `int` | `+ IntegerType() + UseComment` |
+| `amount` | `Decimal` | `+ DecimalType(precision=12, scale=2)` |
+| `ratio` | `float` | `+ FloatType()`（浮点宽度是后端话题，不进共享套件） |
+| `label` | `str` | `+ VarCharType(64) + ColumnUniqueConstraint + UseIndex("ix_…")` |
+| `born_on` | `date` | `+ DateType()` |
+| `wakes_at` | `time` | `+ TimeType()` |
+| `seen_at` | `datetime` | `+ TimestampType(precision=3)`（毫秒，见 §4.1） |
+| `note` | `Optional[str]` | `+ TextType()` |
+
+bare 变体整列只写 Python 类型，**框架推断出什么就是什么**——这正是这一组的价值：
+它把 `minimal-definition.md` 里 D1–D4 四个默认值（`str` 长度、`int` 宽度、
+主键 identity、`Decimal` 精度）钉成可执行断言。默认值若改，这组测试必须跟着改，
+这正是我们要的灵敏度。推断表要照抄 F12 的形状（18 键、每键必答）。
+
+`TinyIntType`/`SmallIntType`/`BigIntType` **不进共享套件**：整数宽度是后端话题，
+写进来就违反 R1。
+
+### 4.1 毫秒是默认，微秒是补充能力
+
+`TimestampType(6)` 在 Firebird 上是硬报错（§1.3），而 MySQL 5.7 / ClickHouse 的
+**秒级** `TIMESTAMP` / `DateTime` 会截断甚至进位（`.600000` → 下一秒）。两个极端的
+共同答案是**毫秒**：
+
+- `DefaultTimestampMixin` 的 `created_at`/`updated_at` 改成
+  `TimestampType(precision=3)`；只在 SQLite 上无所谓，在 PG / Oracle / SQL Server 上
+  无损，在 MySQL / ClickHouse 上真正保留毫秒。
+- Firebird 迁就：它存固定 1/10000 秒，**兑现得了毫秒**，所以接受 precision ≤ 4 并渲染
+  `TIMESTAMP`，只拒绝 > 4 —— 拒绝的理由是「服务器兑现不了」，毫秒不属于这一类。
+- 微秒不进共享默认值，改为**补充能力**：`supports_timestamp_microseconds()` 由各方言
+  显式回答（Firebird 答 False），不设继承默认值（与 `suggested_column_types()` 的
+  「core 里的表是对一台 core 没见过的服务器的猜测」同一取向）。
+- Firebird 自己的 1/10000 秒测试留在 `python-activerecord-firebird`，不进共享套件（R1）。
+
+微秒夹具是**独立的 2 列表** `microsecond_rows`，不拉长 `typed_users`：
+`id` + `precise_at`（`TimestampType(precision=6)`）。它的 `create_table` 操作在
+§8.1 里要求 `supports_timestamp_microseconds`，答否则跳过并指名；这一组不设 bare。
+
+## 5. 类型组二：`types_complex/`（复杂类型）
+
+bare 变体有硬边界：**只有「Python 类型存在、且推断得到存储类型、且方言能承载」的字段
+可以 bare**。`XML` 没有对应的 Python 类型，所以 XML 列只出现在 annotated 变体里 ——
+这正好把两组分开：
+
+| 列 | Python 类型 | bare | annotated |
+|---|---|---|---|
+| `id` | `Optional[int]` | ✓ | `+ IdentityAttribute()` |
+| `token` | `UUID` | ✓ | `+ UseIndex("ix_…")` |
+| `payload` | `dict` | ✓ | `+ UseComment`（容量见下） |
+| `tags` | `list` | ✓ | `+ ArrayType(element_type=VarCharType(32))` |
+| `elapsed` | `timedelta` | ✓ | `+ IntervalType()` |
+| `kind` | `Enum` | ✓ | `+ EnumType(...)` |
+| `raw` | `bytes` | ✓ | `+ UseColumnType(BinaryColumn)`（显式钉死列类） |
+| `markup` | `str` | **不可 bare** | `+ XmlType() + UseColumnType(XMLColumn)` |
+
+两条硬约束来自 §1.3 的实测：
+
+- **Oracle 的 `JsonType()` 只有 `VARCHAR2(4000)`**。`payload` 的内容必须按 4 000 字节
+  设计，否则在 Oracle 上是「容量不足」而不是「不支持 json」。容量前提要进 §8 的操作登记，
+  不能靠测试体去猜。
+- `UUIDType()` / `XmlType()` / `IntervalType()` 在多个方言上是**硬报错**
+  （SQLite、MySQL、SQL Server 各自缺 formatter）。这不是缺陷，是能力：方言明确拒绝
+  语义不成立的类型，而不是静默降级。bare 组在缺少这些概念的方言上按 §8 的开关跳过。
+
+还有一条**只有 bare 会踩到**的边界（实测 F12）：DML 那张 18 键表允许答 `None`
+表示「确实没有列类」，而 **MySQL / MariaDB 对 `dict` 答 `None`、PostgreSQL 对 `timedelta`
+答 `None`**。所以 bare 的 `payload`(dict) 在 MySQL/MariaDB 上、`elapsed`(timedelta)
+在 PostgreSQL 上，连 DML 侧的列类都不存在 —— 不是 DDL 推断能解决的。bare 组因此要按
+**逐列**登记能力（§8.1 的 `Operation` 支持按列细分的登记），在这些方言上跳过并指名
+`dict` / `timedelta`；annotated 组则用 `UseSqlType(JsonType()) + UseColumnType(...)`
+显式承担，不受该限制。
+
+bare 组的测试断言**只做值往返（写入=读出）**，不断言列类：列类由方言推断（F4），
+断它等于把后端实现钉进共享套件。annotated 组可以用 `UseColumnType` 钉死列类，
+因此可以断言 `JSONColumn`/`XMLColumn` 才有的操作。
+
+## 6. 类型组三：`types_long_content/`（长内容）
+
+长内容是复杂类型的子集：内容超出任何后端 `VARCHAR` 上界，只能落在 TEXT/CLOB/BLOB。
+**这一组只有 annotated 变体** —— bare 的 `str` 会被推断成 `VARCHAR(255)` 级别的列，
+根本装不下 16 000 字符；硬做 bare 只能得到一个必然截断的测试。
+
+| 列 | Python 类型 | annotated | 前提 |
+|---|---|---|---|
+| `id` | `Optional[int]` | `IdentityAttribute()` | identity 列 |
+| `body` | `str`（16 000 字符） | `TextType(length=16000)` | `text` 概念 **+ 容量** |
+| `raw` | `bytes`（16 000 字节） | `BlobType(length=16000)` | `blob` 概念 **+ 容量** |
+| `document` | `dict`（≤3 500 字符的 UTF-8） | `JsonType()` | `json` 概念 + Oracle 的 4 000 字节上限 |
+| `markup` | `str`（≤3 500 字符的 XML） | `XmlType()` | `xml` 概念 |
+
+**`length` 是这一组的前提**（`type-capacity-and-precision.md`）：语义是「至少装下 N 个
+字符」，方言向上取档 —— MySQL ≤65 535 → `TEXT`、≤16 MB → `MEDIUMTEXT`、否则 `LONGTEXT`；
+Oracle `N×4 ≤ 4000` → `VARCHAR2`，否则 `CLOB`；SQL Server ≤4 000 → `NVARCHAR(n)`，否则
+`NVARCHAR(MAX)`；Firebird `N×4 ≤ 32765` → `VARCHAR`，否则 `BLOB SUB_TYPE TEXT`；
+PG / ClickHouse / SQLite / Snowflake / BigQuery 本身无上限，忽略。容量参数落地前，这一组
+无法在共享层表达「要一个装得下 16 000 字符的列」，只能写字面后端类型名（违反 R1），
+所以它排在阶段 2b 之后。
+
+**16 000 的由来**：Oracle 的 `VARCHAR2` 上限 4 000 字节，MySQL 的 `TEXT` 上限
+65 535 字节；16 000 字符在两端之间，对所有后端都「超出 VARCHAR」，且能装进 MySQL 的
+`TEXT`。内容只用 BMP 字符（≤3 字节/字符 → ≤48 KB），避开 MySQL `TEXT` 的边界 ——
+换成 4 字节字符就会超过 65 535 字节，那时必须声明更大的档位，而不是换后端类型名。
+
+`document` / `markup` 暂不写 `length`：json / xml 的容量语义还要单独裁决（Oracle 的
+`JsonType()` 今天固定渲染成 `VARCHAR2(4000)`，加上 `length` 就得决定它从哪一档开始落到
+`CLOB`）。所以在裁决之前，先把内容压在 4 000 字节内，按「json / xml 概念可用」跳过。
+
+**这一组测的是「选对了 LOB 类型且装得下」，不是 LOB 的容量上限与溢出路径。**
+后者（> 64 KB，MySQL 需要 `LONGTEXT`、Firebird 需要分段 BLOB）要等 §3 的档位语义
+在全部后端落地，属于 `type-capacity-and-precision.md` 的后续阶段，本轮不做。
+
+## 7. 文件布局（受「夹具目录禁 `__init__.py`、模型与适配器必须同文件」约束）
+
+`fixtures/` 已有 `__init__.py`（历史例外，保留），但**不再新建子目录**，一律平铺模块：
+
+| 文件 | 职责 |
+|---|---|
+| `README.md` | 本文 |
+| `annotations.py` | 版本无关的注记常量（`SQL_INT_PK = (UseSqlType(IntegerType()), IdentityAttribute())` 之类，不含模型） |
+| `user_models.py` | `users` 表的全部声明：`crud`/`fields` 的 `UserFields` + `User`/`AsyncUser` + `UserAnnotated` + `MappedUser` + `ColumnMappingModel`；`nopk` 的 4 个无主键投影；`readonly` 的 5 个只读投影 |
+| `type_rows_models.py` | 三个类型组：字段基类 + 模型 + 其适配器 |
+| `composite_pk_models.py` | `crud_composite_pk` 组（`OrderItem`/`StoreInventory`/`Order`/`MappedOrderItem`） |
+| `connection_models.py` | `connection` 组：`TestUser`/`AsyncTestUser`（`test_users`） |
+| `pydantic_native_models.py` | `validation` 组的 DB-free 契约模型 |
+| `operations.py` | 表登记（DDL/DML 操作 + 能力开关，§8）与执行函数 |
+| `models.py` | 基线（3.8）聚合并 re-export 上述组，`resolve()` 的回落目标 |
+| `models_py39.py` | `TypingProbe39`：PEP 585 内建泛型 |
+| `models_py310.py` / `py311` / `py312` / `py314` | 各只含一个 `TypingProbeN`（§2 P3）；3.13 / 3.15 无文件，靠回落 |
+
+`__init__.py` 的 `resolve()` 机制不变（逐级回落、只覆盖定义过的名字），只是
+`VERSION_MODULES` 增加 `314` 与 `39` 两级。探针另有 `available_probes()` 入口，不走回落。
+
+---
+
+## 8. DDL / DML 操作与能力开关
+
+操作只**执行**，不判定、不跳过、不探测（R3）；断言留在测试里。
+
+```python
+# fixtures/operations.py
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
+
+def create_schema(backend, tables):   # 每张表一次，含 create_index_statements
+def drop_schema(backend, tables):     # if_exists=False：表是本夹具自己建的
+def seed(model, rows):                # DML：规范行 → 插入 → 返回实例列表
+def reload(model, pk):                # DML：按主键读回
+```
+
+`drop_schema` 用 `if_exists=False`（`build_drop_table_statement` 的默认值）：
+表由夹具自己建、自己删，`IF EXISTS` 这一层猜测随之消失，`supports_drop_if_exists`
+不再需要。
+
+### 8.1 临时能力元数据（本轮的替代方案）
+
+core 还没有「定义自己声明需要什么」的接口（`ddl-source-capabilities.md`）。
+在它落地之前，本目录用一层**临时元数据**登记：每张表有哪些操作，每个操作要求
+哪些开关**必须开**或**必须关**。
+
+```python
+@dataclass(frozen=True)
+class Operation:
+    name: str                          # "create_table" / "insert" / "drop_table" / ...
+    requires_on: Tuple[str, ...] = ()  # 必须答 True
+    requires_off: Tuple[str, ...] = () # 必须答 False
+
+@dataclass(frozen=True)
+class TableFixture:
+    table: str
+    source: Optional[type]             # 建表来源模型；投影为 None
+    operations: Tuple[Operation, ...]
+```
+
+一个开关名按固定顺序解析（F9 的两条通道 + 硬失败）：
+
+1. 方言上的零参布尔方法 → 调用（沿用 `requirements.answer()` 的严格性）；
+2. `supports_data_types()` 的键 → 取其布尔值；
+3. 都没有 → `MissingRequirementError`，指名方言与开关名。
+
+于是跳过理由能精确到「`types_complex.payload` 的 `insert` 需要 `json`，方言答否」，
+而方言漏实现则是**失败**而不是跳过 —— R1 要求的形状。
+
+这层是临时的：core 接口落地后应退化为薄壳或整体删除，测试体不动。
+
+---
+
+## 9. 能力前提与跳过
+
+一条链：**表登记 → L2 求值 → 不满足则 skip 并指名**。
+
+- **求值位置必须在 L2**，在 `database` 已 `introspect_and_adapt()` 之后（F8）：
+  版本相关的探针在适配前一律答 False，在 collection 期求值会误跳。
+  `Declaration.requires` 现在的文档写的是 "call time"，那时表已经建过了，
+  类型不支持会先在 `schema` 里炸掉 —— 这一处要改到 L2。
+- 每组登记自己的操作与开关（§8.1），大致形状：
+
+  | 组 | 主要开关 |
+  |---|---|
+  | `types/` | `integer` / `varchar` / `text` / `decimal` / `date` / `time` / `datetime`，以及 `create_table` 的 `identity`（仅 annotated）；`microsecond_rows` 另需 `supports_timestamp_microseconds` |
+  | `types_complex/` | 上述 + `json` / `array` / `uuid` / `blob` / `interval` / `enum` |
+  | `types_long_content/` | `text` / `blob` / `json` / `xml`，加上 §5 的容量限制 |
+
+- **「不支持」= 跳过并指名**；**「方言没实现这个开关」= 硬失败**。两者不能混。
+
+---
+
+## 10. 迁移步骤
+
+| 阶段 | 内容 | 验收 |
+|---|---|---|
+| 0 | core 两处收口：`_resolve_type` 只捕能力异常（`UnsupportedFeatureError` / `ProtocolNotImplementedError`）；本目录落地 §8.1 的临时能力元数据 | core 单测 + 元数据单测 |
+| 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py`；`crud` / `crud_composite_pk` / `connection` / `nopk` / `readonly` 改为派生建表（先用 annotated），删掉对应 `Definition`；`BASIC_DEFINITIONS` → `BASIC_TABLES`，同批更新 `query`/`cli` 的 conftest | core 本地跑 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` |
+| 2a | core `minimal-definition` P0（标量推断）落地：18 键、每键必答，与 `suggested_column_types()` 同一套纪律 | core 单测；零注记模型三方言建表 |
+| 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_timestamp_microseconds()` 进协议并由各后端回答 | core 档位快照；Firebird 毫秒往返；微秒探针在 Firebird 答 False |
+| 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | 本地 + MySQL/PG/Firebird 定向 |
+| 4 | `types_complex/` 两变体 | 上述 + Oracle/SQLServer/ClickHouse |
+| 5 | `types_long_content/`（annotated only，依赖 2b 的 `length`） | 全部后端，重点看 MySQL `TEXT`、Oracle `CLOB` |
+| 6 | `fields/`、`type_adapter/`、`validation/` 按 bare/annotated 重排；`pydantic_native_models.py` 消重复 | 各仓 CI 全绿 |
+| 7 | 版本文件只留探针：新增 `models_py39.py` / `models_py314.py`，`VERSION_MODULES` 加两级；删 3.10/3.11/3.12 的存量副本 | 3.8–3.14 矩阵跑通；3.13/3.15 断言落在正确版本 |
+| 8 | 删 `fixture_types.py`、17 个 `Definition`、`TypeCase`/`TypeTestModel` 旧表 | `rg Definition`、`rg auto_pk`、`rg fixture_types` 均无残留 |
+
+每个阶段独立提交、推送即触发 CI，不等结果继续下一阶段。
+
+**阶段 2a 是关键路径**：它决定 bare 能不能存在。若 core 的推断迟迟不落地，
+阶段 3–5 的 bare 部分只能空转，届时要么推迟，要么先只做 annotated（不要退回到
+「bare = 只给 UseSqlType」——那会让产品承诺与夹具事实脱节）。**阶段 2b 是长内容组与
+微秒补充的前置**，可以 2a 并行，但必须早于阶段 5。
+
+---
+
+## 11. 已定与待探索
+
+**已定**：
+
+1. **bare = 字面零注记**（§2 P2）。它是「写个类就能建表」这一产品承诺的验收夹具，
+   承诺最终写进项目 README。当前受阻于 core 的存储类型推断
+   （`minimal-definition.md`），不退回「只给 `UseSqlType`」的中间形态。推断表照抄
+   F12 的纪律（18 键、每键必答、漏键硬失败），不另发明一套。
+2. **不额外加「零注记必须报错」的契约测试**：既然承诺是「能建表」，断言就必须是
+   「能建表且与等价注记逐字相同」，而不是断言旧的失败行为。
+3. **类型概念的能力检查走临时元数据类**（§8.1），core 接口落地后再删壳
+   （`ddl-source-capabilities.md`）。
+4. **长内容取 16 000 字符，且这一组只有 annotated 变体**；容量由
+   `TextType(length=16000)` / `BlobType(length=16000)` 声明（语义为下限、方言向上取档、
+   4 B/字符换算），前提是阶段 2b。`> 64 KB` 的 LOB 档位属该阶段的后续。
+5. **毫秒是默认，微秒是补充能力**：`DefaultTimestampMixin` → `TimestampType(precision=3)`；
+   Firebird 接受 precision ≤ 4 并渲染 `TIMESTAMP`，其 1/10000 秒测试留在 firebird 仓；
+   微秒夹具是独立的 `microsecond_rows`（2 列），由 `supports_timestamp_microseconds()`
+   决定是否跳过（Firebird 答 False，跳过并指名）。
+6. **`Mapped*` 按 P2 归入 annotated 变体**，不再独立成组。
+
+**待探索（已另立计划）**：
+
+- `minimal-definition.md`：零注记建表、四个默认值（`str` 长度、`int` 宽度、
+  主键 identity、`Decimal` 精度）、推断与 `suggested_column_types()` 同源。
+- `ddl-source-capabilities.md`：`DDLSource.required_capabilities()` 与
+  `dialect.supports(concept)` 的统一通道。
+- `type-capacity-and-precision.md`：五个内容类型的 `length`、档位映射与 4 B/字符换算、
+  毫秒默认与微秒开关、Firebird precision ≤ 4。
+
+---
+
+## 附：版本文件机制现状与目标
+
+`fixtures/__init__.py` 的 `resolve(name)` 按 `314 → 312 → 311 → 310 → 39 → 基线`
+（新方案，现状为 `312 → 311 → 310 → 基线`）顺序取第一个定义该名字的模块；
+因此版本文件只需覆盖**语法不同**的类，无需手抄整个矩阵。
+`resolve()` 的回落不会因为「文件存在」而生效，只会因为「文件里定义了这个名字」而生效。
+
+| 文件 | 现状 | 迁移后 |
+|---|---|---|
+| `models.py` | 3.8 基线，66 类 + 17 Definition | 聚合并 re-export 各组模型 |
+| `models_py39.py` | 不存在 | `TypingProbe39`（PEP 585） |
+| `models_py310.py` | 35 类手抄（`X \| Y`） | `TypingProbe310` |
+| `models_py311.py` | 35 类手抄（`Self`） | `TypingProbe311` |
+| `models_py312.py` | 35 类手抄（`@override`、PEP 695） | `TypingProbe312` |
+| `models_py314.py` | 不存在 | `TypingProbe314`（PEP 649 惰性注解） |
+
+3.13 与 3.15 不建文件：它们在本轴上不引入新语法/新语义，回落到 3.12 / 3.14 即可。
+版本文件的判据只有一条 —— **能否写出基线写不出的、且与列声明相关的语法**；
+写得出才建文件，写不出就不建，避免出现一批只改注释的版本副本。

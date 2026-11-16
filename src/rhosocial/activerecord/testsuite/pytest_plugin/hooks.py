@@ -24,11 +24,12 @@ from typing import Dict, List, Optional, Tuple
 
 import pytest
 
-from .declarations import Declaration, declaration_for
+from .declarations import Declaration, declaration_for, entries_of
 from .requirements import MissingRequirementError, reason
 
 REQUIRES_PROTOCOL = "requires_protocol"
 SCENARIO_FIXTURE = "backend_scenario"
+_DIRECTORY_SOURCE = "DECLARATION"
 
 #: Fixtures through which an already adapted dialect is reachable at call time.
 #: A directory that opens no database of its own answers through ``dialect``
@@ -133,10 +134,19 @@ def _protocol_reason(dialect, marker, owner: str) -> Optional[str]:
 def declared_requirements(item) -> List[Tuple[object, str]]:
     """Every requirement the item carries, in declaration order.
 
-    ``iter_markers`` is used on purpose: ``get_closest_marker`` would return
-    only the nearest declaration and silently drop the class or module one.
+    A directory's declaration comes first: it speaks for the whole scope, so it
+    is the broadest filter and its reason names the directory rather than a
+    case.  ``iter_markers`` is used on purpose for the case-level ones:
+    ``get_closest_marker`` would return only the nearest declaration and
+    silently drop the class or module one.
     """
     found: List[Tuple[object, str]] = []
+    declaration = declaration_for(
+        item.config.pluginmanager, getattr(item, "path", None)
+    )
+    directory_entries = entries_of(declaration)
+    if directory_entries:
+        found.append((directory_entries, _DIRECTORY_SOURCE))
     for marker in item.iter_markers(name=REQUIRES_PROTOCOL):
         found.append((marker, REQUIRES_PROTOCOL))
     return found
@@ -153,7 +163,8 @@ def evaluate(item) -> None:
       skipping;
     * the item never touches a database (a unit test of the marker mechanism
       itself, for example).  There is no dialect to ask and no dialect question
-      being asked, so the marker has no effect -- which is what it had before.
+      being asked, so the requirement has no effect -- which is what it had
+      before.
 
     A dialect that never implemented a declared switch is a gap, not an
     "unsupported" answer: it fails with a one-line message rather than a
@@ -171,9 +182,15 @@ def evaluate(item) -> None:
                 "the directory opened no dialect though the test is "
                 "database-backed, so the switch it declares cannot be answered"
             )
-        for entry, marker_name in entries:
-            owner = "{} ({})".format(getattr(item, "name", item.nodeid), marker_name)
-            why = _protocol_reason(dialect, entry, owner)
+        for entry, source in entries:
+            if source == _DIRECTORY_SOURCE:
+                owner = "{} (declared by its directory)".format(
+                    os.path.dirname(os.fspath(getattr(item, "path", "") or ""))
+                )
+                why = reason(dialect, entry, owner)
+            else:
+                owner = "{} ({})".format(getattr(item, "name", item.nodeid), source)
+                why = _protocol_reason(dialect, entry, owner)
             if why is not None:
                 pytest.skip("[{}] {}".format(scenario_name(item), why))
     except MissingRequirementError as error:
