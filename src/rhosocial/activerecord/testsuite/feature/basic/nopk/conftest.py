@@ -5,19 +5,21 @@ import pytest
 
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import UserDefinition
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
+    USER_FIXTURES,
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
-
-DEFINITIONS = (
-    UserDefinition,
-)
 
 
 @pytest.fixture(scope="session")
 def database_config(backend_scenario):
     """Scenario, connection configuration, and the directory database name."""
-    name = 'test_basic_nopk'
+    name = "test_basic_nopk"
     return backend_scenario, backend_scenario.make_config(name), name
 
 
@@ -36,9 +38,6 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate this directory's tables before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, USER_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, USER_FIXTURES)

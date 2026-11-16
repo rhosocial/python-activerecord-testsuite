@@ -30,6 +30,7 @@ except ImportError:
     from typing_extensions import Annotated, ClassVar
 
 from . import resolve
+from .annotations import SQL_INT_PK
 
 from rhosocial.activerecord.backend.expression import (
     ColumnConstraint as Constraint,
@@ -163,7 +164,7 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
-    id: Optional[int] = None
+    id: Annotated[Optional[int], SQL_INT_PK] = None
     username: str
     email: EmailStr
     age: Optional[int] = Field(..., ge=0, le=100)
@@ -179,7 +180,7 @@ class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
-    id: Optional[int] = None
+    id: Annotated[Optional[int], SQL_INT_PK] = None
     username: str
     email: EmailStr
     age: Optional[int] = Field(..., ge=0, le=100)

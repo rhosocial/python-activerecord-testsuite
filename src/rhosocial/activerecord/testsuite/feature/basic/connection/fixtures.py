@@ -1,25 +1,14 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/connection/fixtures.py
-"""Models used by the connection-pool tests."""
-from typing import Optional
+"""Backward-compatible view of the connection-pool models.
 
-from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
+The declarations now live with the other basic fixtures in
+``feature/basic/fixtures/connection_models.py``; this module keeps the names
+the connection tests import.
+"""
 
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.connection_models import (
+    AsyncTestUser,
+    TestUser,
+)
 
-class TestUser(ActiveRecord):
-    @classmethod
-    def table_name(cls):
-        return "test_users"
-
-    id: Optional[int] = None
-    name: str
-    email: str
-
-
-class AsyncTestUser(AsyncActiveRecord):
-    @classmethod
-    def table_name(cls):
-        return "test_users"
-
-    id: Optional[int] = None
-    name: str
-    email: str
+__all__ = ["AsyncTestUser", "TestUser"]

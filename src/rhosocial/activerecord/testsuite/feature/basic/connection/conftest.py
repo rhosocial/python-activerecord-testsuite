@@ -4,6 +4,7 @@
 The directory owns one database; pool fixtures build pools against it and
 configure the model classes through ``ActiveRecord.configure``.
 """
+
 import pytest
 
 from rhosocial.activerecord.backend.options import ExecutionOptions
@@ -14,13 +15,15 @@ from rhosocial.activerecord.testsuite.feature.basic.connection.fixtures import (
     AsyncTestUser,
     TestUser,
 )
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import TestUserDefinition
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.connection_models import (
+    TEST_USER_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
-
-DEFINITIONS = (
-    TestUserDefinition,
-)
 
 
 @pytest.fixture(scope="session")
@@ -45,12 +48,9 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate this directory's tables before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, TEST_USER_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, TEST_USER_FIXTURES)
 
 
 @pytest.fixture(name="sync_pool_and_model")
@@ -79,9 +79,7 @@ async def async_pool_and_model(database_config):
         PoolConfig(
             min_size=1,
             max_size=5,
-            backend_factory=lambda: scenario.async_backend_class(
-                connection_config=config
-            ),
+            backend_factory=lambda: scenario.async_backend_class(connection_config=config),
         )
     )
     await AsyncTestUser.configure(config, scenario.async_backend_class)
@@ -119,9 +117,7 @@ async def async_pool_for_crud(database_config):
         PoolConfig(
             min_size=1,
             max_size=5,
-            backend_factory=lambda: scenario.async_backend_class(
-                connection_config=config
-            ),
+            backend_factory=lambda: scenario.async_backend_class(connection_config=config),
         )
     )
     await AsyncTestUser.configure(config, scenario.async_backend_class)
