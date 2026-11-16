@@ -474,6 +474,7 @@ class Operation:
     name: str                          # "create_table" / "insert" / "drop_table" / ...
     requires_on: Tuple[str, ...] = ()  # 必须答 True
     requires_off: Tuple[str, ...] = () # 必须答 False
+    column: Optional[str] = None       # 只涉及某一列时点名（§5 的 bare 边界）
 
 @dataclass(frozen=True)
 class TableFixture:
@@ -481,6 +482,10 @@ class TableFixture:
     source: Optional[type]             # 建表来源模型；投影为 None
     operations: Tuple[Operation, ...]
 ```
+
+已落地为 `fixtures/operations.py`，另有 `operation_reason(dialect, operation)` /
+`table_reason(dialect, fixture)` 产出跳过理由（`None` 表示可执行），
+以及 `create_schema` / `drop_schema` / `seed` / `reload` 四个只执行不判定的函数。
 
 一个开关名按固定顺序解析（F9 的两条通道 + 硬失败）：
 
