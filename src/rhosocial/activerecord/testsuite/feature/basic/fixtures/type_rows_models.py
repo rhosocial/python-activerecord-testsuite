@@ -9,12 +9,30 @@ configuring them with a live database connection at test time.
 """
 
 from .operations import Operation, TableFixture
+import uuid
 from datetime import date, time, datetime
 from decimal import Decimal
 from typing import Optional
 
 from pydantic import Field
 
+from rhosocial.activerecord.backend.expression.types import (
+    ArrayType,
+    BigIntType,
+    BlobType,
+    DateType,
+    DecimalType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    SmallIntType,
+    TextType,
+    TimeType,
+    TimestampType,
+    TinyIntType,
+    VarCharType,
+)
+from rhosocial.activerecord.base.fields import UseSqlType
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 
@@ -51,23 +69,33 @@ class TypeCase(UUIDMixin, ActiveRecord):
     def table_name(cls):
         return "type_cases"
 
+    # UUID primary key stored as a 64-char string, matching the
+    # adapter and the original Definition's VarChar(64).
+    id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     username: str
     email: str
-    tiny_int: Optional[int]
-    small_int: Optional[int]
-    big_int: Optional[int]
-    float_val: Optional[float]
-    double_val: Optional[float]
-    decimal_val: Optional[Decimal]
-    char_val: Optional[str]
-    varchar_val: Optional[str]
-    text_val: Optional[str]
-    date_val: Optional[date]
-    time_val: Optional[time]
-    timestamp_val: Optional[datetime]
-    blob_val: Optional[bytes]
+    tiny_int: Annotated[Optional[int], UseSqlType(TinyIntType())]
+    small_int: Annotated[Optional[int], UseSqlType(SmallIntType())]
+    big_int: Annotated[Optional[int], UseSqlType(BigIntType())]
+    float_val: Annotated[Optional[float], UseSqlType(FloatType())]
+    double_val: Annotated[Optional[float], UseSqlType(DoubleType())]
+    decimal_val: Annotated[Optional[Decimal], UseSqlType(DecimalType(precision=10, scale=4))]
+    char_val: Annotated[Optional[str], UseSqlType(VarCharType(length=64))]
+    varchar_val: Annotated[Optional[str], UseSqlType(VarCharType(length=64))]
+    text_val: Annotated[Optional[str], UseSqlType(TextType())]
+    date_val: Annotated[Optional[date], UseSqlType(DateType())]
+    time_val: Annotated[Optional[time], UseSqlType(TimeType())]
+    timestamp_val: Annotated[Optional[datetime], UseSqlType(TimestampType())]
+    blob_val: Annotated[Optional[bytes], UseSqlType(BlobType())]
     json_val: Optional[dict]
-    array_val: Optional[list]
+    # Native array with integer elements on servers that render ARRAY;
+    # on servers without it, fall back to the JSON/text carrier (the
+    # adapter keeps the list type). This mirrors the original Definition's
+    # dialect-aware array_type(Int) factory.
+    array_val: Annotated[
+        Optional[list],
+        UseSqlType(ArrayType(element_type=IntegerType()), TextType()),
+    ]
     is_active: bool = True
 
 
@@ -80,23 +108,33 @@ class AsyncTypeCase(UUIDMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
+    # UUID primary key stored as a 64-char string, matching the
+    # adapter and the original Definition's VarChar(64).
+    id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     username: str
     email: str
-    tiny_int: Optional[int]
-    small_int: Optional[int]
-    big_int: Optional[int]
-    float_val: Optional[float]
-    double_val: Optional[float]
-    decimal_val: Optional[Decimal]
-    char_val: Optional[str]
-    varchar_val: Optional[str]
-    text_val: Optional[str]
-    date_val: Optional[date]
-    time_val: Optional[time]
-    timestamp_val: Optional[datetime]
-    blob_val: Optional[bytes]
+    tiny_int: Annotated[Optional[int], UseSqlType(TinyIntType())]
+    small_int: Annotated[Optional[int], UseSqlType(SmallIntType())]
+    big_int: Annotated[Optional[int], UseSqlType(BigIntType())]
+    float_val: Annotated[Optional[float], UseSqlType(FloatType())]
+    double_val: Annotated[Optional[float], UseSqlType(DoubleType())]
+    decimal_val: Annotated[Optional[Decimal], UseSqlType(DecimalType(precision=10, scale=4))]
+    char_val: Annotated[Optional[str], UseSqlType(VarCharType(length=64))]
+    varchar_val: Annotated[Optional[str], UseSqlType(VarCharType(length=64))]
+    text_val: Annotated[Optional[str], UseSqlType(TextType())]
+    date_val: Annotated[Optional[date], UseSqlType(DateType())]
+    time_val: Annotated[Optional[time], UseSqlType(TimeType())]
+    timestamp_val: Annotated[Optional[datetime], UseSqlType(TimestampType())]
+    blob_val: Annotated[Optional[bytes], UseSqlType(BlobType())]
     json_val: Optional[dict]
-    array_val: Optional[list]
+    # Native array with integer elements on servers that render ARRAY;
+    # on servers without it, fall back to the JSON/text carrier (the
+    # adapter keeps the list type). This mirrors the original Definition's
+    # dialect-aware array_type(Int) factory.
+    array_val: Annotated[
+        Optional[list],
+        UseSqlType(ArrayType(element_type=IntegerType()), TextType()),
+    ]
     is_active: bool = True
 
 
@@ -108,6 +146,9 @@ class TypeTestModel(UUIDMixin, ActiveRecord):
         return "type_tests"
 
     # UUID primary key provided by UUIDMixin
+    # UUID primary key stored as a 64-char string, matching the
+    # adapter and the original Definition's VarChar(64).
+    id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     string_field: str = Field(default="test string")
     int_field: int = Field(default=42)
     float_field: float = Field(default=3.14)
@@ -128,6 +169,9 @@ class AsyncTypeTestModel(UUIDMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # UUID primary key provided by UUIDMixin
+    # UUID primary key stored as a 64-char string, matching the
+    # adapter and the original Definition's VarChar(64).
+    id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     string_field: str = Field(default="test string")
     int_field: int = Field(default=42)
     float_field: float = Field(default=3.14)

@@ -13,9 +13,15 @@ from typing import Optional, Type, Any, Dict, Set
 
 
 from rhosocial.activerecord.base import DerivedField
-from rhosocial.activerecord.base.fields import UseAdapter, UseColumn, UseSqlType
+from rhosocial.activerecord.base.ddl import IdentityAttribute
+from rhosocial.activerecord.base.fields import (
+    UseAdapter,
+    UseColumn,
+    UseColumnAttributes,
+    UseSqlType,
+)
 from rhosocial.activerecord.backend.expression import Literal as SQLLiteral, NumericColumn
-from rhosocial.activerecord.backend.expression.types import TimestampType
+from rhosocial.activerecord.backend.expression.types import IntegerType, TimestampType
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 
@@ -27,7 +33,6 @@ try:
 except ImportError:
     from typing_extensions import Annotated, ClassVar
 
-from .annotations import SQL_INT_PK
 from .operations import Operation, TableFixture
 from .user_models import (
     ColumnMappingModel,
@@ -303,7 +308,9 @@ class CommentDdl(ActiveRecord):
     def table_name(cls):
         return "comments"
 
-    id: Annotated[Optional[int], SQL_INT_PK] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     post_ref: int
     author: str
     text: str

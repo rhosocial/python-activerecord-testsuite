@@ -8,7 +8,11 @@ The backend-specific provider is responsible for taking these classes and
 configuring them with a live database connection at test time.
 """
 
-from rhosocial.activerecord.backend.expression.types import TextType
+from rhosocial.activerecord.backend.expression.types import (
+    DecimalType,
+    IntegerType,
+    TextType,
+)
 
 from .operations import Operation, TableFixture
 from .user_models import ValidatedUser
@@ -19,7 +23,8 @@ from typing import Literal, Optional
 from pydantic import Field, field_validator, model_validator
 
 
-from rhosocial.activerecord.base.fields import UseSqlType
+from rhosocial.activerecord.base.ddl import IdentityAttribute
+from rhosocial.activerecord.base.fields import UseColumnAttributes, UseSqlType
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
@@ -62,7 +67,9 @@ class PydanticValidatedFieldsMixin:
     )
     quantity: int = Field(..., ge=1, le=999)
     step_count: int = Field(..., gt=0, lt=100, multiple_of=5)
-    price: Decimal = Field(..., ge=Decimal("0.01"))
+    price: Annotated[Decimal, UseSqlType(DecimalType(precision=12, scale=4))] = Field(
+        ..., ge=Decimal("0.01")
+    )
     start_at: datetime
     end_at: datetime
     status: Annotated[
@@ -90,7 +97,9 @@ class PydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, Activ
     def table_name(cls):
         return "pydantic_validated_models"
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
 
 
 class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, AsyncActiveRecord):
@@ -100,7 +109,9 @@ class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, 
     def table_name(cls):
         return "pydantic_validated_models"
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
 
 
 # --- Module-level definitions for TypeAdapterTest and YesOrNoBooleanAdapter ---

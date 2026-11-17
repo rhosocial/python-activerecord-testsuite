@@ -31,13 +31,16 @@ try:
 except ImportError:
     from typing_extensions import Annotated, ClassVar
 
+from rhosocial.activerecord.base.ddl import IdentityAttribute
+from rhosocial.activerecord.base.fields import UseColumnAttributes
 from rhosocial.activerecord.backend.expression.types import (
+    IntegerType,
     TextType,
     TimestampType,
     VarCharType,
 )
 
-from .annotations import SQL_INT_PK, SQL_NULLABLE
+from .annotations import SQL_NULLABLE
 from .operations import Operation, TableFixture
 
 # The composite-key models moved to their own group module; re-export them so
@@ -66,7 +69,9 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
-    id: Annotated[Optional[int], SQL_INT_PK] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str
     email: EmailStr
     age: Optional[int] = Field(..., ge=0, le=100)
@@ -84,7 +89,9 @@ class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # The IntegerPKMixin is expected to handle the `id` field.
-    id: Annotated[Optional[int], SQL_INT_PK] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str
     email: EmailStr
     age: Optional[int] = Field(..., ge=0, le=100)
@@ -104,7 +111,9 @@ class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str
     email: EmailStr
     age: Optional[int] = None
@@ -145,7 +154,9 @@ class AsyncValidatedFieldUser(IntegerPKMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str
     email: EmailStr
     age: Optional[int] = None
@@ -181,7 +192,9 @@ class ValidatedUser(IntegerPKMixin, ActiveRecord):
     def table_name(cls):
         return "validated_users"
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     age: Optional[int] = Field(None, ge=0, le=150)
@@ -211,7 +224,9 @@ class AsyncValidatedUser(IntegerPKMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     age: Optional[int] = Field(None, ge=0, le=150)
@@ -665,7 +680,7 @@ class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
     email: Optional[str] = None
 
 
-class UserDdl(ActiveRecord):
+class UserDdl(IntegerPKMixin, ActiveRecord):
     """DDL source for ``users``: the columns the mapped projections write.
 
     Every data column is nullable because the projection models insert subsets
@@ -677,7 +692,9 @@ class UserDdl(ActiveRecord):
     def table_name(cls):
         return "users"
 
-    id: Annotated[Optional[int], SQL_INT_PK] = None
+    id: Annotated[
+        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+    ] = None
     username: Annotated[str, SQL_NULLABLE]
     email: Annotated[str, SQL_NULLABLE]
     age: Optional[int] = None
