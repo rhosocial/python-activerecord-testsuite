@@ -48,14 +48,6 @@
    `BASIC_TABLES`（模型类元组，建表来源，见 `user_models.py`）。
    `cli/conftest.py` 已改用 `BASIC_FIXTURES` 派生这三张表。
 
-### 0.2 待办：query 的借用改名
-
-`feature/query/conftest.py` 对 `basic.fixtures.models.OrderItem` / `AsyncOrderItem` 的导入是阶段 1 保留的临时引用。彻底重新划分时：
-
-1. 在 `basic/fixtures` 中给组合主键分组一个公开入口（现为 `composite_pk_models.py` 的 `COMPOSITE_PK_FIXTURES`）；
-2. query 改为从该公开入口或 query 自己的夹具取模型，并同批更新其 `conftest.py`；
-3. 删除 `models.py` 中不再被任何 basic 组使用的对应定义。
-
 ---
 
 ## 1. 现状盘点（本目录）
