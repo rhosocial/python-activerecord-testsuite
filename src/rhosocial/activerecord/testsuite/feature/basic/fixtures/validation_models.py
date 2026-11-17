@@ -36,7 +36,9 @@ from .user_models import ValidatedUser
 try:
     from typing import Annotated, ClassVar  # noqa: F401
 except ImportError:
-    from typing_extensions import Annotated  # noqa: F401
+    # On 3.8 ``typing.Annotated`` is missing, so the whole try-import fails
+    # before ``ClassVar`` is bound -- import both from typing_extensions.
+    from typing_extensions import Annotated, ClassVar  # noqa: F401
 
 
 # The composite-key models moved to their own group module; re-export them so
