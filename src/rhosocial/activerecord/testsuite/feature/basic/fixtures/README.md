@@ -31,10 +31,13 @@
   `validation`、`connection`、`worker`、`transaction`、`bulk_crud`）**不再私自定义
   夹具** —— 模型、适配器、DDL/DML 操作一律取自本目录。测试目录里只保留
   `pytest` 夹具函数与断言；`conftest.py` 只做「挑表 → 建表 → 交给用例」。
-- **向外借**：**其他 feature 允许使用本目录的夹具**（现状已有：`feature/query`
-  用 `OrderItem`/`AsyncOrderItem`，`feature/cli` 用 `User`、`ValidatedUser`、
-  `BulkUser` 与 `BASIC_DEFINITIONS`）。这条是单向的：本目录**不反向依赖**任何
-  feature，也不从别的 feature 借模型。
+- **向外借**：**其他 feature 允许使用本目录的夹具**。`feature/cli` 已改用
+  `user_models.BASIC_FIXTURES` / `BASIC_TABLES` 派生它借用的三张表；
+  `feature/query/conftest.py` 目前仍从 `fixtures.models` 导入
+  `OrderItem` / `AsyncOrderItem`——这是**临时遗留**，本轮不动，但在夹具
+  彻底重新划分时 query 也必须改用它自己的夹具或新的 basic 分组公开名，
+  不得再直连 `fixtures.models` 的内部类。这条是单向的：本目录**不反向依赖**
+  任何 feature，也不从别的 feature 借模型。
 
 由此产生两条硬约束：
 
@@ -44,6 +47,14 @@
 2. `BASIC_DEFINITIONS`（`{表名: Definition}`）已随 P1 消失，替换为
    `BASIC_TABLES`（模型类元组，建表来源，见 `user_models.py`）。
    `cli/conftest.py` 已改用 `BASIC_FIXTURES` 派生这三张表。
+
+### 0.2 待办：query 的借用改名
+
+`feature/query/conftest.py` 对 `basic.fixtures.models.OrderItem` / `AsyncOrderItem` 的导入是阶段 1 保留的临时引用。彻底重新划分时：
+
+1. 在 `basic/fixtures` 中给组合主键分组一个公开入口（现为 `composite_pk_models.py` 的 `COMPOSITE_PK_FIXTURES`）；
+2. query 改为从该公开入口或 query 自己的夹具取模型，并同批更新其 `conftest.py`；
+3. 删除 `models.py` 中不再被任何 basic 组使用的对应定义。
 
 ---
 
