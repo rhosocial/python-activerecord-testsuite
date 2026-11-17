@@ -31,8 +31,6 @@ try:
 except ImportError:
     from typing_extensions import Annotated, ClassVar
 
-from rhosocial.activerecord.base.ddl import IdentityAttribute
-from rhosocial.activerecord.base.fields import UseColumnAttributes
 from rhosocial.activerecord.backend.expression.types import (
     IntegerType,
     TextType,
@@ -70,7 +68,7 @@ class User(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
     # The IntegerPKMixin is expected to handle the `id` field.
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str
     email: EmailStr
@@ -90,7 +88,7 @@ class AsyncUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 
     # The IntegerPKMixin is expected to handle the `id` field.
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str
     email: EmailStr
@@ -112,7 +110,7 @@ class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str
     email: EmailStr
@@ -155,7 +153,7 @@ class AsyncValidatedFieldUser(IntegerPKMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str
     email: EmailStr
@@ -193,7 +191,7 @@ class ValidatedUser(IntegerPKMixin, ActiveRecord):
         return "validated_users"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -225,7 +223,7 @@ class AsyncValidatedUser(IntegerPKMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -693,7 +691,7 @@ class UserDdl(IntegerPKMixin, ActiveRecord):
         return "users"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     username: Annotated[str, SQL_NULLABLE]
     email: Annotated[str, SQL_NULLABLE]

@@ -13,8 +13,7 @@ try:  # Python 3.8
 except ImportError:  # pragma: no cover
     from typing_extensions import Annotated
 
-from rhosocial.activerecord.base.ddl import IdentityAttribute
-from rhosocial.activerecord.base.fields import UseColumnAttributes, UseSqlType
+from rhosocial.activerecord.base.fields import UseSqlType
 from rhosocial.activerecord.backend.expression.types import IntegerType
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from .operations import Operation, TableFixture
@@ -26,7 +25,7 @@ class TestUser(ActiveRecord):
         return "test_users"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     name: str
     email: str
@@ -38,7 +37,7 @@ class AsyncTestUser(AsyncActiveRecord):
         return "test_users"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     name: str
     email: str

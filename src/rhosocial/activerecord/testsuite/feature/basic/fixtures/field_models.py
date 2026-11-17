@@ -13,11 +13,9 @@ from typing import Optional, Type, Any, Dict, Set
 
 
 from rhosocial.activerecord.base import DerivedField
-from rhosocial.activerecord.base.ddl import IdentityAttribute
 from rhosocial.activerecord.base.fields import (
     UseAdapter,
     UseColumn,
-    UseColumnAttributes,
     UseSqlType,
 )
 from rhosocial.activerecord.backend.expression import Literal as SQLLiteral, NumericColumn
@@ -309,7 +307,7 @@ class CommentDdl(ActiveRecord):
         return "comments"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
     post_ref: int
     author: str

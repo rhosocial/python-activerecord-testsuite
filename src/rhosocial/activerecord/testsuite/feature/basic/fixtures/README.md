@@ -89,7 +89,7 @@
 | F8 | 能力探针的答案依赖服务器版本，`introspect_and_adapt()` 之前可能全部为 False | `impl/oracle/mixins/features.py:201` |
 | F9 | 能力回答有两条**互不重叠**的通道：零参布尔方法 与 `supports_data_types()` 字典；`Requirement` 只接前者 | `pytest_plugin/requirements.py:74`、实跑 §1.3 |
 | F10 | `resolve()` 已支持「新版模块只覆盖它定义的名字」，未定义的回落到 `models.py` | `fixtures/__init__.py` |
-| F11 | **identity 是派生的，不是声明的**：字段在 `__primary_key__` 里且列属性含 `IdentityAttribute` 才算库生成主键；否则调用方必须提供主键值 | `interface/model.py:264` |
+| F11 | **数据库赋值是推导出来的，不是声明出来的**：单列整数主键写成 `Optional[int]`（可省略）且 `pk_auto_generated()` 为默认 True，就足以让写路径不要求主键、让 DDL 派生出后端自己的生成机制。实测：`Optional[int]` 与显式 `IdentityAttribute()` 在同一方言上派生出的 DDL 逐字相同 | `python-activerecord/base/derivation.py:264–296`、`field/integer_pk.py:5–18` |
 | F12 | **`suggested_column_types()` 是成文契约**：`FRAMEWORK_PYTHON_TYPES` 的 **24 键每键必答**，漏键 = 硬失败。2026-11-17 已补齐：六族有 core 列类、`timedelta` 答 `IntervalColumn`；十方言全答满，唯一 `None` 是 Firebird 的 `dict` + 四个容器（无 JSON 读取函数、无原生数组），是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`base/framework_types.py` |
 | F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `substitute_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
 
@@ -100,8 +100,7 @@ class PromptRow(ActiveRecord):
     @classmethod
     def table_name(cls): return "prompt_rows"
 
-    id: Annotated[Optional[int], UseSqlType(IntegerType()),
-                  UseColumnAttributes(IdentityAttribute())] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     label: Annotated[str, UseSqlType(VarCharType(length=64)),
                      UseConstraint(ColumnUniqueConstraint)]
     amount: Annotated[Optional[Decimal], UseSqlType(DecimalType(precision=10, scale=2))] = None
@@ -181,7 +180,11 @@ for source in TABLE_SOURCES:
 | 变体 | 声明内容 | 用来回答 |
 |---|---|---|
 | **bare（完全默认）** | **模型自己写的字段只有 Python 类型注解，没有任何 `Annotated` 标记** | 「什么都不说时，框架给什么？」 |
-| **annotated（完全注记）** | 同一批 Python 类型 + 覆盖全部注记轴（类型/长度/精度、identity、约束、索引、注释） | 「注记改变了什么？」 |
+| **annotated（完全注记）** | 同一批 Python 类型 + 覆盖全部注记轴（类型/长度/精度、约束、索引、注释） | 「注记改变了什么？」 |
+
+**identity 不属于注记轴**。数据库赋值整数主键由 `Optional[int]` + `pk_auto_generated()`
+默认推导（F11），两变体一致；`IdentityAttribute` 是机制专属的 DDL 提示，不写进共享夹具。
+自增行为用 `supports_database_assigned_integer_column()` 在行为层单独验证，DDL 机制留给各后端。
 
 三点必须说清楚：
 
@@ -270,7 +273,7 @@ class AsyncUser(UserFields, IntegerPKMixin, AsyncActiveRecord): ...
 
 | 组（目录） | 表 | bare | annotated | 注解是否改存储 | 能力前提 |
 |---|---|---|---|---|---|
-| `crud/` | `users` | `User`（零注记） | `UserAnnotated`（identity、唯一、索引） | 是 → 两表 | identity 列 |
+| `crud/` | `users` | `User`（零注记） | `UserAnnotated`（唯一、索引） | 是 → 两表 | 数据库赋值整数列 |
 | `crud/` | `users`（映射对照） | `User` | `MappedUser`（`UseColumn`） | 否 → 同表 | — |
 | `crud_composite_pk/` | `order_items`、`store_inventory`、`orders` | `OrderItem`、`StoreInventory`（零注记，复合键天然不是 identity） | `MappedOrderItem`（`UseColumn` + 复合 PK） | 否 → 同表 | 复合 PK |
 | `types/`（新） | `typed_users`、`typed_users_annotated` | ✓ | ✓ | 是 → 两表 | 标量类型概念 |
@@ -324,7 +327,7 @@ bare/annotated 重划**：它们的对照点是行为声明（无主键、只读
 
 | 列 | Python 类型 | annotated 追加（bare 只有 Python 类型） |
 |---|---|---|
-| `id` | `Optional[int]` | `+ UseSqlType(IntegerType()) + IdentityAttribute()` |
+| `id` | `Optional[int]` | `+ UseSqlType(IntegerType())`（identity 由 F11 推导，两变体相同） |
 | `flag` | `bool` | `+ BooleanType() + ColumnDefaultConstraint(False)` |
 | `count` | `int` | `+ IntegerType() + UseComment` |
 | `amount` | `Decimal` | `+ DecimalType(precision=12, scale=2)` |
@@ -337,7 +340,7 @@ bare/annotated 重划**：它们的对照点是行为声明（无主键、只读
 
 bare 变体整列只写 Python 类型，**框架推断出什么就是什么**——这正是这一组的价值：
 它把 `minimal-definition.md` 里 D1–D4 四个默认值（`str` 长度、`int` 宽度、
-主键 identity、`Decimal` 精度）钉成可执行断言。默认值若改，这组测试必须跟着改，
+整数主键由数据库赋值、`Decimal` 精度）钉成可执行断言。默认值若改，这组测试必须跟着改，
 这正是我们要的灵敏度。推断表现在已经存在：`suggested_data_types()` 的 24 键表，
 与列类表同纪律（每键必答、无 `None`），bare 已可建表。
 
@@ -377,7 +380,7 @@ bare 变体的边界由**后端的答案**决定，而不是由「是不是内�
 
 | 列 | Python 类型 | bare | annotated |
 |---|---|---|---|
-| `id` | `Optional[int]` | ✓ | `+ IdentityAttribute()` |
+| `id` | `Optional[int]` | ✓ | ✓（identity 两变体相同，见 F11） |
 | `token` | `UUID` | ✓ | `+ UseIndex("ix_…")` |
 | `payload` | `dict` | ✓ | `+ UseComment`（容量见下） |
 | `tags` | `list` | ✓ | `+ ArrayType(element_type=VarCharType(32))` |
@@ -427,7 +430,7 @@ bare 组的测试断言**只做值往返（写入=读出）**，不断言列类�
 
 | 列 | Python 类型 | annotated | 前提 |
 |---|---|---|---|
-| `id` | `Optional[int]` | `IdentityAttribute()` | identity 列 |
+| `id` | `Optional[int]` | —（identity 由 F11 推导） | 数据库赋值整数列 |
 | `body` | `str`（16 000 字符） | `TextType(length=16000)` | `text` 概念 **+ 容量** |
 | `raw` | `bytes`（16 000 字节） | `BlobType(length=16000)` | `blob` 概念 **+ 容量** |
 | `document` | `dict`（≤3 500 字符的 UTF-8） | `JsonType()` | `json` 概念 + Oracle 的 4 000 字节上限 |
@@ -461,7 +464,7 @@ PG / ClickHouse / SQLite / Snowflake / BigQuery 本身无上限，忽略。容�
 | 文件 | 职责 |
 |---|---|
 | `README.md` | 本文 |
-| `annotations.py` | 版本无关的注记常量（`SQL_INT_PK = (UseSqlType(IntegerType()), IdentityAttribute())` 之类，不含模型） |
+| `annotations.py` | 版本无关的中立声明常量（`SQL_INT_PK = (UseSqlType(IntegerType()),)`：整数主键由 `Optional[int]` + 默认推导赋予，不含机制注记，不含模型） |
 | `user_models.py` | `users` 表的全部声明：`crud`/`fields` 的 `UserFields` + `User`/`AsyncUser` + `UserAnnotated` + `MappedUser` + `ColumnMappingModel`；`nopk` 的 4 个无主键投影；`readonly` 的 5 个只读投影 |
 | `type_rows_models.py` | 三个类型组：字段基类 + 模型 + 其适配器 |
 | `composite_pk_models.py` | `crud_composite_pk` 组（`OrderItem`/`StoreInventory`/`Order`/`MappedOrderItem`） |
@@ -598,14 +601,18 @@ class TableFixture:
    微秒夹具是独立的 `microsecond_rows`（2 列），由 `supports_timestamp_microseconds()`
    决定是否跳过（Firebird 答 False，跳过并指名）。
 6. **`Mapped*` 按 P2 归入 annotated 变体**，不再独立成组。
-7. **C 层的表统一称「建议存储类型表」**（`suggested_storage_types()`）：它只在字段未声明
+7. **C 层的表统一称「建议存储类型表」**（`suggested_data_types()`）：它只在字段未声明
    `UseSqlType` 时提供默认，显式声明永远优先，用户可完全不使用；建议渲染失败时**报错
    指名表与列**，不静默降级。
+8. **identity 退出 bare/annotated 变体轴**（2026-11-18 实测）：`Optional[int]` + 默认
+   `pk_auto_generated()` 即表达"数据库赋值",与显式 `IdentityAttribute()` 派生的 DDL 逐字相同。
+   共享夹具不再写 `IdentityAttribute`;自增行为由 `supports_database_assigned_integer_column()`
+   门控,具体 DDL 机制由各后端自己的契约测试覆盖（PostgreSQL 的 SERIAL 亦属后者）。
 
 **待探索（已另立计划）**：
 
 - `minimal-definition.md`：零注记建表、四个默认值（`str` 长度、`int` 宽度、
-  主键 identity、`Decimal` 精度）、推断与 `suggested_column_types()` 同源。
+  整数主键由数据库赋值、`Decimal` 精度）、推断与 `suggested_column_types()` 同源。
 - `ddl-source-capabilities.md`：`DDLSource.required_capabilities()` 与
   `dialect.supports(concept)` 的统一通道。
 - `type-capacity-and-precision.md`：五个内容类型的 `length`、档位映射与 4 B/字符换算、

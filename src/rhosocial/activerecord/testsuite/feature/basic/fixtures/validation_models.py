@@ -23,8 +23,7 @@ from typing import Literal, Optional
 from pydantic import Field, field_validator, model_validator
 
 
-from rhosocial.activerecord.base.ddl import IdentityAttribute
-from rhosocial.activerecord.base.fields import UseColumnAttributes, UseSqlType
+from rhosocial.activerecord.base.fields import UseSqlType
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
@@ -98,7 +97,7 @@ class PydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, Activ
         return "pydantic_validated_models"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
 
 
@@ -110,7 +109,7 @@ class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, 
         return "pydantic_validated_models"
 
     id: Annotated[
-        Optional[int], UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute())
+        Optional[int], UseSqlType(IntegerType())
     ] = None
 
 
