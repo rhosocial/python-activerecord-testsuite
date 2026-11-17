@@ -8,6 +8,17 @@ adapted backend rather than a probe connection.
 
 import pytest
 
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+# This directory owns one database per scenario; parallel workers would reset
+# the same file underneath each other.
+DECLARATION = Declaration(
+    parallel=True,
+    purpose="Basic ALTER TABLE rendering contracts under ``basic/ddl``",
+    passes_means="the clause renders as documented on the adapted dialect",
+    fails_means="a clause is accepted without support or refused by name",
+)
+
 
 @pytest.fixture(scope="session")
 def database_config(backend_scenario):
