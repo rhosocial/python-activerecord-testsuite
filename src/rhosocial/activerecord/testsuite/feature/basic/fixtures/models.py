@@ -22,7 +22,7 @@ from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.backend.errors import ValidationError
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
 # package to handle common field behaviors like auto-incrementing IDs or timestamps.
-from rhosocial.activerecord.field import DefaultTimestampMixin, UUIDMixin, IntegerPKMixin, CompositePKMixin
+from rhosocial.activerecord.field import DefaultTimestampMixin, UUIDMixin, IntegerPKMixin
 
 try:
     from typing import Annotated, ClassVar
@@ -31,6 +31,19 @@ except ImportError:
 
 from . import resolve
 from .annotations import SQL_INT_PK
+
+# The composite-key models moved to their own group module; re-export them so
+# existing importers of ``fixtures.models`` keep working.
+from .composite_pk_models import (  # noqa: F401
+    AsyncMappedOrderItem,
+    AsyncOrder,
+    AsyncOrderItem,
+    AsyncStoreInventory,
+    MappedOrderItem,
+    Order,
+    OrderItem,
+    StoreInventory,
+)
 
 from rhosocial.activerecord.backend.expression import (
     ColumnConstraint as Constraint,
@@ -67,6 +80,7 @@ from rhosocial.activerecord.testsuite.fixture_types import (
     time_type,
     timestamp_type,
 )
+
 
 class TypeCase(UUIDMixin, ActiveRecord):
     """A model with a wide variety of data types to test database type handling."""
@@ -778,139 +792,6 @@ class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
     email: Optional[str] = None
 
 
-# =============================================================================
-# Composite Primary Key Models
-# =============================================================================
-
-class OrderItem(CompositePKMixin, ActiveRecord):
-    """Composite PK (order_id, product_id), PK provided by application."""
-    @classmethod
-    def table_name(cls):
-        return "order_items"
-
-    @classmethod
-    def primary_key(cls):
-        return ("order_id", "product_id")
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    order_id: int
-    product_id: int
-    quantity: int = 1
-    unit_price: Decimal = Decimal("0.00")
-
-
-class AsyncOrderItem(CompositePKMixin, AsyncActiveRecord):
-    """Async variant of OrderItem."""
-    @classmethod
-    def table_name(cls):
-        return "order_items"
-
-    @classmethod
-    def primary_key(cls):
-        return ("order_id", "product_id")
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    order_id: int
-    product_id: int
-    quantity: int = 1
-    unit_price: Decimal = Decimal("0.00")
-
-
-class StoreInventory(CompositePKMixin, ActiveRecord):
-    """Triple-column composite PK."""
-    @classmethod
-    def table_name(cls):
-        return "store_inventory"
-
-    @classmethod
-    def primary_key(cls):
-        return ("store_id", "product_id", "batch_id")
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    store_id: int
-    product_id: int
-    batch_id: str
-    stock: int = 0
-
-
-class AsyncStoreInventory(CompositePKMixin, AsyncActiveRecord):
-    """Async variant of StoreInventory."""
-    @classmethod
-    def table_name(cls):
-        return "store_inventory"
-
-    @classmethod
-    def primary_key(cls):
-        return ("store_id", "product_id", "batch_id")
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    store_id: int
-    product_id: int
-    batch_id: str
-    stock: int = 0
-
-
-class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
-    """Single-column auto-increment PK — backward compatibility control group."""
-    @classmethod
-    def table_name(cls):
-        return "orders"
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    id: Optional[int] = None
-    total: Decimal = Decimal("0.00")
-
-
-class AsyncOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
-    """Async variant of Order."""
-    @classmethod
-    def table_name(cls):
-        return "orders"
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    id: Optional[int] = None
-    total: Decimal = Decimal("0.00")
-
-
-class MappedOrderItem(CompositePKMixin, ActiveRecord):
-    """Composite PK with UseColumn mapping — Python field names differ from DB column names."""
-    @classmethod
-    def table_name(cls):
-        return "order_items"
-
-    @classmethod
-    def primary_key(cls):
-        return ("order_id", "product_id")
-
-    order_ref: Annotated[int, UseColumn("order_id")]
-    product_ref: Annotated[int, UseColumn("product_id")]
-    quantity: int = 1
-    unit_price: Decimal = Decimal("0.00")
-
-
-class AsyncMappedOrderItem(CompositePKMixin, AsyncActiveRecord):
-    """Async variant of MappedOrderItem."""
-    @classmethod
-    def table_name(cls):
-        return "order_items"
-
-    @classmethod
-    def primary_key(cls):
-        return ("order_id", "product_id")
-
-    c: ClassVar[FieldProxy] = FieldProxy()
-
-    order_ref: Annotated[int, UseColumn("order_id")]
-    product_ref: Annotated[int, UseColumn("product_id")]
-    quantity: int = 1
-    unit_price: Decimal = Decimal("0.00")
-
 
 # =============================================================================
 # Derived Field Models
@@ -1389,46 +1270,6 @@ class BulkUserDefinition(Definition):
             self.text("name"),
             self.default("age", Int(self.dialect), 0),
             self.text("email"),
-        ]
-
-
-class OrderDefinition(Definition):
-    model = resolve("Order")
-    async_model = resolve("AsyncOrder")
-    table_name = "orders"
-
-    def columns(self):
-        return [
-            self.auto_pk(),
-            self.column("total", Numeric(self.dialect, 12, 4)),
-            self.timestamp("created_at"),
-            self.timestamp("updated_at"),
-        ]
-
-
-class OrderItemDefinition(Definition):
-    """Composite-key order item owned by the basic topic."""
-
-    model = resolve("OrderItem")
-    async_model = resolve("AsyncOrderItem")
-    table_name = "order_items"
-
-    def columns(self):
-        return [
-            self.column("order_id", Int(self.dialect)),
-            self.column("product_id", Int(self.dialect)),
-            self.column("quantity", Int(self.dialect)),
-            self.column("unit_price", Numeric(self.dialect, 12, 4)),
-        ]
-
-    def table_constraints(self):
-        return [
-            TableConstraint(
-                self.dialect,
-                branch=TablePrimaryKey(
-                    self.dialect, ["order_id", "product_id"]
-                ),
-            )
         ]
 
 
