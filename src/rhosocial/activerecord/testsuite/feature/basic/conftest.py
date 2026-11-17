@@ -5,16 +5,13 @@ Each fixture names its model directly; the testsuite environment configures it
 against the directory's database.  Which versioned model file supplies the
 class is decided here, so tests only see fixture names.
 """
+
 import pytest
 
 from .fixtures import resolve
 
 User = resolve("User")
 AsyncUser = resolve("AsyncUser")
-TypeCase = resolve("TypeCase")
-AsyncTypeCase = resolve("AsyncTypeCase")
-TypeTestModel = resolve("TypeTestModel")
-AsyncTypeTestModel = resolve("AsyncTypeTestModel")
 ValidatedUser = resolve("ValidatedFieldUser")
 AsyncValidatedUser = resolve("AsyncValidatedFieldUser")
 ValidatedProfile = resolve("ValidatedUser")
@@ -81,42 +78,6 @@ async def async_user_class(database_config):
     scenario, config, _name = database_config
     await AsyncUser.configure(config, scenario.async_backend_class)
     model = AsyncUser
-    yield model
-    await _disconnect_async(model)
-
-
-@pytest.fixture(name="type_case_class")
-def type_case_class(database_config):
-    scenario, config, _name = database_config
-    TypeCase.configure(config, scenario.backend_class)
-    model = TypeCase
-    yield model
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_type_case_class")
-async def async_type_case_class(database_config):
-    scenario, config, _name = database_config
-    await AsyncTypeCase.configure(config, scenario.async_backend_class)
-    model = AsyncTypeCase
-    yield model
-    await _disconnect_async(model)
-
-
-@pytest.fixture(name="type_test_model")
-def type_test_model(database_config):
-    scenario, config, _name = database_config
-    TypeTestModel.configure(config, scenario.backend_class)
-    model = TypeTestModel
-    yield model
-    _disconnect(model)
-
-
-@pytest.fixture(name="async_type_test_model")
-async def async_type_test_model(database_config):
-    scenario, config, _name = database_config
-    await AsyncTypeTestModel.configure(config, scenario.async_backend_class)
-    model = AsyncTypeTestModel
     yield model
     await _disconnect_async(model)
 

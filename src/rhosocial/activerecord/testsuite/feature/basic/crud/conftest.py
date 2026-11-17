@@ -13,29 +13,24 @@ even when it only uses part of it.
 from pathlib import Path
 
 import pytest
-
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.type_rows_models import (
-    TYPE_ROW_FIXTURES,
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
 )
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
     USER_FIXTURES,
     VALIDATED_FIELD_FIXTURES,
 )
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
-    create_schema,
-    drop_schema,
-)
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
-
 
 DECLARATION = Declaration(
     parallel=True,
-    purpose='Basic synchronous/asynchronous CRUD over the standard user tables.',
-    passes_means='rows are created, read, updated and deleted through every documented path',
-    fails_means='a write path silently loses a row or returns the wrong one',
+    purpose="Basic synchronous/asynchronous CRUD over the standard user tables.",
+    passes_means="rows are created, read, updated and deleted through every documented path",
+    fails_means="a write path silently loses a row or returns the wrong one",
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
@@ -70,6 +65,6 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate the tables this directory uses, before every test."""
-    create_schema(database, USER_FIXTURES + TYPE_ROW_FIXTURES + VALIDATED_FIELD_FIXTURES)
+    create_schema(database, USER_FIXTURES + VALIDATED_FIELD_FIXTURES)
     yield
-    drop_schema(database, USER_FIXTURES + TYPE_ROW_FIXTURES + VALIDATED_FIELD_FIXTURES)
+    drop_schema(database, USER_FIXTURES + VALIDATED_FIELD_FIXTURES)

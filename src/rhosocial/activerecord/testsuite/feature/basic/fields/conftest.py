@@ -30,9 +30,6 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     drop_schema,
     table_reason,
 )
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.type_rows_models import (
-    TYPE_ROW_FIXTURES,
-)
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
     USER_FIXTURES,
 )
@@ -45,7 +42,7 @@ DECLARATION = Declaration(
     fails_means="a field is read from the wrong column or a derived value is not computed",
 )
 
-_ALL_FIXTURES = USER_FIXTURES + FIELD_FIXTURES + TYPE_ROW_FIXTURES + FIELD_VARIANT_FIXTURES
+_ALL_FIXTURES = USER_FIXTURES + FIELD_FIXTURES + FIELD_VARIANT_FIXTURES
 
 
 def _database_name() -> str:

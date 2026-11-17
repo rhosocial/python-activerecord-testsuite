@@ -7,7 +7,7 @@ older importers of ``fixtures.models`` keep working. It declares no model of
 its own: there is one definition site per table.
 """
 
-from .composite_pk_models import (
+from .composite_pk_models import (  # noqa: F401
     AsyncMappedOrderItem,
     AsyncOrder,
     AsyncOrderItem,
@@ -16,9 +16,9 @@ from .composite_pk_models import (
     Order,
     OrderItem,
     StoreInventory,
-)  # noqa: F401
+)
 from .connection_models import AsyncTestUser, TestUser  # noqa: F401
-from .field_models import (
+from .field_models import (  # noqa: F401
     AsyncProduct,
     AsyncProductFormA,
     AsyncProductWithColumnAndAdapter,
@@ -27,28 +27,22 @@ from .field_models import (
     ProductFormA,
     ProductWithColumnAndAdapter,
     ProductWithProxy,
-)  # noqa: F401
+)
 from .type_adapter_models import (  # noqa: F401
     AsyncTypeAdapterTest,
     TypeAdapterTest,
     YesOrNoBooleanAdapter,
 )
-from .type_rows_models import (  # noqa: F401
-    AsyncTypeCase,
-    AsyncTypeTestModel,
-    TypeCase,
-    TypeTestModel,
-)
-from .user_models import (
+from .user_models import (  # noqa: F401
     AsyncBulkUser,
     AsyncColumnMappingModel,
     AsyncMappedComment,
     AsyncMappedPost,
     AsyncMappedUser,
     AsyncMixedAnnotationModel,
+    AsyncUser,
     AsyncValidatedFieldUser,
     AsyncValidatedUser,
-    AsyncUser,
     BulkUser,
     ColumnMappingModel,
     IntToStringAdapter,
@@ -61,7 +55,7 @@ from .user_models import (
     User,
     ValidatedFieldUser,
     ValidatedUser,
-)  # noqa: F401
+)
 from .validation_models import (  # noqa: F401
     AsyncPydanticValidatedModel,
     PydanticValidatedFieldsMixin,
@@ -86,8 +80,6 @@ __all__ = [
     "AsyncStoreInventory",
     "AsyncTestUser",
     "AsyncTypeAdapterTest",
-    "AsyncTypeCase",
-    "AsyncTypeTestModel",
     "AsyncUser",
     "AsyncValidatedFieldUser",
     "AsyncValidatedUser",
@@ -112,8 +104,6 @@ __all__ = [
     "StoreInventory",
     "TestUser",
     "TypeAdapterTest",
-    "TypeCase",
-    "TypeTestModel",
     "User",
     "ValidatedFieldUser",
     "ValidatedUser",
