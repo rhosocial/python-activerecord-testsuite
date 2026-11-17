@@ -11,6 +11,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Optional and custom type adapters, including boolean raw storage.',
+    passes_means='values survive the adapter round-trip with the documented database shape',
+    fails_means='an adapter writes a value the backend cannot read back faithfully',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

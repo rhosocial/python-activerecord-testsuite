@@ -28,6 +28,7 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 OrderItem = resolve("OrderItem")
 AsyncOrderItem = resolve("AsyncOrderItem")
@@ -35,6 +36,14 @@ Order = resolve("Order")
 AsyncOrder = resolve("AsyncOrder")
 MappedOrderItem = resolve("MappedOrderItem")
 AsyncMappedOrderItem = resolve("AsyncMappedOrderItem")
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='CRUD over composite primary keys and column-mapped composite keys.',
+    passes_means='composite-key rows round-trip and each key member is required',
+    fails_means='a composite key is mistaken for an identity key or a member is dropped',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

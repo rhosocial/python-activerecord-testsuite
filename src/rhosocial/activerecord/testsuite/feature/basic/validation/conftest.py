@@ -11,6 +11,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Pydantic field/model validators and native validation boundaries.',
+    passes_means='validation runs on assignment and on save, and invalid values are refused',
+    fails_means='an invalid value is persisted or a valid one is rejected',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

@@ -28,6 +28,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Basic synchronous/asynchronous CRUD over the standard user tables.',
+    passes_means='rows are created, read, updated and deleted through every documented path',
+    fails_means='a write path silently loses a row or returns the wrong one',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

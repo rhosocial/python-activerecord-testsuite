@@ -15,7 +15,6 @@ A directory's tables, fixtures and database belong to that directory's
 """
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -69,38 +68,16 @@ def _assert_loadgroup(config) -> None:
         )
 
 
-#: Fixtures whose presence means the test runs against a directory's database.
-_DATABASE_FIXTURES = ("database", "database_config")
-
-
-def _uses_database(item) -> bool:
-    """Whether this test's fixture closure asks for a directory database."""
-    names = set(getattr(item, "fixturenames", ()) or ())
-    info = getattr(item, "_fixtureinfo", None)
-    if info is not None:
-        names.update(getattr(info, "names_closure", ()) or ())
-    return any(name in names for name in _DATABASE_FIXTURES)
-
-
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
-    """Pin database-backed directories **per scenario** to one worker each.
+    """Group a directory's tests onto one worker **only when it declares so**.
 
-    A directory owns one database *per scenario*; different scenarios are
-    different databases (different server, or a scenario-suffixed name), so
-    their variants can run in parallel.  Within one directory and scenario the
-    tests stay on a single worker.  Directories without a ``database`` fixture
-    are left ungrouped and free to run in parallel.
+    Parallel grouping is declared, never inferred: a directory that declares
+    ``Declaration(parallel=True)`` pins its tests (per scenario) to one worker,
+    because its tests share one database. A directory that declares nothing is
+    left ungrouped and free to run in unlimited parallel -- a ``conftest.py``
+    or a ``database`` fixture alone is *not* a declaration of serial intent.
     """
-    for item in items:
-        path = getattr(item, "path", None)
-        if path is None or not _uses_database(item):
-            continue
-        scenario = hooks.scenario_name(item)
-        directory = os.path.dirname(str(path))
-        item.add_marker(
-            pytest.mark.xdist_group(f"testsuite::{directory}::{scenario}")
-        )
     hooks.collection_modifyitems(config, items)
 
 

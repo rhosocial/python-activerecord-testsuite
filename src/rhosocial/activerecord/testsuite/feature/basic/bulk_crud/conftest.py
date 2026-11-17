@@ -11,6 +11,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Bulk insert, batch update/delete and chunked operations.',
+    passes_means='batch operations affect exactly the selected rows in one round',
+    fails_means='a batch touches rows it should not or leaves stale rows behind',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

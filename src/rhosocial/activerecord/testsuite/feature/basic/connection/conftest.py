@@ -22,6 +22,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Connection and pool lifecycle, context managers and pool transaction paths.',
+    passes_means='connections are acquired and released exactly once per context',
+    fails_means='a connection leaks or a pool transaction is shared across the wrong tasks',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

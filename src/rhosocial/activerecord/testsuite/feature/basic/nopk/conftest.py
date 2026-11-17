@@ -9,8 +9,17 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
     USER_FIXTURES,
+)
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Keyless models: identity-based access must be refused.',
+    passes_means='models with primary_key() -> None reject identity lookups by name',
+    fails_means='a keyless model is addressed by identity as if it had a key',
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)

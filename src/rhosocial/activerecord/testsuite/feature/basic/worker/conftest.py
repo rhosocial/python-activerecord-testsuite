@@ -15,6 +15,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Multi-process worker pool lifecycle and parallel CRUD.',
+    passes_means='serialisable connection state reaches a worker and its results come back intact',
+    fails_means='worker state is not serialisable or results are lost across processes',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

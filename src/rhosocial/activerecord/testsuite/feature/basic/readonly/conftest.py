@@ -9,8 +9,17 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
     USER_FIXTURES,
+)
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='ReadOnlyMixin class- and instance-level write refusal.',
+    passes_means='read-only models and opted-out instances refuse writes explicitly',
+    fails_means='a read-only model grants a write or a writable one is refused',
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)

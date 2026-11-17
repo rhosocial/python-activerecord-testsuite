@@ -30,6 +30,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Field mapping, derived fields and column-name/adapter declarations.',
+    passes_means='Python field names and column names map without losing the value or its type',
+    fails_means='a field is read from the wrong column or a derived value is not computed',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 

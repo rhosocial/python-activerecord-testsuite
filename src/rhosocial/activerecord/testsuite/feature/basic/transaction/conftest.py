@@ -18,6 +18,15 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
 )
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose='Savepoint API and cross-task transaction ownership.',
+    passes_means='savepoints nest and roll back to the right owner task',
+    fails_means='a rollback escapes its owner or a savepoint leaves partial state',
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
