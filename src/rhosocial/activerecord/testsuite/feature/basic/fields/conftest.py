@@ -16,27 +16,23 @@ import pytest
 
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
-    UserDefinition,
-    PostDefinition,
-    CommentDefinition,
-    ColumnMappingItemDefinition,
-    MixedAnnotationItemDefinition,
-    TypeTestDefinition,
-    ProductDefinition,
+
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.field_models import (
+    FIELD_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.type_rows_models import (
+    TYPE_ROW_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import (
+    USER_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-DEFINITIONS = (
-    UserDefinition,
-    PostDefinition,
-    CommentDefinition,
-    ColumnMappingItemDefinition,
-    MixedAnnotationItemDefinition,
-    TypeTestDefinition,
-    ProductDefinition,
-)
 
 
 def _database_name() -> str:
@@ -68,9 +64,6 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate the tables this directory uses, before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, USER_FIXTURES + FIELD_FIXTURES + TYPE_ROW_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, USER_FIXTURES + FIELD_FIXTURES + TYPE_ROW_FIXTURES)

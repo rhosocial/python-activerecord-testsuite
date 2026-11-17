@@ -5,17 +5,15 @@ import pytest
 
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
-    ValidatedUserDefinition,
-    PydanticValidatedModelDefinition,
+
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.validation_models import VALIDATION_FIXTURES
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-DEFINITIONS = (
-    ValidatedUserDefinition,
-    PydanticValidatedModelDefinition,
-)
 
 
 @pytest.fixture(scope="session")
@@ -40,9 +38,6 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate this directory's tables before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, VALIDATION_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, VALIDATION_FIXTURES)

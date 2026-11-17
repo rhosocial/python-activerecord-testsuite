@@ -27,6 +27,7 @@ SQLite ``supports_json_type`` is a method that is not a key of
 The third outcome is a failure, never a skip. A dialect that never answered
 the question cannot be said to have answered "no".
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

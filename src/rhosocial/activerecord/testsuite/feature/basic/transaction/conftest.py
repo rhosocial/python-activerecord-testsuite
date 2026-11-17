@@ -12,13 +12,15 @@ from rhosocial.activerecord.testsuite.feature.basic.connection.conftest import (
     async_pool_and_model,
     sync_pool_and_model,
 )
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import TestUserDefinition
+
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.connection_models import TEST_USER_FIXTURES
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-DEFINITIONS = (
-    TestUserDefinition,
-)
 
 
 @pytest.fixture(scope="session")
@@ -43,9 +45,6 @@ def database(database_config):
 @pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate this directory's tables before every test."""
-    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
-    for fixture in fixtures:
-        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    create_schema(database, TEST_USER_FIXTURES)
     yield
-    for fixture in reversed(fixtures):
-        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+    drop_schema(database, TEST_USER_FIXTURES)

@@ -7,6 +7,10 @@ this module is a model and nothing imports one.
 """
 
 from rhosocial.activerecord.base.ddl import IdentityAttribute
+from rhosocial.activerecord.backend.expression.statements import (
+    ColumnNullableConstraint,
+)
+from rhosocial.activerecord.base.fields import UseConstraint
 from rhosocial.activerecord.base.fields import UseColumnAttributes, UseSqlType
 from rhosocial.activerecord.backend.expression.types import IntegerType
 
@@ -16,4 +20,9 @@ from rhosocial.activerecord.backend.expression.types import IntegerType
 #: cannot leave out.
 SQL_INT_PK = (UseSqlType(IntegerType()), UseColumnAttributes(IdentityAttribute()))
 
-__all__ = ["SQL_INT_PK"]
+#: A column the hand-written fixture Definition left nullable. The derivation
+#: adds NOT NULL to every non-Optional field, so a projection model that omits
+#: the field on INSERT needs the old nullability stated explicitly.
+SQL_NULLABLE = UseConstraint(ColumnNullableConstraint)
+
+__all__ = ["SQL_INT_PK", "SQL_NULLABLE"]
