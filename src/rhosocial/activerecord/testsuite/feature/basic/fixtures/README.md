@@ -278,7 +278,7 @@ class AsyncUser(UserFields, IntegerPKMixin, AsyncActiveRecord): ...
 | `crud_composite_pk/` | `order_items`、`store_inventory`、`orders` | `OrderItem`、`StoreInventory`（零注记，复合键天然不是 identity） | `MappedOrderItem`（`UseColumn` + 复合 PK） | 否 → 同表 | 复合 PK |
 | `types/`（新） | `typed_users`、`typed_users_annotated` | ✓ | ✓ | 是 → 两表 | 标量类型概念 |
 | `types/`（新，补充） | `microsecond_rows` | —（只有 2 列，不设 bare） | ✓ | — | `supports_timestamp_microseconds` |
-| `types_complex/`（新） | `complex_rows_default`、`complex_rows_annotated` | ✓（含 `MacAddress` / `Point` 等后端建议表里有的业务类；`Vector`/`Range` 除外） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum）+ 业务类（geometry / mac） |
+| `types_complex/`（新） | `complex_rows`、`complex_rows_annotated` | ✓（含 `MacAddress` / `Point` 等后端建议表里有的业务类；`Vector`/`Range` 除外） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum）+ 业务类（geometry / mac） |
 | `types_long_content/`（新） | `long_rows` | **无** | ✓ | — | text / blob / json / xml 的概念与容量 |
 | `fields/` | 复用 `users` | `User` | `ColumnMappingModel`（`UseColumn`+`UseAdapter`）、派生字段 | 否 → 同表 | — |
 | `type_adapter/` | `adapter_rows` | `AdapterRow` | `AdapterRowAnnotated`（`UseAdapter`+`UseColumnType`） | 否 → 同表 | — |
@@ -564,9 +564,9 @@ class TableFixture:
 | 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py` + `composite_pk_models.py`；五组 conftest 改为派生建表；`BASIC_DEFINITIONS` → `BASIC_TABLES`，`cli/conftest.py` 同步 | **已完成**（2026-11-17）：core 的 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` 与 `cli` 全绿 |
 | 2a | core `minimal-definition` P0（标量推断）落地：24 键、每键必答，与 `suggested_column_types()` 同一套纪律 | **已完成**（2026-11-17）：`suggested_data_types()` 24 键全答，bare 可建表 |
 | 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_timestamp_microseconds()` 进协议并由各后端回答 | core 档位快照；Firebird 毫秒往返；微秒探针在 Firebird 答 False |
-| 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | 本地 + MySQL/PG/Firebird 定向 |
-| 4 | `types_complex/` 两变体 | 上述 + Oracle/SQLServer/ClickHouse |
-| 5 | `types_long_content/`（annotated only，依赖 2b 的 `length`） | 全部后端，重点看 MySQL `TEXT`、Oracle `CLOB` |
+| 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | **已落地**（2026-11-18）：`types_models.py` + `types/` 组，sync/async 同源，SQLite 两变体真实往返通过；`microsecond_rows` 仍属阶段 2b |
+| 4 | `types_complex/` 两变体 | **已落地**（2026-11-18）：`types_complex_models.py` + `types_complex/` 组，逐列能力登记；SQLite 14 passed；`Vector/Range/BitString` 仅 annotated、用可移植载体 |
+| 5 | `types_long_content/`（annotated only，依赖 2b 的 `length`） | **已落地**（2026-11-18）：`types_long_content_models.py` + 组；SQLite 上 XML 无法声明，4 个 DB 用例指名跳过，DB-free 断言照常执行 |
 | 6 | `fields/`、`type_adapter/`、`validation/` 按 bare/annotated 重排；`pydantic_native_models.py` 消重复 | 各仓 CI 全绿 |
 | 6b | 新增 `expressions/` 组（§12）：X1–X6；复用既有表，不新增 DDL | 各后端：X1 通过、X2/X3 按能力跳过并指名 |
 | 7 | 版本文件只留探针：新增 `models_py39.py` / `models_py314.py`，`VERSION_MODULES` 加两级；删 3.10/3.11/3.12 的存量副本 | 3.8–3.14 矩阵跑通；3.13/3.15 断言落在正确版本 |
@@ -608,6 +608,12 @@ class TableFixture:
    `pk_auto_generated()` 即表达"数据库赋值",与显式 `IdentityAttribute()` 派生的 DDL 逐字相同。
    共享夹具不再写 `IdentityAttribute`;自增行为由 `supports_database_assigned_integer_column()`
    门控,具体 DDL 机制由各后端自己的契约测试覆盖（PostgreSQL 的 SERIAL 亦属后者）。
+9. **三个类型组已建,并接受以下可移植性取舍**（2026-11-18）：
+   - `types_complex/` 表名用 `complex_rows`（与 §3 初稿的 `complex_rows_default` 不同，以代码为准）；
+   - `Vector/Range/BitString` 只做 annotated，用 `JsonType`/`TextType` 载体，原生维度/元素/位宽语义留给后端专用类型；
+   - geometry 用 `CustomType(raw="GEOMETRY")` 表示通用子类型，原生 `POINT`/SRID 不进共享夹具；
+   - `timedelta` 在 SQLite 无 DML 转换器，往返用例存 NULL，待 core 补转换器后改为真实时长；
+   - `types_long_content/` 的 DB 用例按需请求 `schema`（**非 autouse**），因此方言拒绝 XML 时只有 DB 用例跳过，声明级断言照常执行。
 
 **待探索（已另立计划）**：
 
