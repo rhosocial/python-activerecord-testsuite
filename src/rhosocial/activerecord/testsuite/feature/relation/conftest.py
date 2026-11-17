@@ -34,6 +34,15 @@ from .fixtures.definitions import (
     UserDefinition,
 )
 
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose="Directory-owned database for relation/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
+)
+
 
 class Employee(RelationManagementMixin, BaseModel):
     """Memory-based Employee model: used for BelongsTo -> Department testing."""

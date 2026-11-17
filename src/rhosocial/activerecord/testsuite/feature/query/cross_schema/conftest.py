@@ -17,6 +17,15 @@ import pytest
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose="Directory-owned database for query/cross_schema/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
+)
+
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
 # No tables belong to this group: only capability-gated tests live here, and

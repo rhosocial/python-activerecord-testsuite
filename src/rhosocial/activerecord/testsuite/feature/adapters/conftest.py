@@ -6,7 +6,6 @@
 - model fixtures use ``ActiveRecord.configure`` with this directory's config
   and backend class.
 """
-from pathlib import Path
 
 import pytest
 
@@ -14,6 +13,15 @@ from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 from rhosocial.activerecord.testsuite.feature.adapters.fixtures import (
     NeutralTypesFixture,
+)
+
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+DECLARATION = Declaration(
+    parallel=True,
+    purpose="Directory-owned database for adapters/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
 )
 
 DDL = ExecutionOptions(stmt_type=StatementType.DDL)
