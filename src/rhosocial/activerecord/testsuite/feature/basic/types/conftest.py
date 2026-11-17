@@ -24,9 +24,12 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     table_reason,
 )
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_models import (
+    MICROSECOND_FIXTURES,
     TYPES_FIXTURES,
+    AsyncMicrosecondRow,
     AsyncTypedUser,
     AsyncTypedUserAnnotated,
+    MicrosecondRow,
     TypedUser,
     TypedUserAnnotated,
 )
@@ -70,7 +73,8 @@ def database(database_config):
 def schema(database):
     """Create only the tables this dialect can render, before every test."""
     dialect = database.dialect
-    usable = tuple(fixture for fixture in TYPES_FIXTURES if table_reason(dialect, fixture) is None)
+    fixtures = TYPES_FIXTURES + MICROSECOND_FIXTURES
+    usable = tuple(fixture for fixture in fixtures if table_reason(dialect, fixture) is None)
     create_schema(database, usable)
     yield
     drop_schema(database, usable)
@@ -122,3 +126,21 @@ async def async_typed_user_annotated_class(database_config):
     await AsyncTypedUserAnnotated.configure(config, scenario.async_backend_class)
     yield AsyncTypedUserAnnotated
     await _disconnect_async(AsyncTypedUserAnnotated)
+
+
+@pytest.fixture(name="microsecond_row_class")
+def microsecond_row_class(database_config):
+    """The microsecond probe model, configured against the directory database."""
+    scenario, config, _name = database_config
+    MicrosecondRow.configure(config, scenario.backend_class)
+    yield MicrosecondRow
+    _disconnect(MicrosecondRow)
+
+
+@pytest.fixture(name="async_microsecond_row_class")
+async def async_microsecond_row_class(database_config):
+    """Async twin of the microsecond probe model."""
+    scenario, config, _name = database_config
+    await AsyncMicrosecondRow.configure(config, scenario.async_backend_class)
+    yield AsyncMicrosecondRow
+    await _disconnect_async(AsyncMicrosecondRow)

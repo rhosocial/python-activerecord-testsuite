@@ -49,11 +49,14 @@ from .operations import Operation, TableFixture
 
 __all__ = [
     "TYPES_FIXTURES",
+    "MICROSECOND_FIXTURES",
     "TYPED_FIELD_NAMES",
     "TypedUser",
     "TypedUserAnnotated",
     "AsyncTypedUser",
     "AsyncTypedUserAnnotated",
+    "MicrosecondRow",
+    "AsyncMicrosecondRow",
 ]
 
 #: The one field set both variants declare, in declaration order.  Kept here so
@@ -182,4 +185,55 @@ TYPES_FIXTURES: Tuple[TableFixture, ...] = (
         source=TypedUserAnnotated,
         operations=_OPS + _COLUMN_OPS,
     ),
+)
+
+
+# --- Microsecond supplement (README sections 4.1, 9, 10 step 2b) ------------
+
+
+class MicrosecondRowFields:
+    """The two-column microsecond probe: annotated only, no bare variant.
+
+    ``precise_at`` asks for all six fractional digits. Firebird answers False
+    to ``supports_microsecond_timestamp`` (its TIMESTAMP keeps only four), so
+    the registry leaves this table out of the schema and the tests skip with
+    that named reason instead of losing digits silently.
+    """
+
+    c: ClassVar[FieldProxy] = FieldProxy()
+
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
+    precise_at: Annotated[datetime, UseSqlType(TimestampType(precision=6))] = datetime(1970, 1, 1)
+
+
+class MicrosecondRow(MicrosecondRowFields, ActiveRecord):
+    """Microsecond probe bound to ``microsecond_rows``."""
+
+    @classmethod
+    def table_name(cls) -> str:
+        return "microsecond_rows"
+
+
+class AsyncMicrosecondRow(MicrosecondRowFields, AsyncActiveRecord):
+    """Async twin of :class:`MicrosecondRow` (P4)."""
+
+    @classmethod
+    def table_name(cls) -> str:
+        return "microsecond_rows"
+
+
+#: Every operation needs the dialect to keep all six fractional digits; the
+#: column name on ``insert`` makes the skip reason name ``precise_at`` as well.
+_MICROSECOND_OPS = (
+    Operation("create_table", requires_on=("supports_microsecond_timestamp",)),
+    Operation(
+        "insert",
+        requires_on=("supports_microsecond_timestamp",),
+        column="precise_at",
+    ),
+    Operation("drop_table", requires_on=("supports_microsecond_timestamp",)),
+)
+
+MICROSECOND_FIXTURES: Tuple[TableFixture, ...] = (
+    TableFixture(table="microsecond_rows", source=MicrosecondRow, operations=_MICROSECOND_OPS),
 )

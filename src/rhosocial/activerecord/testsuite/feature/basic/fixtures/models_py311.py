@@ -1,15 +1,15 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models_py311.py
-"""Python 311+ fixture view: ``typing.Self`` and ``LiteralString``.
+"""Python 3.11+ fixture view: ``typing.Self`` and ``typing.LiteralString``.
 
 Models live once in their group modules and are re-exported by ``models.py``;
-``resolve()`` walks here first, finds no model of a given name, and falls
-through to the baseline. This file only exposes a version-specific probe.
+``resolve()`` finds no real model of a given name here, so every other name
+falls through to the 3.8 baseline.  This file only exposes a version-specific
+probe: ``Self`` appears on a method return (never in a column), while
+``LiteralString`` is used as a column annotation that must still behave as
+``str``.
 """
 
-try:  # Python 3.8 baseline has no PEP 604 in annotations at runtime here
-    from typing import Optional
-except ImportError:  # pragma: no cover
-    from typing_extensions import Optional
+from typing import LiteralString, Self
 
 from .models import *  # noqa: F401,F403
 
@@ -17,11 +17,11 @@ __requires_python__ = (3, 11)
 
 
 class TypingProbe311:
-    """A model whose annotation uses ``typing.Self`` and ``LiteralString``, proving the interpreter parses it."""
+    """Probe that ``Self`` and ``LiteralString`` are available at runtime."""
 
     @classmethod
-    def table_name(cls):
+    def table_name(cls) -> Self:
         return "typing_probe_311"
 
-    id: Optional[int] = None
-    label: str
+    id: int | None = None
+    label: LiteralString = None

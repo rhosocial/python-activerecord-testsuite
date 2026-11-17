@@ -8,14 +8,12 @@ The backend-specific provider is responsible for taking these classes and
 configuring them with a live database connection at test time.
 """
 
-from .operations import Operation, TableFixture
 import uuid
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Optional
 
 from pydantic import Field
-
 from rhosocial.activerecord.backend.expression.types import (
     ArrayType,
     BigIntType,
@@ -27,24 +25,23 @@ from rhosocial.activerecord.backend.expression.types import (
     IntegerType,
     SmallIntType,
     TextType,
-    TimeType,
     TimestampType,
+    TimeType,
     TinyIntType,
     VarCharType,
 )
-from rhosocial.activerecord.base.fields import UseSqlType
-from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base.field_proxy import FieldProxy
+from rhosocial.activerecord.base.fields import UseSqlType
 
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
 # package to handle common field behaviors like auto-incrementing IDs or timestamps.
 from rhosocial.activerecord.field import UUIDMixin
+from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 try:
     from typing import Annotated, ClassVar  # noqa: F401
 except ImportError:
     from typing_extensions import ClassVar
-
 
 # The composite-key models moved to their own group module; re-export them so
 # existing importers of ``fixtures.models`` keep working.
@@ -58,6 +55,7 @@ from .composite_pk_models import (  # noqa: F401
     OrderItem,
     StoreInventory,
 )
+from .operations import Operation, TableFixture
 
 # --- model bodies (moved from models.py) -------------------------------
 
@@ -69,8 +67,8 @@ class TypeCase(UUIDMixin, ActiveRecord):
     def table_name(cls):
         return "type_cases"
 
-    # UUID primary key stored as a 64-char string, matching the
-    # adapter and the original Definition's VarChar(64).
+    # UUID primary key stored as a 64-char string, matching the adapter's
+    # VarChar(64) carrier.
     id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     username: str
     email: str
@@ -90,8 +88,7 @@ class TypeCase(UUIDMixin, ActiveRecord):
     json_val: Optional[dict]
     # Native array with integer elements on servers that render ARRAY;
     # on servers without it, fall back to the JSON/text carrier (the
-    # adapter keeps the list type). This mirrors the original Definition's
-    # dialect-aware array_type(Int) factory.
+    # adapter keeps the list type). The dialect chooses between the two.
     array_val: Annotated[
         Optional[list],
         UseSqlType(ArrayType(element_type=IntegerType()), TextType()),
@@ -108,8 +105,8 @@ class AsyncTypeCase(UUIDMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    # UUID primary key stored as a 64-char string, matching the
-    # adapter and the original Definition's VarChar(64).
+    # UUID primary key stored as a 64-char string, matching the adapter's
+    # VarChar(64) carrier.
     id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     username: str
     email: str
@@ -129,8 +126,7 @@ class AsyncTypeCase(UUIDMixin, AsyncActiveRecord):
     json_val: Optional[dict]
     # Native array with integer elements on servers that render ARRAY;
     # on servers without it, fall back to the JSON/text carrier (the
-    # adapter keeps the list type). This mirrors the original Definition's
-    # dialect-aware array_type(Int) factory.
+    # adapter keeps the list type). The dialect chooses between the two.
     array_val: Annotated[
         Optional[list],
         UseSqlType(ArrayType(element_type=IntegerType()), TextType()),
@@ -146,8 +142,8 @@ class TypeTestModel(UUIDMixin, ActiveRecord):
         return "type_tests"
 
     # UUID primary key provided by UUIDMixin
-    # UUID primary key stored as a 64-char string, matching the
-    # adapter and the original Definition's VarChar(64).
+    # UUID primary key stored as a 64-char string, matching the adapter's
+    # VarChar(64) carrier.
     id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     string_field: str = Field(default="test string")
     int_field: int = Field(default=42)
@@ -169,8 +165,8 @@ class AsyncTypeTestModel(UUIDMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # UUID primary key provided by UUIDMixin
-    # UUID primary key stored as a 64-char string, matching the
-    # adapter and the original Definition's VarChar(64).
+    # UUID primary key stored as a 64-char string, matching the adapter's
+    # VarChar(64) carrier.
     id: Annotated[uuid.UUID, UseSqlType(VarCharType(length=64))] = Field(default_factory=uuid.uuid4)
     string_field: str = Field(default="test string")
     int_field: int = Field(default=42)

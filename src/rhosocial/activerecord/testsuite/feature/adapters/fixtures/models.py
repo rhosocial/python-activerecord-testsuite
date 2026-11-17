@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/adapters/fixtures/models.py
 """L1 fixture definitions for the shared neutral-type contract.
 
-A definition class holds the test ActiveRecord classes together with the
+A fixture class holds the test ActiveRecord classes together with the
 DDL/DML expression instances they need.  It receives only a ``dialect`` and
 never a backend; composing and executing the environment belongs to the L2
 fixtures.
@@ -9,35 +9,76 @@ fixtures.
 Expression names are imported under short aliases so the definitions stay
 readable.
 """
+
 from typing import Optional
 
 from pydantic import ConfigDict
-
 from rhosocial.activerecord.backend.adapters.bitstring import BitString
 from rhosocial.activerecord.backend.adapters.geometry import Geometry, Point
 from rhosocial.activerecord.backend.adapters.network import MacAddress
 from rhosocial.activerecord.backend.adapters.range import Multirange, Range
 from rhosocial.activerecord.backend.adapters.vector import Vector
-from rhosocial.activerecord.backend.expression import (
-    ColumnConstraint as Constraint,
-    ColumnDefinition as Column,
-    CreateTableStatement as CreateTable,
-    DropTableStatement as DropTable,
-)
+from rhosocial.activerecord.backend.expression import ColumnConstraint as Constraint
+from rhosocial.activerecord.backend.expression import ColumnDefinition as Column
+from rhosocial.activerecord.backend.expression import CreateTableStatement as CreateTable
+from rhosocial.activerecord.backend.expression import DropTableStatement as DropTable
 from rhosocial.activerecord.backend.expression.objects import Table
 from rhosocial.activerecord.backend.expression.statements import (
     ColumnPrimaryKeyConstraint as PrimaryKey,
 )
 from rhosocial.activerecord.backend.expression.types import (
-    IntegerType as Int,
-    TextType as Text,
+    ArrayType,
 )
+from rhosocial.activerecord.backend.expression.types import IntegerType as Int
+from rhosocial.activerecord.backend.expression.types import TextType as Text
+from rhosocial.activerecord.backend.expression.types import VarCharType
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
-from rhosocial.activerecord.testsuite.fixture_types import (
-    array_type,
-    long_text,
-    short_text,
-)
+
+# --- Generic column type concepts (local to this group) --------------------
+#
+# These helpers used to live in a cross-group type-helpers module.
+# Each group that needs them now owns its own copy: the shared suite declares
+# only generic concepts and lets the dialect render them, without consulting a
+# backend name.
+
+#: Bounded length for comparable text; ten such columns stay inside the
+#: tightest row-width limit the suite meets (MySQL 65535 bytes at 4 B/char).
+_SHORT_TEXT_LENGTH = 255
+
+
+def _require_data_type(dialect, concept: str) -> None:
+    """Skip when the dialect has not declared support for *concept*."""
+    probe = getattr(dialect, "supports_data_types", None)
+    if not callable(probe):
+        return
+    supported = probe() or {}
+    if concept not in supported:
+        import pytest
+
+        pytest.skip(
+            f"{getattr(dialect, 'name', 'this dialect')} does not support "
+            f"the generic data type {concept!r}"
+        )
+
+
+def short_text(dialect):
+    """Comparable text for identity-like columns (a bounded VARCHAR)."""
+    _require_data_type(dialect, "varchar")
+    return VarCharType(dialect, _SHORT_TEXT_LENGTH)
+
+
+def long_text(dialect):
+    """Unbounded text payload; never compared or sorted."""
+    return Text(dialect)
+
+
+def array_type(dialect, element_type):
+    """Native ARRAY where the dialect renders it, else a text carrier."""
+    probe = getattr(dialect, "supports_data_types", None)
+    supported = probe() if callable(probe) else {}
+    if "array" in supported:
+        return ArrayType(dialect, element_type=element_type)
+    return Text(dialect)
 
 
 class NeutralTypes(ActiveRecord):
@@ -83,7 +124,7 @@ class AsyncNeutralTypes(AsyncActiveRecord):
 
 
 class NeutralTypesFixture:
-    """Definition class: model classes plus their DDL expression instances."""
+    """Fixture class: model classes plus their DDL expression instances."""
 
     model = NeutralTypes
     async_model = AsyncNeutralTypes
@@ -116,6 +157,4 @@ class NeutralTypesFixture:
                 Column(dialect, "tags", array_type(dialect, Text(dialect))),
             ],
         )
-        self.drop_table = DropTable(
-            dialect, table=Table(dialect, "neutral_types")
-        )
+        self.drop_table = DropTable(dialect, table=Table(dialect, "neutral_types"))

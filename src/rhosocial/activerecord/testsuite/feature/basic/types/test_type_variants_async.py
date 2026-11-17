@@ -40,12 +40,14 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     table_reason,
 )
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_models import (
+    MICROSECOND_FIXTURES,
     TYPED_FIELD_NAMES,
     TYPES_FIXTURES,
 )
 
 BARE_FIXTURE = TYPES_FIXTURES[0]
 ANNOTATED_FIXTURE = TYPES_FIXTURES[1]
+MICROSECOND_FIXTURE = MICROSECOND_FIXTURES[0]
 
 _EXPECTED_TYPES = {
     "id": IntegerType,
@@ -151,3 +153,14 @@ class TestAsyncScalarTypeVariants:
         assert found is not None, "Expected to read the annotated row back"
         for field, value in _VALUES.items():
             assert getattr(found, field) == value, field
+
+    async def test_microsecond_round_trip(self, async_microsecond_row_class, database):
+        """A precision=6 TIMESTAMP keeps all six fractional digits where supported."""
+        _skip_unless(database.dialect, MICROSECOND_FIXTURE, "insert")
+        precise_at = datetime(2024, 5, 6, 7, 8, 9, 123456)
+        instance = async_microsecond_row_class(precise_at=precise_at)
+        assert await instance.save() == 1, "Expected the microsecond row to be inserted"
+        assert instance.id is not None, "Expected a database-assigned primary key"
+        found = await async_microsecond_row_class.find_one(instance.id)
+        assert found is not None, "Expected to read the microsecond row back"
+        assert found.precise_at == precise_at, "Fractional seconds were truncated"

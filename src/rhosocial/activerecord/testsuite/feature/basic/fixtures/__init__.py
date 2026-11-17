@@ -1,15 +1,24 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/fixtures/__init__.py
 """Basic feature test fixtures.
 
-``models.py`` is the Python 3.8 baseline.  ``models_py310.py`` and later only
-add syntax that exists on those interpreters; the newest file the running
-interpreter supports wins.  Which class a fixture delivers is decided here,
-not by the test.
+``models.py`` is the Python 3.8 baseline.  The versioned files only add a
+single syntax/semantics probe that exists on that interpreter; every other
+name falls back to the baseline.  The newest file the running interpreter
+supports wins.  Which class a fixture delivers is decided here, not by the
+test.
 """
+
 import importlib
 import sys
 
-VERSION_MODULES = (("312", (3, 12)), ("311", (3, 11)), ("310", (3, 10)))
+# Newest first; 3.13 and 3.15 intentionally have no file of their own.
+VERSION_MODULES = (
+    ("314", (3, 14)),
+    ("312", (3, 12)),
+    ("311", (3, 11)),
+    ("310", (3, 10)),
+    ("39", (3, 9)),
+)
 
 
 def resolve(name: str):

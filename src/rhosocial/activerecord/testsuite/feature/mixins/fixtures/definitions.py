@@ -13,29 +13,60 @@ Expression names are imported under short aliases so the definitions stay
 readable.
 """
 
-from rhosocial.activerecord.backend.expression import (
-    ColumnConstraint as Constraint,
-    ColumnDefinition as Column,
-    CreateTableStatement as CreateTable,
-    DropTableStatement as DropTable,
-)
+from rhosocial.activerecord.backend.expression import ColumnConstraint as Constraint
+from rhosocial.activerecord.backend.expression import ColumnDefinition as Column
+from rhosocial.activerecord.backend.expression import CreateTableStatement as CreateTable
+from rhosocial.activerecord.backend.expression import DropTableStatement as DropTable
 from rhosocial.activerecord.backend.expression.objects import Table
+from rhosocial.activerecord.backend.expression.statements import ColumnNotNullConstraint as NotNull
 from rhosocial.activerecord.backend.expression.statements import (
-    ColumnNotNullConstraint as NotNull,
     ColumnPrimaryKeyConstraint as PrimaryKey,
 )
-from rhosocial.activerecord.backend.expression.types import (
-    BooleanType as Bool,
-    FloatType as Float,
-    IntegerType as Int,
-)
-from rhosocial.activerecord.testsuite.fixture_types import (
-    long_text,
-    short_text,
-    timestamp_type,
-)
+from rhosocial.activerecord.backend.expression.types import BooleanType as Bool
+from rhosocial.activerecord.backend.expression.types import FloatType as Float
+from rhosocial.activerecord.backend.expression.types import IntegerType as Int
+from rhosocial.activerecord.backend.expression.types import TextType, TimestampType, VarCharType
 
 from . import resolve
+
+# --- Generic column type concepts (local to this group) --------------------
+#
+# Migrated from the former cross-group type-helpers module.  Each group
+# owns the concepts it uses; the dialect renders them, no backend name is read.
+
+_SHORT_TEXT_LENGTH = 255
+
+
+def _require_data_type(dialect, concept: str) -> None:
+    probe = getattr(dialect, "supports_data_types", None)
+    if not callable(probe):
+        return
+    supported = probe() or {}
+    if concept not in supported:
+        import pytest
+
+        pytest.skip(
+            f"{getattr(dialect, 'name', 'this dialect')} does not support "
+            f"the generic data type {concept!r}"
+        )
+
+
+def short_text(dialect):
+    """Comparable text for identity-like columns (a bounded VARCHAR)."""
+    _require_data_type(dialect, "varchar")
+    return VarCharType(dialect, _SHORT_TEXT_LENGTH)
+
+
+def long_text(dialect):
+    """Unbounded text payload; never compared or sorted."""
+    return TextType(dialect)
+
+
+def timestamp_type(dialect):
+    """Timestamp with microsecond resolution where the server declares it."""
+    probe = getattr(dialect, "supports_microsecond_timestamp", None)
+    keeps_microseconds = bool(probe()) if callable(probe) else bool(probe)
+    return TimestampType(dialect, precision=6 if keeps_microseconds else None)
 
 
 class Definition:

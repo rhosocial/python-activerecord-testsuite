@@ -1,7 +1,7 @@
 # src/rhosocial/activerecord/testsuite/feature/adapters/test_neutral_types.py
 """Shared contract: neutral types format and round-trip through generic carriers.
 
-Only generic column types are involved (see ``testsuite.fixture_types``).
+Only generic column types are involved (the group's local fixture helpers).
 The suite asserts three kinds of consistency:
 
 * **S1** -- a Python value written and read back is the same value;
@@ -10,8 +10,8 @@ The suite asserts three kinds of consistency:
 * **S3** -- a value written as native SQL text is decoded through the adapter
   and re-written in canonical form.
 """
-import json
 
+import json
 
 from rhosocial.activerecord.backend.adapters.bitstring import BitString
 from rhosocial.activerecord.backend.adapters.geometry import LineString, Point
@@ -78,7 +78,9 @@ def test_geometry_roundtrip(neutral_types):
     assert foreign.shape == Point(3.0, 4.0), "foreign WKT must decode through the adapter"
     foreign.shape = Point(3.0, 4.0)
     foreign.save()
-    assert _raw(neutral_types, "shape", raw_id) == Point(3.0, 4.0).to_wkt(), "re-written WKT must be canonical"
+    assert (
+        _raw(neutral_types, "shape", raw_id) == Point(3.0, 4.0).to_wkt()
+    ), "re-written WKT must be canonical"
 
 
 def test_vector_roundtrip(neutral_types):
@@ -148,7 +150,9 @@ def test_macaddress_roundtrip(neutral_types):
     assert foreign.address == value, "foreign MAC text must decode"
     foreign.address = value
     foreign.save()
-    assert _raw(neutral_types, "address", raw_id) == "aa:bb:cc:dd:ee:ff", "rewritten MAC must be canonical"
+    assert (
+        _raw(neutral_types, "address", raw_id) == "aa:bb:cc:dd:ee:ff"
+    ), "rewritten MAC must be canonical"
 
 
 def test_json_payload_roundtrip(neutral_types):

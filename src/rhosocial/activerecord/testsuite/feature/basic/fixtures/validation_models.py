@@ -1,35 +1,37 @@
-# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/models.py
-"""
-This file defines the generic ActiveRecord model classes used by the basic tests.
+# src/rhosocial/activerecord/testsuite/feature/basic/fixtures/validation_models.py
+"""Validation fixtures for the ``basic/validation`` group.
 
-These models are "generic" because they define the data structure and validation
-rules (using Pydantic), but they are not tied to any specific database backend.
-The backend-specific provider is responsible for taking these classes and
-configuring them with a live database connection at test time.
+The group has one bare/annotated pair sharing a single table (``validated_rows``):
+
+* ``PlainValidatedRow`` / ``AsyncPlainValidatedRow`` write only Python type
+  annotations -- a control that accepts any value of the right Python type.
+* ``ValidatedRow`` / ``AsyncValidatedRow`` add Pydantic ``Field`` constraints,
+  a ``field_validator`` and a ``model_validator``.  Those are validation
+  semantics, not storage declarations (README section 2 P2), so both models
+  derive the very same table and the tests compare behavior, not DDL.
+
+Identity is not a variant axis (F11).  Sync and async twins share one mixin
+per variant (P4).  The legacy ``PydanticValidatedModel`` stays on its own
+``pydantic_validated_models`` table for the existing DB validation contracts.
 """
 
+from datetime import datetime
+from decimal import Decimal
+from typing import Literal, Optional, Tuple
+
+from pydantic import Field, field_validator, model_validator
 from rhosocial.activerecord.backend.expression.types import (
     DecimalType,
     IntegerType,
     TextType,
 )
+from rhosocial.activerecord.base.field_proxy import FieldProxy
+from rhosocial.activerecord.base.fields import UseSqlType
+from rhosocial.activerecord.field import IntegerPKMixin
+from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 from .operations import Operation, TableFixture
 from .user_models import ValidatedUser
-from datetime import datetime
-from decimal import Decimal
-from typing import Literal, Optional
-
-from pydantic import Field, field_validator, model_validator
-
-
-from rhosocial.activerecord.base.fields import UseSqlType
-from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
-
-# These mixins are assumed to be provided by the core `rhosocial-activerecord`
-# package to handle common field behaviors like auto-incrementing IDs or timestamps.
-from rhosocial.activerecord.field import IntegerPKMixin
 
 try:
     from typing import Annotated, ClassVar  # noqa: F401
@@ -96,9 +98,7 @@ class PydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, Activ
     def table_name(cls):
         return "pydantic_validated_models"
 
-    id: Annotated[
-        Optional[int], UseSqlType(IntegerType())
-    ] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
 
 
 class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, AsyncActiveRecord):
@@ -108,9 +108,71 @@ class AsyncPydanticValidatedModel(PydanticValidatedFieldsMixin, IntegerPKMixin, 
     def table_name(cls):
         return "pydantic_validated_models"
 
-    id: Annotated[
-        Optional[int], UseSqlType(IntegerType())
-    ] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
+
+
+# --- bare / annotated validation variants (shared table) ---------------------
+
+
+class PlainValidatedRowFields:
+    """Bare fields: Python annotations only, zero validation markers."""
+
+    id: Optional[int] = None
+    code: str
+    quantity: int
+    price: Decimal
+    label: str
+
+
+class ValidatedRowFields:
+    """Annotated fields: Pydantic constraints and validators.
+
+    No storage declaration is added, so this model derives the very same
+    ``validated_rows`` table as :class:`PlainValidatedRowFields`.  The test
+    compares what each model accepts, not how it stores the value.
+    """
+
+    id: Optional[int] = None
+    code: str = Field(..., pattern=r"^[A-Z]{3}-\d{3}$")
+    quantity: int = Field(..., ge=1, le=999)
+    price: Decimal = Field(..., ge=Decimal("0.01"))
+    label: str = Field(..., min_length=1, max_length=50)
+
+    @field_validator("label")
+    def normalize_label(cls, value: str) -> str:
+        return value.strip().lower()
+
+
+class PlainValidatedRow(PlainValidatedRowFields, ActiveRecord):
+    """Bare validation variant, bound to ``validated_rows``."""
+
+    @classmethod
+    def table_name(cls):
+        return "validated_rows"
+
+
+class AsyncPlainValidatedRow(PlainValidatedRowFields, AsyncActiveRecord):
+    """Async twin of :class:`PlainValidatedRow` (P4: same fields, same table)."""
+
+    @classmethod
+    def table_name(cls):
+        return "validated_rows"
+
+
+class ValidatedRow(ValidatedRowFields, ActiveRecord):
+    """Pydantic-annotated validation variant, bound to ``validated_rows``."""
+
+    @classmethod
+    def table_name(cls):
+        return "validated_rows"
+
+
+class AsyncValidatedRow(ValidatedRowFields, AsyncActiveRecord):
+    """Async twin of :class:`ValidatedRow` (P4)."""
+
+    @classmethod
+    def table_name(cls):
+        return "validated_rows"
 
 
 # --- Module-level definitions for TypeAdapterTest and YesOrNoBooleanAdapter ---
@@ -120,3 +182,34 @@ VALIDATION_FIXTURES = (
     TableFixture(table="validated_users", source=ValidatedUser, operations=_OPS),
     TableFixture(table="pydantic_validated_models", source=PydanticValidatedModel, operations=_OPS),
 )
+
+_VALIDATION_COLUMN_SWITCHES = (
+    ("id", "integer"),
+    ("code", "varchar"),
+    ("quantity", "integer"),
+    ("price", "decimal"),
+    ("label", "varchar"),
+)
+_VALIDATION_COLUMN_OPS = tuple(
+    Operation("create_table", requires_on=(switch,), column=column)
+    for column, switch in _VALIDATION_COLUMN_SWITCHES
+)
+VALIDATION_VARIANT_FIXTURES: Tuple[TableFixture, ...] = (
+    TableFixture(
+        table="validated_rows",
+        source=PlainValidatedRow,
+        operations=_OPS + _VALIDATION_COLUMN_OPS,
+    ),
+)
+
+__all__ = [
+    "VALIDATION_FIXTURES",
+    "VALIDATION_VARIANT_FIXTURES",
+    "AsyncPlainValidatedRow",
+    "AsyncPydanticValidatedModel",
+    "AsyncValidatedRow",
+    "PydanticValidatedFieldsMixin",
+    "PydanticValidatedModel",
+    "PlainValidatedRow",
+    "ValidatedRow",
+]

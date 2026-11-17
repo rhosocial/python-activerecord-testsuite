@@ -145,7 +145,7 @@ postgres  CREATE TABLE "prompt_rows" (`id` SERIAL NOT NULL,
 3. **`TimestampType(6)` 在 Firebird 上是硬报错**（它存储固定 1/10000 秒，拒绝声明一个
    服务器无法兑现的精度）。裁决：**默认毫秒（`precision=3`）**，Firebird 接受
    precision ≤ 4 并渲染 `TIMESTAMP`；微秒是补充能力
-   （`supports_timestamp_microseconds()`，Firebird 答 False），不进共享默认值。
+   （`supports_microsecond_timestamp()`，Firebird 答 False），不进共享默认值。
 
 MySQL 侧还有两个实测行为（`clic_ts_precision.py`，MySQL 5.7.44）：
 
@@ -223,7 +223,7 @@ for source in TABLE_SOURCES:
 | 3.9 | PEP 585：`list[str]`、`dict[str, int]` 运行期可下标 | **新增 `models_py39.py`** | 3.8 上直接 `TypeError` 的唯一语法分界；验证内建泛型注解派生的 DDL 与基线逐字相同 |
 | 3.10 | PEP 604：`X \| Y` | `models_py310.py`（已有） | 注解语法的第二次分界 |
 | 3.11 | `typing.Self`、`LiteralString`、PEP 646/655 | `models_py311.py`（已有） | `Self` 只出现在方法返回注解（不进列）；`LiteralString` 进列，验证它仍被当作 `str` |
-| 3.12 | PEP 695 `type Alias = ...`、`class C[T]`；`typing.override` | `models_py312.py`（已有） | 用 `type` 语句做列类型别名 + `@override` 修饰 `table_name()`；**不**用 PEP 695 泛型模型（泛型 AR 模型不在本套件范围） |
+| 3.12 | `typing.override`（PEP 698；3.11 无此名字） | `models_py312.py` | 用 `@override` 修饰 `table_name()`；PEP 695 `type` 别名因与仓库 ruff 目标版本冲突不采用 |
 | 3.13 | PEP 696 类型参数默认值、`typing.ReadOnly`、`TypeIs` | **不建文件** | 三者都作用于 TypedDict / 泛型参数，不改变列声明；`resolve()` 落到 3.12 文件 |
 | 3.14 | **PEP 649/749 惰性注解求值**（`__annotate__`） | **新增 `models_py314.py`** | 唯一**改变语义**而非语法的变化：注解不再在类创建时求值。框架若依赖立即求值，会在 3.14 上失效 |
 | 3.15 | 无影响本轴的已知变更 | **不建文件** | 落到 3.14 文件；一旦出现注解语义变更再加 |
@@ -239,11 +239,11 @@ for source in TABLE_SOURCES:
 3. 读 `cls.__annotations__` 与读 `__annotate__` 得到同一份注记，且其中某个名字解析失败
    时能指名到列，而不是整张表崩掉。
 
-探针的取用方式：**不走 `resolve()`** —— 它会回落到基线，拿到的是错版本的类。
-探针用 `available_probes()` 收集「当前解释器可导入且确实定义了」的那些，
-再由 DB-free 契约测试断言：所有可用探针派生的 `CREATE TABLE` 与基线探针逐字相同。
-不建文件的 3.13 / 3.15 仍有覆盖：契约测试顺带断言「当前解释器上解析到的探针属于哪个
-版本」，避免回落链写错后静默测了别的版本。
+探针的取用方式：**走 `resolve()`**。版本文件只定义自己的 `TypingProbeN`，其余名字由
+`resolve()` 逐级回落到基线；因此探针名本身天然按解释器版本门控 —— 当前解释器能导入的
+最高版本文件定义它，更低版本的探针名则回落到基线（基线没有这个名字）而不可用。
+DB-free 契约测试断言「当前解释器上 `resolve()` 取到的探针属于正确的版本文件」，
+避免回落链写错后静默测了别的版本。3.13 / 3.15 不建文件，分别回落到 3.12 / 3.14。
 
 ### P4 同步异步同源
 
@@ -277,7 +277,7 @@ class AsyncUser(UserFields, IntegerPKMixin, AsyncActiveRecord): ...
 | `crud/` | `users`（映射对照） | `User` | `MappedUser`（`UseColumn`） | 否 → 同表 | — |
 | `crud_composite_pk/` | `order_items`、`store_inventory`、`orders` | `OrderItem`、`StoreInventory`（零注记，复合键天然不是 identity） | `MappedOrderItem`（`UseColumn` + 复合 PK） | 否 → 同表 | 复合 PK |
 | `types/`（新） | `typed_users`、`typed_users_annotated` | ✓ | ✓ | 是 → 两表 | 标量类型概念 |
-| `types/`（新，补充） | `microsecond_rows` | —（只有 2 列，不设 bare） | ✓ | — | `supports_timestamp_microseconds` |
+| `types/`（新，补充） | `microsecond_rows` | —（只有 2 列，不设 bare） | ✓ | — | `supports_microsecond_timestamp`（2026-11-18 已落地） |
 | `types_complex/`（新） | `complex_rows`、`complex_rows_annotated` | ✓（含 `MacAddress` / `Point` 等后端建议表里有的业务类；`Vector`/`Range` 除外） | ✓ | 是 → 两表 | 各概念（json/array/uuid/blob/interval/enum）+ 业务类（geometry / mac） |
 | `types_long_content/`（新） | `long_rows` | **无** | ✓ | — | text / blob / json / xml 的概念与容量 |
 | `fields/` | 复用 `users` | `User` | `ColumnMappingModel`（`UseColumn`+`UseAdapter`）、派生字段 | 否 → 同表 | — |
@@ -358,14 +358,14 @@ bare 变体整列只写 Python 类型，**框架推断出什么就是什么**—
   无损，在 MySQL / ClickHouse 上真正保留毫秒。
 - Firebird 迁就：它存固定 1/10000 秒，**兑现得了毫秒**，所以接受 precision ≤ 4 并渲染
   `TIMESTAMP`，只拒绝 > 4 —— 拒绝的理由是「服务器兑现不了」，毫秒不属于这一类。
-- 微秒不进共享默认值，改为**补充能力**：`supports_timestamp_microseconds()` 由各方言
+- 微秒不进共享默认值，改为**补充能力**：`supports_microsecond_timestamp()` 由各方言
   显式回答（Firebird 答 False），不设继承默认值（与 `suggested_column_types()` 的
   「core 里的表是对一台 core 没见过的服务器的猜测」同一取向）。
 - Firebird 自己的 1/10000 秒测试留在 `python-activerecord-firebird`，不进共享套件（R1）。
 
 微秒夹具是**独立的 2 列表** `microsecond_rows`，不拉长 `typed_users`：
 `id` + `precise_at`（`TimestampType(precision=6)`）。它的 `create_table` 操作在
-§8.1 里要求 `supports_timestamp_microseconds`，答否则跳过并指名；这一组不设 bare。
+§8.1 里要求 `supports_microsecond_timestamp`，答否则跳过并指名；这一组不设 bare。
 
 ## 5. 类型组二：`types_complex/`（复杂类型）
 
@@ -476,7 +476,8 @@ PG / ClickHouse / SQLite / Snowflake / BigQuery 本身无上限，忽略。容�
 | `models_py310.py` / `py311` / `py312` / `py314` | 各只含一个 `TypingProbeN`（§2 P3）；3.13 / 3.15 无文件，靠回落 |
 
 `__init__.py` 的 `resolve()` 机制不变（逐级回落、只覆盖定义过的名字），只是
-`VERSION_MODULES` 增加 `314` 与 `39` 两级。探针另有 `available_probes()` 入口，不走回落。
+`VERSION_MODULES` 增加 `314` 与 `39` 两级。探针走同一条 `resolve()` 回落链，
+只由「该名字是否在某版本文件中定义」决定命中，不另设入口。
 
 ---
 
@@ -548,7 +549,7 @@ class TableFixture:
 
   | 组 | 主要开关 |
   |---|---|
-  | `types/` | `integer` / `varchar` / `text` / `decimal` / `date` / `time` / `datetime`，以及 `create_table` 的 `identity`（仅 annotated）；`microsecond_rows` 另需 `supports_timestamp_microseconds` |
+  | `types/` | `integer` / `varchar` / `text` / `decimal` / `date` / `time` / `datetime`，以及 `create_table` 的 `identity`（仅 annotated）；`microsecond_rows` 另需 `supports_microsecond_timestamp` |
   | `types_complex/` | 上述 + `json` / `array` / `uuid` / `blob` / `interval` / `enum` |
   | `types_long_content/` | `text` / `blob` / `json` / `xml`，加上 §5 的容量限制 |
 
@@ -563,14 +564,14 @@ class TableFixture:
 | 0 | core 两处收口：`_resolve_type` 只捕能力异常；本目录落地 §8.1 的临时能力元数据 | **已完成**（2026-11-17） |
 | 1 | `annotations.py` + `operations.py` + `user_models.py` + `connection_models.py` + `composite_pk_models.py`；五组 conftest 改为派生建表；`BASIC_DEFINITIONS` → `BASIC_TABLES`，`cli/conftest.py` 同步 | **已完成**（2026-11-17）：core 的 `basic/{crud,crud_composite_pk,connection,nopk,readonly}` 与 `cli` 全绿 |
 | 2a | core `minimal-definition` P0（标量推断）落地：24 键、每键必答，与 `suggested_column_types()` 同一套纪律 | **已完成**（2026-11-17）：`suggested_data_types()` 24 键全答，bare 可建表 |
-| 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_timestamp_microseconds()` 进协议并由各后端回答 | core 档位快照；Firebird 毫秒往返；微秒探针在 Firebird 答 False |
-| 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | **已落地**（2026-11-18）：`types_models.py` + `types/` 组，sync/async 同源，SQLite 两变体真实往返通过；`microsecond_rows` 仍属阶段 2b |
+| 2b | core 容量与精度：五个内容类型加 `length`；`DefaultTimestampMixin` 改毫秒；Firebird 接受 precision ≤ 4；`supports_microsecond_timestamp()` 进协议并由各后端回答 | **已完成**（2026-11-18）：`microsecond_rows` 2 列夹具 + sync/async 往返用例落在 `types/` 组；Firebird 方言覆盖 `supports_microsecond_timestamp()` 答 False，按能力跳过并指名；precision ≤ 4 由 Firebird 方言接受，毫秒为共享默认 |
+| 3 | `types/` 两变体 + `microsecond_rows`（bare 此时才可建表） | **已落地**（2026-11-18）：`types_models.py` + `types/` 组，sync/async 同源，SQLite 两变体真实往返通过；`microsecond_rows` 已在阶段 2b 落地 |
 | 4 | `types_complex/` 两变体 | **已落地**（2026-11-18）：`types_complex_models.py` + `types_complex/` 组，逐列能力登记；SQLite 14 passed；`Vector/Range/BitString` 仅 annotated、用可移植载体 |
 | 5 | `types_long_content/`（annotated only，依赖 2b 的 `length`） | **已落地**（2026-11-18）：`types_long_content_models.py` + 组；SQLite 上 XML 无法声明，4 个 DB 用例指名跳过，DB-free 断言照常执行 |
-| 6 | `fields/`、`type_adapter/`、`validation/` 按 bare/annotated 重排；`pydantic_native_models.py` 消重复 | 各仓 CI 全绿 |
-| 6b | 新增 `expressions/` 组（§12）：X1–X6；复用既有表，不新增 DDL | 各后端：X1 通过、X2/X3 按能力跳过并指名 |
-| 7 | 版本文件只留探针：新增 `models_py39.py` / `models_py314.py`，`VERSION_MODULES` 加两级；删 3.10/3.11/3.12 的存量副本 | 3.8–3.14 矩阵跑通；3.13/3.15 断言落在正确版本 |
-| 8 | 删 `fixture_types.py`、17 个 `Definition`、`TypeCase`/`TypeTestModel` 旧表 | `rg Definition`、`rg auto_pk`、`rg fixture_types` 均无残留 |
+| 6 | `fields/`、`type_adapter/`、`validation/` 按 bare/annotated 重排；`pydantic_native_models.py` 消重复 | **已落地**（2026-11-18）：三组各建 bare/annotated 变体 + sync/async 孪生，共用一张表（UseColumn/UseAdapter/校验不改存储），DDL 等价；pydantic native 模型收归 `pydantic_native_models.py`，两份测试去掉重复声明块；SQLite 声明级断言通过 |
+| 6b | 新增 `expressions/` 组（§12）：X1–X6；复用既有表，不新增 DDL | **已落地**（2026-11-18）：`expressions/` 组 = conftest + sync/async 配对测试，复用 `TypedUser`/`ComplexRow` 等既有模型，只取方言的建议列类与运算，不连库、不建表；X1 断言 `Model.c.<field>` 的类 == 该方言 `suggested_column_types()` 答案，X2 七族各一运算渲染 SQL，X3 负向运算不存在（JSON 无 `like`、XML 不可比较），X4 `UseColumn` 用列名，X5 同步/异步同源，X6 漏答失败、None 跳过并指名；本地 SQLite 双半通过 |
+| 7 | 版本文件只留探针：新增 `models_py39.py` / `models_py314.py`，`VERSION_MODULES` 加两级；删 3.10/3.11/3.12 的存量副本 | **已落地**（2026-11-18）：五个版本文件各只含一个 `TypingProbeN`（其余名字回落基线 `models.py`）；`VERSION_MODULES` 按 314→312→311→310→39 排序；`test_version_probes{,_async}.py` 断言各探针落回自己的文件、常规名字回落基线。本地 3.14 / 3.15 跑通；3.13 的回落由「最新 required ≤ 当前」规则覆盖（未在本机跑） |
+| 8 | 删 `fixture_types.py`、17 个 `Definition`、`TypeCase`/`TypeTestModel` 旧表 | **部分落地**（2026-11-18）：`fixture_types.py` 已删除，`short_text`/`long_text`/`array_type`/`timestamp_type`/`supports_drop_if_exists` 等助手已迁入 adapters/events/mixins/relation/query 五组本地；basic 原有的 17 个 `Definition` 已在阶段 1 清除。剩余四组的 `Definition`/`auto_pk` 仍是各组 conftest 的建表来源，`TypeCase`/`TypeTestModel` 仍被 `basic/crud`、`basic/fields` 用例引用——均在本次改动范围外，故保留 |
 
 每个阶段独立提交、推送即触发 CI，不等结果继续下一阶段。
 
@@ -598,7 +599,7 @@ class TableFixture:
    4 B/字符换算），前提是阶段 2b。`> 64 KB` 的 LOB 档位属该阶段的后续。
 5. **毫秒是默认，微秒是补充能力**：`DefaultTimestampMixin` → `TimestampType(precision=3)`；
    Firebird 接受 precision ≤ 4 并渲染 `TIMESTAMP`，其 1/10000 秒测试留在 firebird 仓；
-   微秒夹具是独立的 `microsecond_rows`（2 列），由 `supports_timestamp_microseconds()`
+   微秒夹具是独立的 `microsecond_rows`（2 列），由 `supports_microsecond_timestamp()`
    决定是否跳过（Firebird 答 False，跳过并指名）。
 6. **`Mapped*` 按 P2 归入 annotated 变体**，不再独立成组。
 7. **C 层的表统一称「建议存储类型表」**（`suggested_data_types()`）：它只在字段未声明
@@ -659,18 +660,19 @@ class TableFixture:
 ## 附：版本文件机制现状与目标
 
 `fixtures/__init__.py` 的 `resolve(name)` 按 `314 → 312 → 311 → 310 → 39 → 基线`
-（新方案，现状为 `312 → 311 → 310 → 基线`）顺序取第一个定义该名字的模块；
-因此版本文件只需覆盖**语法不同**的类，无需手抄整个矩阵。
+顺序取第一个定义该名字的模块；因此版本文件只需覆盖**语法不同**的类，无需手抄整个矩阵。
 `resolve()` 的回落不会因为「文件存在」而生效，只会因为「文件里定义了这个名字」而生效。
+阶段 7 后这一回落链已落地，并由 `test_version_probes{,_async}.py` 以「最新
+required ≤ 当前解释器」规则验证：3.13 落 3.12、3.14/3.15 落 3.14。
 
-| 文件 | 现状 | 迁移后 |
+| 文件 | 迁移前 | 现状（阶段 7 已落地） |
 |---|---|---|
-| `models.py` | 3.8 基线，66 类 + 17 Definition | 聚合并 re-export 各组模型 |
-| `models_py39.py` | 不存在 | `TypingProbe39`（PEP 585） |
-| `models_py310.py` | 35 类手抄（`X \| Y`） | `TypingProbe310` |
-| `models_py311.py` | 35 类手抄（`Self`） | `TypingProbe311` |
-| `models_py312.py` | 35 类手抄（`@override`、PEP 695） | `TypingProbe312` |
-| `models_py314.py` | 不存在 | `TypingProbe314`（PEP 649 惰性注解） |
+| `models.py` | 3.8 基线，66 类 + 17 Definition | 聚合并 re-export 各组模型，`resolve()` 回落目标 |
+| `models_py39.py` | 不存在 | `TypingProbe39`（PEP 585 `list[str]` / `dict[str, int]`） |
+| `models_py310.py` | 35 类手抄（`X \| Y`） | `TypingProbe310`（PEP 604 联合注解） |
+| `models_py311.py` | 35 类手抄（`Self`） | `TypingProbe311`（`Self` + `LiteralString`） |
+| `models_py312.py` | 35 类手抄（`@override`、PEP 695） | `TypingProbe312`（`@override`） |
+| `models_py314.py` | 不存在 | `TypingProbe314`（PEP 649/749 惰性注解 `__annotate__`） |
 
 3.13 与 3.15 不建文件：它们在本轴上不引入新语法/新语义，回落到 3.12 / 3.14 即可。
 版本文件的判据只有一条 —— **能否写出基线写不出的、且与列声明相关的语法**；
