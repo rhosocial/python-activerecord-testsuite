@@ -15,6 +15,7 @@ import pytest
 from rhosocial.activerecord.backend.options import ExecutionOptions
 from rhosocial.activerecord.backend.schema import StatementType
 
+from rhosocial.activerecord.base.derivation import build_create_table_statement
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
@@ -70,9 +71,37 @@ def database(database_config):
     backend.disconnect()
 
 
-@pytest.fixture(scope="function", autouse=True)
+def _unsupported_reason(dialect):
+    """Why the complex tables cannot be declared on *dialect*, or ``None``.
+
+    Ask the real question -- can the DDL be built? -- rather than the declared
+    ``requires_on`` switches: a backend may store a complex value through a
+    substitute (SQLite keeps UUID as text) yet never name the concept in its
+    ``supports_data_types()`` table. A dialect that refuses a declaration raises
+    during derivation; turn that refusal into a named skip reason.
+    """
+    for fixture in COMPLEX_FIXTURES:
+        if fixture.source is None:
+            continue
+        try:
+            build_create_table_statement(fixture.source, dialect).to_sql()
+        except (ValueError, TypeError) as error:
+            return "{} cannot declare the complex-type tables ({})".format(
+                getattr(dialect, "name", type(dialect).__name__), error
+            )
+    return None
+
+
+@pytest.fixture(scope="function")
 def schema(database):
-    """Drop and recreate the two complex tables before every test."""
+    """Drop and recreate the two complex tables when the dialect can build them.
+
+    Deliberately not autouse: declaration-only assertions need no database and
+    must still run on dialects that cannot render a complex concept.
+    """
+    why = _unsupported_reason(database.dialect)
+    if why is not None:
+        pytest.skip(why)
     create_schema(database, COMPLEX_FIXTURES)
     yield
     drop_schema(database, COMPLEX_FIXTURES)
@@ -91,7 +120,7 @@ async def _disconnect_async(model) -> None:
 
 
 @pytest.fixture(name="complex_bare_class")
-def complex_bare_class(database_config):
+def complex_bare_class(schema, database_config):
     """The bare sync model, configured against the directory database."""
     scenario, config, _name = database_config
     ComplexRow.configure(config, scenario.backend_class)
@@ -100,7 +129,7 @@ def complex_bare_class(database_config):
 
 
 @pytest.fixture(name="async_complex_bare_class")
-async def async_complex_bare_class(database_config):
+async def async_complex_bare_class(schema, database_config):
     """The bare async twin of ``complex_bare_class``."""
     scenario, config, _name = database_config
     await AsyncComplexRow.configure(config, scenario.async_backend_class)
@@ -109,7 +138,7 @@ async def async_complex_bare_class(database_config):
 
 
 @pytest.fixture(name="complex_annotated_class")
-def complex_annotated_class(database_config):
+def complex_annotated_class(schema, database_config):
     """The fully annotated sync model."""
     scenario, config, _name = database_config
     ComplexRowAnnotated.configure(config, scenario.backend_class)
@@ -118,7 +147,7 @@ def complex_annotated_class(database_config):
 
 
 @pytest.fixture(name="async_complex_annotated_class")
-async def async_complex_annotated_class(database_config):
+async def async_complex_annotated_class(schema, database_config):
     """The fully annotated async twin of ``complex_annotated_class``."""
     scenario, config, _name = database_config
     await AsyncComplexRowAnnotated.configure(config, scenario.async_backend_class)

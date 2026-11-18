@@ -116,7 +116,7 @@ def test_async_annotated_declarations_match_sync():
     ]
 
 
-def test_async_twins_derive_identical_ddl(database):
+def test_async_twins_derive_identical_ddl(database, schema):
     dialect = database.dialect
     assert build_create_table_statement(AsyncComplexRow, dialect).to_sql() == (
         build_create_table_statement(ComplexRow, dialect).to_sql()

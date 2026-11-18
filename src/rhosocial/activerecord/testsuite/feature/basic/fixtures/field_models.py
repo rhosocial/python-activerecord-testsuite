@@ -28,6 +28,7 @@ from rhosocial.activerecord.base.fields import (
     UseColumn,
     UseSqlType,
 )
+from rhosocial.activerecord.field import IntegerPKMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
@@ -48,12 +49,12 @@ from .user_models import (
 # --- model bodies (moved from models.py) -------------------------------
 
 
-class Product(ActiveRecord):
+class Product(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -77,12 +78,12 @@ class Product(ActiveRecord):
     ]
 
 
-class AsyncProduct(AsyncActiveRecord):
+class AsyncProduct(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int

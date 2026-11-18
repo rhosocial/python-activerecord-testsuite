@@ -141,7 +141,7 @@ def test_annotated_declares_section5_annotations():
     assert isinstance(annotated.column_data_type("markup").data_types[0], XmlType)
 
 
-def test_sync_async_twins_derive_identical_ddl(database):
+def test_sync_async_twins_derive_identical_ddl(database, schema):
     """A one-sided sync/async drift must fail (P4)."""
     dialect = database.dialect
     assert build_create_table_statement(ComplexRow, dialect).to_sql() == (

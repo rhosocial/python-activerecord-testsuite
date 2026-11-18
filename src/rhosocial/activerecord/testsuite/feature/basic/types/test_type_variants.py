@@ -44,6 +44,7 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_models import
     TYPED_FIELD_NAMES,
     TYPES_FIXTURES,
 )
+from rhosocial.activerecord.testsuite.utils import assert_datetime_equal
 
 BARE_FIXTURE = TYPES_FIXTURES[0]
 ANNOTATED_FIXTURE = TYPES_FIXTURES[1]
@@ -139,7 +140,13 @@ class TestScalarTypeVariants:
         found = typed_user_class.find_one(instance.id)
         assert found is not None, "Expected to read the bare row back"
         for field, value in _VALUES.items():
-            assert getattr(found, field) == value, field
+            actual = getattr(found, field)
+            if isinstance(value, datetime):
+                # Some drivers qualify a zoneless column with UTC on read; the
+                # shared helper compares the instants on a common naive clock.
+                assert_datetime_equal(actual, value)
+            else:
+                assert actual == value, field
 
     def test_annotated_model_value_round_trip(self, typed_user_annotated_class, database):
         """Declared storage gives every Python value back unchanged."""
@@ -150,7 +157,13 @@ class TestScalarTypeVariants:
         found = typed_user_annotated_class.find_one(instance.id)
         assert found is not None, "Expected to read the annotated row back"
         for field, value in _VALUES.items():
-            assert getattr(found, field) == value, field
+            actual = getattr(found, field)
+            if isinstance(value, datetime):
+                # Some drivers qualify a zoneless column with UTC on read; the
+                # shared helper compares the instants on a common naive clock.
+                assert_datetime_equal(actual, value)
+            else:
+                assert actual == value, field
 
     def test_microsecond_round_trip(self, microsecond_row_class, database):
         """A precision=6 TIMESTAMP keeps all six fractional digits where supported."""

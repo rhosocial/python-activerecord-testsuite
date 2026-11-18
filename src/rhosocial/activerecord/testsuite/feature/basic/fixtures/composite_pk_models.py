@@ -14,8 +14,9 @@ try:  # Python 3.8
 except ImportError:  # pragma: no cover
     from typing_extensions import Annotated, ClassVar
 
-from rhosocial.activerecord.base.fields import UseColumn
+from rhosocial.activerecord.base.fields import UseColumn, UseSqlType
 from rhosocial.activerecord.base.field_proxy import FieldProxy
+from rhosocial.activerecord.backend.expression.types import VarCharType
 from rhosocial.activerecord.field import CompositePKMixin, DefaultTimestampMixin, IntegerPKMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
@@ -79,7 +80,9 @@ class StoreInventory(CompositePKMixin, ActiveRecord):
 
     store_id: int
     product_id: int
-    batch_id: str
+    # A bare str becomes MySQL's TEXT, which cannot be a key without a prefix
+    # length; the PK member declares a bounded VARCHAR so it is a valid key.
+    batch_id: Annotated[str, UseSqlType(VarCharType(length=32))]
     stock: int = 0
 
 
@@ -98,7 +101,9 @@ class AsyncStoreInventory(CompositePKMixin, AsyncActiveRecord):
 
     store_id: int
     product_id: int
-    batch_id: str
+    # A bare str becomes MySQL's TEXT, which cannot be a key without a prefix
+    # length; the PK member declares a bounded VARCHAR so it is a valid key.
+    batch_id: Annotated[str, UseSqlType(VarCharType(length=32))]
     stock: int = 0
 
 

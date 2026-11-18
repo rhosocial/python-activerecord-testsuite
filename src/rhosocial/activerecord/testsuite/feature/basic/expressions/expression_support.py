@@ -103,6 +103,23 @@ def first_renderable(column, dialect):
     raise AssertionError("{} offers no renderable operation".format(type(column).__name__))
 
 
+def _require_json_path(dialect):
+    """Skip when the dialect cannot render a JSON path at all.
+
+    A dialect may answer a column class for the json/array families while its
+    server has no path function -- in that case the column's ``json_path``
+    renders by raising UnsupportedFeatureError, which is an answered refusal,
+    not a defect.  Ask the same switch that refusal consults.
+    """
+    switch = getattr(dialect, "supports_json_path", None)
+    if callable(switch) and not switch():
+        pytest.skip(
+            "{} 不支持 JSON path 运算".format(
+                getattr(dialect, "name", type(dialect).__name__)
+            )
+        )
+
+
 def positive_expression(kind, column, dialect):
     """Build the X2 operation of *kind* on *column*, using *dialect* for literals."""
     if kind == "arithmetic":
@@ -112,6 +129,7 @@ def positive_expression(kind, column, dialect):
     if kind == "comparison":
         return column < Literal(dialect, "2100-01-01")
     if kind == "json_path":
+        _require_json_path(dialect)
         return column.json_path("k")
     if kind == "element":
         # A native array exposes array operations; a backend with no array
@@ -121,6 +139,7 @@ def positive_expression(kind, column, dialect):
         if hasattr(column, "unnest"):
             return column.unnest()
         if hasattr(column, "json_path"):
+            _require_json_path(dialect)
             return column.json_path(0)
         raise AssertionError("{} has no element operation".format(type(column).__name__))
     if kind == "first":
