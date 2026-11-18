@@ -5,7 +5,12 @@ Generators are pure Python, so the async variant exercises the same runner on
 ``AsyncActiveRecord`` models. There is no I/O in generation itself; the mirror
 exists to keep sync/async parity for the contract surface.
 """
-from typing import Annotated, Optional
+try:  # Python 3.8 has no typing.Annotated
+    from typing import Annotated, Optional
+except ImportError:  # pragma: no cover - only on 3.8
+    from typing_extensions import Annotated
+
+    from typing import Optional
 
 from rhosocial.activerecord.base import UseFieldGenerator
 from rhosocial.activerecord.base.field_generation import apply_field_generators

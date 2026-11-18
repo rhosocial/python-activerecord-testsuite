@@ -6,7 +6,12 @@ with a value before a write and filter it out of write sets where no generator
 is declared. They are backend-agnostic, so these contracts run unchanged on
 every backend -- no database connection or dialect is required.
 """
-from typing import Annotated, Optional
+try:  # Python 3.8 has no typing.Annotated
+    from typing import Annotated, Optional
+except ImportError:  # pragma: no cover - only on 3.8
+    from typing_extensions import Annotated
+
+    from typing import Optional
 
 from rhosocial.activerecord.base import UseFieldGenerator
 from rhosocial.activerecord.base.field_generation import apply_field_generators
