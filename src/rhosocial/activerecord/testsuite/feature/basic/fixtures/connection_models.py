@@ -20,6 +20,7 @@ from .operations import Operation, TableFixture
 
 
 class TestUser(ActiveRecord):
+    __primary_key__ = "id"
     @classmethod
     def table_name(cls):
         return "test_users"
@@ -32,6 +33,7 @@ class TestUser(ActiveRecord):
 
 
 class AsyncTestUser(AsyncActiveRecord):
+    __primary_key__ = "id"
     @classmethod
     def table_name(cls):
         return "test_users"

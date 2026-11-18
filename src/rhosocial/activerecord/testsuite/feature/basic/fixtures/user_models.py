@@ -281,7 +281,8 @@ class PydanticValidatedFieldsMixin:
         return self
 
 
-class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
+class MappedUser(DefaultTimestampMixin, ActiveRecord):
+    __primary_key__ = "id"
     """User model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -302,7 +303,8 @@ class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     creation_date: Annotated[Optional[datetime], UseColumn("created_at")] = None
 
 
-class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
+class AsyncMappedUser(DefaultTimestampMixin, AsyncActiveRecord):
+    __primary_key__ = "id"
     """User model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -325,7 +327,8 @@ class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     creation_date: Annotated[Optional[datetime], UseColumn("created_at")] = None
 
 
-class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
+class MappedPost(DefaultTimestampMixin, ActiveRecord):
+    __primary_key__ = "id"
     """Post model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -351,7 +354,8 @@ class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     is_published: Annotated[bool, UseColumn("published")]
 
 
-class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
+class AsyncMappedPost(DefaultTimestampMixin, AsyncActiveRecord):
+    __primary_key__ = "id"
     """Post model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -379,7 +383,8 @@ class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     is_published: Annotated[bool, UseColumn("published")]
 
 
-class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
+class MappedComment(DefaultTimestampMixin, ActiveRecord):
+    __primary_key__ = "id"
     """Comment model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -406,7 +411,8 @@ class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
     is_approved: Annotated[bool, UseColumn("approved")]
 
 
-class AsyncMappedComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
+class AsyncMappedComment(DefaultTimestampMixin, AsyncActiveRecord):
+    __primary_key__ = "id"
     """Comment model with custom column name mappings for testing in basic feature."""
 
     @classmethod
@@ -456,6 +462,7 @@ class IntToStringAdapter(BaseSQLTypeAdapter):
 
 
 class ColumnMappingModel(ActiveRecord):
+    __primary_key__ = "id"
     """
     A model demonstrating various valid uses of UseColumn and UseAdapter,
     including mapping the primary key attribute.
@@ -475,6 +482,7 @@ class ColumnMappingModel(ActiveRecord):
 
 
 class AsyncColumnMappingModel(AsyncActiveRecord):
+    __primary_key__ = "id"
     """
     A model demonstrating various valid uses of UseColumn and UseAdapter,
     including mapping the primary key attribute.
@@ -587,6 +595,7 @@ class JsonToStringAdapter(BaseSQLTypeAdapter):
 
 
 class MixedAnnotationModel(ActiveRecord):
+    __primary_key__ = "id"
     """A model with various combinations of annotations to test field mapping and adapters."""
 
     @classmethod
@@ -619,6 +628,7 @@ class MixedAnnotationModel(ActiveRecord):
 
 
 class AsyncMixedAnnotationModel(AsyncActiveRecord):
+    __primary_key__ = "id"
     """A model with various combinations of annotations to test field mapping and adapters."""
 
     @classmethod

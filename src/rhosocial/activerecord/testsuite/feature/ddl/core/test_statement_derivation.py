@@ -26,6 +26,7 @@ from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 
 class DerivationItem(ActiveRecord):
+    __primary_key__ = "id"
     @classmethod
     def table_name(cls):
         return "ddl_derivation_items"
@@ -43,6 +44,7 @@ class DerivationItem(ActiveRecord):
 
 
 class AsyncDerivationItem(AsyncActiveRecord):
+    __primary_key__ = "id"
     @classmethod
     def table_name(cls):
         return "ddl_derivation_items"

@@ -39,6 +39,8 @@ AsyncMappedOrderItem = resolve("AsyncMappedOrderItem")
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='CRUD over composite primary keys and column-mapped composite keys.',
     passes_means='composite-key rows round-trip and each key member is required',

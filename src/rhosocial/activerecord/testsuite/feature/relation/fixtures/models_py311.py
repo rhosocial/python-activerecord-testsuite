@@ -9,6 +9,7 @@ This file contains model classes using Python 3.11+ syntax features:
 Note: This file should only be imported and used in Python 3.11+ environments.
 """
 from __future__ import annotations
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Self
 
@@ -20,7 +21,7 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasO
 __requires_python__ = (3, 11)
 
 
-class Employee(ActiveRecord):
+class Employee(IntegerPKMixin, ActiveRecord):
     """Employee model with department relation.
 
     Python 3.11+ version using | syntax and Self type.
@@ -45,7 +46,7 @@ class Employee(ActiveRecord):
         return self
 
 
-class Department(ActiveRecord):
+class Department(IntegerPKMixin, ActiveRecord):
     """Department model with employees relation.
 
     Python 3.11+ version using | syntax and Self type.
@@ -70,7 +71,7 @@ class Department(ActiveRecord):
         return self
 
 
-class Author(ActiveRecord):
+class Author(IntegerPKMixin, ActiveRecord):
     """Author model with books and profile relations.
 
     Python 3.11+ version using | syntax and Self type.
@@ -98,7 +99,7 @@ class Author(ActiveRecord):
         return self
 
 
-class Book(ActiveRecord):
+class Book(IntegerPKMixin, ActiveRecord):
     """Book model with author and chapters relations.
 
     Python 3.11+ version using | syntax and Self type.
@@ -127,7 +128,7 @@ class Book(ActiveRecord):
         return self
 
 
-class Chapter(ActiveRecord):
+class Chapter(IntegerPKMixin, ActiveRecord):
     """Chapter model with book relation.
 
     Python 3.11+ version using | syntax and Self type.
@@ -152,7 +153,7 @@ class Chapter(ActiveRecord):
         return self
 
 
-class Profile(ActiveRecord):
+class Profile(IntegerPKMixin, ActiveRecord):
     """Profile model with author relation.
 
     Python 3.11+ version using | syntax and Self type.

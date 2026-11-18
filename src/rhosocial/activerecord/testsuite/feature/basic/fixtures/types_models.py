@@ -125,6 +125,7 @@ class TypedUserAnnotatedFields:
 
 
 class TypedUser(TypedUserFields, ActiveRecord):
+    __primary_key__ = "id"
     """Bare scalar-type variant, bound to ``typed_users``."""
 
     @classmethod
@@ -133,6 +134,7 @@ class TypedUser(TypedUserFields, ActiveRecord):
 
 
 class AsyncTypedUser(TypedUserFields, AsyncActiveRecord):
+    __primary_key__ = "id"
     """Async twin of :class:`TypedUser` (P4: same fields, same table)."""
 
     @classmethod
@@ -141,6 +143,7 @@ class AsyncTypedUser(TypedUserFields, AsyncActiveRecord):
 
 
 class TypedUserAnnotated(TypedUserAnnotatedFields, ActiveRecord):
+    __primary_key__ = "id"
     """Fully annotated scalar-type variant, bound to ``typed_users_annotated``."""
 
     @classmethod
@@ -149,6 +152,7 @@ class TypedUserAnnotated(TypedUserAnnotatedFields, ActiveRecord):
 
 
 class AsyncTypedUserAnnotated(TypedUserAnnotatedFields, AsyncActiveRecord):
+    __primary_key__ = "id"
     """Async twin of :class:`TypedUserAnnotated` (P4)."""
 
     @classmethod
@@ -207,6 +211,7 @@ class MicrosecondRowFields:
 
 
 class MicrosecondRow(MicrosecondRowFields, ActiveRecord):
+    __primary_key__ = "id"
     """Microsecond probe bound to ``microsecond_rows``."""
 
     @classmethod
@@ -215,6 +220,7 @@ class MicrosecondRow(MicrosecondRowFields, ActiveRecord):
 
 
 class AsyncMicrosecondRow(MicrosecondRowFields, AsyncActiveRecord):
+    __primary_key__ = "id"
     """Async twin of :class:`MicrosecondRow` (P4)."""
 
     @classmethod

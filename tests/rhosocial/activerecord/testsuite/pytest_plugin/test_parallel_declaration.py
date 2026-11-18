@@ -119,3 +119,36 @@ def test_no_declaration_anywhere_returns_none(tmp_path):
     pm = _pluginmanager_with_conftests((tmp_path, None))
     test_file = tmp_path / "test_sample.py"
     assert declaration_for(pm, test_file) is None
+
+
+def test_database_use_is_opt_in():
+    """uses_database defaults off; a declaring scope owns the choice."""
+    assert Declaration().uses_database is False
+    assert Declaration(uses_database=True).uses_database is True
+
+
+def test_undeclared_database_fixture_fails_collection():
+    """Requesting a DB fixture without uses_database raises a UsageError."""
+    import pytest
+
+    item = SimpleNamespace(
+        nodeid="test_scope.py::test_x",
+        fixturenames=["database"],
+    )
+    declaration = Declaration(parallel=True)  # uses_database not declared
+    try:
+        hooks._check_database_declaration(item, declaration)
+    except pytest.UsageError as exc:
+        assert "uses_database=True" in str(exc)
+        assert "database" in str(exc)
+    else:
+        raise AssertionError("undeclared database fixture was not refused")
+
+
+def test_declared_database_fixture_passes():
+    """A scope that declares uses_database may request DB fixtures."""
+    item = SimpleNamespace(
+        nodeid="test_scope.py::test_x",
+        fixturenames=["database", "schema", "database_config"],
+    )
+    hooks._check_database_declaration(item, Declaration(uses_database=True))

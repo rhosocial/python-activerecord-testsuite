@@ -15,6 +15,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='Bulk insert, batch update/delete and chunked operations.',
     passes_means='batch operations affect exactly the selected rows in one round',

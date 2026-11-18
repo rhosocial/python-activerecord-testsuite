@@ -45,6 +45,17 @@ class Declaration:
     expressions.
     """
 
+    uses_database: bool = False
+    """Declare that this scope needs a prepared database.
+
+    ``True`` makes the shared L1 gate request the directory's ``schema``
+    fixture, which connects the backend and (re)creates its tables. ``False``
+    -- the default -- means the scope never opens a connection: pure Python or
+    expression-only tests declare nothing and touch no database. A scope that
+    declares ``True`` must provide ``database`` and ``schema`` fixtures; the
+    gate fails loudly if it does not.
+    """
+
     purpose: str = ""
     passes_means: str = ""
     fails_means: str = ""

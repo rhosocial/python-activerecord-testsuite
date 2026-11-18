@@ -27,6 +27,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import 
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Basic synchronous/asynchronous CRUD over the standard user tables.",
     passes_means="rows are created, read, updated and deleted through every documented path",

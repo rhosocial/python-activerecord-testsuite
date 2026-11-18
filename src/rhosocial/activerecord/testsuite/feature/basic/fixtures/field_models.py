@@ -13,6 +13,7 @@ Identity is not a variant axis (F11): ``Optional[int]`` plus the framework's
 ``pk_auto_generated()`` default is the whole primary-key declaration on both
 sides.  Sync and async twins share one mixin per variant (P4).
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from datetime import datetime
 from decimal import Decimal
@@ -28,7 +29,6 @@ from rhosocial.activerecord.base.fields import (
     UseColumn,
     UseSqlType,
 )
-from rhosocial.activerecord.field import IntegerPKMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 # These mixins are assumed to be provided by the core `rhosocial-activerecord`
@@ -107,7 +107,7 @@ class AsyncProduct(IntegerPKMixin, AsyncActiveRecord):
     ]
 
 
-class ProductFormA(ActiveRecord):
+class ProductFormA(IntegerPKMixin, ActiveRecord):
     """Form A declaration: ClassVar[DerivedField] = DerivedField(...)."""
 
     @classmethod
@@ -128,7 +128,7 @@ class ProductFormA(ActiveRecord):
     )
 
 
-class AsyncProductFormA(AsyncActiveRecord):
+class AsyncProductFormA(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "product"
@@ -171,7 +171,7 @@ class PriceToIntAdapter:
         return {int: {float}}
 
 
-class ProductWithProxy(ActiveRecord):
+class ProductWithProxy(IntegerPKMixin, ActiveRecord):
     """Product model using FieldProxy in DerivedField expressions."""
 
     @classmethod
@@ -203,7 +203,7 @@ class ProductWithProxy(ActiveRecord):
     ]
 
 
-class AsyncProductWithProxy(AsyncActiveRecord):
+class AsyncProductWithProxy(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "product"
@@ -233,7 +233,7 @@ class AsyncProductWithProxy(AsyncActiveRecord):
     ]
 
 
-class ProductWithColumnAndAdapter(ActiveRecord):
+class ProductWithColumnAndAdapter(IntegerPKMixin, ActiveRecord):
     """Product model with UseColumn and UseAdapter on derived fields."""
 
     @classmethod
@@ -266,7 +266,7 @@ class ProductWithColumnAndAdapter(ActiveRecord):
     ]
 
 
-class AsyncProductWithColumnAndAdapter(AsyncActiveRecord):
+class AsyncProductWithColumnAndAdapter(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "product"
@@ -373,7 +373,7 @@ class AsyncFieldRowAnnotated(FieldRowAnnotatedFields, AsyncActiveRecord):
 # backend-specific assumption, must never appear here.
 
 
-class CommentDdl(ActiveRecord):
+class CommentDdl(IntegerPKMixin, ActiveRecord):
     """DDL source for ``comments``.
 
     ``MappedComment`` renames ``created_at`` to ``comment_creation_date`` for

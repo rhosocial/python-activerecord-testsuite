@@ -7,6 +7,7 @@ This module provides model classes for testing relation features:
 - Author/Book/Chapter/Profile: Nested relations with HasOne
 - User/Post/Comment: Relations with FieldProxy, DerivedField, and JSON fields
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 from typing import Optional, ClassVar
 
 from typing_extensions import Annotated
@@ -23,7 +24,7 @@ from rhosocial.activerecord.relation.async_descriptors import AsyncBelongsTo, As
 
 # ── Basic Relation Models ────────────────────────────────
 
-class Employee(ActiveRecord):
+class Employee(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "employees"
@@ -38,7 +39,7 @@ class Employee(ActiveRecord):
     )
 
 
-class Department(ActiveRecord):
+class Department(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "departments"
@@ -53,7 +54,7 @@ class Department(ActiveRecord):
     )
 
 
-class Author(ActiveRecord):
+class Author(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "authors"
@@ -71,7 +72,7 @@ class Author(ActiveRecord):
     )
 
 
-class Book(ActiveRecord):
+class Book(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "books"
@@ -90,7 +91,7 @@ class Book(ActiveRecord):
     )
 
 
-class Chapter(ActiveRecord):
+class Chapter(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "chapters"
@@ -105,7 +106,7 @@ class Chapter(ActiveRecord):
     )
 
 
-class Profile(ActiveRecord):
+class Profile(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "profiles"
@@ -122,7 +123,7 @@ class Profile(ActiveRecord):
 
 # ── Advanced Relation Models (with FieldProxy, DerivedField, JSON) ──
 
-class User(ActiveRecord):
+class User(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"
@@ -155,7 +156,7 @@ class User(ActiveRecord):
     )
 
 
-class Post(ActiveRecord):
+class Post(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "posts"
@@ -199,7 +200,7 @@ class Post(ActiveRecord):
     )
 
 
-class Comment(ActiveRecord):
+class Comment(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "comments"
@@ -229,7 +230,7 @@ class Comment(ActiveRecord):
 
 # ── Async Models ─────────────────────────────────────────
 
-class AsyncUser(AsyncActiveRecord):
+class AsyncUser(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"
@@ -258,7 +259,7 @@ class AsyncUser(AsyncActiveRecord):
     )
 
 
-class AsyncPost(AsyncActiveRecord):
+class AsyncPost(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "posts"
@@ -297,7 +298,7 @@ class AsyncPost(AsyncActiveRecord):
     )
 
 
-class AsyncComment(AsyncActiveRecord):
+class AsyncComment(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "comments"
@@ -324,7 +325,7 @@ class AsyncComment(AsyncActiveRecord):
 
 # ── Relation Boundary Models ──────────────────────────────
 
-class BoundaryOwner(ActiveRecord):
+class BoundaryOwner(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_owners"
@@ -342,7 +343,7 @@ class BoundaryOwner(ActiveRecord):
     )
 
 
-class BoundaryProfile(ActiveRecord):
+class BoundaryProfile(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_profiles"
@@ -357,7 +358,7 @@ class BoundaryProfile(ActiveRecord):
     )
 
 
-class BoundaryPost(ActiveRecord):
+class BoundaryPost(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_posts"
@@ -372,7 +373,7 @@ class BoundaryPost(ActiveRecord):
     )
 
 
-class AsyncBoundaryOwner(AsyncActiveRecord):
+class AsyncBoundaryOwner(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_owners"
@@ -390,7 +391,7 @@ class AsyncBoundaryOwner(AsyncActiveRecord):
     )
 
 
-class AsyncBoundaryProfile(AsyncActiveRecord):
+class AsyncBoundaryProfile(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_profiles"
@@ -405,7 +406,7 @@ class AsyncBoundaryProfile(AsyncActiveRecord):
     )
 
 
-class AsyncBoundaryPost(AsyncActiveRecord):
+class AsyncBoundaryPost(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "relation_boundary_posts"

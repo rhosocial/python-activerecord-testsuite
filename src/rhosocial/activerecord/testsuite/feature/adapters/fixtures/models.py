@@ -9,6 +9,8 @@ fixtures.
 Expression names are imported under short aliases so the definitions stay
 readable.
 """
+from rhosocial.activerecord.backend.expression.statements import auto_increment_parts  # noqa: E402
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import Optional
 
@@ -81,7 +83,7 @@ def array_type(dialect, element_type):
     return Text(dialect)
 
 
-class NeutralTypes(ActiveRecord):
+class NeutralTypes(IntegerPKMixin, ActiveRecord):
     """One row per neutral family; columns are generic text/array carriers."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -102,7 +104,7 @@ class NeutralTypes(ActiveRecord):
     tags: Optional[list] = None
 
 
-class AsyncNeutralTypes(AsyncActiveRecord):
+class AsyncNeutralTypes(IntegerPKMixin, AsyncActiveRecord):
     """Async twin of :class:`NeutralTypes`."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -129,32 +131,11 @@ class NeutralTypesFixture:
     model = NeutralTypes
     async_model = AsyncNeutralTypes
 
-    def __init__(self, dialect):
-        self.dialect = dialect
-        self.create_table = CreateTable(
-            dialect,
-            table=Table(dialect, "neutral_types"),
-            columns=[
-                Column(
-                    dialect,
-                    "id",
-                    Int(dialect),
-                    constraints=[
-                        Constraint(
-                            dialect,
-                            branch=PrimaryKey(dialect, is_auto_increment=True),
-                        )
-                    ],
-                ),
-                Column(dialect, "shape", long_text(dialect)),
-                Column(dialect, "point", long_text(dialect)),
-                Column(dialect, "vector", long_text(dialect)),
-                Column(dialect, "window", long_text(dialect)),
-                Column(dialect, "windows", long_text(dialect)),
-                Column(dialect, "payload", long_text(dialect)),
-                Column(dialect, "flags", short_text(dialect)),
-                Column(dialect, "address", short_text(dialect)),
-                Column(dialect, "tags", array_type(dialect, Text(dialect))),
-            ],
+    def __init__(self, name="id"):
+        data_type, attributes = auto_increment_parts(self.dialect, Int(self.dialect))
+        return Column(
+            self.dialect, name, data_type,
+            constraints=[Constraint(self.dialect, branch=PrimaryKey(self.dialect))],
+            attributes=attributes,
         )
-        self.drop_table = DropTable(dialect, table=Table(dialect, "neutral_types"))
+

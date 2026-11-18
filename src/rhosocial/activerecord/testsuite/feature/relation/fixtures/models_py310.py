@@ -7,6 +7,7 @@ This file contains model classes using Python 3.10+ syntax features:
 
 Note: This file should only be imported and used in Python 3.10+ environments.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 from typing import ClassVar
 
 from rhosocial.activerecord.model import ActiveRecord
@@ -17,7 +18,7 @@ from rhosocial.activerecord.relation.descriptors import BelongsTo, HasMany, HasO
 __requires_python__ = (3, 10)
 
 
-class Employee(ActiveRecord):
+class Employee(IntegerPKMixin, ActiveRecord):
     """Employee model with department relation.
 
     Python 3.10+ version.
@@ -37,7 +38,7 @@ class Employee(ActiveRecord):
     )
 
 
-class Department(ActiveRecord):
+class Department(IntegerPKMixin, ActiveRecord):
     """Department model with employees relation.
 
     Python 3.10+ version.
@@ -57,7 +58,7 @@ class Department(ActiveRecord):
     )
 
 
-class Author(ActiveRecord):
+class Author(IntegerPKMixin, ActiveRecord):
     """Author model with books and profile relations.
 
     Python 3.10+ version.
@@ -80,7 +81,7 @@ class Author(ActiveRecord):
     )
 
 
-class Book(ActiveRecord):
+class Book(IntegerPKMixin, ActiveRecord):
     """Book model with author and chapters relations.
 
     Python 3.10+ version.
@@ -104,7 +105,7 @@ class Book(ActiveRecord):
     )
 
 
-class Chapter(ActiveRecord):
+class Chapter(IntegerPKMixin, ActiveRecord):
     """Chapter model with book relation.
 
     Python 3.10+ version.
@@ -124,7 +125,7 @@ class Chapter(ActiveRecord):
     )
 
 
-class Profile(ActiveRecord):
+class Profile(IntegerPKMixin, ActiveRecord):
     """Profile model with author relation.
 
     Python 3.10+ version.

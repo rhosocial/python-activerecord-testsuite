@@ -26,6 +26,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin.requirements import (
 )
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Long content in TEXT/BLOB/JSON/XML columns declared as a minimum capacity.",
     passes_means="a 16 000-character/byte value is written and read back in full",
@@ -88,7 +90,7 @@ def database(database_config):
     backend.disconnect()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Prepare ``long_rows`` for a DB test, unless the dialect refuses it.
 

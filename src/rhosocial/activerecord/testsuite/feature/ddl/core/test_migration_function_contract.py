@@ -5,6 +5,7 @@ The contract is about the mechanism, not a process: a decorated function may
 declare DDL, and a runner may render it without writing.  No backend needs to
 ship an orchestrator for this to work.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 try:  # Python 3.8 has no typing.Annotated
     from typing import Annotated, Optional
@@ -39,7 +40,7 @@ from rhosocial.activerecord.base import UseSqlType
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
 
-class ContractUser(ActiveRecord):
+class ContractUser(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_contract_function_users"
@@ -56,7 +57,7 @@ class ContractUser(ActiveRecord):
             ctx.apply(cls.drop_table_statement(backend=ctx.backend, if_exists=True))
 
 
-class AsyncContractUser(AsyncActiveRecord):
+class AsyncContractUser(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_contract_function_users"

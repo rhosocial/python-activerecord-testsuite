@@ -22,6 +22,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='Savepoint API and cross-task transaction ownership.',
     passes_means='savepoints nest and roll back to the right owner task',

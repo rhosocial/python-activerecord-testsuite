@@ -19,6 +19,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='Multi-process worker pool lifecycle and parallel CRUD.',
     passes_means='serialisable connection state reaches a worker and its results come back intact',

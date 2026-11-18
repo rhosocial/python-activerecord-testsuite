@@ -13,6 +13,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 # This directory owns one database per scenario; parallel workers would reset
 # the same file underneath each other.
 DECLARATION = Declaration(
+    # Rendering contracts still need a connected, adapted dialect -- no tables.
+    uses_database=True,
     parallel=True,
     purpose="Basic ALTER TABLE rendering contracts under ``basic/ddl``",
     passes_means="the clause renders as documented on the adapted dialect",

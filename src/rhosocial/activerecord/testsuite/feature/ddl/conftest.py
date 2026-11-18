@@ -27,6 +27,8 @@ from .fixtures.models import (
 )
 
 DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
     parallel=True,
     purpose="DDLSource contracts: what a declaration may say and how it renders.",
     passes_means="the declaration surface renders and refuses as documented",

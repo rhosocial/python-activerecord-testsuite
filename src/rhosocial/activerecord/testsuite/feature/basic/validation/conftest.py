@@ -27,6 +27,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.validation_models i
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Pydantic field/model validators and native validation boundaries.",
     passes_means="validation runs on assignment and on save, and invalid values are refused",

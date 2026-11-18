@@ -27,6 +27,8 @@ from rhosocial.activerecord.testsuite.feature.query.fixtures.models import User
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
     parallel=True,
     purpose="Directory-owned database for query/connection/conftest.py.",
     passes_means="the directory's tests run on one worker per scenario",

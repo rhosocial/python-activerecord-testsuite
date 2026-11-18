@@ -30,19 +30,45 @@ The test suite is organized into the following main categories, located in `src/
 
 ## Capability-based Testing
 
-The test suite includes an integrated pytest plugin that automatically checks if the current backend supports required capabilities. Tests using the `@requires_capability` decorator will be automatically skipped if the backend doesn't support the required features.
+An integrated pytest plugin evaluates what each backend dialect answers. Tests
+marked `@requires_protocol(...)` are skipped only when the dialect genuinely
+answers "no"; a dialect that does not implement a required probe fails loudly
+instead of silently skipping a whole group. The plugin registers itself through
+the package's `pytest11` entry point — installing this package is enough.
 
-The plugin is registered automatically and available when the package is installed.
+See [`pytest_plugin/README.md`](src/rhosocial/activerecord/testsuite/pytest_plugin/README.md)
+for the full mechanism.
+
+## Backend wiring and parallel units
+
+Two parts of the suite are now considered mature:
+
+- **Backend integration** — a backend supplies one `backend_scenario` fixture and
+  thin conftest/bridge files that import the shared directories; test bodies live
+  in exactly one place.
+- **Minimum parallel unit** — each test directory declares its own unit
+  (`Declaration.parallel`, `uses_database`, `requires`). A directory sharing a
+  database is pinned to one xdist worker, and database use is opt-in: scopes that
+  only render or compute declare nothing and open no connection.
+
+Both are documented in detail in the [plugin README](src/rhosocial/activerecord/testsuite/pytest_plugin/README.md).
 
 ## Usage for Backend Developers
 
-If you are developing a database backend for RhoSocial ActiveRecord, you should include this test suite as a development dependency. Your backend's test runner will execute these tests against your implementation, using your provided database schema fixtures.
+If you are developing a database backend for RhoSocial ActiveRecord, include this
+suite as a development dependency. The plugin installs automatically; you provide
+the scenarios and thin bridges, not a copy of the tests.
 
 A typical workflow involves:
 1.  Adding `rhosocial-activerecord-testsuite` to your `pyproject.toml`.
-2.  Creating database schema fixtures that match the structure required by the tests.
-3.  Running the test suite against your backend to identify and fix compatibility issues.
-4.  Generating a compatibility report to document your backend's compliance level.
+2.  Defining a parametrized `backend_scenario` fixture that yields your scenarios
+    (each knows its backend classes, config factory and database reset).
+3.  Adding thin `conftest.py` files that star-import the corresponding shared
+    directory, plus bridge modules that import the shared test functions.
+4.  Running the suite; use `--dist=loadgroup` for parallel runs so tests sharing
+    one database stay on one worker.
+5.  Fixing dialect gaps reported loudly by the capability checks, and recording
+    your backend's compliance level.
 
 For detailed instructions, please refer to the main project's [testing documentation](https://github.com/rhosocial/python-activerecord/blob/main/tests/rhosocial/activerecord_test/README.md).
 

@@ -1,7 +1,7 @@
 # Basic 夹具目录：重设计计划
 
 - 日期：2026-11-16
-- 状态：**待审定**（审定前不写实现；按 §10 分阶段）
+- 状态：**已审定，§10 各阶段均已落地**（2026-11-18；本文件保留设计依据与裁决记录）
 - 范围：`src/rhosocial/activerecord/testsuite/feature/basic/fixtures/` 及其服务的
   `basic/*` 测试目录
 - 依据：
@@ -22,6 +22,15 @@
 **模型即定义。** 一张表由一个模型类的注解声明，DDL 由
 `base/derivation.py` 从注解派生，不再有手写的 `Definition` 列清单；每个声明集合
 配一份同目录的 DDL/DML 操作；夹具按「组」组织，每组 = 一个测试目录 = 一个库。
+
+### 0.0 数据库使用是目录声明（2026-11-18）
+
+`basic/` 下的测试目录**只有声明 `uses_database=True` 才碰库**：L2 的
+`DECLARATION` 是唯一开关，plugin 在收集期校验——未声明却请求 `database` /
+`schema` / `database_config` 的用例直接失败。`expressions/` 与新增的
+`field_generation/` 不声明、也不定义这些夹具，因此完全无连接；后者承载纯 Python
+的字段生成器契约（按 insert/update/soft-delete/restore 填值与过滤）。声明是**目录级**
+的：往已声明目录里加纯 Python 用例仍会建库，若要 DB-free 就放进未声明目录。
 
 ### 0.1 适用范围与所有权
 
@@ -81,7 +90,7 @@
 | F8 | 能力探针的答案依赖服务器版本，`introspect_and_adapt()` 之前可能全部为 False | `impl/oracle/mixins/features.py:201` |
 | F9 | 能力回答有两条**互不重叠**的通道：零参布尔方法 与 `supports_data_types()` 字典；`Requirement` 只接前者 | `pytest_plugin/requirements.py:74`、实跑 §1.3 |
 | F10 | `resolve()` 已支持「新版模块只覆盖它定义的名字」，未定义的回落到 `models.py` | `fixtures/__init__.py` |
-| F11 | **数据库赋值是推导出来的，不是声明出来的**：单列整数主键写成 `Optional[int]`（可省略）且 `pk_auto_generated()` 为默认 True，就足以让写路径不要求主键、让 DDL 派生出后端自己的生成机制。实测：`Optional[int]` 与显式 `IdentityAttribute()` 在同一方言上派生出的 DDL 逐字相同 | `python-activerecord/base/derivation.py:264–296`、`field/integer_pk.py:5–18` |
+| F11 | **数据库赋值是推导出来的，不是声明出来的**：单列主键为 `Optional[int]` 且字段无 `UseFieldGenerator` 注记，即推导为数据库自增；`pk_auto_generated()` 完全由该推导得出（无 dunder 开关、无 override）。实测：`Optional[int]` 与显式 `IdentityAttribute()` 在同一方言上派生出的 DDL 逐字相同 | `python-activerecord/base/derivation.py`、`interface/model.py` 的 `_is_database_generated_integer_key()` / `identity_pk_fields()` |
 | F12 | **`suggested_column_types()` 是成文契约**：`FRAMEWORK_PYTHON_TYPES` 的 **24 键每键必答**，漏键 = 硬失败。2026-11-17 已补齐：六族有 core 列类、`timedelta` 答 `IntervalColumn`；十方言全答满，唯一 `None` 是 Firebird 的 `dict` + 四个容器（无 JSON 读取函数、无原生数组），是明确拒绝而非漏答 | `protocols/query/column_type.py:31`、`base/field_proxy.py:266`、`base/framework_types.py` |
 | F13 | 存储类型侧已有**「渲染或替代」二选一**纪律：每个类型概念必须被 `format_data_type_<name>` 渲染，或在 `substitute_data_types()` 里给出替代类，两者互斥；沉默 = `TypeError` | `protocols/query/data_type.py:85` |
 
@@ -174,9 +183,10 @@ for source in TABLE_SOURCES:
 | **bare（完全默认）** | **模型自己写的字段只有 Python 类型注解，没有任何 `Annotated` 标记** | 「什么都不说时，框架给什么？」 |
 | **annotated（完全注记）** | 同一批 Python 类型 + 覆盖全部注记轴（类型/长度/精度、约束、索引、注释） | 「注记改变了什么？」 |
 
-**identity 不属于注记轴**。数据库赋值整数主键由 `Optional[int]` + `pk_auto_generated()`
-默认推导（F11），两变体一致；`IdentityAttribute` 是机制专属的 DDL 提示，不写进共享夹具。
-自增行为用 `supports_database_assigned_integer_column()` 在行为层单独验证，DDL 机制留给各后端。
+**identity 不属于注记轴**。数据库赋值整数主键由单列 `Optional[int]` 且字段无
+`UseFieldGenerator` 注记推导（F11），两变体一致；`IdentityAttribute` 是机制专属的 DDL
+提示，不写进共享夹具；`pk_auto_generated()` 完全派生、无可设开关。自增行为用
+`supports_database_assigned_integer_column()` 在行为层单独验证，DDL 机制留给各后端。
 
 三点必须说清楚：
 
@@ -597,10 +607,11 @@ class TableFixture:
 7. **C 层的表统一称「建议存储类型表」**（`suggested_data_types()`）：它只在字段未声明
    `UseSqlType` 时提供默认，显式声明永远优先，用户可完全不使用；建议渲染失败时**报错
    指名表与列**，不静默降级。
-8. **identity 退出 bare/annotated 变体轴**（2026-11-18 实测）：`Optional[int]` + 默认
-   `pk_auto_generated()` 即表达"数据库赋值",与显式 `IdentityAttribute()` 派生的 DDL 逐字相同。
-   共享夹具不再写 `IdentityAttribute`;自增行为由 `supports_database_assigned_integer_column()`
-   门控,具体 DDL 机制由各后端自己的契约测试覆盖（PostgreSQL 的 SERIAL 亦属后者）。
+8. **identity 退出 bare/annotated 变体轴**（2026-11-18 实测）：单列 `Optional[int]` 且无
+   `UseFieldGenerator` 注记即表达"数据库赋值"，与显式 `IdentityAttribute()` 派生的 DDL 逐字相同；
+   `pk_auto_generated()` 由该推导得出，无开关。共享夹具不再写 `IdentityAttribute`；自增行为由
+   `supports_database_assigned_integer_column()` 门控，具体 DDL 机制由各后端自己的契约测试覆盖
+   （PostgreSQL 的 SERIAL 亦属后者）。
 9. **三个类型组已建,并接受以下可移植性取舍**（2026-11-18）：
    - `types_complex/` 表名用 `complex_rows`（与 §3 初稿的 `complex_rows_default` 不同，以代码为准）；
    - `Vector/Range/BitString` 只做 annotated，用 `JsonType`/`TextType` 载体，原生维度/元素/位宽语义留给后端专用类型；

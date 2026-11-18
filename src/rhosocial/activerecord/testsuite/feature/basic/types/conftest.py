@@ -41,6 +41,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_models import
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Scalar types in bare and fully annotated variants, side by side.",
     passes_means="both variants derive a table and round-trip every Python type in the set",
@@ -74,7 +76,7 @@ def database(database_config):
     backend.disconnect()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Create the tables a dialect can render.
 

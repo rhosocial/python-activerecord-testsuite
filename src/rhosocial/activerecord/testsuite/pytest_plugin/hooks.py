@@ -228,7 +228,7 @@ def attach_text(item, declaration: Optional[Declaration]) -> None:
 
 
 def collection_modifyitems(config, items) -> None:
-    """Pin declared parallel directories, and attach each item's text."""
+    """Pin declared parallel directories, enforce DB declarations, attach text."""
     for item in items:
         path = getattr(item, "path", None)
         if path is None:
@@ -242,7 +242,28 @@ def collection_modifyitems(config, items) -> None:
                     )
                 )
             )
+        _check_database_declaration(item, declaration)
         attach_text(item, declaration)
+
+
+def _check_database_declaration(item, declaration) -> None:
+    """A test may touch a database only when its directory declares it.
+
+    ``Declaration.uses_database`` is the single switch. Fixture names are
+    already known at collection time, so an undeclared directory requesting
+    ``database`` / ``schema`` / ``database_config`` fails here with the path and
+    the declaration that needs fixing -- never silently opens a connection.
+    """
+    if declaration is None or declaration.uses_database:
+        return
+    leaking = {"database", "schema", "database_config"} & set(
+        getattr(item, "fixturenames", ())
+    )
+    if leaking:
+        raise pytest.UsageError(
+            "{} uses database fixture(s) {} without declaring uses_database=True "
+            "in the directory's DECLARATION".format(item.nodeid, sorted(leaking))
+        )
 
 
 def runtest_call(item) -> None:

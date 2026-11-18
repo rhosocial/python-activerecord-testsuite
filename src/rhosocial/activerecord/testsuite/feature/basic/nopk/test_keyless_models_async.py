@@ -5,6 +5,7 @@
 decision points answer for the async family: reads keep working, identity-based
 access is refused, and keyless-ness stays orthogonal to read-only-ness.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Optional
 
@@ -48,7 +49,7 @@ class AsyncKeylessReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class AsyncReadOnlyWithKeyUser(AsyncActiveRecord, ReadOnlyMixin):
+class AsyncReadOnlyWithKeyUser(IntegerPKMixin, AsyncActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -58,7 +59,7 @@ class AsyncReadOnlyWithKeyUser(AsyncActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class AsyncNormalUser(AsyncActiveRecord):
+class AsyncNormalUser(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"

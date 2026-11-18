@@ -36,6 +36,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import 
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Field mapping, derived fields and column-name/adapter declarations.",
     passes_means="Python field names and column names map without losing the value or its type",

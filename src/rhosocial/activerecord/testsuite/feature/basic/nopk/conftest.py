@@ -16,6 +16,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.user_models import 
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='Keyless models: identity-based access must be refused.',
     passes_means='models with primary_key() -> None reject identity lookups by name',

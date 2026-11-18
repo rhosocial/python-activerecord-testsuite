@@ -26,6 +26,8 @@ from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose='Connection and pool lifecycle, context managers and pool transaction paths.',
     passes_means='connections are acquired and released exactly once per context',

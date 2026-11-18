@@ -14,6 +14,7 @@ per variant (P4).  The legacy ``TypeAdapterTest``/``AsyncTypeAdapterTest``
 models stay on their own ``type_adapter_tests`` table for the existing adapter
 contracts; they are not part of this variant pair.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple, Type, Union
@@ -66,7 +67,7 @@ class YesOrNoBooleanAdapter(BaseSQLTypeAdapter):
         return value == "yes"
 
 
-class TypeAdapterTest(ActiveRecord):
+class TypeAdapterTest(IntegerPKMixin, ActiveRecord):
     """Model for testing various type adapter scenarios."""
 
     @classmethod
@@ -91,7 +92,7 @@ class TypeAdapterTest(ActiveRecord):
     ] = None
 
 
-class AsyncTypeAdapterTest(AsyncActiveRecord):
+class AsyncTypeAdapterTest(IntegerPKMixin, AsyncActiveRecord):
     """Model for testing various type adapter scenarios."""
 
     @classmethod

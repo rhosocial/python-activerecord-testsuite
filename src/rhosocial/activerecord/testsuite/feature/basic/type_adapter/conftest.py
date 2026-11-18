@@ -27,6 +27,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.type_adapter_models
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose="Optional and custom type adapters, including boolean raw storage.",
     passes_means="values survive the adapter round-trip with the documented database shape",

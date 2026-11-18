@@ -46,6 +46,8 @@ from rhosocial.activerecord.testsuite.feature.mixins.fixtures.models import (
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
     parallel=True,
     purpose="Directory-owned database for cli/conftest.py.",
     passes_means="the directory's tests run on one worker per scenario",

@@ -30,6 +30,8 @@ from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_complex_model
 from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
     parallel=True,
     purpose=(
         "Bare and fully annotated complex-type tables: declared storage, "
@@ -92,7 +94,7 @@ def _unsupported_reason(dialect):
     return None
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def schema(database):
     """Drop and recreate the two complex tables when the dialect can build them.
 

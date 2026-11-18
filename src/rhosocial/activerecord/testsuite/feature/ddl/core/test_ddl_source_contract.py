@@ -1,5 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/test_ddl_source_contract.py
 
+from rhosocial.activerecord.field import IntegerPKMixin
 from typing import ClassVar, Optional
 
 try:
@@ -301,7 +302,7 @@ class NotNullPrimaryKeyModel(NotNullPrimaryKeyDeclarations, ActiveRecord):
     pass
 
 
-class PlainModel(ActiveRecord):
+class PlainModel(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_contract_plain"
@@ -310,7 +311,7 @@ class PlainModel(ActiveRecord):
     note: Optional[str] = None
 
 
-class AsyncPlainModel(AsyncActiveRecord):
+class AsyncPlainModel(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_contract_plain_async"
