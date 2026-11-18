@@ -17,11 +17,8 @@ import sys
 import pytest
 
 from rhosocial.activerecord.connection import AsyncBackendGroup, BackendGroup
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
-    AsyncOrderItem as AsyncBasicOrderItem,
-)
-from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import (
-    OrderItem as BasicOrderItem,
+from rhosocial.activerecord.testsuite.feature.basic.fixtures import (
+    resolve as _basic_resolve,
 )
 from rhosocial.activerecord.testsuite.feature.query.fixtures.annotated_adapter_models import (
     SearchableItem,
@@ -65,6 +62,12 @@ from rhosocial.activerecord.testsuite.feature.query.fixtures.models import (
     AsyncMappedPost,
     AsyncMappedUser,
 )
+
+# basic/fixtures/README.md §0.1: reach composite-PK OrderItem through basic's
+# public ``resolve`` accessor, never via the internal ``basic.fixtures.models``
+# module (which is the legacy direct-import this used to be).
+BasicOrderItem = _basic_resolve("OrderItem")
+AsyncBasicOrderItem = _basic_resolve("AsyncOrderItem")
 
 FIXTURES_PACKAGE = "rhosocial.activerecord.testsuite.feature.query.fixtures"
 
