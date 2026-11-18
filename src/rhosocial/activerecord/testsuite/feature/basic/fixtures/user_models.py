@@ -289,7 +289,7 @@ class MappedUser(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
         return "users"
 
     # Python field: user_id, Database column: id
-    user_id: Annotated[Optional[int], UseColumn("id")] = None
+    user_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: user_name, Database column: username
     user_name: Annotated[str, UseColumn("username")]
@@ -312,7 +312,7 @@ class AsyncMappedUser(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # Python field: user_id, Database column: id
-    user_id: Annotated[Optional[int], UseColumn("id")] = None
+    user_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: user_name, Database column: username
     user_name: Annotated[str, UseColumn("username")]
@@ -333,7 +333,7 @@ class MappedPost(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
         return "posts"
 
     # Python field: post_id, Database column: id
-    post_id: Annotated[Optional[int], UseColumn("id")] = None
+    post_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: author_id, Database column: author
     author_id: Annotated[int, UseColumn("author")]
@@ -361,7 +361,7 @@ class AsyncMappedPost(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # Python field: post_id, Database column: id
-    post_id: Annotated[Optional[int], UseColumn("id")] = None
+    post_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: author_id, Database column: author
     author_id: Annotated[int, UseColumn("author")]
@@ -387,7 +387,7 @@ class MappedComment(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
         return "comments"
 
     # Python field: comment_id, Database column: id
-    comment_id: Annotated[Optional[int], UseColumn("id")] = None
+    comment_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: post_id, Database column: post_ref
     post_id: Annotated[int, UseColumn("post_ref")]
@@ -416,7 +416,7 @@ class AsyncMappedComment(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecor
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # Python field: comment_id, Database column: id
-    comment_id: Annotated[Optional[int], UseColumn("id")] = None
+    comment_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = None
 
     # Python field: post_id, Database column: post_ref
     post_id: Annotated[int, UseColumn("post_ref")]
@@ -466,7 +466,7 @@ class ColumnMappingModel(ActiveRecord):
         return "column_mapping_items"
 
     # Primary key defaults to 'id'. item_id attribute maps to this 'id' column.
-    item_id: Annotated[Optional[int], UseColumn("id")] = Field(default=None)
+    item_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = Field(default=None)
     name: str  # Default mapping
     item_count: Annotated[int, UseColumn("item_total")]  # Mapped to 'item_total'
     notes: Annotated[
@@ -487,7 +487,7 @@ class AsyncColumnMappingModel(AsyncActiveRecord):
     c: ClassVar[FieldProxy] = FieldProxy()
 
     # Primary key defaults to 'id'. item_id attribute maps to this 'id' column.
-    item_id: Annotated[Optional[int], UseColumn("id")] = Field(default=None)
+    item_id: Annotated[Optional[int], UseSqlType(IntegerType()), UseColumn("id")] = Field(default=None)
     name: str  # Default mapping
     item_count: Annotated[int, UseColumn("item_total")]  # Mapped to 'item_total'
     notes: Annotated[
@@ -597,7 +597,7 @@ class MixedAnnotationModel(ActiveRecord):
     name: str
 
     # 2. Field with a different column name
-    item_id: Annotated[int, UseColumn("id")]
+    item_id: Annotated[int, UseSqlType(IntegerType()), UseColumn("id")]
 
     # 3. Field using a type adapter
     tags: Annotated[List[str], UseAdapter(ListToStringAdapter(), str), UseSqlType(TextType())]
@@ -631,7 +631,7 @@ class AsyncMixedAnnotationModel(AsyncActiveRecord):
     name: str
 
     # 2. Field with a different column name
-    item_id: Annotated[int, UseColumn("id")]
+    item_id: Annotated[int, UseSqlType(IntegerType()), UseColumn("id")]
 
     # 3. Field using a type adapter
     tags: Annotated[List[str], UseAdapter(ListToStringAdapter(), str), UseSqlType(TextType())]
@@ -659,7 +659,7 @@ class BulkUser(IntegerPKMixin, ActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     age: int = 0
     email: Optional[str] = None
@@ -672,7 +672,7 @@ class AsyncBulkUser(IntegerPKMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     age: int = 0
     email: Optional[str] = None

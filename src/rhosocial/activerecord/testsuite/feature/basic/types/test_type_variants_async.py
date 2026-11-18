@@ -14,7 +14,7 @@ The sync and async halves differ only in the configured model fixture; the
 declarations under test are shared through one mixin per variant (P4).
 """
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -131,7 +131,7 @@ class TestAsyncScalarTypeVariants:
             == "Occurrences recorded for this row"
         )
 
-    async def test_bare_model_value_round_trip(self, async_typed_user_class, database):
+    async def test_bare_model_value_round_trip(self, async_typed_user_class, database, schema):
         """Inferred storage still gives every Python value back unchanged."""
         _skip_unless(database.dialect, BARE_FIXTURE, "insert")
         instance = async_typed_user_class(**_VALUES)
@@ -149,7 +149,7 @@ class TestAsyncScalarTypeVariants:
                 assert actual == value, field
 
     async def test_annotated_model_value_round_trip(
-        self, async_typed_user_annotated_class, database
+        self, async_typed_user_annotated_class, database, schema
     ):
         """Declared storage gives every Python value back unchanged."""
         _skip_unless(database.dialect, ANNOTATED_FIXTURE, "insert")
@@ -167,7 +167,7 @@ class TestAsyncScalarTypeVariants:
             else:
                 assert actual == value, field
 
-    async def test_microsecond_round_trip(self, async_microsecond_row_class, database):
+    async def test_microsecond_round_trip(self, async_microsecond_row_class, database, schema):
         """A precision=6 TIMESTAMP keeps all six fractional digits where supported."""
         _skip_unless(database.dialect, MICROSECOND_FIXTURE, "insert")
         precise_at = datetime(2024, 5, 6, 7, 8, 9, 123456)
@@ -176,4 +176,4 @@ class TestAsyncScalarTypeVariants:
         assert instance.id is not None, "Expected a database-assigned primary key"
         found = await async_microsecond_row_class.find_one(instance.id)
         assert found is not None, "Expected to read the microsecond row back"
-        assert found.precise_at == precise_at, "Fractional seconds were truncated"
+        assert_datetime_equal(found.precise_at, precise_at, tolerance=timedelta(0))

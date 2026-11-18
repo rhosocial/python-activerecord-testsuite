@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover
 
 from rhosocial.activerecord.base.fields import UseColumn, UseSqlType
 from rhosocial.activerecord.base.field_proxy import FieldProxy
-from rhosocial.activerecord.backend.expression.types import VarCharType
+from rhosocial.activerecord.backend.expression.types import IntegerType, VarCharType
 from rhosocial.activerecord.field import CompositePKMixin, DefaultTimestampMixin, IntegerPKMixin
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 
@@ -116,7 +116,7 @@ class Order(IntegerPKMixin, DefaultTimestampMixin, ActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     total: Decimal = Decimal("0.00")
 
 
@@ -129,7 +129,7 @@ class AsyncOrder(IntegerPKMixin, DefaultTimestampMixin, AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     total: Decimal = Decimal("0.00")
 
 

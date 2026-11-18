@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from rhosocial.activerecord.backend.expression import NumericColumn
-from rhosocial.activerecord.backend.expression.types import TextType
+from rhosocial.activerecord.backend.expression.types import IntegerType, TextType
 from rhosocial.activerecord.backend.type_adapter import BaseSQLTypeAdapter
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.base.fields import UseAdapter, UseColumn, UseColumnType, UseSqlType
@@ -73,7 +73,7 @@ class TypeAdapterTest(ActiveRecord):
     def table_name(cls):
         return "type_adapter_tests"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     # Fields for testing implicit Optional[T] handling
     optional_name: Optional[str] = None
@@ -100,7 +100,7 @@ class AsyncTypeAdapterTest(AsyncActiveRecord):
 
     c: ClassVar[FieldProxy] = FieldProxy()
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     # Fields for testing implicit Optional[T] handling
     optional_name: Optional[str] = None
@@ -145,7 +145,7 @@ class ScaleByTenAdapter:
 class AdapterRowFields:
     """Bare fields: Python annotations only, zero ``Annotated`` markers."""
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     label: str
     count: int
 
@@ -158,7 +158,7 @@ class AdapterRowAnnotatedFields:
     maps to the ``label`` column and ``scaled`` to ``count``.
     """
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     title: Annotated[str, UseColumn("label")]
     scaled: Annotated[
         int,

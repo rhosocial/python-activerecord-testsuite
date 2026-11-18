@@ -114,7 +114,7 @@ class ProductFormA(ActiveRecord):
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -133,7 +133,7 @@ class AsyncProductFormA(AsyncActiveRecord):
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -179,7 +179,7 @@ class ProductWithProxy(ActiveRecord):
         return "product"
 
     c: ClassVar[FieldProxy] = FieldProxy()
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -209,7 +209,7 @@ class AsyncProductWithProxy(AsyncActiveRecord):
         return "product"
 
     c: ClassVar[FieldProxy] = FieldProxy()
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -240,7 +240,7 @@ class ProductWithColumnAndAdapter(ActiveRecord):
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -271,7 +271,7 @@ class AsyncProductWithColumnAndAdapter(AsyncActiveRecord):
     def table_name(cls):
         return "product"
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     name: str
     price: float
     quantity: int
@@ -303,7 +303,7 @@ class AsyncProductWithColumnAndAdapter(AsyncActiveRecord):
 class FieldRowFields:
     """Bare fields: Python annotations only, zero ``Annotated`` markers."""
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     label: str
     amount: Decimal
     count: int
@@ -318,7 +318,7 @@ class FieldRowAnnotatedFields:
     the Python value's representation, not the column's DDL type.
     """
 
-    id: Optional[int] = None
+    id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     title: Annotated[str, UseColumn("label")]
     amount: Decimal
     total: Annotated[int, UseColumn("count"), UseAdapter(PriceToIntAdapter(), int)]

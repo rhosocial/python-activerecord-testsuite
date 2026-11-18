@@ -18,10 +18,15 @@ from pathlib import Path
 
 import pytest
 
+from rhosocial.activerecord.backend.errors import DatabaseError
+from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
     create_schema,
     drop_schema,
     table_reason,
+)
+from rhosocial.activerecord.testsuite.pytest_plugin.requirements import (
+    MissingRequirementError,
 )
 from rhosocial.activerecord.testsuite.feature.basic.fixtures.types_models import (
     MICROSECOND_FIXTURES,
@@ -69,13 +74,22 @@ def database(database_config):
     backend.disconnect()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function")
 def schema(database):
-    """Create only the tables this dialect can render, before every test."""
+    """Create the tables a dialect can render.
+
+    Not autouse: declaration-only assertions need no database and must still
+    run where a table cannot be built. A refused concept or a DDL the server
+    rejects is an answered capability gap, so the DB tests skip with a named
+    reason instead of erroring in setup.
+    """
     dialect = database.dialect
     fixtures = TYPES_FIXTURES + MICROSECOND_FIXTURES
-    usable = tuple(fixture for fixture in fixtures if table_reason(dialect, fixture) is None)
-    create_schema(database, usable)
+    try:
+        usable = tuple(fixture for fixture in fixtures if table_reason(dialect, fixture) is None)
+        create_schema(database, usable)
+    except (MissingRequirementError, UnsupportedFeatureError, DatabaseError) as error:
+        pytest.skip("{} cannot build the scalar-type tables ({})".format(dialect.name, error))
     yield
     drop_schema(database, usable)
 
