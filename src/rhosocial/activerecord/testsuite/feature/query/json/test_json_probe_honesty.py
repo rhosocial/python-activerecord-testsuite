@@ -279,10 +279,16 @@ def test_json_table_claim_matches_the_formatter(dialect):
 
     PostgreSQL and SQL Server both shipped this exact contradiction.
     """
+    from rhosocial.activerecord.backend.expression.query_sources import JSONTableExpression
+
     claimed = dialect.supports_json_table()
+    # Probe with a real expression, not None: formatters inspect attributes such
+    # as ``json_column``/``path``, and passing None raises AttributeError for a
+    # perfectly working formatter, which would be misread as a refusal.
+    expr = JSONTableExpression(dialect, json_column="doc", path="$[*]", columns=[])
     try:
-        dialect.format_json_table_expression(None)
-    except Exception:  # noqa: BLE001 - the refusal is what we are checking
+        dialect.format_json_table_expression(expr)
+    except UnsupportedFeatureError:  # noqa: BLE001 - a deliberate refusal means unsupported
         assert claimed is False, (
             f"{dialect.name} claims supports_json_table() but its formatter "
             f"refuses; callers trusting the probe get an exception at render "
