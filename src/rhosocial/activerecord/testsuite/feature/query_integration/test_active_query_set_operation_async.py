@@ -11,6 +11,8 @@ This module contains tests for the set operation ActiveQuery operations includin
 
 from decimal import Decimal
 
+import pytest
+
 from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestAsyncActiveQuerySetOperation:
