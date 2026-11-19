@@ -30,3 +30,38 @@ into 14 subcategories.
 
 `interfaces.py` defines `IQuerySyncProvider` and `IQueryAsyncProvider`. Backend projects implement
 these to supply configured model classes and database schemas.
+
+## L2 environment and fixtures
+
+This topic declares `DECLARATION(uses_database=True)` in `conftest.py`. L1 model
+classes live in `fixtures/` (models across Python versions plus blog/json/extended/
+cte model families); the L2 `conftest.py` wires `database_config` / `database` /
+`schema` and exposes per-group handles — `order_fixtures`, `blog_fixtures`,
+`tree_fixtures`, `json_user_fixture`, `combined_fixtures`, and their async twins.
+`basic/` (in this topic) contains the composite-PK contracts, including a
+`test_explain` that only asserts `explain()` is executable when the dialect
+advertises `supports_explain_plan()`.
+
+## For backends importing this topic — test EXPLAIN thoroughly
+
+EXPLAIN differs radically across databases (syntax, options, and especially the
+shape of the returned plan: tabular rows vs JSON vs `PLAN_TABLE` vs none). The
+shared `test_explain` here only guarantees the clause **can execute** when
+supported. Backends are expected to go further in their **local** `feature/query`
+tests, using these shared fixtures to prepare a typical environment and data:
+
+- Build tables with a primary key, single- and composite indexes, a unique
+  constraint, and a foreign key; seed a few rows.
+- Run `EXPLAIN` on: a simple PK/index point lookup, a two-table JOIN, and an
+  aggregate (`GROUP BY` + `COUNT`/`SUM`). Assert on whatever the local dialect
+  exposes — access method, index usage, scanned rows/cost — using that backend's
+  own result type.
+- Exercise the options the backend supports (`analyze`, `format`, `verbose`, …)
+  and keep `supports_explain_*` probes consistent with reality.
+- If the backend has declarative partitioning, prepare a partitioned table plus
+  seed data and verify **partition pruning** evidence in the plan.
+- If the dialect reports `supports_explain_plan() == False` (e.g. Firebird), skip
+  the whole group via the capability gate.
+
+Depth and assertions are intentionally backend-local — do not add a generic
+result-shape contract to the testsuite.
