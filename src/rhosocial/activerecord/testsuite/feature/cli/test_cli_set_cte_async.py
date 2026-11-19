@@ -28,9 +28,29 @@ async def _create(models, username, age):
 
 
 class TestAsyncCLISetCte:
-    async def test_set_run(self, async_cli_models):
+    async def test_set_union_and_run(self, async_cli_models):
         await _create(async_cli_models, "async_set_one", 20)
         await _create(async_cli_models, "async_set_two", 40)
+
+        code, out, err = await run_cli_async(
+            [
+                "set",
+                "union",
+                "--left-model",
+                async_cli_models.model,
+                "--right-model",
+                async_cli_models.model,
+                "--left-where",
+                "age=20",
+                "--right-where",
+                "age=40",
+                "-o",
+                "json",
+            ]
+        )
+        assert code == 0, err
+        assert {row["age"] for row in json.loads(out)} == {20, 40}
+
         code, out, err = await run_cli_async(
             [
                 "set",
