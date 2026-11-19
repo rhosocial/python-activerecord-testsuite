@@ -149,7 +149,9 @@ class TestAsyncCLIMigrateContract:
         statements = payload["statements"]
         assert len(statements) == 2
         assert "CREATE TABLE" in statements[0]["sql"].upper()
-        assert "cli_migrate_probe" in statements[0]["sql"]
+        # Dialects that upper-case unquoted identifiers (Oracle, Firebird)
+        # render the table name as CLI_MIGRATE_PROBE; compare case-insensitively.
+        assert "cli_migrate_probe" in statements[0]["sql"].lower()
 
     async def test_apply_and_rollback_on_transactional_backends(self, async_cli_models):
         """A real apply then rollback runs only where transactional DDL exists."""
