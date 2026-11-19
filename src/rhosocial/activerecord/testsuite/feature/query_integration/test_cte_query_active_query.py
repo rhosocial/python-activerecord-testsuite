@@ -22,6 +22,25 @@ from rhosocial.activerecord.testsuite.utils import (
 class TestCTEQueryActiveQuery:
     """Test CTE queries with ActiveQuery subqueries (synchronous)."""
 
+    def test_explain(self, tree_fixtures):
+        """explain() on a CTE over an ActiveQuery returns a non-empty plan."""
+        from rhosocial.activerecord.testsuite.feature.query_integration.fixtures.cte_models import Node
+
+        Node = tree_fixtures[0]
+        backend = Node.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_basic_cte():
+            pytest.skip("Backend does not support CTE")
+
+        cte_subquery = Node.query().select(Node.c.id, Node.c.name)
+        cte_query = CTEQuery(backend)
+        cte_query.with_cte(name="explain_nodes", query=cte_subquery)
+        result = cte_query.from_cte("explain_nodes").explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @requires_cte()
     def test_single_active_query_cte(self, tree_fixtures):
         """Test basic CTE with a single ActiveQuery as subquery."""

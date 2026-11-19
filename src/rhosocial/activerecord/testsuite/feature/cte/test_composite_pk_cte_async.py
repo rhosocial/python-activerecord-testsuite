@@ -7,6 +7,24 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 class TestAsyncCTEQueryCompositePK:
     """Test async CTE query operations against models with composite primary keys."""
 
+    async def test_explain(self, async_order_item_class):
+        """explain() on an async CTE query returns a non-empty plan when supported."""
+        backend = async_order_item_class.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_basic_cte():
+            pytest.skip("Backend does not support CTE")
+
+        from rhosocial.activerecord.query import AsyncCTEQuery
+
+        base = async_order_item_class.query()
+        cte = AsyncCTEQuery(backend)
+        cte.with_cte("explain_cte", base)
+        result = await cte.from_cte("explain_cte").explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     async def test_cte_aggregate(self, async_order_item_class):
         """An async CTE wrapping the base composite-key query should aggregate over filtered rows."""
         backend = async_order_item_class.backend()

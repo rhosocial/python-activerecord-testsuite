@@ -7,6 +7,24 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 class TestCTEQueryCompositePK:
     """Test CTE query operations against models with composite primary keys."""
 
+    def test_explain(self, order_item_class):
+        """explain() on a CTE query returns a non-empty plan when supported."""
+        backend = order_item_class.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_basic_cte():
+            pytest.skip("Backend does not support CTE")
+
+        from rhosocial.activerecord.query import CTEQuery
+
+        base = order_item_class.query()
+        cte = CTEQuery(backend)
+        cte.with_cte("explain_cte", base)
+        result = cte.from_cte("explain_cte").explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @pytest.fixture
     def seeded(self, order_item_class):
         items = [

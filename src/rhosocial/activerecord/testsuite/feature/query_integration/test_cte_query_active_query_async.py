@@ -22,6 +22,25 @@ from rhosocial.activerecord.testsuite.utils import (
 class TestAsyncCTEQueryActiveQuery:
     """Test CTE queries with ActiveQuery subqueries (asynchronous)."""
 
+    async def test_explain(self, async_tree_fixtures):
+        """explain() on a CTE over an async ActiveQuery returns a non-empty plan."""
+        from rhosocial.activerecord.testsuite.feature.query_integration.fixtures.async_cte_models import AsyncNode
+
+        AsyncNode = async_tree_fixtures[0]
+        backend = AsyncNode.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_basic_cte():
+            pytest.skip("Backend does not support CTE")
+
+        cte_subquery = AsyncNode.query().select(AsyncNode.c.id, AsyncNode.c.name)
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte(name="explain_nodes", query=cte_subquery)
+        result = await cte_query.from_cte("explain_nodes").explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @requires_cte()
     async def test_single_active_query_cte(self, async_tree_fixtures):
         """Test basic CTE with a single ActiveQuery as subquery (async version)."""

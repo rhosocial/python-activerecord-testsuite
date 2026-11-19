@@ -18,6 +18,22 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestAsyncSetOperations:
     """Asynchronous set operation tests using real backend models."""
 
+    async def test_explain(self, async_order_fixtures):
+        """explain() on an async set operation returns a non-empty plan when supported."""
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+        backend = AsyncOrder.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_union():
+            pytest.skip("Backend does not support UNION")
+
+        q1 = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+        q2 = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+        result = await q1.union(q2).explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     async def test_union_operation(self, async_order_fixtures):
         """
         Test async UNION operation functionality with real models

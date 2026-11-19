@@ -19,6 +19,22 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestSyncSetOperations:
     """Synchronous set operation tests using real backend models."""
 
+    def test_explain(self, order_fixtures):
+        """explain() on a set operation returns a non-empty plan when supported."""
+        User, Order, OrderItem = order_fixtures
+        backend = Order.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_union():
+            pytest.skip("Backend does not support UNION")
+
+        q1 = Order.query().where(Order.c.status == 'active')
+        q2 = Order.query().where(Order.c.status == 'completed')
+        result = q1.union(q2).explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     def test_union_operation(self, order_fixtures):
         """
         Test UNION operation functionality with real models

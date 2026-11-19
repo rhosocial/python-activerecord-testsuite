@@ -25,6 +25,26 @@ from rhosocial.activerecord.testsuite.utils import requires_protocol
 class TestAsyncCTEQuerySetOperation:
     """Test CTE queries wrapping set operations of ActiveQuery instances (asynchronous)."""
 
+    async def test_explain(self, async_order_fixtures):
+        """explain() on a CTE over an async set operation returns a non-empty plan."""
+        AsyncUser, AsyncOrder, AsyncOrderItem = async_order_fixtures
+        backend = AsyncOrder.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_union():
+            pytest.skip("Backend does not support UNION")
+        if not dialect.supports_basic_cte():
+            pytest.skip("Backend does not support CTE")
+
+        q1 = AsyncOrder.query().where(AsyncOrder.c.status == 'active')
+        q2 = AsyncOrder.query().where(AsyncOrder.c.status == 'completed')
+        cte_query = AsyncCTEQuery(backend)
+        cte_query.with_cte("explain_orders", q1.union(q2))
+        result = await cte_query.from_cte("explain_orders").explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @requires_cte()
     async def test_cte_with_union_of_active_queries(self, async_order_fixtures):
         """

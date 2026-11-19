@@ -10,6 +10,25 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 class TestSetOperationCompositePK:
     """Tests for UNION, INTERSECT, and EXCEPT on composite primary key queries."""
 
+    def test_explain(self, order_item_class):
+        """explain() on a set operation returns a non-empty plan when supported."""
+        backend = order_item_class.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_union():
+            pytest.skip("Backend does not support UNION")
+
+        q1 = order_item_class.query().where(
+            order_item_class._build_pk_where_predicate({"order_id": 1, "product_id": 101})
+        )
+        q2 = order_item_class.query().where(
+            order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
+        )
+        result = q1.union(q2).explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @pytest.fixture
     def seeded(self, order_item_class):
         items = [

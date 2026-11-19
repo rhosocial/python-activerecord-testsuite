@@ -10,6 +10,25 @@ from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeature
 class TestAsyncSetOperationCompositePK:
     """Async tests for UNION, INTERSECT, and EXCEPT on composite primary key queries."""
 
+    async def test_explain(self, async_order_item_class):
+        """explain() on an async set operation returns a non-empty plan when supported."""
+        backend = async_order_item_class.backend()
+        dialect = backend.dialect
+        if not dialect.supports_explain_plan():
+            pytest.skip("Backend dialect does not support explain plan")
+        if not dialect.supports_union():
+            pytest.skip("Backend does not support UNION")
+
+        q1 = async_order_item_class.query().where(
+            async_order_item_class._build_pk_where_predicate({"order_id": 1, "product_id": 101})
+        )
+        q2 = async_order_item_class.query().where(
+            async_order_item_class._build_pk_where_predicate({"order_id": 2, "product_id": 101})
+        )
+        result = await q1.union(q2).explain().aggregate()
+        assert isinstance(result, list), "Expected explain() result to be a list"
+        assert len(result) > 0, "Expected explain() result to be non-empty"
+
     @pytest.fixture
     async def seeded(self, async_order_item_class):
         items = [
