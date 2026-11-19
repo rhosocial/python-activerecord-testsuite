@@ -27,8 +27,11 @@ def _supports_transactional_migrations(models):
         backend = model.backend()
         dialect = getattr(backend, "dialect", None)
         supports = getattr(dialect, "supports_transactional_ddl", lambda: True)()
+        # The migration fixtures' down path uses DROP TABLE IF EXISTS; skip
+        # backends that cannot express it (e.g. Firebird).
+        if_exists = getattr(dialect, "supports_if_exists_table", lambda: True)()
         manager = getattr(backend, "transaction_manager", None)
-        return bool(supports) and hasattr(manager, "begin")
+        return bool(supports) and bool(if_exists) and hasattr(manager, "begin")
     except Exception:
         return False
 
