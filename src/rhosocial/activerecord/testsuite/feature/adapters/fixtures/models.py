@@ -126,16 +126,36 @@ class AsyncNeutralTypes(IntegerPKMixin, AsyncActiveRecord):
 
 
 class NeutralTypesFixture:
-    """Fixture class: model classes plus their DDL expression instances."""
+    """Fixture class: model classes plus their DDL expression instances.
+
+    Receives a dialect and builds the CREATE/DROP TABLE expressions the L2
+    ``schema`` fixture executes.  Model classes carry their own generic column
+    types; the DDL here only needs the identity column plus the carrier columns.
+    """
 
     model = NeutralTypes
     async_model = AsyncNeutralTypes
 
-    def __init__(self, name="id"):
-        data_type, attributes = auto_increment_parts(self.dialect, Int(self.dialect))
-        return Column(
-            self.dialect, name, data_type,
-            constraints=[Constraint(self.dialect, branch=PrimaryKey(self.dialect))],
-            attributes=attributes,
-        )
+    def __init__(self, dialect):
+        self.dialect = dialect
+        id_type, id_attrs = auto_increment_parts(dialect, Int(dialect))
+        columns = [
+            Column(
+                dialect, "id", id_type,
+                constraints=[Constraint(dialect, branch=PrimaryKey(dialect))],
+                attributes=id_attrs,
+            ),
+            Column(dialect, "shape", long_text(dialect)),
+            Column(dialect, "point", long_text(dialect)),
+            Column(dialect, "vector", array_type(dialect, Int(dialect))),
+            Column(dialect, "flags", long_text(dialect)),
+            Column(dialect, "window", long_text(dialect)),
+            Column(dialect, "windows", long_text(dialect)),
+            Column(dialect, "address", long_text(dialect)),
+            Column(dialect, "payload", long_text(dialect)),
+            Column(dialect, "tags", array_type(dialect, long_text(dialect))),
+        ]
+        table = Table(dialect, "neutral_types")
+        self.create_table = CreateTable(dialect=dialect, table=table, columns=columns)
+        self.drop_table = DropTable(dialect=dialect, table=table)
 
