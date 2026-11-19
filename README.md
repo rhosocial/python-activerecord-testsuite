@@ -14,19 +14,50 @@ By separating the test definitions from the backend implementations, we can guar
 
 ## Testing Philosophy
 
-Our testing strategy is built on three core pillars:
+The suite's mature, actively maintained pillar is **feature tests**: a single
+copy of each contract, shared by every backend through thin bridge files. The
+other two categories exist but are **not mature and not documented here**:
 
-1.  **Feature Tests**: Validate individual functionality points (e.g., `where` queries, `save` methods, `BelongsTo` relationships).
-2.  **Real-world Scenarios**: Simulate actual business scenarios to verify complex interactions and data integrity.
-3.  **Performance Benchmarks**: Measure and compare backend performance under standardized loads.
+-   **Real-world scenarios** (`/realworld`) — not mature; not covered in this README.
+-   **Performance benchmarks** (`/benchmark`) — not mature; not covered in this
+    README. Backends run benchmarks in their own dedicated CI jobs.
 
 ## Structure
 
-The test suite is organized into the following main categories, located in `src/rhosocial/activerecord/testsuite/`:
+Everything importable lives under `src/rhosocial/activerecord/testsuite/`:
 
--   `/feature`: Core feature tests.
--   `/realworld`: Complex, real-world application scenarios.
--   `/benchmark`: Performance and load tests.
+-   `/feature` — **mature**, the main subject of this suite (see below).
+-   `/realworld` — immature; out of scope for this document.
+-   `/benchmark` — immature; out of scope for this document.
+-   `/pytest_plugin` — the capability/parallelism plugin (see its own README).
+
+### Feature topics
+
+`feature/` is split into topic directories, each a self-contained contract unit
+with its own fixtures and a directory-level `Declaration`. A backend imports a
+topic by adding thin `conftest.py` + `test_*.py` bridges that star-import the
+shared modules — the test bodies exist once.
+
+| Topic | What it validates | Sync/async |
+|-------|-------------------|------------|
+| `basic/` | The core object model: CRUD, composite-PK CRUD, field types and type adapters, validation, connection/worker lifecycle, transactions, bulk CRUD, field generation, derived fields, DDL statements, materialized views, and keyless/read-only models. Also hosts `basic/events/` (model lifecycle events) and `basic/fixtures/` (the single definition site for shared models). | both |
+| `query/` | `ActiveQuery` — construction, joins, aggregates, range/window queries, JSON/special/typed-column queries, query contexts and error handling. | both |
+| `cte/` | `CTEQuery` — common table expressions (recursive, composite-PK). | both |
+| `setop/` | `SetOperationQuery` — UNION / INTERSECT / EXCEPT. | both |
+| `query_integration/` | Cross-type combinations of `ActiveQuery` / `CTEQuery` / `SetOperationQuery` (each paired query type contributes its own combined fixtures). | both |
+| `query/relation/` | Model relationships — belongs-to / has-many / has-one, eager loading, descriptors, caching, modifiers, ordering, validation. (Historically `feature/relation`.) | both |
+| `cli/` | The model CLI (`rhosocial.activerecord.cli`) — DML/DQL/bulk/read-only/soft-delete/validation/set-CTE commands, in-process. | both |
+| `mixins/` | Reusable field mixins — timestamps, soft delete, optimistic lock, UUID, etc. | both |
+| `adapters/`, `interface/`, `contracts/`, `backend/`, `ddl/` | Lower-level contracts: type adapters, interface compliance, shared contract helpers, backend capabilities, DDL source derivation. | varies |
+
+> Note: `ddl/` is still maturing and is **not yet wired into any backend**; it is
+> kept in the suite but excluded from backend CI.
+
+Each topic may declare `uses_database`, `parallel`, and dialect `requires`
+through its `DECLARATION`. Database use is opt-in: topics that only render SQL
+or compute values declare nothing and never open a connection. See the
+[plugin README](src/rhosocial/activerecord/testsuite/pytest_plugin/README.md)
+for the full mechanism.
 
 ## Capability-based Testing
 
