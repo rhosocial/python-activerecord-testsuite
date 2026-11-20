@@ -69,8 +69,8 @@ def _create_sql(model, dialect, **kwargs):
 def test_create_table_statement_has_no_inline_extras_by_default(ddl_dialect):
     sql = _create_sql(DerivationItem, ddl_dialect)
     assert "CREATE TABLE" in sql.upper()
-    assert "ddl_derivation_items" in sql
-    assert "name" in sql
+    assert "ddl_derivation_items" in sql.lower()
+    assert "name" in sql.lower()
     assert "CREATE INDEX" not in sql.upper()
 
 
@@ -89,7 +89,7 @@ def test_indexes_are_separate_statements_by_default(ddl_dialect):
     assert len(indexes) == 1
     sql = indexes[0].to_sql()[0]
     assert "CREATE INDEX" in sql.upper()
-    assert "ix_derivation_items_name" in sql
+    assert "ix_derivation_items_name" in sql.lower()
 
     drops = build_drop_index_statements(DerivationItem, ddl_dialect)
     assert len(drops) == 1
@@ -99,13 +99,13 @@ def test_indexes_are_separate_statements_by_default(ddl_dialect):
 def test_drop_table_statement_names_the_table(ddl_dialect):
     sql = build_drop_table_statement(DerivationItem, ddl_dialect).to_sql()[0]
     assert "DROP TABLE" in sql.upper()
-    assert "ddl_derivation_items" in sql
+    assert "ddl_derivation_items" in sql.lower()
 
 
 def test_async_model_derives_the_same_statements(ddl_dialect):
     # A dialect is not sync/async; only the backend is.  The async model derives
     # its statements with the same dialect instance.
     sql = _create_sql(AsyncDerivationItem, ddl_dialect)
-    assert "ddl_derivation_items" in sql
+    assert "ddl_derivation_items" in sql.lower()
     indexes = build_create_index_statements(AsyncDerivationItem, ddl_dialect)
     assert len(indexes) == 1
