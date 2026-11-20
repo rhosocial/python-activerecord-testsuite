@@ -5,6 +5,7 @@
 predicate. This mirror proves the same single mixin gates every async write
 path and that the declaration surface is identical.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Optional
 
@@ -18,7 +19,7 @@ from rhosocial.activerecord.interface import IReadOnlyBehavior
 from rhosocial.activerecord.model import AsyncActiveRecord
 
 
-class AsyncReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
+class AsyncReadOnlyUser(IntegerPKMixin, AsyncActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -28,7 +29,7 @@ class AsyncReadOnlyUser(AsyncActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class AsyncWritableUser(AsyncActiveRecord):
+class AsyncWritableUser(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"
@@ -38,7 +39,7 @@ class AsyncWritableUser(AsyncActiveRecord):
     username: str = ""
 
 
-class AsyncOptedOutUser(AsyncActiveRecord, ReadOnlyMixin):
+class AsyncOptedOutUser(IntegerPKMixin, AsyncActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -51,7 +52,7 @@ class AsyncOptedOutUser(AsyncActiveRecord, ReadOnlyMixin):
         return False
 
 
-class AsyncImplementsButWritable(AsyncActiveRecord, IReadOnlyBehavior):
+class AsyncImplementsButWritable(IntegerPKMixin, AsyncActiveRecord, IReadOnlyBehavior):
     @classmethod
     def table_name(cls):
         return "users"
@@ -61,7 +62,7 @@ class AsyncImplementsButWritable(AsyncActiveRecord, IReadOnlyBehavior):
     username: str = ""
 
 
-class AsyncReadOnlyView(AsyncActiveRecord, ReadOnlyMixin):
+class AsyncReadOnlyView(IntegerPKMixin, AsyncActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"

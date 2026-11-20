@@ -1,105 +1,108 @@
 # src/rhosocial/activerecord/testsuite/feature/query/cross_schema/conftest.py
-"""Fixtures for cross-schema query tests.
+"""L2 environment fixtures for ``query/cross_schema``.
 
-Provisioning is delegated to the backend provider through the OPTIONAL
-``setup_schema_fixtures`` method. Providers that do not implement it (or do
-not declare schema support) cause a clean skip — the testsuite itself makes
-no judgment about backend capabilities; that is declared by each backend's
-dialect (``supports_schema``) and consumed via ``@requires_protocol``.
+The directory's own database is created and emptied like every other query
+directory, but no table belongs to its default namespace: the tests only
+provision schema-qualified tables.  A backend opts in by declaring an optional
+``schema_setup`` callable on its scenario object.  It receives this directory's
+``database_config`` triple and a suffix, and returns the configured models the
+tests use.  Backends without it skip these tests instead of emulating schemas
+they do not have.
 """
+
+from pathlib import Path
 
 import pytest
 
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-from rhosocial.activerecord.testsuite.feature.query.conftest import (
-    PROVIDER_KEY_ASYNC,
-    PROVIDER_KEY_SYNC,
-    SCENARIO_PARAMS_ASYNC,
-    SCENARIO_PARAMS_SYNC,
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
+
+DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
+    parallel=True,
+    purpose="Directory-owned database for query/cross_schema/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
 )
 
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-def _provider_for(key):
-    registry = get_provider_registry()
-    provider_class = registry.get_provider(key)
-    return provider_class() if provider_class else None
+# No tables belong to this group: only capability-gated tests live here, and
+# they provision their cross-schema models themselves.
+DEFINITIONS = ()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def schema_fixtures(request):
-    """(SchemaCustomer, SchemaOrder) bound to two distinct schemas."""
-    provider = _provider_for(PROVIDER_KEY_SYNC)
-    if provider is None:
-        pytest.skip("No testsuite scenarios found")
-    setup = getattr(provider, "setup_schema_fixtures", None)
+def _database_name() -> str:
+    """Database name from this directory's namespace (below ``feature``)."""
+    parts = Path(__file__).parent.parts
+    start = parts.index("feature") + 1
+    return "test_" + "_".join(parts[start:])
+
+
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the directory database name."""
+    name = _database_name()
+    return backend_scenario, backend_scenario.make_config(name), name
+
+
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """The default namespace declares no tables; the tests provision their own."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+
+
+@pytest.fixture(name="schema_fixtures")
+def schema_fixtures(database_config):
+    scenario, _config, _name = database_config
+    setup = getattr(scenario, "schema_setup", None)
     if setup is None:
-        pytest.skip("Provider does not provide cross-schema fixtures")
-
-    scenario = request.param
-    models = setup(scenario)
-    try:
-        yield models
-    finally:
-        cleanup = getattr(provider, "cleanup_after_test", None)
-        if cleanup:
-            cleanup(scenario)
+        pytest.skip("backend does not declare cross-schema fixtures")
+    yield setup(database_config, "schema")
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_schema_fixtures(request):
-    """(AsyncSchemaCustomer, AsyncSchemaOrder) bound to two distinct schemas."""
-    provider = _provider_for(PROVIDER_KEY_ASYNC)
-    if provider is None:
-        pytest.skip("No async testsuite scenarios found")
-    setup = getattr(provider, "setup_schema_fixtures", None)
+@pytest.fixture(name="async_schema_fixtures")
+async def async_schema_fixtures(database_config):
+    scenario, _config, _name = database_config
+    setup = getattr(scenario, "schema_setup", None)
     if setup is None:
-        pytest.skip("Provider does not provide cross-schema fixtures")
-
-    scenario = request.param
-    models = await setup(scenario)
-    try:
-        yield models
-    finally:
-        cleanup = getattr(provider, "cleanup_after_test", None)
-        if cleanup:
-            await cleanup(scenario)
+        pytest.skip("backend does not declare cross-schema fixtures")
+    yield setup(database_config, "async_schema")
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def mixed_schema_fixtures(request):
-    """(User, Order, MixedSchemaOrder): default users/orders plus orders in SCHEMA_A."""
-    provider = _provider_for(PROVIDER_KEY_SYNC)
-    if provider is None:
-        pytest.skip("No testsuite scenarios found")
-    setup = getattr(provider, "setup_mixed_schema_fixtures", None)
+@pytest.fixture(name="mixed_schema_fixtures")
+def mixed_schema_fixtures(database_config):
+    scenario, _config, _name = database_config
+    setup = getattr(scenario, "schema_setup", None)
     if setup is None:
-        pytest.skip("Provider does not provide mixed-schema fixtures")
-
-    scenario = request.param
-    models = setup(scenario)
-    try:
-        yield models
-    finally:
-        cleanup = getattr(provider, "cleanup_after_test", None)
-        if cleanup:
-            cleanup(scenario)
+        pytest.skip("backend does not declare cross-schema fixtures")
+    yield setup(database_config, "mixed_schema")
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_mixed_schema_fixtures(request):
-    """(AsyncUser, AsyncOrder, AsyncMixedSchemaOrder) with orders also in SCHEMA_A."""
-    provider = _provider_for(PROVIDER_KEY_ASYNC)
-    if provider is None:
-        pytest.skip("No async testsuite scenarios found")
-    setup = getattr(provider, "setup_mixed_schema_fixtures", None)
+@pytest.fixture(name="async_mixed_schema_fixtures")
+async def async_mixed_schema_fixtures(database_config):
+    scenario, _config, _name = database_config
+    setup = getattr(scenario, "schema_setup", None)
     if setup is None:
-        pytest.skip("Provider does not provide mixed-schema fixtures")
-
-    scenario = request.param
-    models = await setup(scenario)
-    try:
-        yield models
-    finally:
-        cleanup = getattr(provider, "cleanup_after_test", None)
-        if cleanup:
-            await cleanup(scenario)
+        pytest.skip("backend does not declare cross-schema fixtures")
+    yield setup(database_config, "async_mixed_schema")

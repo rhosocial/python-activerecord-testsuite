@@ -8,6 +8,7 @@ and the tables inside them, then returns these configured model classes.
 Only backends whose dialect declares ``supports_schema()`` will run these
 tests; everyone else skips via ``@requires_protocol``.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Optional
 
@@ -19,7 +20,7 @@ SCHEMA_A = "ar_crm"    # customers live here
 SCHEMA_B = "ar_shop"   # orders live here
 
 
-class SchemaCustomer(ActiveRecord):
+class SchemaCustomer(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "customers"
@@ -34,7 +35,7 @@ class SchemaCustomer(ActiveRecord):
     name: str
 
 
-class SchemaOrder(ActiveRecord):
+class SchemaOrder(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "orders"
@@ -50,7 +51,7 @@ class SchemaOrder(ActiveRecord):
     amount: int
 
 
-class AsyncSchemaCustomer(AsyncActiveRecord):
+class AsyncSchemaCustomer(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "customers"
@@ -65,7 +66,7 @@ class AsyncSchemaCustomer(AsyncActiveRecord):
     name: str
 
 
-class AsyncSchemaOrder(AsyncActiveRecord):
+class AsyncSchemaOrder(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "orders"

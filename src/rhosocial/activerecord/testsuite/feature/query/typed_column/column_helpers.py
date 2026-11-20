@@ -7,10 +7,16 @@ accessor selects the class the model's backend answers. This module mirrors
 that selection step for a bare annotation, so a contract test can build a
 column without declaring a model.
 
-``COMMON_TYPES`` is the contract-side canonical list of the common Python
-types every backend must answer for. It lives here, not in the framework: the
-framework resolves by walking whatever keys a backend's table declares, and
-the required key set is a contract the tests state and hold each backend to.
+``COMMON_TYPES`` is the contract-side canonical list of the Python types every
+backend must answer for. It is an alias of the framework's own
+``FRAMEWORK_PYTHON_TYPES``: the required key set is stated once, next to the
+lookup walk that depends on its order, rather than copied into the contract
+where the two could drift apart. The framework resolves by walking whatever
+keys a backend's table declares; the contract holds each backend to the
+framework's list -- the eighteen common entries plus the six complex value
+families (geometry, vector, bit string, range, multirange, MAC address),
+which are framework-modelled types like any other key and are answered
+``None`` where a backend has no class for them.
 
 Deliberately **not** a fallback: an annotation the selection cannot classify
 raises :class:`ColumnTypeResolutionError` exactly as ``Model.c.<field>``
@@ -18,10 +24,6 @@ would, so a contract test that builds a column from a bad annotation fails
 here for the same reason the model would.
 """
 
-import datetime
-import decimal
-import enum
-import uuid
 from typing import Any, Optional, Tuple, Type
 
 from rhosocial.activerecord.backend.expression.column_types import ColumnBase
@@ -30,30 +32,15 @@ from rhosocial.activerecord.base.field_proxy import (
     ColumnTypeResolutionError,
     FieldAccessor,
 )
+from rhosocial.activerecord.base.framework_types import FRAMEWORK_PYTHON_TYPES
 
 #: The common Python types, in declared reading order. The order matters where
 #: a subclass walk meets an ambiguous annotation: ``bool`` ahead of ``int``,
 #: and ``enum.Enum`` tested before the walk (a ``(int, Enum)`` stays an enum).
-COMMON_TYPES: Tuple[Any, ...] = (
-    bool,
-    int,
-    float,
-    decimal.Decimal,
-    str,
-    bytes,
-    bytearray,
-    datetime.date,
-    datetime.time,
-    datetime.datetime,
-    datetime.timedelta,
-    uuid.UUID,
-    dict,
-    list,
-    tuple,
-    set,
-    frozenset,
-    enum.Enum,
-)
+#: Aliased rather than restated so the contract list and the lookup walk share
+#: one source; the six complex families are in the framework's list for the
+#: same reason the eighteen are.
+COMMON_TYPES: Tuple[Any, ...] = FRAMEWORK_PYTHON_TYPES
 
 
 def resolve_column_class(dialect: Any, annotation: Any, declared: Any = None) -> Type[ColumnBase]:

@@ -1,5 +1,6 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/fixtures/models.py
 """DDL derivation fixture models."""
+from rhosocial.activerecord.field import IntegerPKMixin
 
 import sys
 
@@ -38,7 +39,7 @@ from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.backend.expression.objects import Table
 
 
-class BareItem(ActiveRecord):
+class BareItem(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_bare_items"
@@ -52,7 +53,7 @@ class BareItem(ActiveRecord):
     note: Optional[str] = None
 
 
-class AsyncBareItem(AsyncActiveRecord):
+class AsyncBareItem(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_bare_items"
@@ -132,7 +133,7 @@ class AsyncSpecOrder(UUIDMixin, AsyncActiveRecord):
     ]
 
 
-class CapabilityPost(ActiveRecord):
+class CapabilityPost(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_capability_posts"
@@ -164,7 +165,7 @@ class CapabilityPost(ActiveRecord):
     ]
 
 
-class AsyncCapabilityPost(AsyncActiveRecord):
+class AsyncCapabilityPost(IntegerPKMixin, AsyncActiveRecord):
     @classmethod
     def table_name(cls):
         return "ddl_capability_posts"
@@ -207,10 +208,6 @@ class SpecComment(ActiveRecord):
     def primary_key(cls):
         return "comment_id"
 
-    @classmethod
-    def pk_auto_generated(cls):
-        return False
-
     comment_id: int
     order_id: UUID
     body: str
@@ -237,10 +234,6 @@ class AsyncSpecComment(AsyncActiveRecord):
     @classmethod
     def primary_key(cls):
         return "comment_id"
-
-    @classmethod
-    def pk_auto_generated(cls):
-        return False
 
     comment_id: int
     order_id: UUID

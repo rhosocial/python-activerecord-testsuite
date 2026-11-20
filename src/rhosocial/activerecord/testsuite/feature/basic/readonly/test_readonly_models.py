@@ -12,6 +12,7 @@ metadata, the gate ordering, and the error type, all of which are decided
 before SQL is issued. The "no SQL reached the database" assertion is
 SQLite-specific and lives in the core suite, not here.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Optional
 
@@ -25,7 +26,7 @@ from rhosocial.activerecord.interface import IReadOnlyBehavior
 from rhosocial.activerecord.model import ActiveRecord
 
 
-class ReadOnlyUser(ActiveRecord, ReadOnlyMixin):
+class ReadOnlyUser(IntegerPKMixin, ActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -35,7 +36,7 @@ class ReadOnlyUser(ActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class WritableUser(ActiveRecord):
+class WritableUser(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"
@@ -45,7 +46,7 @@ class WritableUser(ActiveRecord):
     username: str = ""
 
 
-class OptedOutUser(ActiveRecord, ReadOnlyMixin):
+class OptedOutUser(IntegerPKMixin, ActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -58,7 +59,7 @@ class OptedOutUser(ActiveRecord, ReadOnlyMixin):
         return False
 
 
-class ImplementsButWritable(ActiveRecord, IReadOnlyBehavior):
+class ImplementsButWritable(IntegerPKMixin, ActiveRecord, IReadOnlyBehavior):
     @classmethod
     def table_name(cls):
         return "users"
@@ -68,7 +69,7 @@ class ImplementsButWritable(ActiveRecord, IReadOnlyBehavior):
     username: str = ""
 
 
-class ReadOnlyView(ActiveRecord, ReadOnlyMixin):
+class ReadOnlyView(IntegerPKMixin, ActiveRecord, ReadOnlyMixin):
     """A read-only model that declares it maps a view."""
 
     @classmethod

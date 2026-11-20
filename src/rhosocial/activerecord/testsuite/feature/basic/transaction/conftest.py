@@ -1,62 +1,61 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/transaction/conftest.py
-"""
-Pytest fixtures for transaction API black-box tests.
+"""L2 environment fixtures for ``basic/transaction``.
 
-Reuses IBasicConnectionProvider when available to keep provider surface
-minimal. Backend providers that need different setup can implement
-ITransactionBasicProvider instead; this conftest prefers the dedicated
-provider and falls back to BasicConnectionProvider.
+The transaction tests reuse the pool fixtures from ``basic/connection``; this
+directory owns its own database and prepares its own table group.
 """
-import logging
 import pytest
 
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.testsuite.feature.basic.connection.conftest import (  # noqa: F401
+    async_pool_and_model,
+    sync_pool_and_model,
+)
 
-PROVIDER_KEY = "feature.basic.transaction.ITransactionBasicProvider"
-FALLBACK_KEY = "feature.basic.connection.IBasicConnectionProvider"
-
-logger = logging.getLogger(__name__)
-
-
-def _resolve_provider():
-    registry = get_provider_registry()
-    provider_class = registry.get_provider(PROVIDER_KEY)
-    if provider_class:
-        return provider_class, "dedicated"
-    fallback_class = registry.get_provider(FALLBACK_KEY)
-    if fallback_class:
-        return fallback_class, "fallback"
-    return None, None
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.connection_models import TEST_USER_FIXTURES
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
 
-def get_scenarios():
-    provider_class, _ = _resolve_provider()
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
+DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
+    parallel=True,
+    purpose='Savepoint API and cross-task transaction ownership.',
+    passes_means='savepoints nest and roll back to the right owner task',
+    fails_means='a rollback escapes its owner or a savepoint leaves partial state',
+)
+
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
 
-scenarios = get_scenarios()
-SCENARIO_PARAMS = scenarios if scenarios else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No transaction basic provider found"))
-]
+
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """Scenario, connection configuration, and the directory database name."""
+    name = "test_basic_transaction"
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def sync_pool_and_model(request):
-    provider_class, kind = _resolve_provider()
-    provider = provider_class()
-    scenario = request.param
-    pool, model = provider.setup_sync_pool_and_model(scenario)
-    yield pool, model
-    provider.cleanup_sync(scenario, pool)
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-async def async_pool_and_model(request):
-    provider_class, _ = _resolve_provider()
-    provider = provider_class()
-    scenario = request.param
-    pool, model = await provider.setup_async_pool_and_model(scenario)
-    yield pool, model
-    await provider.cleanup_async(scenario, pool)
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate this directory's tables before every test."""
+    create_schema(database, TEST_USER_FIXTURES)
+    yield
+    drop_schema(database, TEST_USER_FIXTURES)

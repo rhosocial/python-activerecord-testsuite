@@ -1,133 +1,143 @@
 # src/rhosocial/activerecord/testsuite/feature/query/worker/conftest.py
-"""
-Pytest fixtures for WorkerPool tests with query feature.
+"""L2 environment fixtures for ``query/worker``.
 
-These fixtures provide Worker-specific configurations that allow tests
-to verify WorkerPool integration with ActiveRecord query operations.
+A worker process cannot inherit the test's open connections, so the fixtures
+hand it the scenario's connection parameters instead.  The parameters are
+derived from this directory's configuration, which keeps the worker on the
+directory's database.
 """
+
+from pathlib import Path
+
 import pytest
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
-from rhosocial.activerecord.testsuite.core.protocols import WorkerTestProtocol
 
-# Reuse the same provider key and scenario discovery as parent feature
-PROVIDER_KEY_SYNC = "feature.query.IQuerySyncProvider"
-PROVIDER_KEY_ASYNC = "feature.query.IQueryAsyncProvider"
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.testsuite.feature.query.fixtures.async_models import (
+    AsyncOrder,
+    AsyncOrderItem,
+    AsyncUser,
+)
+from rhosocial.activerecord.testsuite.feature.query.fixtures.definitions import (
+    OrderItemsDefinition,
+    OrdersDefinition,
+    UsersDefinition,
+)
+from rhosocial.activerecord.testsuite.feature.query.fixtures.models import (
+    Order,
+    OrderItem,
+    User,
+)
 
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
-def get_scenarios_sync():
-    """
-    Discover available test scenarios from the backend's registered provider.
-    """
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
+DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
+    parallel=True,
+    purpose="Directory-owned database for query/worker/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
+)
 
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-def get_scenarios_async():
-    """
-    Discover available test scenarios from the backend's registered provider.
-    """
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
-
-
-scenarios_sync = get_scenarios_sync()
-scenarios_async = get_scenarios_async()
-
-# If no scenarios are found, create a skip marker
-SCENARIO_PARAMS_SYNC = scenarios_sync if scenarios_sync else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No testsuite scenarios found"))
-]
-SCENARIO_PARAMS_ASYNC = scenarios_async if scenarios_async else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No testsuite scenarios found"))
-]
+DEFINITIONS = (
+    UsersDefinition,
+    OrdersDefinition,
+    OrderItemsDefinition,
+)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def worker_connection_params(request):
-    """
-    Get serializable connection parameters for Worker processes.
-
-    Provider must implement WorkerTestProtocol for this fixture to work.
-
-    Returns:
-        dict: Connection parameters for Worker processes
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-
-    if not isinstance(provider, WorkerTestProtocol):
-        pytest.skip("Provider does not implement WorkerTestProtocol")
-
-    params = provider.get_worker_connection_params(scenario, fixture_type='order')
-
-    yield params
-
-    provider.cleanup_after_test(scenario)
+def _database_name() -> str:
+    """Database name from this directory's namespace (below ``feature``)."""
+    parts = Path(__file__).parent.parts
+    start = parts.index("feature") + 1
+    return "test_" + "_".join(parts[start:])
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def order_fixtures_for_worker(request):
-    """
-    Provides Order-related models and Worker connection parameters.
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the directory database name."""
+    name = _database_name()
+    return backend_scenario, backend_scenario.make_config(name), name
 
-    Yields:
-        dict: {
-            'models': (User, Order, OrderItem) tuple,
-            'conn_params': Worker connection parameters dict
+
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate the tables this directory uses, before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
+
+
+class WorkerConnection:
+    """Serializable connection payload for a worker process."""
+
+    def __init__(self, scenario, config):
+        self.scenario = scenario
+        self.config = config
+
+    def params(self, is_async=False):
+        backend_class = (
+            self.scenario.async_backend_class if is_async else self.scenario.backend_class
+        )
+        return {
+            "backend_module": backend_class.__module__,
+            "backend_class_name": backend_class.__name__,
+            "config_class_module": type(self.config).__module__,
+            "config_class_name": type(self.config).__name__,
+            "config_kwargs": self.config.to_dict(),
+            "schema_sql": "",
         }
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
 
-    User, Order, OrderItem = provider.setup_order_fixtures(scenario)
 
-    conn_params = None
-    if isinstance(provider, WorkerTestProtocol):
-        conn_params = provider.get_worker_connection_params(scenario, fixture_type='order')
+@pytest.fixture(name="worker_connection_params")
+def worker_connection_params(database_config):
+    scenario, config, _name = database_config
+    yield WorkerConnection(scenario, config).params()
 
-    yield {
-        'models': (User, Order, OrderItem),
-        'conn_params': conn_params
+
+@pytest.fixture(name="order_fixtures_for_worker")
+def order_fixtures_for_worker(database_config):
+    scenario, config, _name = database_config
+    models = (User, Order, OrderItem)
+    for model in models:
+        model.configure(config, scenario.backend_class)
+    payload = {
+        "models": models,
+        "conn_params": WorkerConnection(scenario, config).params(),
     }
+    yield payload
+    for model in models:
+        model.backend().disconnect()
 
-    provider.cleanup_after_test(scenario)
 
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_order_fixtures_for_worker(request):
-    """
-    Provides async Order-related models and Worker connection parameters.
-
-    Yields:
-        dict: {
-            'models': (AsyncUser, AsyncOrder, AsyncOrderItem) tuple,
-            'conn_params': Worker connection parameters dict
-        }
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-
-    AsyncUser, AsyncOrder, AsyncOrderItem = await provider.setup_order_fixtures(scenario)
-
-    conn_params = None
-    if isinstance(provider, WorkerTestProtocol):
-        conn_params = provider.get_worker_connection_params(scenario, fixture_type='async_order')
-
-    yield {
-        'models': (AsyncUser, AsyncOrder, AsyncOrderItem),
-        'conn_params': conn_params
+@pytest.fixture(name="async_order_fixtures_for_worker")
+async def async_order_fixtures_for_worker(database_config):
+    scenario, config, _name = database_config
+    models = (AsyncUser, AsyncOrder, AsyncOrderItem)
+    for model in models:
+        await model.configure(config, scenario.async_backend_class)
+    payload = {
+        "models": models,
+        "conn_params": WorkerConnection(scenario, config).params(is_async=True),
     }
-
-    await provider.cleanup_after_test(scenario)
+    yield payload
+    for model in models:
+        await model.backend().disconnect()

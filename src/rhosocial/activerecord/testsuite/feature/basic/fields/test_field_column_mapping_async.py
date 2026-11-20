@@ -214,27 +214,34 @@ class TestAsyncInvalidCases:
         assert "A field can have at most one UseColumn specified" in str(excinfo.value), \
             "Expected the duplicate UseColumn error message"
 
-    async def test_multiple_use_adapter_raises_error(self):
-        """Verify that using multiple UseAdapter annotations raises an error for async models."""
+    async def test_multiple_use_adapter_declarations_are_collected(self):
+        """Verify that an async model may declare one UseAdapter per backend."""
         from rhosocial.activerecord.model import AsyncActiveRecord
-        class DummyAdapter(BaseSQLTypeAdapter):
+
+        class FirstAdapter(BaseSQLTypeAdapter):
             def _do_to_database(self, value, **kwargs): return value
             def _do_from_database(self, value, **kwargs): return value
 
-        with pytest.raises(TypeError) as excinfo:
-            class AsyncInvalidModel(AsyncActiveRecord):
-                @classmethod
-                def table_name(cls):
-                    return "invalid"
+        class SecondAdapter(BaseSQLTypeAdapter):
+            def _do_to_database(self, value, **kwargs): return value
+            def _do_from_database(self, value, **kwargs): return value
 
-                data: Annotated[
-                    str,
-                    UseAdapter(DummyAdapter(), str),
-                    UseAdapter(DummyAdapter(), str)
-                ]
+        class MultiAdapterAsyncModel(AsyncActiveRecord):
+            @classmethod
+            def table_name(cls):
+                return "multi_adapter_async"
 
-        assert "A field can have at most one UseAdapter specified" in str(excinfo.value), \
-            "Expected the duplicate UseAdapter error message"
+            data: Annotated[
+                str,
+                UseAdapter(FirstAdapter(), str),
+                UseAdapter(SecondAdapter(), int)
+            ]
+
+        declared = MultiAdapterAsyncModel.__field_adapters__["data"]
+        assert [type(adapter).__name__ for adapter, _ in declared] == ["FirstAdapter", "SecondAdapter"], \
+            "Expected both declarations to be collected in order"
+        assert [target for _, target in declared] == [str, int], \
+            "Expected each declaration to keep its own target type"
 
     async def test_use_column_with_invalid_type_raises_error(self):
         """Verify that UseColumn expects a string argument for async models."""

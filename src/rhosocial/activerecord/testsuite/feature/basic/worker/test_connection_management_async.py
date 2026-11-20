@@ -43,12 +43,14 @@ def count_users_task(ctx: TaskContext, conn_params: Dict) -> int:
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    asyncio.run(AsyncUser.configure(config, backend_class))
+    async def _run():
+        await AsyncUser.configure(config, backend_class)
+        try:
+            return await AsyncUser.query().count()
+        finally:
+            await AsyncUser.backend().disconnect()
 
-    try:
-        return asyncio.run(AsyncUser.query().count())
-    finally:
-        AsyncUser.backend().disconnect()
+    return asyncio.run(_run())
 
 
 def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) -> Dict:
@@ -78,15 +80,17 @@ def create_and_count_task(ctx: TaskContext, user_data: Dict, conn_params: Dict) 
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    asyncio.run(AsyncUser.configure(config, backend_class))
+    async def _run():
+        await AsyncUser.configure(config, backend_class)
+        try:
+            user = AsyncUser(**user_data)
+            await user.save()
+            count = await AsyncUser.query().count()
+            return {'user_id': user.id, 'count': count}
+        finally:
+            await AsyncUser.backend().disconnect()
 
-    try:
-        user = AsyncUser(**user_data)
-        asyncio.run(user.save())
-        count = asyncio.run(AsyncUser.query().count())
-        return {'user_id': user.id, 'count': count}
-    finally:
-        AsyncUser.backend().disconnect()
+    return asyncio.run(_run())
 
 
 def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict) -> int:
@@ -114,17 +118,18 @@ def connection_stress_task(ctx: TaskContext, iterations: int, conn_params: Dict)
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    success_count = 0
+    async def _run():
+        success_count = 0
+        for _ in range(iterations):
+            await AsyncUser.configure(config, backend_class)
+            try:
+                await AsyncUser.query().count()
+                success_count += 1
+            finally:
+                await AsyncUser.backend().disconnect()
+        return success_count
 
-    for _ in range(iterations):
-        asyncio.run(AsyncUser.configure(config, backend_class))
-        try:
-            asyncio.run(AsyncUser.query().count())
-            success_count += 1
-        finally:
-            AsyncUser.backend().disconnect()
-
-    return success_count
+    return asyncio.run(_run())
 
 
 def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> bool:
@@ -152,14 +157,16 @@ def slow_query_task(ctx: TaskContext, duration: float, conn_params: Dict) -> boo
 
     from rhosocial.activerecord.testsuite.feature.basic.fixtures.models import AsyncUser
 
-    asyncio.run(AsyncUser.configure(config, backend_class))
+    async def _run():
+        await AsyncUser.configure(config, backend_class)
+        try:
+            time.sleep(duration)
+            await AsyncUser.query().count()
+            return True
+        finally:
+            await AsyncUser.backend().disconnect()
 
-    try:
-        time.sleep(duration)
-        asyncio.run(AsyncUser.query().count())
-        return True
-    finally:
-        AsyncUser.backend().disconnect()
+    return asyncio.run(_run())
 
 
 # ─────────────────────────────────────────────────────────────────────────────

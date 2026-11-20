@@ -1,208 +1,158 @@
 # src/rhosocial/activerecord/testsuite/feature/mixins/conftest.py
-"""
-This file defines the pytest fixtures for the "mixins" feature test group.
+"""L2 environment and model fixtures for the mixins topic.
 
-Fixtures are a core concept in pytest. They are functions that provide a fixed
-baseline state or data for tests. In this case, they provide fully configured
-ActiveRecord model classes that are ready to be used in tests.
+- ``database``: one database per directory (session scope, emptied at start);
+- ``schema``: the four mixin tables, dropped and recreated for every test
+  (function scope), so each test starts from empty tables;
+- ``database_config``: the scenario, its connection configuration, and the
+  directory database name, which the model fixtures configure against.
 
-The key mechanism here is `pytest.fixture` parameterization. The fixtures are
-parameterized by the list of "scenarios" provided by the backend's provider.
-This causes pytest to run each test that uses one of these fixtures multiple times,
-once for each database configuration (scenario) the backend supports.
+The directory owns one fixture group: every test prepares all four tables,
+even when it only uses one of the models.  Which versioned model file supplies
+the class is decided here, so tests only see fixture names.
 """
+
+from pathlib import Path
+
 import pytest
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
 
-PROVIDER_KEY_SYNC = "feature.mixins.IMixinsSyncProvider"
-PROVIDER_KEY_ASYNC = "feature.mixins.IMixinsAsyncProvider"
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.testsuite.feature.mixins.fixtures.definitions import (
+    CombinedArticleDefinition,
+    TaskDefinition,
+    TimestampedPostDefinition,
+    VersionedProductDefinition,
+)
 
+from .fixtures import resolve
 
-def get_scenarios_sync():
-    """
-    A helper function that runs during pytest's collection phase to discover
-    all available test scenarios from the backend's registered provider.
-    """
-    # Dynamically get the registry and the provider for this test group.
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    if not provider_class:
-        return []
-    # Instantiate the provider and get the list of scenario names.
-    return provider_class().get_test_scenarios()
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
+DECLARATION = Declaration(
+    # This scope opens a database; the plugin enforces this declaration.
+    uses_database=True,
+    parallel=True,
+    purpose="Directory-owned database for mixins/conftest.py.",
+    passes_means="the directory's tests run on one worker per scenario",
+    fails_means="two workers share the same database file",
+)
 
-def get_scenarios_async():
-    """
-    A helper function that runs during pytest's collection phase to discover
-    all available test scenarios from the backend's registered provider.
-    """
-    # Dynamically get the registry and the provider for this test group.
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    if not provider_class:
-        return []
-    # Instantiate the provider and get the list of scenario names.
-    return provider_class().get_test_scenarios()
+TimestampedPost = resolve("TimestampedPost")
+AsyncTimestampedPost = resolve("AsyncTimestampedPost")
+VersionedProduct = resolve("VersionedProduct")
+AsyncVersionedProduct = resolve("AsyncVersionedProduct")
+Task = resolve("Task")
+AsyncTask = resolve("AsyncTask")
+CombinedArticle = resolve("CombinedArticle")
+AsyncCombinedArticle = resolve("AsyncCombinedArticle")
 
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
-# Discover the scenarios at module import time.
-scenarios_sync = get_scenarios_sync()
-scenarios_async = get_scenarios_async()
-
-# If no scenarios are found, create a single dummy parameter that will cause
-# the tests to be skipped with a helpful message.
-SCENARIO_PARAMS_SYNC = scenarios_sync if scenarios_sync else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No sync mixins testsuite scenarios found"))
-]
-SCENARIO_PARAMS_ASYNC = scenarios_async if scenarios_async else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No async mixins testsuite scenarios found"))
-]
+DEFINITIONS = (
+    TimestampedPostDefinition,
+    VersionedProductDefinition,
+    TaskDefinition,
+    CombinedArticleDefinition,
+)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def timestamped_post_model(request):
-    """
-    A pytest fixture that provides a configured `TimestampedPost` model class for testing.
-    It is parameterized to run for each available scenario.
-    It also handles the setup and teardown for each test.
-    """
-    # `request.param` holds the current scenario name (e.g., "memory", "file").
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-
-    # Ask the provider to set up the database and configure the TimestampedPost model for this scenario.
-    Model = provider.setup_timestamped_post_model(scenario)
-
-    # `yield` passes the configured model class to the test function.
-    yield Model
-
-    # After the test function finishes, the code below this line runs as a teardown.
-    provider.cleanup_after_test(scenario)
+def _database_name() -> str:
+    """Database name from this conftest's namespace (below ``feature``)."""
+    parts = Path(__file__).parent.parts
+    start = parts.index("feature") + 1
+    return "test_" + "_".join(parts[start:])
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_timestamped_post_model(request):
-    """
-    An async pytest fixture that provides a configured `AsyncTimestampedPost` model class for testing.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    Model = await provider.setup_timestamped_post_model(scenario)
-    yield Model
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """The scenario, its connection configuration, and the directory database name."""
+    name = _database_name()
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def versioned_product_model(request):
-    """
-    A pytest fixture that provides a configured `VersionedProduct` model class for testing.
-    It is parameterized to run for each available scenario.
-    It also handles the setup and teardown for each test.
-    """
-    # `request.param` holds the current scenario name (e.g., "memory", "file").
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-
-    # Ask the provider to set up the database and configure the VersionedProduct model for this scenario.
-    Model = provider.setup_versioned_product_model(scenario)
-
-    # `yield` passes the configured model class to the test function.
-    yield Model
-
-    # After the test function finishes, the code below this line runs as a teardown.
-    provider.cleanup_after_test(scenario)
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_versioned_product_model(request):
-    """
-    An async pytest fixture that provides a configured `AsyncVersionedProduct` model class for testing.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    Model = await provider.setup_versioned_product_model(scenario)
-    yield Model
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate the tables this directory uses, before every test."""
+    fixtures = [definition(database.dialect) for definition in DEFINITIONS]
+    for fixture in fixtures:
+        database.execute(*fixture.create_table.to_sql(), options=DDL)
+    yield
+    for fixture in reversed(fixtures):
+        database.execute(*fixture.drop_table.to_sql(), options=DDL)
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def task_model(request):
-    """
-    A pytest fixture that provides a configured `Task` model class for testing.
-    It is parameterized to run for each available scenario.
-    It also handles the setup and teardown for each test.
-    """
-    # `request.param` holds the current scenario name (e.g., "memory", "file").
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-
-    # Ask the provider to set up the database and configure the Task model for this scenario.
-    Model = provider.setup_task_model(scenario)
-
-    # `yield` passes the configured model class to the test function.
-    yield Model
-
-    # After the test function finishes, the code below this line runs as a teardown.
-    provider.cleanup_after_test(scenario)
+@pytest.fixture(name="timestamped_post_model")
+def timestamped_post_model(database_config):
+    scenario, config, _name = database_config
+    TimestampedPost.configure(config, scenario.backend_class)
+    yield TimestampedPost
+    TimestampedPost.backend().disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_task_model(request):
-    """
-    An async pytest fixture that provides a configured `AsyncTask` model class for testing.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    Model = await provider.setup_task_model(scenario)
-    yield Model
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(name="async_timestamped_post_model")
+async def async_timestamped_post_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncTimestampedPost.configure(config, scenario.async_backend_class)
+    yield AsyncTimestampedPost
+    await AsyncTimestampedPost.backend().disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_SYNC)
-def combined_article_model(request):
-    """
-    A pytest fixture that provides a configured `CombinedArticle` model class for testing.
-    It is parameterized to run for each available scenario.
-    It also handles the setup and teardown for each test.
-    """
-    # `request.param` holds the current scenario name (e.g., "memory", "file").
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_SYNC)
-    provider = provider_class()
-
-    # Ask the provider to set up the database and configure the CombinedArticle model for this scenario.
-    Model = provider.setup_combined_article_model(scenario)
-
-    # `yield` passes the configured model class to the test function.
-    yield Model
-
-    # After the test function finishes, the code below this line runs as a teardown.
-    provider.cleanup_after_test(scenario)
+@pytest.fixture(name="versioned_product_model")
+def versioned_product_model(database_config):
+    scenario, config, _name = database_config
+    VersionedProduct.configure(config, scenario.backend_class)
+    yield VersionedProduct
+    VersionedProduct.backend().disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS_ASYNC)
-async def async_combined_article_model(request):
-    """
-    An async pytest fixture that provides a configured `AsyncCombinedArticle` model class for testing.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY_ASYNC)
-    provider = provider_class()
-    Model = await provider.setup_combined_article_model(scenario)
-    yield Model
-    await provider.cleanup_after_test(scenario)
+@pytest.fixture(name="async_versioned_product_model")
+async def async_versioned_product_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncVersionedProduct.configure(config, scenario.async_backend_class)
+    yield AsyncVersionedProduct
+    await AsyncVersionedProduct.backend().disconnect()
+
+
+@pytest.fixture(name="task_model")
+def task_model(database_config):
+    scenario, config, _name = database_config
+    Task.configure(config, scenario.backend_class)
+    yield Task
+    Task.backend().disconnect()
+
+
+@pytest.fixture(name="async_task_model")
+async def async_task_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncTask.configure(config, scenario.async_backend_class)
+    yield AsyncTask
+    await AsyncTask.backend().disconnect()
+
+
+@pytest.fixture(name="combined_article_model")
+def combined_article_model(database_config):
+    scenario, config, _name = database_config
+    CombinedArticle.configure(config, scenario.backend_class)
+    yield CombinedArticle
+    CombinedArticle.backend().disconnect()
+
+
+@pytest.fixture(name="async_combined_article_model")
+async def async_combined_article_model(database_config):
+    scenario, config, _name = database_config
+    await AsyncCombinedArticle.configure(config, scenario.async_backend_class)
+    yield AsyncCombinedArticle
+    await AsyncCombinedArticle.backend().disconnect()

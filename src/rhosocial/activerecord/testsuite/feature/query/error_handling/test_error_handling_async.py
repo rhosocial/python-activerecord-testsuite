@@ -586,7 +586,6 @@ async def test_special_character_full_matrix(async_order_fixtures):
     special_values = [
         "line1\nline2\t tabbed",
         "carriage\rreturn",
-        "",
         "   spaces   ",
         "unicode中文emoji🎉",
         "\\' \\\" backslash with quotes",

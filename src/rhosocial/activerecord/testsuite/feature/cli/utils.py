@@ -6,6 +6,7 @@ import io
 from contextlib import redirect_stderr, redirect_stdout
 
 from rhosocial.activerecord.backend.dialect.protocols import CTESupport
+from rhosocial.activerecord.backend.dialect.protocols import SetOperationSupport
 from rhosocial.activerecord.cli import main
 
 
@@ -18,6 +19,18 @@ def supports_basic_cte(model) -> bool:
     """
     dialect = model.backend().dialect
     return isinstance(dialect, CTESupport) and dialect.supports_basic_cte()
+
+
+def supports_set_operation(model, probe_name: str) -> bool:
+    """Whether the configured model's dialect supports a set operation.
+
+    ``probe_name`` names one of the ``SetOperationSupport`` probes.  Every
+    dialect includes the set-operation mixin, so ``isinstance`` alone is not
+    a sufficient gate -- the specific probe must be called.  Capability
+    answers are version-dependent for several backends.
+    """
+    dialect = model.backend().dialect
+    return isinstance(dialect, SetOperationSupport) and getattr(dialect, probe_name)()
 
 
 def run_cli(argv):

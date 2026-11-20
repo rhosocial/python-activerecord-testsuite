@@ -137,7 +137,6 @@ async def test_conflict_without_matching_lookup_reraises(async_order_item_class)
 
     with pytest.raises(IntegrityError):
         await async_order_item_class.find_one_or_create(
-            order_id=1,
-            product_id=101,
             quantity=999,
+            defaults={"order_id": 1, "product_id": 101, "unit_price": Decimal("1.00")},
         )

@@ -11,6 +11,7 @@ This contract reuses the provider's existing ``users`` table, so it adds no
 DDL and stays backend-neutral. Keyless-ness is orthogonal to read-only-ness in
 both directions.
 """
+from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import ClassVar, Optional
 
@@ -51,7 +52,7 @@ class KeylessReadOnlyUser(ActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class ReadOnlyWithKeyUser(ActiveRecord, ReadOnlyMixin):
+class ReadOnlyWithKeyUser(IntegerPKMixin, ActiveRecord, ReadOnlyMixin):
     @classmethod
     def table_name(cls):
         return "users"
@@ -61,7 +62,7 @@ class ReadOnlyWithKeyUser(ActiveRecord, ReadOnlyMixin):
     username: str = ""
 
 
-class NormalUser(ActiveRecord):
+class NormalUser(IntegerPKMixin, ActiveRecord):
     @classmethod
     def table_name(cls):
         return "users"

@@ -44,6 +44,9 @@ dependencies = [
 # pytest-benchmark and pytest-xdist reach the backends without each one having
 # to add a `-p` flag. See rhosocial/activerecord/testsuite/pytest_compat.py.
 rhosocial_activerecord_pytest_compat = "rhosocial.activerecord.testsuite.pytest_compat"
+# The shared suite's own plugin: directory contracts, environment fixture,
+# per-scenario xdist pinning and capability skipping.
+rhosocial_activerecord_testsuite = "rhosocial.activerecord.testsuite.plugin"
 
 [project.optional-dependencies]
 # Development dependencies

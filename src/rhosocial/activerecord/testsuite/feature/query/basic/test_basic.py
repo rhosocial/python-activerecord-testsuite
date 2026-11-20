@@ -178,9 +178,9 @@ def test_exists_with_limit_and_offset(order_fixtures):
     exists_result = Order.query().where('status = ?', ('active',)).limit(1).exists()
     assert exists_result is True, "Expected exists() to be True with limit"
 
-    # Test exists with limit and offset
+    # Test exists with limit and offset (3 rows remain after offset 2 of 5)
     exists_result = Order.query().where('status = ?', ('active',)).limit(3).offset(2).exists()
-    assert exists_result is False, "Expected exists() to be False past available records"
+    assert exists_result is True, "Expected exists() to be True when rows remain after the offset"
 
     # Test exists with limit and offset that exceeds available records
     exists_result = Order.query().where('status = ?', ('active',)).limit(1).offset(10).exists()

@@ -1,124 +1,140 @@
 # src/rhosocial/activerecord/testsuite/feature/basic/connection/conftest.py
-"""
-Pytest fixtures for connection pool context awareness tests.
+"""L2 environment fixtures for ``basic/connection``.
 
-This module provides fixtures that use the IBasicConnectionProvider interface
-to set up connection pools and models for testing.
+The directory owns one database; pool fixtures build pools against it and
+configure the model classes through ``ActiveRecord.configure``.
 """
-import logging
+
 import pytest
-from rhosocial.activerecord.testsuite.core.registry import get_provider_registry
 
-PROVIDER_KEY = "feature.basic.connection.IBasicConnectionProvider"
+from rhosocial.activerecord.backend.options import ExecutionOptions
+from rhosocial.activerecord.backend.schema import StatementType
+from rhosocial.activerecord.connection.pool import AsyncBackendPool, BackendPool
+from rhosocial.activerecord.connection.pool.config import PoolConfig
+from rhosocial.activerecord.testsuite.feature.basic.connection.fixtures import (
+    AsyncTestUser,
+    TestUser,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.connection_models import (
+    TEST_USER_FIXTURES,
+)
+from rhosocial.activerecord.testsuite.feature.basic.fixtures.operations import (
+    create_schema,
+    drop_schema,
+)
+from rhosocial.activerecord.testsuite.pytest_plugin import Declaration
 
-logger = logging.getLogger(__name__)
+
+DECLARATION = Declaration(
+    # This scope needs a prepared database; the L1 gate requests `schema`.
+    uses_database=True,
+    parallel=True,
+    purpose='Connection and pool lifecycle, context managers and pool transaction paths.',
+    passes_means='connections are acquired and released exactly once per context',
+    fails_means='a connection leaks or a pool transaction is shared across the wrong tasks',
+)
+
+DDL = ExecutionOptions(stmt_type=StatementType.DDL)
 
 
-def get_scenarios():
-    """Discover available test scenarios from the backend provider."""
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
-    if not provider_class:
-        return []
-    return provider_class().get_test_scenarios()
+@pytest.fixture(scope="session")
+def database_config(backend_scenario):
+    """Scenario, connection configuration, and the directory database name."""
+    name = "test_basic_connection"
+    return backend_scenario, backend_scenario.make_config(name), name
 
 
-def log_pool_stats(pool, scenario: str, test_name: str, pool_type: str):
-    """Log connection pool statistics.
+@pytest.fixture(scope="session")
+def database(database_config):
+    """The directory's database, prepared once and left for later files."""
+    scenario, config, name = database_config
+    scenario.reset_database(name)
+    backend = scenario.backend_class(connection_config=config)
+    backend.connect()
+    backend.introspect_and_adapt()
+    yield backend
+    backend.disconnect()
 
-    Args:
-        pool: The connection pool instance
-        scenario: Test scenario name
-        test_name: Name of the test function
-        pool_type: Type of pool (sync/async)
-    """
-    try:
-        stats = pool.get_stats()
-        logger.info(
-            f"[{scenario}] {test_name} ({pool_type}) - Pool stats: "
-            f"created={stats.total_created}, destroyed={stats.total_destroyed}, "
-            f"acquired={stats.total_acquired}, released={stats.total_released}, "
-            f"available={stats.current_available}, in_use={stats.current_in_use}, "
-            f"utilization={stats.utilization_rate:.2%}, "
-            f"errors={stats.total_errors}, timeouts={stats.total_timeouts}"
+
+@pytest.fixture(scope="function", autouse=True)
+def schema(database):
+    """Drop and recreate this directory's tables before every test."""
+    create_schema(database, TEST_USER_FIXTURES)
+    yield
+    drop_schema(database, TEST_USER_FIXTURES)
+
+
+@pytest.fixture(name="sync_pool_and_model")
+def sync_pool_and_model(database_config):
+    scenario, config, _name = database_config
+    pool = BackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.backend_class(connection_config=config),
         )
-    except Exception as e:
-        logger.warning(f"Failed to get pool stats: {e}")
+    )
+    TestUser.configure(config, scenario.backend_class)
+    yield pool, TestUser
+    try:
+        pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    TestUser.backend().disconnect()
 
 
-scenarios = get_scenarios()
-SCENARIO_PARAMS = scenarios if scenarios else [
-    pytest.param("default", marks=pytest.mark.skip(reason="No IBasicConnectionProvider found"))
-]
+@pytest.fixture(name="async_pool_and_model")
+async def async_pool_and_model(database_config):
+    scenario, config, _name = database_config
+    pool = await AsyncBackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.async_backend_class(connection_config=config),
+        )
+    )
+    await AsyncTestUser.configure(config, scenario.async_backend_class)
+    yield pool, AsyncTestUser
+    try:
+        await pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    await AsyncTestUser.backend().disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def sync_pool_and_model(request):
-    """
-    Provides a sync connection pool and model for context awareness tests.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
-    provider = provider_class()
-
-    pool, model = provider.setup_sync_pool_and_model(scenario)
-    yield pool, model
-
-    # Log pool stats before cleanup
-    log_pool_stats(pool, scenario, request.node.name, "sync")
-    provider.cleanup_sync(scenario, pool)
-
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-async def async_pool_and_model(request):
-    """
-    Provides an async connection pool and model for context awareness tests.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
-    provider = provider_class()
-
-    pool, model = await provider.setup_async_pool_and_model(scenario)
-    yield pool, model
-
-    # Log pool stats before cleanup
-    log_pool_stats(pool, scenario, request.node.name, "async")
-    await provider.cleanup_async(scenario, pool)
+@pytest.fixture(name="sync_pool_for_crud")
+def sync_pool_for_crud(database_config):
+    scenario, config, _name = database_config
+    pool = BackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.backend_class(connection_config=config),
+        )
+    )
+    TestUser.configure(config, scenario.backend_class)
+    yield pool, TestUser
+    try:
+        pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    TestUser.backend().disconnect()
 
 
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-def sync_pool_for_crud(request):
-    """
-    Provides a sync connection pool and model for CRUD tests.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
-    provider = provider_class()
-
-    pool, model = provider.setup_sync_pool_for_crud(scenario)
-    yield pool, model
-
-    # Log pool stats before cleanup
-    log_pool_stats(pool, scenario, request.node.name, "sync")
-    provider.cleanup_sync(scenario, pool)
-
-
-@pytest.fixture(scope="function", params=SCENARIO_PARAMS)
-async def async_pool_for_crud(request):
-    """
-    Provides an async connection pool and model for CRUD tests.
-    """
-    scenario = request.param
-    provider_registry = get_provider_registry()
-    provider_class = provider_registry.get_provider(PROVIDER_KEY)
-    provider = provider_class()
-
-    pool, model = await provider.setup_async_pool_for_crud(scenario)
-    yield pool, model
-
-    # Log pool stats before cleanup
-    log_pool_stats(pool, scenario, request.node.name, "async")
-    await provider.cleanup_async(scenario, pool)
+@pytest.fixture(name="async_pool_for_crud")
+async def async_pool_for_crud(database_config):
+    scenario, config, _name = database_config
+    pool = await AsyncBackendPool.create(
+        PoolConfig(
+            min_size=1,
+            max_size=5,
+            backend_factory=lambda: scenario.async_backend_class(connection_config=config),
+        )
+    )
+    await AsyncTestUser.configure(config, scenario.async_backend_class)
+    yield pool, AsyncTestUser
+    try:
+        await pool.close(timeout=1.0, force=True)
+    except Exception:
+        pass
+    await AsyncTestUser.backend().disconnect()

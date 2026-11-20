@@ -212,7 +212,7 @@ def test_storage_capability_is_declared_independently(dialect):
     from rhosocial.activerecord.backend.expression.types import UUIDType
 
     supported = dialect.supports_data_types()
-    suggested = dialect.suggested_data_types()
+    suggested = dialect.substitute_data_types()
     stores_natively = "uuid" in supported
     has_substitute = "uuid" in suggested
 
