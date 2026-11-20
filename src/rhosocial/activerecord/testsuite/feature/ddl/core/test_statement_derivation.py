@@ -75,7 +75,7 @@ def test_create_table_statement_has_no_inline_extras_by_default(ddl_dialect):
 
 
 def test_column_order_is_owned_by_the_caller(ddl_dialect):
-    sql = _create_sql(DerivationItem, ddl_dialect, column_order=["name", "id"])
+    sql = _create_sql(DerivationItem, ddl_dialect, column_order=["name", "id"]).lower()
     assert sql.index("name") < sql.index("id")
 
 
@@ -93,7 +93,7 @@ def test_indexes_are_separate_statements_by_default(ddl_dialect):
 
     drops = build_drop_index_statements(DerivationItem, ddl_dialect)
     assert len(drops) == 1
-    assert "ix_derivation_items_name" in drops[0].to_sql()[0]
+    assert "ix_derivation_items_name" in drops[0].to_sql()[0].lower()
 
 
 def test_drop_table_statement_names_the_table(ddl_dialect):
