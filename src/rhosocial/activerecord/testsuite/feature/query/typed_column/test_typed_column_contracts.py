@@ -284,9 +284,12 @@ def test_a_bare_column_still_takes_an_explicit_predicate(dialect):
     """
     col = Column(dialect, "status")
     ident = dialect.format_identifier("status")
-    assert ComparisonPredicate(dialect, "=", col, Literal(dialect, "active")).to_sql() == (f"{ident} = ?", ("active",))
+    ph = dialect.get_parameter_placeholder()
+    assert ComparisonPredicate(dialect, "=", col, Literal(dialect, "active")).to_sql() == (
+        f"{ident} = {ph}", ("active",)
+    )
     assert InPredicate(dialect, col, Literal(dialect, ("open", "paid"))).to_sql() == (
-        f"{ident} IN (?, ?)",
+        f"{ident} IN ({ph}, {ph})",
         ("open", "paid"),
     )
     assert IsNullPredicate(dialect, col).to_sql() == (f"{ident} IS NULL", ())
