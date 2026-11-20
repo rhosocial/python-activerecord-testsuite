@@ -143,7 +143,9 @@ def test_sync_function_dry_run_renders_create_table(ddl_dialect):
     assert result.dry_run_total == 1
     sql = result.dry_run_sql[0][1]
     assert "CREATE TABLE" in sql.upper()
-    assert "ddl_contract_function_users" in sql
+    # Identifier casing is dialect-defined (some backends fold to upper case);
+    # compare case-insensitively.
+    assert "ddl_contract_function_users" in sql.lower()
 
 
 async def test_async_function_dry_run_renders_create_table(ddl_dialect):
@@ -161,4 +163,6 @@ async def test_async_function_dry_run_renders_create_table(ddl_dialect):
     assert result.dry_run_total == 1
     sql = result.dry_run_sql[0][1]
     assert "CREATE TABLE" in sql.upper()
-    assert "ddl_contract_function_users" in sql
+    # Identifier casing is dialect-defined (some backends fold to upper case);
+    # compare case-insensitively.
+    assert "ddl_contract_function_users" in sql.lower()
