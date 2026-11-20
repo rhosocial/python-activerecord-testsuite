@@ -416,7 +416,18 @@ def test_json_chaining_does_not_renest_the_path(dialect):
     Re-anchoring would make ``col.json_value("a").json_value("b")`` read
     ``b`` from the document root instead of from ``a``.
     """
+    from rhosocial.activerecord.backend.expression.advanced_functions import JSONDocumentValue
+
     col = _class_or_skip(dialect, dict, "settings")
-    chained = col.json_value("a").json_value("b").to_sql()[0]
-    assert chained.count("$") == 2
-    assert "$." not in chained.replace("$.a", "").replace("$.b", "")
+    first = col.json_value("a")
+    second = first.json_value("b")
+    # A second ``json_value`` must operate on the *previous result node*, not
+    # re-anchor at the source column. Check the expression tree rather than the
+    # rendered SQL: dialects spell JSON paths differently (inline ``$.a`` in
+    # SQL, a bound jsonpath parameter, or nested JSON_QUERY calls), but the
+    # chaining structure is identical everywhere.
+    assert isinstance(second, JSONDocumentValue)
+    assert isinstance(second.column, JSONDocumentValue)
+    assert second.column is first
+    assert first.path == build_json_path("a")
+    assert second.path == build_json_path("b")
