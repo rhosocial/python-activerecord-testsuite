@@ -115,8 +115,12 @@ def switch_answer(dialect: Any, switch: str) -> bool:
     # Second channel: the capability protocol declares a storage concept by
     # providing its format_data_type_<concept> formatter. Support is exactly
     # "how many formatters are defined" -- no summary table is involved.
-    if _declares_data_type(dialect, switch):
-        return True
+    # An attribute that exists but is not callable is an *explicit* "no"
+    # (a dialect may disable a concept by setting the formatter to None on
+    # the instance); an absent attribute means the dialect never answered.
+    formatter = "format_data_type_" + switch
+    if hasattr(dialect, formatter):
+        return callable(getattr(dialect, formatter))
 
     dialect_name = getattr(dialect, "name", type(dialect).__name__)
     raise MissingRequirementError(
@@ -124,17 +128,6 @@ def switch_answer(dialect: Any, switch: str) -> bool:
         "format_data_type_{} capability, so it has not answered the "
         "question".format(dialect_name, switch, switch)
     )
-
-
-def _declares_data_type(dialect: Any, concept: str) -> bool:
-    """Whether the dialect declares a storage concept via its capability protocol.
-
-    A concept is supported exactly when the dialect defines its
-    ``format_data_type_<concept>`` formatter (or, for version-gated types, a
-    ``supports_<concept>`` switch -- resolved by the method channel above).
-    No aggregate table is used or needed.
-    """
-    return callable(getattr(dialect, "format_data_type_" + concept, None))
 
 
 def operation_reason(dialect: Any, operation: Operation) -> Optional[str]:
