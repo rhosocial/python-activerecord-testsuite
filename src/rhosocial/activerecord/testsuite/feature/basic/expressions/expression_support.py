@@ -14,7 +14,7 @@ from rhosocial.activerecord.backend.adapters import Geometry, MacAddress, Vector
 from rhosocial.activerecord.backend.expression import Literal
 
 #: X1: (family, column-class table key, existing model, field). The key is the
-#: framework family in ``suggested_column_types()``; a field whose Python type
+#: framework family in ``suggest_column_types()``; a field whose Python type
 #: is a subclass (Point -> Geometry) names its family key here. ``None`` answers
 #: are handled at runtime by :func:`column_class_for`.
 X1_CASES = (
@@ -73,10 +73,10 @@ def column_class_for(dialect, key, family):
     means "no operation class" and skips with a reason that names both the
     dialect and the value family (README sections 9 and 12, X6).
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     if key not in table:
         pytest.fail(
-            "{} 的 suggested_column_types() 漏答 {}（键 {!r}）：漏答是失败，不是跳过".format(
+            "{} 的 suggest_column_types() 漏答 {}（键 {!r}）：漏答是失败，不是跳过".format(
                 getattr(dialect, "name", type(dialect).__name__), family, key
             )
         )

@@ -8,7 +8,7 @@ every table it would name, so there is no ``schema`` fixture and no
 ``database`` fixture here (README sections 8.1 and 12).
 
 The dialect comes from an *unconnected* backend instance built from the
-scenario. ``suggested_column_types()`` is a static declaration answer (README
+scenario. ``suggest_column_types()`` is a static declaration answer (README
 F4/F12), so no ``introspect_and_adapt()`` is needed to read it. A scenario whose
 dialect cannot answer that table without a live backend is skipped by name
 (README section 9) instead of quietly connecting.
@@ -80,7 +80,7 @@ def dialect(expression_backend):
     skipped by name rather than connected behind the suite's back (section 9).
     """
     found = getattr(expression_backend, "dialect", None)
-    if found is None or not callable(getattr(found, "suggested_column_types", None)):
+    if found is None or not callable(getattr(found, "suggest_column_types", None)):
         pytest.skip(
             "{} exposes no dialect that answers column classes without an "
             "adapted backend; this directory owns no database".format(

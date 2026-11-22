@@ -97,3 +97,52 @@ def test_the_extra_table_is_consistent_across_calls(ddl_dialect):
 
     assert first is not second
     assert first == second
+
+
+# ---------------------------------------------------------------------------
+# The other two legs of the type triad. A backend that does not implement a
+# suggestion protocol is structurally skipped (no false requirement); a
+# backend that does must answer the same 24-key / disjointness contracts.
+# ---------------------------------------------------------------------------
+
+def test_column_type_table_covers_every_framework_type_if_supported(ddl_dialect):
+    from rhosocial.activerecord.backend.suggestion.protocols import ColumnTypeSuggestionSupport
+
+    if not isinstance(ddl_dialect, ColumnTypeSuggestionSupport):
+        pytest.skip("dialect has no column-type suggestion protocol")
+    table = ddl_dialect.suggest_column_types()
+    assert not [e for e in FRAMEWORK_PYTHON_TYPES if e not in table]
+
+
+def test_column_type_extra_table_is_disjoint_if_supported(ddl_dialect):
+    from rhosocial.activerecord.backend.suggestion.protocols import ColumnTypeSuggestionSupport
+
+    if not isinstance(ddl_dialect, ColumnTypeSuggestionSupport):
+        pytest.skip("dialect has no column-type suggestion protocol")
+    extras = ddl_dialect.suggest_extra_column_types()
+    assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))
+
+
+def test_adapter_suggestion_table_is_sparse_and_fresh_if_supported(database):
+    """The adapter table is sparse: native types are absent (pass through)."""
+    from rhosocial.activerecord.backend.suggestion.protocols import DataAdapterSuggestionSupport
+
+    backend = database
+    if not isinstance(backend, DataAdapterSuggestionSupport):
+        pytest.skip("backend has no data-adapter suggestion protocol")
+    table = backend.suggest_data_adapters()
+    assert isinstance(table, dict)
+    # Adapter tables may be cached by the backend; only the SQL-structure
+    # tables promise a fresh dict on every call.
+    assert backend.suggest_data_adapters() == table
+    native = {str, int, float, bytes}
+    assert native.isdisjoint(set(table))
+
+
+def test_adapter_extra_table_is_disjoint_if_supported(database):
+    from rhosocial.activerecord.backend.suggestion.protocols import DataAdapterSuggestionSupport
+
+    if not isinstance(database, DataAdapterSuggestionSupport):
+        pytest.skip("backend has no data-adapter suggestion protocol")
+    extras = database.suggest_extra_data_adapters()
+    assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))

@@ -9,6 +9,7 @@ from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     TableUniqueConstraint,
 )
 from rhosocial.activerecord.base import DDLSource, UseSqlType
+from rhosocial.activerecord.base.derivation import build_create_table_statement
 
 
 def _constraint_branches(model, field):
@@ -42,6 +43,15 @@ class TestZeroDeclarationDerivation:
         assert ColumnNotNullConstraint not in _constraint_branches(
             bare_class, "note"
         )
+
+    def test_bare_model_builds_a_statement_from_suggestions(self, bare_class, database):
+        """A zero-declaration model must build real DDL via the suggestion
+        tables, not just expose source declarations."""
+        dialect = database.dialect
+        sql = build_create_table_statement(bare_class, dialect).to_sql()[0]
+        assert "name" in sql
+        assert "quantity" in sql
+        assert "price" in sql
 
 
 class TestGenericDeclarationDerivation:

@@ -144,7 +144,9 @@ class ScaleByTenAdapter:
 
 
 class AdapterRowFields:
-    """Bare fields: Python annotations only, zero ``Annotated`` markers."""
+    """Bare fields, except ``id`` which pins its integer storage so the
+    annotated twin derives the same DDL; the value-carrying fields rely on
+    the three suggestion tables."""
 
     id: Annotated[Optional[int], UseSqlType(IntegerType())] = None
     label: str

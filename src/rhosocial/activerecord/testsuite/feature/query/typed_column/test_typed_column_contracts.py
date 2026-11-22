@@ -13,7 +13,7 @@ or on SQL produced from a dialect that was never connected to.
 Two contracts, not one
 ----------------------
 Which column class an annotation means is the **backend's answer** (through
-the ``ColumnTypeSupport`` tables), so "the class is backend-independent" holds
+the ``ColumnTypeSuggestionSupport`` tables), so "the class is backend-independent" holds
 only for explicit declarations:
 
 * an **explicit** ``UseColumnType(SomeColumn)`` is backend-independent by
@@ -21,7 +21,7 @@ only for explicit declarations:
   operations are the same everywhere. A backend that disagreed here would be
   changing what a column class *means*, which the typed_column contracts
   forbid everywhere;
-* **inference** is per backend. Each dialect's ``suggested_column_types()`` is
+* **inference** is per backend. Each dialect's ``suggest_column_types()`` is
   the authority, and what the selection builds must equal that table's answer
   for the annotation. A backend that suggests ``ArrayColumn`` for ``list``
   where another suggests ``JSONColumn`` is not breaking a contract -- it is
@@ -76,9 +76,9 @@ def _class_or_skip(dialect, annotation, column_name):
     The annotation is used as an exact table key (``str`` is the ``str``
     entry); these callers pass the very types the table is keyed by.
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     assert annotation in table, (
-        f"{type(dialect).__name__}.suggested_column_types() does not answer "
+        f"{type(dialect).__name__}.suggest_column_types() does not answer "
         f"for {annotation!r}; every common entry must be answered (see "
         f"test_protocol_guarantees.py)."
     )
@@ -185,9 +185,9 @@ def test_inference_matches_this_backends_own_table(dialect, annotation):
     *not* negotiable is that the selection and the table agree -- otherwise the
     table is documentation rather than the source of the answer.
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     assert annotation in table, (
-        f"{type(dialect).__name__}.suggested_column_types() does not answer "
+        f"{type(dialect).__name__}.suggest_column_types() does not answer "
         f"for {annotation!r}; every common entry must be answered (see "
         f"test_protocol_guarantees.py)."
     )

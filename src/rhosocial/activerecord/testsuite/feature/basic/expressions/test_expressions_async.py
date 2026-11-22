@@ -33,7 +33,7 @@ class _FakeDialect:
     def __init__(self, table):
         self._table = table
 
-    def suggested_column_types(self):
+    def suggest_column_types(self):
         return self._table
 
 
@@ -45,7 +45,7 @@ class TestAsyncExpressions:
         self, expression_models, dialect, family, key, model_name, field
     ):
         """X1: the class is the dialect's answer, not a hard-coded constant."""
-        table = dialect.suggested_column_types()
+        table = dialect.suggest_column_types()
         assert key in table, "{} 漏答 {}（键 {!r}）".format(dialect.name, family, key)
         expected = table[key]
         model = next(item for item in expression_models if item.__name__ == model_name)
@@ -114,7 +114,7 @@ class TestAsyncExpressions:
 
     async def test_x6_all_framework_keys_are_answered(self, dialect):
         """X6: a dialect that omits a framework key fails rather than skips."""
-        table = dialect.suggested_column_types()
+        table = dialect.suggest_column_types()
         missing = [
             getattr(key, "__name__", key) for key in FRAMEWORK_PYTHON_TYPES if key not in table
         ]

@@ -65,11 +65,11 @@ def test_every_common_entry_of_the_protocol_is_answered(dialect):
     precisely so that "no" and "unconsidered" stay distinguishable. What is not
     allowed is absence, because absence is what an oversight looks like.
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     unanswered = [entry for entry in COMMON_TYPES if entry not in table]
 
     assert not unanswered, (
-        f"{type(dialect).__name__}.suggested_column_types() leaves "
+        f"{type(dialect).__name__}.suggest_column_types() leaves "
         f"{len(unanswered)} entr{'y' if len(unanswered) == 1 else 'ies'} of the "
         f"common list unanswered: {[_name(e) for e in unanswered]}. Answer "
         f"None rather than omitting, so a refusal stays distinguishable from "
@@ -98,10 +98,10 @@ def test_an_omitted_entry_fails_at_selection_rather_than_defaulting():
     class _WithHole:
         NAME = "with_hole"
 
-        def suggested_column_types(self):
+        def suggest_column_types(self):
             return dict(table)
 
-        def suggested_extra_column_types(self):
+        def suggest_extra_column_types(self):
             return {}
 
     with pytest.raises(ColumnTypeResolutionError) as err:
@@ -128,7 +128,7 @@ def test_the_answer_for_each_entry_is_a_class_or_none(dialect):
     contract cannot see. Checking the *table* makes a malformed cell the
     backend's own test failure rather than a surprise at the first query.
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     malformed = [
         (_name(entry), value)
         for entry, value in table.items()
@@ -152,7 +152,7 @@ def test_every_answered_class_is_constructible(dialect):
     about the annotation, which is the outcome the narrow column classes were
     introduced to remove.
     """
-    for entry, value in dialect.suggested_column_types().items():
+    for entry, value in dialect.suggest_column_types().items():
         if value is None:
             continue
         column = value(dialect, "c")
@@ -176,7 +176,7 @@ def test_every_extra_answer_is_a_column_class(dialect):
     class names the column class a bare field gets. Anything that is not a
     ``ColumnBase`` subclass would be read as a column class and fail later.
     """
-    extra = dialect.suggested_extra_column_types()
+    extra = dialect.suggest_extra_column_types()
     for entry, value in extra.items():
         assert isinstance(value, type) and issubclass(value, ColumnBase), (
             f"{type(dialect).__name__} answers {value!r} in its extra table for "
@@ -191,8 +191,8 @@ def test_the_extra_table_does_not_shadow_the_common_entries(dialect):
     stays distinguishable from "this backend has one of its own"; a key that
     falls in both would blur the distinction at the first lookup.
     """
-    common = set(dialect.suggested_column_types())
-    extra = set(dialect.suggested_extra_column_types())
+    common = set(dialect.suggest_column_types())
+    extra = set(dialect.suggest_extra_column_types())
     assert not (common & extra), (
         f"{type(dialect).__name__} answers {sorted(_name(e) for e in common & extra)} "
         f"in both tables"
@@ -201,7 +201,7 @@ def test_the_extra_table_does_not_shadow_the_common_entries(dialect):
 
 def test_every_extra_class_is_constructible(dialect):
     """Every extra answer builds a column that renders, like the common ones."""
-    for entry, value in dialect.suggested_extra_column_types().items():
+    for entry, value in dialect.suggest_extra_column_types().items():
         column = value(dialect, "c")
         assert isinstance(column, ColumnBase), (
             f"{type(dialect).__name__} answers {value!r} in its extra table for "
@@ -212,9 +212,9 @@ def test_every_extra_class_is_constructible(dialect):
 
 def test_the_extra_table_is_a_copy(dialect):
     """Mutating the answer must not reach the table a later lookup reads."""
-    first = dialect.suggested_extra_column_types()
+    first = dialect.suggest_extra_column_types()
     first.clear()
-    assert dialect.suggested_extra_column_types() == dialect.suggested_extra_column_types()
+    assert dialect.suggest_extra_column_types() == dialect.suggest_extra_column_types()
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +264,7 @@ def test_no_value_family_label_remains(dialect):
     """
     any_class = next(
         value
-        for value in dialect.suggested_column_types().values()
+        for value in dialect.suggest_column_types().values()
         if isinstance(value, type) and issubclass(value, ColumnBase)
     )
     assert not hasattr(any_class(dialect, "c"), "value_type")
@@ -320,13 +320,13 @@ def test_the_escape_hatch_reaches_past_a_none_answer(dialect):
     class _RefusingDict:
         NAME = "refusing_dict"
 
-        def suggested_column_types(self):
-            table = dict(dialect.suggested_column_types())
+        def suggest_column_types(self):
+            table = dict(dialect.suggest_column_types())
             table[dict] = None
             return table
 
-        def suggested_extra_column_types(self):
-            return dialect.suggested_extra_column_types()
+        def suggest_extra_column_types(self):
+            return dialect.suggest_extra_column_types()
 
     with pytest.raises(ColumnTypeResolutionError):
         resolve_column_class(_RefusingDict(), dict)
@@ -357,7 +357,7 @@ def test_length_renders_one_plain_function_call(dialect):
     can see what happened. A unit clause would be invisible in the same
     comparison and would change the answer.
     """
-    table = dialect.suggested_column_types()
+    table = dialect.suggest_column_types()
     column_class = table.get(str)
     if not (isinstance(column_class, type) and issubclass(column_class, ColumnBase)):
         pytest.skip(f"{type(dialect).__name__} does not answer a class for str")
