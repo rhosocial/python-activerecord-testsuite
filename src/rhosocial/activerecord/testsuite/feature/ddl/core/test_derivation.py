@@ -49,9 +49,12 @@ class TestZeroDeclarationDerivation:
         tables, not just expose source declarations."""
         dialect = database.dialect
         sql = build_create_table_statement(bare_class, dialect).to_sql()[0]
-        assert "name" in sql
-        assert "quantity" in sql
-        assert "price" in sql
+        # Identifier casing is backend policy (e.g. Firebird/Oracle uppercase
+        # and quote identifiers), so compare case-insensitively.
+        sql_lower = sql.lower()
+        assert "name" in sql_lower
+        assert "quantity" in sql_lower
+        assert "price" in sql_lower
 
 
 class TestGenericDeclarationDerivation:
