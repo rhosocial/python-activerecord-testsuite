@@ -9,7 +9,7 @@ fixtures.
 Expression names are imported under short aliases so the definitions stay
 readable.
 """
-from rhosocial.activerecord.backend.expression.statements import auto_increment_parts  # noqa: E402
+from rhosocial.activerecord.backend.suggestion import IntegerAutoIncrementSuggestionRenderer  # noqa: E402
 from rhosocial.activerecord.field import IntegerPKMixin
 
 from typing import Optional

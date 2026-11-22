@@ -3,12 +3,12 @@
 
 Two tables sit behind a bare field's declaration:
 
-* ``suggested_data_types()`` answers the framework's closed list of modelled
+* ``suggest_data_types()`` answers the framework's closed list of modelled
   Python types (``FRAMEWORK_PYTHON_TYPES``). The promise is that a field which
   writes only a Python type always has a declaration, so every entry is
   answered with a ``DataType`` the dialect can spell -- ``None`` is not an
   answer here.
-* ``suggested_extra_data_types()`` answers the backend's **own** value classes
+* ``suggest_extra_data_types()`` answers the backend's **own** value classes
   (a hstore, an SDO geometry, an interval wrapper). Its key space is the
   backend's, which is why it may not overlap the framework list: an overlap
   would make "the framework answers this" and "this backend answers this"
@@ -31,11 +31,11 @@ from rhosocial.activerecord.base.framework_types import FRAMEWORK_PYTHON_TYPES
 
 def test_every_framework_type_is_answered(ddl_dialect):
     """A hole is a lie told to the model layer, so the list is walked, not read."""
-    table = ddl_dialect.suggested_data_types()
+    table = ddl_dialect.suggest_data_types()
     missing = [entry for entry in FRAMEWORK_PYTHON_TYPES if entry not in table]
 
     assert not missing, (
-        f"{type(ddl_dialect).__name__}.suggested_data_types() leaves "
+        f"{type(ddl_dialect).__name__}.suggest_data_types() leaves "
         f"{len(missing)} framework-modelled type(s) unanswered: "
         f"{[getattr(entry, '__name__', entry) for entry in missing]}. "
         f"Answer each with a DataType the dialect renders."
@@ -47,7 +47,7 @@ def test_no_framework_type_is_left_without_a_declaration(ddl_dialect):
     away from the caller rather than state a limitation."""
     unanswered = [
         getattr(entry, "__name__", entry)
-        for entry, suggestion in ddl_dialect.suggested_data_types().items()
+        for entry, suggestion in ddl_dialect.suggest_data_types().items()
         if suggestion is None
     ]
 
@@ -60,15 +60,15 @@ def test_no_framework_type_is_left_without_a_declaration(ddl_dialect):
 def test_every_suggested_declaration_renders(ddl_dialect):
     """A suggestion the renderer cannot keep is worse than none: the caller
     finds out at CREATE TABLE instead of here."""
-    for entry, suggestion in ddl_dialect.suggested_data_types().items():
+    for entry, suggestion in ddl_dialect.suggest_data_types().items():
         if suggestion is None:
             continue  # covered by the previous contract, not by this one
         ddl_dialect.format_data_type(suggestion)
 
 
 def test_each_call_returns_a_new_table(ddl_dialect):
-    first = ddl_dialect.suggested_data_types()
-    second = ddl_dialect.suggested_data_types()
+    first = ddl_dialect.suggest_data_types()
+    second = ddl_dialect.suggest_data_types()
 
     assert first is not second
     assert first == second
@@ -77,13 +77,13 @@ def test_each_call_returns_a_new_table(ddl_dialect):
 def test_the_extra_table_is_disjoint_from_the_framework_list(ddl_dialect):
     """The backend's own keys are its own; the framework list is not theirs to
     answer again."""
-    extras: Any = ddl_dialect.suggested_extra_data_types()
+    extras: Any = ddl_dialect.suggest_extra_data_types()
 
     assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))
 
 
 def test_every_extra_answer_is_a_renderable_declaration(ddl_dialect):
-    for entry, suggestion in ddl_dialect.suggested_extra_data_types().items():
+    for entry, suggestion in ddl_dialect.suggest_extra_data_types().items():
         assert suggestion is not None, (
             f"{type(ddl_dialect).__name__} declares {getattr(entry, '__name__', entry)!r} "
             f"as an own value class but suggests no declaration for it"
@@ -92,8 +92,8 @@ def test_every_extra_answer_is_a_renderable_declaration(ddl_dialect):
 
 
 def test_the_extra_table_is_consistent_across_calls(ddl_dialect):
-    first = ddl_dialect.suggested_extra_data_types()
-    second = ddl_dialect.suggested_extra_data_types()
+    first = ddl_dialect.suggest_extra_data_types()
+    second = ddl_dialect.suggest_extra_data_types()
 
     assert first is not second
     assert first == second

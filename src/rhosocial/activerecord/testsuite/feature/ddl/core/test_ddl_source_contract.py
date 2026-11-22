@@ -25,13 +25,15 @@ from rhosocial.activerecord.backend.expression.statements import (
     ColumnUniqueConstraint,
     CreateTableOptions,
     IndexDefinition,
-    PartitionStrategy,
     StorageOptionsExpression,
     TableConstraint,
     TablePrimaryKeyConstraint,
     TableUniqueConstraint,
 )
-from rhosocial.activerecord.backend.expression.statements.ddl_partition import PartitionClause
+from rhosocial.activerecord.backend.expression.statements.ddl_partition import (
+    PartitionByRangeClause,
+    PartitionClause,
+)
 from rhosocial.activerecord.backend.expression.types import JsonType, TextType
 from rhosocial.activerecord.base import (
     CharacterSetAttribute,
@@ -124,9 +126,8 @@ TABLE_INDEX = IndexDefinition(
 )
 TABLE_OPTIONS = CreateTableOptions(None, or_replace=True)
 STORAGE_OPTIONS = StorageOptionsExpression(None, {"fillfactor": 80})
-TABLE_PARTITION = PartitionClause(
+TABLE_PARTITION = PartitionByRangeClause(
     None,
-    PartitionStrategy.RANGE,
     [Column(None, "record_id")],
 )
 TABLE_INHERITS = ["parent_records"]

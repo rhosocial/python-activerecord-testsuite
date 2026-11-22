@@ -38,11 +38,10 @@ class _Refuses(DummyDialect):
     def __init__(self, concept):
         super().__init__()
         self._concept = concept
-
-    def supports_data_types(self):
-        table = super().supports_data_types()
-        table[self._concept] = False
-        return table
+        # Decline the concept by hiding its capability method on this instance.
+        formatter = "format_data_type_" + concept
+        if hasattr(self, formatter):
+            object.__setattr__(self, formatter, None)
 
 
 def _operation_for(column):

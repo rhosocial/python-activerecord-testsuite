@@ -64,8 +64,14 @@ class _AnsweringDialect:
     def __init__(self, **answers):
         self._answers = answers
 
-    def supports_data_types(self):
-        return dict(self._answers)
+    def __getattr__(self, name):
+        # A declared concept answers through a zero-argument switch of the
+        # same name (the capability-protocol channel): True = renders, False =
+        # explicitly does not render. Unknown names raise (unanswered).
+        if name in self._answers:
+            value = self._answers[name]
+            return lambda: bool(value)
+        raise AttributeError(name)
 
 
 def _row_values():

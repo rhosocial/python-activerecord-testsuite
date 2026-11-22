@@ -29,8 +29,8 @@ class BothChannels(DummyDialect):
     def supports_identity_column(self):
         return True
 
-    def supports_data_types(self):
-        return {"json": True, "array": False}
+    def format_data_type_json(self, expr):
+        return ("JSON", ())  # declares the json concept
 
 
 class MethodOnly(DummyDialect):
@@ -39,15 +39,9 @@ class MethodOnly(DummyDialect):
     def supports_identity_column(self):
         return False
 
-    def supports_data_types(self):
-        return {}
-
 
 class Neither(DummyDialect):
     name = "Neither"
-
-    def supports_data_types(self):
-        return {}
 
 
 def test_a_method_answers_first_and_names_the_answer():

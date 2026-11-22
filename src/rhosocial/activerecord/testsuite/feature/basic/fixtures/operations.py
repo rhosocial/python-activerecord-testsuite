@@ -16,11 +16,11 @@ Two halves, deliberately kept apart:
 Switch names resolve through a fixed order, because the dialect answers
 capability questions through two channels that do not overlap (measured: on
 SQLite ``supports_json_type`` is a method that is not a key of
-``supports_data_types()``, and ``json`` is a key with no method):
+``format_data_type_json``, and ``json`` has no probe method):
 
 1. a zero-argument boolean method of that name on the dialect -- the shape
    ``pytest_plugin.requirements`` already answers strictly;
-2. a key of ``supports_data_types()`` -- the storage-concept table;
+2. a ``format_data_type_<concept>`` formatter -- the capability declaration;
 3. neither: :class:`MissingRequirementError`, naming the dialect and the
    switch.
 
@@ -112,31 +112,29 @@ def switch_answer(dialect: Any, switch: str) -> bool:
     if callable(getattr(dialect, switch, None)):
         return answer(dialect, switch)
 
-    table = _data_type_table(dialect)
-    if switch in table:
-        return bool(table[switch])
+    # Second channel: the capability protocol declares a storage concept by
+    # providing its format_data_type_<concept> formatter. Support is exactly
+    # "how many formatters are defined" -- no summary table is involved.
+    if _declares_data_type(dialect, switch):
+        return True
 
     dialect_name = getattr(dialect, "name", type(dialect).__name__)
     raise MissingRequirementError(
-        "{}.{}: the dialect neither implements this method nor names the "
-        "concept in supports_data_types(), so it has not answered the "
-        "question".format(dialect_name, switch)
+        "{}.{}: the dialect implements neither a zero-argument method nor the "
+        "format_data_type_{} capability, so it has not answered the "
+        "question".format(dialect_name, switch, switch)
     )
 
 
-def _data_type_table(dialect: Any) -> dict:
-    """The dialect's storage-concept table, or an empty one.
+def _declares_data_type(dialect: Any, concept: str) -> bool:
+    """Whether the dialect declares a storage concept via its capability protocol.
 
-    A dialect that does not implement ``supports_data_types`` has answered
-    nothing through this channel; whether that is a gap is decided after the
-    method channel has also been asked, so an empty table is not itself an
-    error here.
+    A concept is supported exactly when the dialect defines its
+    ``format_data_type_<concept>`` formatter (or, for version-gated types, a
+    ``supports_<concept>`` switch -- resolved by the method channel above).
+    No aggregate table is used or needed.
     """
-    method = getattr(dialect, "supports_data_types", None)
-    if not callable(method):
-        return {}
-    answered = method()
-    return answered if isinstance(answered, dict) else {}
+    return callable(getattr(dialect, "format_data_type_" + concept, None))
 
 
 def operation_reason(dialect: Any, operation: Operation) -> Optional[str]:
