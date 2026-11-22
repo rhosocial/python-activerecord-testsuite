@@ -73,7 +73,7 @@ def column_class_for(dialect, key, family):
     means "no operation class" and skips with a reason that names both the
     dialect and the value family (README sections 9 and 12, X6).
     """
-    table = dialect.suggest_column_types()
+    table = dialect.suggest_column_types().table
     if key not in table:
         pytest.fail(
             "{} 的 suggest_column_types() 漏答 {}（键 {!r}）：漏答是失败，不是跳过".format(

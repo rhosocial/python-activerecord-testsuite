@@ -11,7 +11,7 @@ expression instances they need.  It receives only a ``dialect`` and never a
 backend, connection, database name or scenario: composing and executing the
 environment belongs to the L2 fixtures in ``query_integration/conftest.py``.
 """
-from rhosocial.activerecord.backend.suggestion import IntegerAutoIncrementSuggestionRenderer  # noqa: E402
+from rhosocial.activerecord.base.derivation import integer_auto_increment_parts  # noqa: E402
 
 from rhosocial.activerecord.backend.expression import ColumnConstraint as Constraint
 from rhosocial.activerecord.backend.expression import ColumnDefinition as Column
@@ -127,7 +127,7 @@ class Definition:
         return Column(self.dialect, name, sql_type, constraints=constraints or [])
 
     def auto_pk(self, name="id"):
-        data_type, attributes = IntegerAutoIncrementSuggestionRenderer().parts(self.dialect, Int(self.dialect))
+        data_type, attributes = integer_auto_increment_parts(self.dialect, Int(self.dialect))
         return Column(
             self.dialect,
             name,

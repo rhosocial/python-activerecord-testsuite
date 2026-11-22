@@ -76,9 +76,9 @@ def _class_or_skip(dialect, annotation, column_name):
     The annotation is used as an exact table key (``str`` is the ``str``
     entry); these callers pass the very types the table is keyed by.
     """
-    table = dialect.suggest_column_types()
+    table = dialect.suggest_column_types().table
     assert annotation in table, (
-        f"{type(dialect).__name__}.suggest_column_types() does not answer "
+        f"{type(dialect).__name__}.suggest_column_types().table does not answer "
         f"for {annotation!r}; every common entry must be answered (see "
         f"test_protocol_guarantees.py)."
     )
@@ -185,9 +185,9 @@ def test_inference_matches_this_backends_own_table(dialect, annotation):
     *not* negotiable is that the selection and the table agree -- otherwise the
     table is documentation rather than the source of the answer.
     """
-    table = dialect.suggest_column_types()
+    table = dialect.suggest_column_types().table
     assert annotation in table, (
-        f"{type(dialect).__name__}.suggest_column_types() does not answer "
+        f"{type(dialect).__name__}.suggest_column_types().table does not answer "
         f"for {annotation!r}; every common entry must be answered (see "
         f"test_protocol_guarantees.py)."
     )

@@ -31,11 +31,11 @@ from rhosocial.activerecord.base.framework_types import FRAMEWORK_PYTHON_TYPES
 
 def test_every_framework_type_is_answered(ddl_dialect):
     """A hole is a lie told to the model layer, so the list is walked, not read."""
-    table = ddl_dialect.suggest_data_types()
+    table = ddl_dialect.suggest_data_types().table
     missing = [entry for entry in FRAMEWORK_PYTHON_TYPES if entry not in table]
 
     assert not missing, (
-        f"{type(ddl_dialect).__name__}.suggest_data_types() leaves "
+        f"{type(ddl_dialect).__name__}.suggest_data_types().table leaves "
         f"{len(missing)} framework-modelled type(s) unanswered: "
         f"{[getattr(entry, '__name__', entry) for entry in missing]}. "
         f"Answer each with a DataType the dialect renders."
@@ -47,7 +47,7 @@ def test_no_framework_type_is_left_without_a_declaration(ddl_dialect):
     away from the caller rather than state a limitation."""
     unanswered = [
         getattr(entry, "__name__", entry)
-        for entry, suggestion in ddl_dialect.suggest_data_types().items()
+        for entry, suggestion in ddl_dialect.suggest_data_types().table.items()
         if suggestion is None
     ]
 
@@ -60,15 +60,15 @@ def test_no_framework_type_is_left_without_a_declaration(ddl_dialect):
 def test_every_suggested_declaration_renders(ddl_dialect):
     """A suggestion the renderer cannot keep is worse than none: the caller
     finds out at CREATE TABLE instead of here."""
-    for entry, suggestion in ddl_dialect.suggest_data_types().items():
+    for entry, suggestion in ddl_dialect.suggest_data_types().table.items():
         if suggestion is None:
             continue  # covered by the previous contract, not by this one
         ddl_dialect.format_data_type(suggestion)
 
 
 def test_each_call_returns_a_new_table(ddl_dialect):
-    first = ddl_dialect.suggest_data_types()
-    second = ddl_dialect.suggest_data_types()
+    first = ddl_dialect.suggest_data_types().table
+    second = ddl_dialect.suggest_data_types().table
 
     assert first is not second
     assert first == second
@@ -77,13 +77,13 @@ def test_each_call_returns_a_new_table(ddl_dialect):
 def test_the_extra_table_is_disjoint_from_the_framework_list(ddl_dialect):
     """The backend's own keys are its own; the framework list is not theirs to
     answer again."""
-    extras: Any = ddl_dialect.suggest_extra_data_types()
+    extras: Any = ddl_dialect.suggest_extra_data_types().table
 
     assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))
 
 
 def test_every_extra_answer_is_a_renderable_declaration(ddl_dialect):
-    for entry, suggestion in ddl_dialect.suggest_extra_data_types().items():
+    for entry, suggestion in ddl_dialect.suggest_extra_data_types().table.items():
         assert suggestion is not None, (
             f"{type(ddl_dialect).__name__} declares {getattr(entry, '__name__', entry)!r} "
             f"as an own value class but suggests no declaration for it"
@@ -92,8 +92,8 @@ def test_every_extra_answer_is_a_renderable_declaration(ddl_dialect):
 
 
 def test_the_extra_table_is_consistent_across_calls(ddl_dialect):
-    first = ddl_dialect.suggest_extra_data_types()
-    second = ddl_dialect.suggest_extra_data_types()
+    first = ddl_dialect.suggest_extra_data_types().table
+    second = ddl_dialect.suggest_extra_data_types().table
 
     assert first is not second
     assert first == second
@@ -110,7 +110,7 @@ def test_column_type_table_covers_every_framework_type_if_supported(ddl_dialect)
 
     if not isinstance(ddl_dialect, ColumnTypeSuggestionSupport):
         pytest.skip("dialect has no column-type suggestion protocol")
-    table = ddl_dialect.suggest_column_types()
+    table = ddl_dialect.suggest_column_types().table
     assert not [e for e in FRAMEWORK_PYTHON_TYPES if e not in table]
 
 
@@ -119,7 +119,7 @@ def test_column_type_extra_table_is_disjoint_if_supported(ddl_dialect):
 
     if not isinstance(ddl_dialect, ColumnTypeSuggestionSupport):
         pytest.skip("dialect has no column-type suggestion protocol")
-    extras = ddl_dialect.suggest_extra_column_types()
+    extras = ddl_dialect.suggest_extra_column_types().table
     assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))
 
 
@@ -130,11 +130,11 @@ def test_adapter_suggestion_table_is_sparse_and_fresh_if_supported(database):
     backend = database
     if not isinstance(backend, DataAdapterSuggestionSupport):
         pytest.skip("backend has no data-adapter suggestion protocol")
-    table = backend.suggest_data_adapters()
+    table = backend.suggest_data_adapters().table
     assert isinstance(table, dict)
     # Adapter tables may be cached by the backend; only the SQL-structure
     # tables promise a fresh dict on every call.
-    assert backend.suggest_data_adapters() == table
+    assert backend.suggest_data_adapters().table == table
     native = {str, int, float, bytes}
     assert native.isdisjoint(set(table))
 
@@ -144,5 +144,5 @@ def test_adapter_extra_table_is_disjoint_if_supported(database):
 
     if not isinstance(database, DataAdapterSuggestionSupport):
         pytest.skip("backend has no data-adapter suggestion protocol")
-    extras = database.suggest_extra_data_adapters()
+    extras = database.suggest_extra_data_adapters().table
     assert set(extras).isdisjoint(set(FRAMEWORK_PYTHON_TYPES))

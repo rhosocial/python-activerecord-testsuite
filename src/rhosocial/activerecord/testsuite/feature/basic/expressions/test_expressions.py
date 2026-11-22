@@ -10,6 +10,8 @@ The classes under test are the ones already declared by ``types_models``,
 inspected. A pass means the model-declaration -> dialect-answer -> operation
 route is intact, not that a particular backend class was hard-coded.
 """
+from rhosocial.activerecord.backend.suggestion.definitions import ColumnTypeSuggestion  # noqa: E402
+
 
 import operator
 
@@ -37,7 +39,7 @@ class _FakeDialect:
         self._table = table
 
     def suggest_column_types(self):
-        return self._table
+        return ColumnTypeSuggestion(table=self._table)
 
 
 class TestExpressions:
@@ -48,7 +50,7 @@ class TestExpressions:
         self, expression_models, dialect, family, key, model_name, field
     ):
         """X1: the class is the dialect's answer, not a hard-coded constant."""
-        table = dialect.suggest_column_types()
+        table = dialect.suggest_column_types().table
         assert key in table, "{} 漏答 {}（键 {!r}）".format(dialect.name, family, key)
         expected = table[key]
         model = next(item for item in expression_models if item.__name__ == model_name)
@@ -117,7 +119,7 @@ class TestExpressions:
 
     def test_x6_all_framework_keys_are_answered(self, dialect):
         """X6: a dialect that omits a framework key fails rather than skips."""
-        table = dialect.suggest_column_types()
+        table = dialect.suggest_column_types().table
         missing = [
             getattr(key, "__name__", key) for key in FRAMEWORK_PYTHON_TYPES if key not in table
         ]

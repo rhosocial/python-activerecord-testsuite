@@ -77,7 +77,7 @@ def _skip_without_column_class(dialect, annotation):
     contract about the core operation surface must not turn it into a failure
     on the backends that refuse.
     """
-    if dialect.suggest_column_types().get(annotation) is None:
+    if dialect.suggest_column_types().table.get(annotation) is None:
         pytest.skip(f"this backend answers no column class for {annotation!r}")
 
 

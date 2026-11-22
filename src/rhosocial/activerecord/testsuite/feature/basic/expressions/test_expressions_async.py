@@ -7,6 +7,8 @@ pytest schedules it: no await happens here and no connection is opened. The
 async twins in ``TWINS`` are the models that declare ``FieldProxy`` for the
 mapped-model checks, so both halves inspect the same declarations.
 """
+from rhosocial.activerecord.backend.suggestion.definitions import ColumnTypeSuggestion  # noqa: E402
+
 
 import operator
 
@@ -34,7 +36,7 @@ class _FakeDialect:
         self._table = table
 
     def suggest_column_types(self):
-        return self._table
+        return ColumnTypeSuggestion(table=self._table)
 
 
 class TestAsyncExpressions:
@@ -45,7 +47,7 @@ class TestAsyncExpressions:
         self, expression_models, dialect, family, key, model_name, field
     ):
         """X1: the class is the dialect's answer, not a hard-coded constant."""
-        table = dialect.suggest_column_types()
+        table = dialect.suggest_column_types().table
         assert key in table, "{} 漏答 {}（键 {!r}）".format(dialect.name, family, key)
         expected = table[key]
         model = next(item for item in expression_models if item.__name__ == model_name)
@@ -114,7 +116,7 @@ class TestAsyncExpressions:
 
     async def test_x6_all_framework_keys_are_answered(self, dialect):
         """X6: a dialect that omits a framework key fails rather than skips."""
-        table = dialect.suggest_column_types()
+        table = dialect.suggest_column_types().table
         missing = [
             getattr(key, "__name__", key) for key in FRAMEWORK_PYTHON_TYPES if key not in table
         ]
