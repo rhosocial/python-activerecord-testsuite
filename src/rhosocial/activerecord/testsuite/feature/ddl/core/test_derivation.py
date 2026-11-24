@@ -1,5 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/test_derivation.py
-"""Backend-independent DDLSource declaration tests."""
+"""Backend-independent ModelDDLDeclaration declaration tests."""
 
 from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     ColumnCheckConstraint,
@@ -8,7 +8,7 @@ from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     ForeignKeyConstraint,
     TableUniqueConstraint,
 )
-from rhosocial.activerecord.base import DDLSource, UseSqlType
+from rhosocial.activerecord.base import ModelDDLDeclaration, UseSqlType
 from rhosocial.activerecord.base.derivation import build_create_table_statement
 
 
@@ -24,7 +24,7 @@ def _constraint_branches(model, field):
 
 class TestZeroDeclarationDerivation:
     def test_source_declaration(self, bare_class):
-        assert isinstance(bare_class, DDLSource)
+        assert isinstance(bare_class, ModelDDLDeclaration)
         assert bare_class.table_name() == "ddl_bare_items"
         assert bare_class.primary_key_columns() == ("id",)
         assert bare_class.ddl_field_names() == (

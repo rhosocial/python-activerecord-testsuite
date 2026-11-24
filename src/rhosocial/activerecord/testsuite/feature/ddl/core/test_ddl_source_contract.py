@@ -41,7 +41,7 @@ from rhosocial.activerecord.base import (
     ColumnOptions,
     DDLAnnotation,
     DDLAnnotationHandler,
-    DDLSource,
+    ModelDDLDeclaration,
     DerivedField,
     UseColumn,
     UseColumnAttributes,
@@ -356,7 +356,7 @@ class UnhandledModel(ActiveRecord):
 
 @pytest.mark.parametrize("model", [SyncContractModel, AsyncContractModel], ids=("sync", "async"))
 def test_contract_source_collects_table_and_field_declarations(model):
-    assert isinstance(model, DDLSource)
+    assert isinstance(model, ModelDDLDeclaration)
     assert model.table_name() == "ddl_contract_records"
     assert model.schema_name() == "app"
     assert model.primary_key_columns() == ("record_id",)

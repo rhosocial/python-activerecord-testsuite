@@ -1,5 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/conftest.py
-"""L2 environment and model fixtures for the backend-independent DDLSource group.
+"""L2 environment and model fixtures for the backend-independent ModelDDLDeclaration group.
 
 These tests render statements and inspect declarations; they never create
 tables.  They still own one database, because the dialect they render with has
@@ -30,7 +30,7 @@ DECLARATION = Declaration(
     # This scope opens a database; the plugin enforces this declaration.
     uses_database=True,
     parallel=True,
-    purpose="DDLSource contracts: what a declaration may say and how it renders.",
+    purpose="ModelDDLDeclaration contracts: what a declaration may say and how it renders.",
     passes_means="the declaration surface renders and refuses as documented",
     fails_means="a declaration renders something the backend does not accept, "
     "or accepts something it should refuse",

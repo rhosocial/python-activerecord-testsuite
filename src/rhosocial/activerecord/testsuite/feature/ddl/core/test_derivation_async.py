@@ -1,5 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/test_derivation_async.py
-"""Backend-independent asynchronous DDLSource declaration tests."""
+"""Backend-independent asynchronous ModelDDLDeclaration declaration tests."""
 
 from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     ColumnCheckConstraint,
@@ -8,7 +8,7 @@ from rhosocial.activerecord.backend.expression.statements.ddl_table import (
     ForeignKeyConstraint,
     TableUniqueConstraint,
 )
-from rhosocial.activerecord.base import DDLSource, UseSqlType
+from rhosocial.activerecord.base import ModelDDLDeclaration, UseSqlType
 
 
 def _constraint_branches(model, field):
@@ -23,7 +23,7 @@ def _constraint_branches(model, field):
 
 class TestZeroDeclarationDerivationAsync:
     async def test_source_declaration(self, async_bare_class):
-        assert isinstance(async_bare_class, DDLSource)
+        assert isinstance(async_bare_class, ModelDDLDeclaration)
         assert async_bare_class.table_name() == "ddl_bare_items"
         assert async_bare_class.primary_key_columns() == ("id",)
         assert async_bare_class.ddl_field_names() == (

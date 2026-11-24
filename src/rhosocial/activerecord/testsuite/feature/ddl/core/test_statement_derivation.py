@@ -1,5 +1,5 @@
 # src/rhosocial/activerecord/testsuite/feature/ddl/test_statement_derivation.py
-"""Backend contract for DDLSource -> statement derivation."""
+"""Backend contract for ModelDDLDeclaration -> statement derivation."""
 
 try:  # Python 3.8 has no typing.Annotated
     from typing import Annotated, Optional
