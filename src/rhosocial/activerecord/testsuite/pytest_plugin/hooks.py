@@ -19,7 +19,6 @@ Three moments:
 from __future__ import annotations
 
 import os
-import re
 from typing import Dict, List, Optional, Tuple
 
 import pytest
@@ -39,7 +38,24 @@ _DIALECT_FIXTURES = ("ddl_dialect", "database")
 #: Fixtures that say a test talks to a database at all.
 _DATABASE_FIXTURES = frozenset(("database", "database_config"))
 
-_SECTION = re.compile(r"^(purpose|passes|fails):\s*(.*)$", re.IGNORECASE)
+#: The docstring sections a test may carry, matched case-insensitively.
+_SECTION_NAMES = ("purpose", "passes", "fails")
+
+
+def _section_of(line: str) -> Optional[Tuple[str, str]]:
+    """Split a ``purpose:`` / ``passes:`` / ``fails:`` line into name and text.
+
+    The name must be one of the known sections and be followed directly by a
+    colon. Everything after that colon is the section's text, so the text itself
+    may contain colons.
+    """
+    name, colon, text = line.partition(":")
+    if not colon:
+        return None
+    lowered = name.lower()
+    if lowered not in _SECTION_NAMES:
+        return None
+    return lowered, text.strip()
 
 
 def parse_docstring(text: Optional[str]) -> Tuple[str, Dict[str, str]]:
@@ -55,10 +71,10 @@ def parse_docstring(text: Optional[str]) -> Tuple[str, Dict[str, str]]:
     current = None
     for line in text.strip().splitlines():
         stripped = line.strip()
-        match = _SECTION.match(stripped)
-        if match:
-            current = match.group(1).lower()
-            sections[current] = match.group(2).strip()
+        section = _section_of(stripped)
+        if section is not None:
+            current, body = section
+            sections[current] = body
             continue
         if not stripped:
             continue

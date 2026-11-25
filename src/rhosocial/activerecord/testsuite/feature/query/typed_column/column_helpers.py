@@ -76,9 +76,40 @@ def build_column(
     return column_class(dialect, column_name, table=table, schema_name=schema_name)
 
 
+#: The attribute family a dialect declares its data-type capabilities through.
+_DATA_TYPE_CONCEPT_PREFIX = "format_data_type_"
+
+#: Characters a concept name may carry after its first letter.
+_CONCEPT_TAIL_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789_")
+
+
+def supported_concepts(dialect: Any) -> set:
+    """The ``format_data_type_*`` concepts a dialect declares, without the prefix.
+
+    A declared capability is a class attribute named
+    ``format_data_type_<concept>``, where the concept is a lowercase ASCII
+    identifier: one lowercase letter, then lowercase letters, digits or
+    underscores -- the same shape the DDL formatters are named by, so a test
+    reading capabilities and a test rendering one cannot disagree about a name.
+    """
+    concepts = set()
+    for name in dir(type(dialect)):
+        if not name.startswith(_DATA_TYPE_CONCEPT_PREFIX):
+            continue
+        concept = name[len(_DATA_TYPE_CONCEPT_PREFIX) :]
+        if not concept:
+            continue
+        if not ("a" <= concept[0] <= "z"):
+            continue
+        if all(ch in _CONCEPT_TAIL_CHARS for ch in concept):
+            concepts.add(concept)
+    return concepts
+
+
 __all__ = [
     "COMMON_TYPES",
     "ColumnTypeResolutionError",
     "build_column",
     "resolve_column_class",
+    "supported_concepts",
 ]

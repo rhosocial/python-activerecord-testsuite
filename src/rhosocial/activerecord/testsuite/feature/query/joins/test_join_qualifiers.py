@@ -7,17 +7,14 @@ regressions surface locally instead of as live-server errors:
 - JOIN ranges keep schema qualifiers; column references stay two-part.
 - Aliased self-join ranges are referenced by alias only.
 """
-import re
-
-import pytest
 
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
 def _norm(sql: str) -> str:
-    """Normalise rendered SQL: strip identifier quotes, fold case/space."""
+    """Normalise rendered SQL: strip identifier quotes, collapse space, fold case."""
     cleaned = sql.replace('"', "").replace("`", "").replace("[", "").replace("]", "")
-    return re.sub(r"\s+", " ", cleaned).lower()
+    return " ".join(cleaned.split()).lower()
 
 
 @requires_protocol("rhosocial.activerecord.backend.dialect.protocols.JoinSupport", "supports_inner_join")

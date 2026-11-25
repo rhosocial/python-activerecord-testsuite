@@ -1,14 +1,13 @@
 # src/rhosocial/activerecord/testsuite/feature/query/cross_schema/test_mixed_schema_qualifiers.py
 """Qualifier-form contract for schema-bound models under plain and joined ranges."""
-import re
 
 from rhosocial.activerecord.testsuite.utils import requires_protocol
 
 
 def _norm(sql: str) -> str:
-    """Normalise rendered SQL: strip identifier quotes, fold case/space."""
+    """Normalise rendered SQL: strip identifier quotes, collapse space, fold case."""
     cleaned = sql.replace('"', "").replace("`", "").replace("[", "").replace("]", "")
-    return re.sub(r"\s+", " ", cleaned).lower()
+    return " ".join(cleaned.split()).lower()
 
 
 @requires_protocol("rhosocial.activerecord.backend.dialect.protocols.CreateSchemaSupport", "supports_schema")

@@ -20,13 +20,9 @@ from rhosocial.activerecord.backend.expression import (
     UUIDConstantExpression,
     UUIDGenerationExpression,
 )
-def _supported_concepts(dialect):
-    """Concepts the dialect declares via its format_data_type_* capability family."""
-    import re as _re
-    return {m.group(1) for n in dir(type(dialect))
-            if (m := _re.match(r"^format_data_type_([a-z][a-z0-9_]*)$", n))}
-
-
+from rhosocial.activerecord.testsuite.feature.query.typed_column.column_helpers import (
+    supported_concepts,
+)
 
 
 @pytest.fixture
@@ -218,7 +214,7 @@ def test_storage_capability_is_declared_independently(dialect):
     """
     from rhosocial.activerecord.backend.expression.types import UUIDType
 
-    supported = _supported_concepts(dialect)
+    supported = supported_concepts(dialect)
     suggested = dialect.suggest_substitute_types().mapping
     stores_natively = "uuid" in supported
     has_substitute = "uuid" in suggested

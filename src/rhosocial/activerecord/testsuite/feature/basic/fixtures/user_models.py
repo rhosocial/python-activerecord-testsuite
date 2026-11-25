@@ -8,11 +8,10 @@ The backend-specific provider is responsible for taking these classes and
 configuring them with a live database connection at test time.
 """
 
-import re
+import json  # Added import for json
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Type, Literal, Any, Dict, List
-import json  # Added import for json
 
 from pydantic import EmailStr, Field, field_validator, model_validator
 
@@ -126,7 +125,7 @@ class ValidatedFieldUser(IntegerPKMixin, ActiveRecord):
     @field_validator("username")
     def validate_username(cls, value):
         """A custom validator that rejects usernames containing '123'."""
-        if re.search(r"123", value):
+        if "123" in value:
             # This test uses the framework's custom ValidationError, which is
             # distinct from pydantic.ValidationError.
             raise ValidationError("Username must not contain '123'.")
@@ -169,7 +168,7 @@ class AsyncValidatedFieldUser(IntegerPKMixin, AsyncActiveRecord):
     @field_validator("username")
     def validate_username(cls, value):
         """A custom validator that rejects usernames containing '123'."""
-        if re.search(r"123", value):
+        if "123" in value:
             # This test uses the framework's custom ValidationError, which is
             # distinct from pydantic.ValidationError.
             raise ValidationError("Username must not contain '123'.")

@@ -19,13 +19,9 @@ Neither set may overlap, because a type in both is one of the two a lie.
 import pytest
 
 from rhosocial.activerecord.backend.expression.types import EnumType
-def _supported_concepts(dialect):
-    """Concepts the dialect declares via its format_data_type_* capability family."""
-    import re as _re
-    return {m.group(1) for n in dir(type(dialect))
-            if (m := _re.match(r"^format_data_type_([a-z][a-z0-9_]*)$", n))}
-
-
+from rhosocial.activerecord.testsuite.feature.query.typed_column.column_helpers import (
+    supported_concepts,
+)
 
 
 @pytest.fixture
@@ -43,7 +39,7 @@ def dialect(json_user_fixture):
 
 def _renderable(dialect) -> set:
     """The generic type names this dialect can actually render."""
-    return _supported_concepts(dialect)
+    return supported_concepts(dialect)
 
 
 def _suggested(dialect) -> dict:
