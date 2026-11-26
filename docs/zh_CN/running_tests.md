@@ -231,5 +231,5 @@ def test_basic_cte():
 - 必须处理数据库连接池并清理测试数据。
 - 必须从 provider 方法返回元组（即使对于单个模型）。
 - 能力处理由方言驱动：`requires_protocol` 读取 Protocol 类支持，
-  `requires_functions` 读取 `supports_functions(...)` — 后端不再用 `add_*`
+  `requires_functions` 读取 `suggest_functions().functions` 目录 — 后端不再用 `add_*`
   方法单独声明能力。

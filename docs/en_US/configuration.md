@@ -146,7 +146,7 @@ are expressed with exactly **two** generic pytest decorators, both defined in
 | Decorator | Marker | Captures |
 |-----------|--------|----------|
 | `requires_protocol(ProtocolClass, method_name=None)` | `requires_protocol` | A capability expressed by a Protocol class on the dialect (optionally a specific `supports_*` method). |
-| `requires_functions(*fn_names)` | `requires_functions` | A capability expressed by SQL function name(s) the dialect's `supports_functions(...)` accepts. |
+| `requires_functions(*fn_names)` | `requires_functions` | A capability expressed by SQL function name(s) the dialect's `suggest_functions().functions` catalogue reports as available. |
 
 Both expand to a single pytest marker; the runtime skip logic lives in
 topic-level `conftest.py` files, which read the markers via
@@ -204,7 +204,7 @@ sequenceDiagram
     participant Dialect as Backend Dialect
     
     Test->>Marker: collect (marker attached)
-    Conftest->>Dialect: inspect dialect Protocol / supports_functions()
+    Conftest->>Dialect: inspect dialect Protocol / suggest_functions().functions
     Dialect-->>Conftest: True / False
     
     alt Capability Supported

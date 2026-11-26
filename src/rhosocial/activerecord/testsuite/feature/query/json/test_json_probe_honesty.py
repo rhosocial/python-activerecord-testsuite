@@ -22,10 +22,11 @@ Which function names a backend declares is not a capability switch. A
 ``supports_*`` switch takes no arguments, so there is no shared
 ``supports_json_function(name)`` probe any more: a name lookup answers "does
 this backend have *this* function", which is not the same question as "does
-this backend support JSON". The shared vocabulary lives in the parameterless
-``supports_functions()`` switch, whose mapping keys are the backend's own
-function constructors; a dialect that advertises JSON but names no JSON
-constructor there is failing this test. Comparing rendered SQL against the
+this backend support JSON". The shared vocabulary is the catalogue in the
+``suggest_functions()`` suggestion -- a value, not a switch -- whose
+``functions`` mapping keys are the backend's own function constructors; a
+dialect that advertises JSON but names no JSON constructor there is failing
+this test. Comparing rendered SQL against the
 dialect's own *spellings* needs a per-name answer, which is backend-private:
 some dialects keep ``is_json_function_available(name)`` (SQL Server does),
 others do not. That comparison runs where the helper exists and is explicitly
@@ -238,8 +239,8 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
     if not declared:
         pytest.fail(
             f"{dialect.name} advertises supports_json_type() but names no JSON "
-            f"function in supports_functions(); it cannot name a single JSON "
-            f"function"
+            f"function in its suggest_functions() catalogue; it cannot name a "
+            f"single JSON function"
         )
 
     own = _own_function_names(dialect)
@@ -275,20 +276,21 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
 def _declared_json_functions(dialect) -> Optional[tuple]:
     """JSON function constructors this dialect's own vocabulary names.
 
-    ``supports_functions()`` is a parameterless switch that answers with a
-    mapping, so it is a legitimate place to ask which functions a backend has
-    -- no per-name capability probe is invented here. The keys are the
+    ``suggest_functions()`` answers with the ``FunctionSuggestion`` value, so
+    it is a catalogue rather than a capability switch -- no per-name capability
+    probe is invented here. The keys of its ``functions`` mapping are the
     backend's constructor vocabulary (``json_extract``, ``json_unquote``, ...),
     not SQL spellings, so they are only used to establish that the backend can
     name JSON functions at all.
 
-    ``None`` means the dialect has no such switch. An empty tuple means it has
-    one and names no JSON function, which the caller treats as a failure.
+    ``None`` means the dialect has no such suggestion. An empty tuple means it
+    has one and names no JSON function, which the caller treats as a failure.
     """
-    switch = getattr(dialect, "supports_functions", None)
-    if switch is None:
+    suggest = getattr(dialect, "suggest_functions", None)
+    if suggest is None:
         return None
-    return tuple(sorted(name for name in switch() if "json" in name.lower()))
+    catalogue = suggest()
+    return tuple(sorted(name for name in catalogue.functions if "json" in name.lower()))
 
 
 #: The JSON function names worth asking about. This is not a contract member:

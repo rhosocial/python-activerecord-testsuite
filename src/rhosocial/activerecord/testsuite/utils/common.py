@@ -127,7 +127,7 @@ def skip_test_if_functions_unsupported(model_class, required_functions):
     """
     Skip a test if the backend dialect does not support the required functions.
 
-    This function checks the backend dialect's supports_functions() method
+    This function checks the backend dialect's suggest_functions() catalogue
     to determine if all required functions are available.
 
     Args:
@@ -143,12 +143,12 @@ def skip_test_if_functions_unsupported(model_class, required_functions):
     backend = get_backend_from_model(model_class)
     dialect = backend.dialect
 
-    if not hasattr(dialect, 'supports_functions'):
+    if not hasattr(dialect, 'suggest_functions'):
         pytest.skip(
-            "Skipping test - backend dialect does not implement supports_functions()"
+            "Skipping test - backend dialect declares no suggest_functions() catalogue"
         )
 
-    supported_functions = dialect.supports_functions()
+    supported_functions = dialect.suggest_functions().functions
 
     unsupported = []
     for func_name in required_functions:
@@ -203,9 +203,9 @@ def requires_functions(*required_functions):
     """
     Decorator to mark a test function as requiring specific database functions.
 
-    This decorator checks if the backend dialect's supports_functions() method
-    returns True for all specified function names. If any function is not supported,
-    the test will be skipped.
+    This decorator checks whether the backend dialect's suggest_functions()
+    catalogue reports all specified function names as available. If any
+    function is not available, the test will be skipped.
 
     Args:
         *required_functions: Variable number of function names to check (e.g., 'json_array_insert', 'jsonb_array_insert')

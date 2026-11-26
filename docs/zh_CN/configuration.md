@@ -125,7 +125,7 @@ pytest --scenarios=sqlite_memory,mysql_80
 | 装饰器 | 标记 | 捕获 |
 |-----------|--------|----------|
 | `requires_protocol(ProtocolClass, method_name=None)` | `requires_protocol` | 由方言上的 Protocol 类表达的能力（可选特定 `supports_*` 方法）。 |
-| `requires_functions(*fn_names)` | `requires_functions` | 由方言的 `supports_functions(...)` 接受的 SQL 函数名表达的能力。 |
+| `requires_functions(*fn_names)` | `requires_functions` | 由方言的 `suggest_functions().functions` 目录报告为可用的 SQL 函数名表达的能力。 |
 
 二者都会展开为单个 pytest 标记；运行时跳过逻辑位于主题级 `conftest.py` 文件中，通过 `request.node.get_closest_marker(...)` 读取标记。当所需能力不受支持时，测试在该后端上被**跳过**而非失败。
 
@@ -178,7 +178,7 @@ sequenceDiagram
     participant Dialect as 后端方言
     
     Test->>Marker: 收集（附加标记）
-    Conftest->>Dialect: 检查方言 Protocol / supports_functions()
+    Conftest->>Dialect: 检查方言 Protocol / suggest_functions().functions
     Dialect-->>Conftest: True / False
     
     alt 能力受支持

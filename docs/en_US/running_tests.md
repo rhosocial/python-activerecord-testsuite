@@ -241,5 +241,6 @@ def test_basic_cte():
 - MUST handle database connection pooling and clean up test data.
 - MUST return tuples from provider methods (even for single model).
 - Capability handling is driven by the dialects: `requires_protocol` reads
-  Protocol-class support, `requires_functions` reads `supports_functions(...)`
+  Protocol-class support, `requires_functions` reads the
+  `suggest_functions().functions` catalogue
   — backends do not declare capabilities separately with `add_*` methods.
