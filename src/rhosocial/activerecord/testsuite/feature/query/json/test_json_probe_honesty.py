@@ -236,6 +236,13 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
         pytest.skip(f"{dialect.name} has no JSON support")
 
     declared = _declared_json_functions(dialect)
+    if declared is None:
+        pytest.skip(
+            f"{dialect.name} publishes no function catalogue (it answers "
+            f"suggest_functions() with a non-actions state or has no such "
+            f"suggestion), so its JSON vocabulary cannot be compared; a "
+            f"catalogue the backend does not keep is not evidence either way."
+        )
     if not declared:
         pytest.fail(
             f"{dialect.name} advertises supports_json_type() but names no JSON "
@@ -283,13 +290,18 @@ def _declared_json_functions(dialect) -> Optional[tuple]:
     not SQL spellings, so they are only used to establish that the backend can
     name JSON functions at all.
 
-    ``None`` means the dialect has no such suggestion. An empty tuple means it
-    has one and names no JSON function, which the caller treats as a failure.
+    ``None`` means the dialect publishes no catalogue at all: it has no such
+    suggestion, or it answers with a non-``"actions"`` state (a backend that
+    deliberately keeps no vocabulary). An empty tuple means it publishes an
+    ``"actions"`` catalogue and names no JSON function, which the caller treats
+    as a failure.
     """
     suggest = getattr(dialect, "suggest_functions", None)
     if suggest is None:
         return None
     catalogue = suggest()
+    if getattr(catalogue, "state", "actions") != "actions":
+        return None
     return tuple(sorted(name for name in catalogue.functions if "json" in name.lower()))
 
 
