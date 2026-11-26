@@ -17,9 +17,24 @@ Two layers are needed, because either alone passes while the defect is live:
    backend. Renderability alone is not enough: the core's default
    function-based fallback emits MySQL's ``JSON_EXTRACT``, which renders
    happily on any dialect and is wrong on most of them.
+
+Which function names a backend declares is not a capability switch. A
+``supports_*`` switch takes no arguments, so there is no shared
+``supports_json_function(name)`` probe any more: a name lookup answers "does
+this backend have *this* function", which is not the same question as "does
+this backend support JSON". The shared vocabulary lives in the parameterless
+``supports_functions()`` switch, whose mapping keys are the backend's own
+function constructors; a dialect that advertises JSON but names no JSON
+constructor there is failing this test. Comparing rendered SQL against the
+dialect's own *spellings* needs a per-name answer, which is backend-private:
+some dialects keep ``is_json_function_available(name)`` (SQL Server does),
+others do not. That comparison runs where the helper exists and is explicitly
+skipped -- not silently passed -- elsewhere.
 """
 
 # src/rhosocial/activerecord/testsuite/feature/query/json/test_json_probe_honesty.py
+from typing import Optional
+
 import pytest
 
 from rhosocial.activerecord.backend.dialect.exceptions import UnsupportedFeatureError
@@ -211,16 +226,40 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
     """The rendered SQL must not contain another backend's function names.
 
     Catches the core's MySQL-shaped fallback being inherited by a dialect
-    that has none of those functions.
+    that has none of those functions. Whether a backend's own spelling can be
+    compared at all depends on a backend-private name lookup; see
+    ``_own_function_names``. The presence check comes first so a dialect that
+    advertises JSON without naming a single function fails rather than skips.
     """
     if not dialect.supports_json_type():
         pytest.skip(f"{dialect.name} has no JSON support")
 
+    declared = _declared_json_functions(dialect)
+    if not declared:
+        pytest.fail(
+            f"{dialect.name} advertises supports_json_type() but names no JSON "
+            f"function in supports_functions(); it cannot name a single JSON "
+            f"function"
+        )
+
     own = _own_function_names(dialect)
+    if own is None:
+        sample = ", ".join(declared[:3]) + ("..." if len(declared) > 3 else "")
+        pytest.skip(
+            f"{dialect.name} declares {len(declared)} JSON function "
+            f"constructors ({sample}) but exposes no "
+            f"is_json_function_available(name) helper, so its function-mode "
+            f"SQL cannot be compared with the spellings it owns; per-name "
+            f"availability is backend-private, not a capability switch. Not "
+            f"asserting foreign syntax rather than guessing which names are "
+            f"its own."
+        )
+
     sql, _ = _text_sql(dialect, "function")
 
     if not own:
-        # Nothing declared, so nothing may be claimed either.
+        # The lookup exists and says nothing is available, so nothing may be
+        # claimed either: rendering a foreign name here is a broken promise.
         assert not any(name in sql for name in _FOREIGN_FUNCTION_NAMES), (
             f"{dialect.name} declares no JSON function names but rendered "
             f"{sql!r}"
@@ -233,9 +272,28 @@ def test_function_mode_emits_no_foreign_syntax(dialect):
     )
 
 
-#: The JSON function names worth asking about. Every backend's
-#: supports_json_function takes a name rather than returning a set, so the
-#: question is asked one name at a time.
+def _declared_json_functions(dialect) -> Optional[tuple]:
+    """JSON function constructors this dialect's own vocabulary names.
+
+    ``supports_functions()`` is a parameterless switch that answers with a
+    mapping, so it is a legitimate place to ask which functions a backend has
+    -- no per-name capability probe is invented here. The keys are the
+    backend's constructor vocabulary (``json_extract``, ``json_unquote``, ...),
+    not SQL spellings, so they are only used to establish that the backend can
+    name JSON functions at all.
+
+    ``None`` means the dialect has no such switch. An empty tuple means it has
+    one and names no JSON function, which the caller treats as a failure.
+    """
+    switch = getattr(dialect, "supports_functions", None)
+    if switch is None:
+        return None
+    return tuple(sorted(name for name in switch() if "json" in name.lower()))
+
+
+#: The JSON function names worth asking about. This is not a contract member:
+#: it is the fixed list the backend-private ``is_json_function_available``
+#: helper (where a backend keeps one) is queried with, one name at a time.
 _JSON_FUNCTION_NAMES = (
     "JSON_EXTRACT", "JSON_UNQUOTE", "JSON_QUERY", "JSON_VALUE", "JSON_TABLE",
     "JSON_CONTAINS", "JSON_TYPE", "JSON_SEARCH", "GET_PATH", "OPENJSON",
@@ -244,29 +302,22 @@ _JSON_FUNCTION_NAMES = (
 )
 
 
-def _own_function_names(dialect) -> tuple:
-    """JSON function names this dialect declares for itself.
+def _own_function_names(dialect) -> Optional[tuple]:
+    """JSON function names this dialect declares for itself, or ``None``.
 
-    Asks ``supports_json_function(name)`` per name, because that is the shape
-    every backend implements. Calling it with no arguments — which an earlier
-    version of this helper did — raises TypeError on all of them and returns
-    nothing, so the check silently degraded to "render no function name at
-    all" and no backend was ever really compared against its own set.
+    ``None`` means the dialect cannot answer: per-name availability is
+    backend-private, so a dialect without ``is_json_function_available(name)``
+    has no way to say which spellings are its own. Returning ``()`` there would
+    be a lie -- it reads as "declares nothing" and turns the caller's check
+    into "render no function name at all", which every dialect passes.
 
-    A dialect with no such probe gets an empty result, which is legitimate: it
-    means the dialect renders with operators only.
+    Dialects that do keep the helper (SQL Server, for one) get their real
+    answer, and the caller compares the rendered SQL against it.
     """
-    probe = getattr(dialect, "supports_json_function", None)
+    probe = getattr(dialect, "is_json_function_available", None)
     if probe is None:
-        return ()
-    own = []
-    for name in _JSON_FUNCTION_NAMES:
-        try:
-            if probe(name):
-                own.append(name)
-        except Exception:  # noqa: BLE001 - a probe that cannot answer is not a failure here
-            return ()
-    return tuple(own)
+        return None
+    return tuple(name for name in _JSON_FUNCTION_NAMES if probe(name))
 
 
 # ---------------------------------------------------------------------------
