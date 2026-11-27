@@ -180,9 +180,18 @@ def test_constants_carry_the_right_value(dialect, which, value):
 
 
 def test_unknown_constant_kind_is_rejected(dialect):
-    """A typo must not silently render something else."""
-    with pytest.raises(ValueError, match="which must be one of"):
-        UUIDConstantExpression(dialect, "middle")
+    """A typo must not silently render something else.
+
+    The refusal belongs to rendering, not to construction: a node read back
+    from a stored artifact must build whatever spelling the artifact carries,
+    and only the formatter can say the word is not a constant. It is a
+    ``TypeError`` -- the caller's error -- and never an
+    ``UnsupportedFeatureError``, which would claim a dialect gap that is not
+    there.
+    """
+    expr = UUIDConstantExpression(dialect, "middle")
+    with pytest.raises(TypeError, match="which must be one of"):
+        expr.to_sql()
 
 
 # ---------------------------------------------------------------------------
