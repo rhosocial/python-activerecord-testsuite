@@ -184,15 +184,19 @@ def test_unknown_constant_kind_is_rejected(dialect):
 
     The refusal belongs to rendering, not to construction: a node read back
     from a stored artifact must build whatever spelling the artifact carries,
-    and only rendering can judge the word. It is a ``TypeError`` -- the
-    caller's error -- wherever the dialect has a constant formatter at all; a
-    dialect with no such formatter refuses at dispatch with
-    ``UnsupportedFeatureError`` before the word is ever read, and that is a
-    capability answer, not a caller one.
+    and only rendering can judge the word.
+
+    Which error arrives depends on whether the dialect declares the constant
+    formatter at all. Where it does, the formatter reads ``which`` before it
+    consults the capability table -- a typo is the caller's bug, and reporting
+    "this dialect cannot render constants" would hide it behind an environment
+    limit -- so the answer is ``TypeError``. Where the dialect declares no
+    formatter, the dispatch refuses the node with ``UnsupportedFeatureError``
+    before the word is ever read.
     """
     expr = UUIDConstantExpression(dialect, "middle")  # construction collects
 
-    if _supports(dialect, "supports_uuid_constant"):
+    if callable(getattr(dialect, "format_uuid_constant_expression", None)):
         with pytest.raises(TypeError, match="which must be one of"):
             expr.to_sql()
     else:
