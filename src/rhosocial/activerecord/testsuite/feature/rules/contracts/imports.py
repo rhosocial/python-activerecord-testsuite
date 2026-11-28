@@ -117,6 +117,38 @@ def foreign_imports(subject: ExpressionSubject) -> List[str]:
     ]
 
 
+def test_no_backend_imports_the_application_layer(subject: ExpressionSubject) -> None:
+    """A concrete backend never consumes the AR layer's semantic vocabulary (A2).
+
+    The AR layer here is its four components and their support: ActiveRecord,
+    ActiveQuery, CTEQuery, SetOperationQuery, plus field proxies, the public
+    interface and migration orchestration. ``base`` also holds DDL declaration
+    types (``ColumnOptions``, ``CollationAttribute``) shared by both layers;
+    importing a declaration is not importing AR semantics.
+    """
+    if not subject.has_vocabulary_owner:
+        return
+    offenders = []
+    prefix = "rhosocial.activerecord."
+    _AR_SEMANTICS = {
+        "activerecord",
+        "query",
+        "relation",
+        "interface",
+        "migration",
+        "field",
+    }
+    for path, lineno, module in imported_modules(subject):
+        if not module.startswith(prefix):
+            continue
+        first = module[len(prefix) :].split(".", 1)[0]
+        if first in _AR_SEMANTICS:
+            offenders.append(f"{path}:{lineno}: imports {module}")
+    assert not offenders, "the application layer is invisible to backends:\n" + "\n".join(
+        offenders
+    )
+
+
 def test_no_module_imports_a_foreign_implementation(subject: ExpressionSubject) -> None:
     """The dependency runs one way, and implementations do not reach each other."""
     offenders = foreign_imports(subject)

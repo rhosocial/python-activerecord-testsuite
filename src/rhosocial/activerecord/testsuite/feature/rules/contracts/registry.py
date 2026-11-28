@@ -15,6 +15,7 @@ table, so it has no ``registry`` fixture to supply.
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -33,10 +34,19 @@ def _own_expressions(subject: ExpressionSubject) -> dict:
     return vars(module)[f"{subject.prefix.upper()}_EXPRESSIONS"]
 
 
-def _sibling_only_kinds() -> set:
+def _sibling_only_kinds(subject: ExpressionSubject) -> set:
     core = set(_core_expressions())
     kinds = set()
-    for name in ("sqlite", "dummy"):
+    for base in importlib.import_module(
+        "rhosocial.activerecord.backend.impl"
+    ).__path__:
+        for path in sorted(Path(base).iterdir()):
+            name = path.name
+        own = subject.impl_module_prefix
+        if own and own.endswith("." + name):
+            continue
+        if name.startswith("_") or name == "__pycache__" or not (path / "expression_registry.py").exists():
+            continue
         module = importlib.import_module(
             f"rhosocial.activerecord.backend.impl.{name}.expression_registry"
         )
@@ -59,9 +69,11 @@ def test_registry_publishes_core_plus_own_kinds(
     assert set(registry.node_kinds()) == expected
 
 
-def test_registry_publishes_no_sibling_backend_kind(registry: Any) -> None:
+def test_registry_publishes_no_sibling_backend_kind(
+    registry: Any, subject: ExpressionSubject
+) -> None:
     """Installing a sibling must not make its kinds readable here."""
-    sibling_only = _sibling_only_kinds()
+    sibling_only = _sibling_only_kinds(subject)
     assert sibling_only
     assert set(registry.node_kinds()).isdisjoint(sibling_only)
 
