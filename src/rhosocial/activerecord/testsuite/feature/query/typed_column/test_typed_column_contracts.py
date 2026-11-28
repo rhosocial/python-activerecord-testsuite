@@ -49,7 +49,7 @@ from rhosocial.activerecord.backend.expression import (
     ComparisonPredicate,
     InPredicate,
     IsNullPredicate,
-    Literal,
+    Parameter,
     TimestampColumn,
     IntegerColumn,
     JSONColumn,
@@ -285,10 +285,10 @@ def test_a_bare_column_still_takes_an_explicit_predicate(dialect):
     col = Column(dialect, "status")
     ident = dialect.format_identifier("status")
     ph = dialect.get_parameter_placeholder()
-    assert ComparisonPredicate(dialect, "=", col, Literal(dialect, "active")).to_sql() == (
+    assert ComparisonPredicate(dialect, "=", col, Parameter(dialect, "active")).to_sql() == (
         f"{ident} = {ph}", ("active",)
     )
-    assert InPredicate(dialect, col, Literal(dialect, ("open", "paid"))).to_sql() == (
+    assert InPredicate(dialect, col, Parameter(dialect, ("open", "paid"))).to_sql() == (
         f"{ident} IN ({ph}, {ph})",
         ("open", "paid"),
     )

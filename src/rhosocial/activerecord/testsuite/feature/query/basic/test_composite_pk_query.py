@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.backend.expression.core import Column
-from rhosocial.activerecord.backend.expression import ComparisonPredicate, Literal
+from rhosocial.activerecord.backend.expression import ComparisonPredicate, Parameter
 class TestActiveQueryCompositePK:
     """Test ActiveQuery operations against models with composite primary keys."""
 
@@ -31,7 +31,7 @@ class TestActiveQueryCompositePK:
         """Filtering by a single composite key column should return matching rows."""
         dialect = order_item_class.backend().dialect
         results = order_item_class.query().where(
-            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Parameter(dialect, 1))
         ).all()
         assert len(results) == 2, "Expected 2 rows with order_id == 1"
 
@@ -39,9 +39,9 @@ class TestActiveQueryCompositePK:
         """Combining multiple where clauses should apply both filters."""
         dialect = order_item_class.backend().dialect
         results = order_item_class.query().where(
-            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))
+            ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Parameter(dialect, 1))
         ).where(
-            ComparisonPredicate(dialect, ">", Column(dialect, "quantity"), Literal(dialect, 1))
+            ComparisonPredicate(dialect, ">", Column(dialect, "quantity"), Parameter(dialect, 1))
         ).all()
         assert len(results) == 1, "Expected 1 row matching both conditions"
         assert results[0].product_id == 101, "Expected product_id to be 101"

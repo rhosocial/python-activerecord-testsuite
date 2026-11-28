@@ -212,7 +212,7 @@ class TestCTEQueryWithQueryExpression:
             where=query_parts.WhereClause(
                 dialect,
                 condition=ComparisonPredicate(
-                    dialect, "=", core.Column(dialect, "status"), core.Literal(dialect, "active")
+                    dialect, "=", core.Column(dialect, "status"), core.Parameter(dialect, "active")
                 ),
             )
         )

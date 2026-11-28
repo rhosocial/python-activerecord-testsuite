@@ -11,7 +11,7 @@ from decimal import Decimal
 
 import pytest
 from rhosocial.activerecord.backend.adapters import Geometry, MacAddress, Vector
-from rhosocial.activerecord.backend.expression import Literal
+from rhosocial.activerecord.backend.expression import Parameter
 
 #: X1: (family, column-class table key, existing model, field). The key is the
 #: framework family in ``suggest_column_types()``; a field whose Python type
@@ -123,11 +123,11 @@ def _require_json_path(dialect):
 def positive_expression(kind, column, dialect):
     """Build the X2 operation of *kind* on *column*, using *dialect* for literals."""
     if kind == "arithmetic":
-        return column + Literal(dialect, 1)
+        return column + Parameter(dialect, 1)
     if kind == "like":
         return column.like("%probe%")
     if kind == "comparison":
-        return column < Literal(dialect, "2100-01-01")
+        return column < Parameter(dialect, "2100-01-01")
     if kind == "json_path":
         _require_json_path(dialect)
         return column.json_path("k")

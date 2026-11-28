@@ -43,14 +43,14 @@ class TestCTEQueryCompositePK:
             pytest.skip("Backend does not support CTE")
 
         from rhosocial.activerecord.query import CTEQuery
-        from rhosocial.activerecord.backend.expression import Column, ComparisonPredicate, Literal
+        from rhosocial.activerecord.backend.expression import Column, ComparisonPredicate, Parameter
 
         base = order_item_class.query()
         cte = CTEQuery(backend)
         cte.with_cte("order_summary", base)
         result = cte.from_cte("order_summary").select(
             Column(dialect, "order_id"), Column(dialect, "quantity")
-        ).where(ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Literal(dialect, 1))).aggregate()
+        ).where(ComparisonPredicate(dialect, "=", Column(dialect, "order_id"), Parameter(dialect, 1))).aggregate()
         assert len(result) == 2, "Expected 2 aggregated rows for order_id == 1"
 
     def test_cte_pk_filter(self, seeded, order_item_class):

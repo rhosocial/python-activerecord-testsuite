@@ -14,7 +14,7 @@ from typing_extensions import Annotated
 
 from rhosocial.activerecord.model import ActiveRecord, AsyncActiveRecord
 from rhosocial.activerecord.base import DerivedField, FieldProxy
-from rhosocial.activerecord.backend.expression import ArithmeticOperation, Column, Literal
+from rhosocial.activerecord.backend.expression import ArithmeticOperation, Column, Parameter
 from rhosocial.activerecord.backend.expression.functions import (
     json_extract_text, length, concat, coalesce
 )
@@ -176,7 +176,7 @@ class Post(IntegerPKMixin, ActiveRecord):
 
     # DerivedField: hotness score
     hotness: ClassVar[Annotated[int, DerivedField(
-        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Literal(d, 1)),
+        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Parameter(d, 1)),
     )]]
 
     # DerivedField (JSON): first tag from metadata
@@ -277,7 +277,7 @@ class AsyncPost(IntegerPKMixin, AsyncActiveRecord):
     )]]
 
     hotness: ClassVar[Annotated[int, DerivedField(
-        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Literal(d, 1)),
+        lambda d: ArithmeticOperation(d, "add", Column(d, "view_count"), Parameter(d, 1)),
     )]]
 
     first_tag: ClassVar[Annotated[str, DerivedField(

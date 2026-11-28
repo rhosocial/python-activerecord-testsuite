@@ -16,7 +16,7 @@ from rhosocial.activerecord.backend.suggestion.definitions import ColumnTypeSugg
 import operator
 
 import pytest
-from rhosocial.activerecord.backend.expression import JSONColumn, Literal, XMLColumn
+from rhosocial.activerecord.backend.expression import JSONColumn, Parameter, XMLColumn
 from rhosocial.activerecord.backend.expression.mixins import ComparisonMixin
 from rhosocial.activerecord.base.field_proxy import ColumnTypeResolutionError
 from rhosocial.activerecord.base.framework_types import FRAMEWORK_PYTHON_TYPES
@@ -85,9 +85,9 @@ class TestExpressions:
         column = XMLColumn(dialect, "markup")
         assert ComparisonMixin not in type(column).__mro__
         with pytest.raises(AttributeError):
-            operator.eq(column, Literal(dialect, "<a/>"))
+            operator.eq(column, Parameter(dialect, "<a/>"))
         with pytest.raises(AttributeError):
-            operator.lt(column, Literal(dialect, "<b/>"))
+            operator.lt(column, Parameter(dialect, "<b/>"))
 
     def test_x4_use_column_expression_uses_column_name(self, expression_models, dialect):
         """X4: a renamed field produces the column name, not the field name."""

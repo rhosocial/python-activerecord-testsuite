@@ -19,7 +19,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional, Set, Tuple, Type
 
-from rhosocial.activerecord.backend.expression import Literal as SQLLiteral
+from rhosocial.activerecord.backend.expression import Parameter as SQLLiteral
 from rhosocial.activerecord.backend.expression import NumericColumn
 from rhosocial.activerecord.backend.expression.types import IntegerType, TimestampType
 from rhosocial.activerecord.base import DerivedField
