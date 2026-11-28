@@ -7,3 +7,4 @@ own conftest. Nothing here names a backend or decides which table is correct.
 
 from rhosocial.activerecord.testsuite.feature.rules.contracts.registry import *  # noqa: F401,F403,E501
 from rhosocial.activerecord.testsuite.feature.rules.contracts.retired import *  # noqa: F401,F403,E501
+from rhosocial.activerecord.testsuite.feature.rules.contracts.explicit import *  # noqa: F401,F403,E501

@@ -44,7 +44,7 @@ def _audited_files(subject: ExpressionSubject):
             relative = path.relative_to(root.path)
             in_expression = any(
                 part in subject.expression_dirs for part in relative.parts[:-1]
-            ) or relative.name in subject.expression_dirs
+            ) or relative.stem == "expression"
             if in_expression or path.stem.endswith("expression_registry"):
                 yield path
 
