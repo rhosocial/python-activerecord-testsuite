@@ -60,12 +60,14 @@ def _retired_offenders(subject: ExpressionSubject) -> List[str]:
 
 
 def _global_offenders(subject: ExpressionSubject) -> List[str]:
+    """The ban covers the whole backend: no rebindable process state anywhere."""
     found = []
-    for path in _audited_files(subject):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Global):
-                found.append(f"{path.as_posix()}:{node.lineno}: global statement")
+    for root in subject.roots:
+        for path in source_files(root.path):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Global):
+                    found.append(f"{path.as_posix()}:{node.lineno}: global statement")
     return found
 
 
