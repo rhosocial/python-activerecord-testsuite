@@ -5,13 +5,13 @@ from decimal import Decimal
 import pytest
 
 from rhosocial.activerecord.testsuite.utils import requires_window_functions
-from rhosocial.activerecord.backend.expression.advanced_functions import (
+from rhosocial.activerecord.backend.expression.functions.advanced_functions import (
     WindowSpecification,
     WindowFrameSpecification,
 )
-from rhosocial.activerecord.backend.expression.core import FunctionCall
+from rhosocial.activerecord.backend.expression.functions.function_call import FunctionCall
 from rhosocial.activerecord.backend.expression.query_parts import OrderByClause
-from rhosocial.activerecord.backend.expression import core
+from rhosocial.activerecord.backend.expression.column_types.column import Column
 
 
 @requires_window_functions()
@@ -35,7 +35,7 @@ async def test_row_number_window_function(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
         window_func = FunctionCall(
             dialect,
@@ -88,8 +88,8 @@ async def test_partition_by_window_function(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        partition_by = [core.Column(dialect, "status")]
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "ASC")])
+        partition_by = [Column(dialect, "status")]
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "ASC")])
         window_spec = WindowSpecification(dialect, partition_by=partition_by, order_by=order_by_clause)
         window_func = FunctionCall(
             dialect,
@@ -134,9 +134,9 @@ async def test_aggregate_window_functions(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
-        sum_func = FunctionCall(dialect, "SUM", core.Column(dialect, "total_amount"), window_spec=window_spec, alias="running_sum")
+        sum_func = FunctionCall(dialect, "SUM", Column(dialect, "total_amount"), window_spec=window_spec, alias="running_sum")
 
         query = AsyncOrder.query().select("id", "total_amount", sum_func)
         query.order_by(("total_amount", "DESC"))
@@ -175,7 +175,7 @@ async def test_named_window_definitions(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "DESC")])
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "DESC")])
         window_spec = WindowSpecification(dialect, order_by=order_by_clause)
         window_func = FunctionCall(
             dialect,
@@ -218,14 +218,14 @@ async def test_window_frame_specifications(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "ASC")])
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "ASC")])
         window_frame = WindowFrameSpecification(dialect, 'ROWS', 'UNBOUNDED PRECEDING', 'CURRENT ROW')
         window_spec = WindowSpecification(dialect, order_by=order_by_clause, frame=window_frame)
 
         first_value_func = FunctionCall(
             dialect,
             "FIRST_VALUE",
-            core.Column(dialect, "total_amount"),
+            Column(dialect, "total_amount"),
             window_spec=window_spec,
             alias="first_amount"
         )
@@ -264,14 +264,14 @@ async def test_unbounded_window_frames(async_order_fixtures):
     try:
         dialect = AsyncOrder.backend().dialect
 
-        order_by_clause = OrderByClause(dialect, [(core.Column(dialect, "total_amount"), "ASC")])
+        order_by_clause = OrderByClause(dialect, [(Column(dialect, "total_amount"), "ASC")])
         window_frame = WindowFrameSpecification(dialect, 'ROWS', 'UNBOUNDED PRECEDING', 'UNBOUNDED FOLLOWING')
         window_spec = WindowSpecification(dialect, order_by=order_by_clause, frame=window_frame)
 
         sum_func = FunctionCall(
             dialect,
             "SUM",
-            core.Column(dialect, "total_amount"),
+            Column(dialect, "total_amount"),
             window_spec=window_spec,
             alias="total_sum"
         )

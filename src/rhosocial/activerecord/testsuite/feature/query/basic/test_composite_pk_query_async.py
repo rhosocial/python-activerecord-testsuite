@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from rhosocial.activerecord.backend.expression.core import Column
+from rhosocial.activerecord.backend.expression.column_types.column import Column
 from rhosocial.activerecord.backend.expression import ComparisonPredicate, Parameter
 class TestAsyncActiveQueryCompositePK:
     """Test async ActiveQuery operations against models with composite primary keys."""

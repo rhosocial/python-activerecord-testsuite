@@ -344,7 +344,7 @@ def test_json_table_claim_matches_the_formatter(dialect):
 
     PostgreSQL and SQL Server both shipped this exact contradiction.
     """
-    from rhosocial.activerecord.backend.expression.query_sources import JSONTableExpression
+    from rhosocial.activerecord.backend.expression.sources.query_sources import JSONTableExpression
 
     claimed = dialect.supports_json_table()
     # Probe with a real expression, not None: formatters inspect attributes such

@@ -117,6 +117,7 @@ class Tree:
     def __init__(self) -> None:
         self.classes: Dict[Definition, Tuple[Root, Path, ast.ClassDef]] = {}
         self.imports: Dict[Definition, Definition] = {}
+        self._package_index: Dict[Definition, Definition] = {}
 
     def add_root(self, root: Root, skip: Set[str]) -> None:
         for path in source_files(root.path):
@@ -129,6 +130,9 @@ class Tree:
             except (OSError, SyntaxError, ValueError):
                 continue
             self._read(root, path, relative, module, tree)
+        for (module, name), definition in self.classes.items():
+            package = module.rsplit(".", 1)[0]
+            self._package_index.setdefault((package, name), definition)
 
     def _read(self, root: Root, path: Path, relative: Path, module: str, tree: ast.AST) -> None:
         package = module if relative.name == "__init__.py" else module.rsplit(".", 1)[0]
@@ -169,6 +173,10 @@ class Tree:
             seen.add(current)
             if current in self.classes:
                 return current
+            if via_import:
+                packaged = self._package_index.get(current)
+                if packaged is not None:
+                    return packaged
             target = self.imports.get(current)
             if target is None:
                 # A name that was never imported is unknown here; a name reached
@@ -253,6 +261,11 @@ def node_entries(subject: ExpressionSubject) -> List[Tuple[Tuple[str, str], str,
     """
     tree = _subject_tree(subject)
     vocabulary = core_vocabulary()
+    # A backend may import a core base from a package path (``expression.column_types``)
+    # while the class is declared in one of that package's modules. Teach the
+    # subject's resolver the package -> definition mapping from core's vocabulary.
+    for module, name in vocabulary:
+        tree._package_index.setdefault((module.rsplit(".", 1)[0], name), (module, name))
     seen = reachable(tree, list(vocabulary))
     found: List[Tuple[Tuple[str, str], str, Path, str]] = []
     for definition in sorted(seen):

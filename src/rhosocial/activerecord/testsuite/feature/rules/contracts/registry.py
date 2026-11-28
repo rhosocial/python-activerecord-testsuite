@@ -82,7 +82,7 @@ def test_every_target_resolves_to_its_own_class(
     registry: Any, subject: ExpressionSubject
 ) -> None:
     """A stale FQN is a defect, not an artifact that happens to fail at read."""
-    from rhosocial.activerecord.backend.expression.core import Parameter
+    from rhosocial.activerecord.backend.expression.value_types.parameter import Parameter
 
     assert registry.resolve_node("parameter") is Parameter
     for kind, target in _own_expressions(subject).items():
@@ -93,7 +93,7 @@ def test_every_target_resolves_to_its_own_class(
 
 def test_no_value_kind_is_published(registry: Any) -> None:
     """Values are carried by ``parameter``; every other kind is a node kind."""
-    from rhosocial.activerecord.backend.expression.core import Parameter
+    from rhosocial.activerecord.backend.expression.value_types.parameter import Parameter
 
     answering = [kind for kind in registry.node_kinds() if registry.resolve_node(kind) is Parameter]
     assert answering == ["parameter"]

@@ -27,7 +27,7 @@ here for the same reason the model would.
 from typing import Any, Optional, Tuple, Type
 
 from rhosocial.activerecord.backend.expression.column_types import ColumnBase
-from rhosocial.activerecord.backend.expression.core import Column
+from rhosocial.activerecord.backend.expression.column_types.column import Column
 from rhosocial.activerecord.base.field_proxy import (
     ColumnTypeResolutionError,
     FieldAccessor,

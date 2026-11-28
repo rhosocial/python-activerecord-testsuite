@@ -26,7 +26,7 @@ from typing import ClassVar
 import pytest
 
 from rhosocial.activerecord.backend.expression import functions
-from rhosocial.activerecord.backend.expression.mixins import NumericValueMixin
+from rhosocial.activerecord.backend.expression.bases.mixins import NumericValueMixin
 from rhosocial.activerecord.backend.expression.operators import ArithmeticOperation
 from rhosocial.activerecord.base.field_proxy import FieldProxy
 from rhosocial.activerecord.model import ActiveRecord

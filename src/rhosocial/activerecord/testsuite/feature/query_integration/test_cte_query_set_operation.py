@@ -15,7 +15,9 @@ import pytest
 from decimal import Decimal
 
 from rhosocial.activerecord.query import CTEQuery, AsyncCTEQuery
-from rhosocial.activerecord.backend.expression import statements, core, query_parts
+from rhosocial.activerecord.backend.expression import statements, query_parts
+from rhosocial.activerecord.backend.expression.column_types.column import Column
+from rhosocial.activerecord.backend.expression.value_types.parameter import Parameter
 from rhosocial.activerecord.backend.expression.predicates import ComparisonPredicate
 from rhosocial.activerecord.backend.expression.objects import Table
 from rhosocial.activerecord.backend.expression.sources import NamedRelationRef
@@ -207,12 +209,12 @@ class TestCTEQueryWithQueryExpression:
         # Create a QueryStatement directly (this implements ToSQLProtocol)
         query_expr = statements.QueryStatement(
             dialect,
-            select=[core.Column(dialect, "id"), core.Column(dialect, "status"), core.Column(dialect, "total_amount")],
+            select=[Column(dialect, "id"), Column(dialect, "status"), Column(dialect, "total_amount")],
             from_=NamedRelationRef(dialect, Table(dialect, Order.table_name())),
             where=query_parts.WhereClause(
                 dialect,
                 condition=ComparisonPredicate(
-                    dialect, "=", core.Column(dialect, "status"), core.Parameter(dialect, "active")
+                    dialect, "=", Column(dialect, "status"), Parameter(dialect, "active")
                 ),
             )
         )

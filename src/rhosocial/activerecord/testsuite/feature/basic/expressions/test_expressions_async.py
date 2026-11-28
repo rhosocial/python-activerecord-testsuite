@@ -14,7 +14,7 @@ import operator
 
 import pytest
 from rhosocial.activerecord.backend.expression import JSONColumn, Parameter, XMLColumn
-from rhosocial.activerecord.backend.expression.mixins import ComparisonMixin
+from rhosocial.activerecord.backend.expression.bases.mixins import ComparisonMixin
 from rhosocial.activerecord.base.field_proxy import ColumnTypeResolutionError
 from rhosocial.activerecord.base.framework_types import FRAMEWORK_PYTHON_TYPES
 

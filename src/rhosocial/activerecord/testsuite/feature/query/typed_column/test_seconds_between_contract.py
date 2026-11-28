@@ -19,7 +19,7 @@ by such a backend would report the backend's honest refusal as a failure.
 
 # testsuite/feature/query/typed_column/test_seconds_between_contract.py
 from rhosocial.activerecord.backend.expression import seconds_between
-from rhosocial.activerecord.backend.expression.datetime import SecondsBetweenExpression
+from rhosocial.activerecord.backend.expression.functions.datetime import SecondsBetweenExpression
 from rhosocial.activerecord.backend.expression.value_types import NumericValue
 
 

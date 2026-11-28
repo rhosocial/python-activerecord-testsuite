@@ -416,7 +416,7 @@ def test_json_chaining_does_not_renest_the_path(dialect):
     Re-anchoring would make ``col.json_value("a").json_value("b")`` read
     ``b`` from the document root instead of from ``a``.
     """
-    from rhosocial.activerecord.backend.expression.advanced_functions import JSONDocumentValue
+    from rhosocial.activerecord.backend.expression.functions.advanced_functions import JSONDocumentValue
 
     col = _class_or_skip(dialect, dict, "settings")
     first = col.json_value("a")
